@@ -882,6 +882,15 @@ window.onload = function() {
     sb.auth.signOut().then(function() {
       document.getElementById('appdash').style.display = 'none';
       document.body.style.overflow = '';
+      cUser = null; cProfile = null;
+      // Reset login form
+      var liE = document.getElementById('li-e'); if (liE) liE.value = '';
+      var liP = document.getElementById('li-p'); if (liP) liP.value = '';
+      var btnIn = document.getElementById('btn-in');
+      if (btnIn) { btnIn.disabled = false; btnIn.textContent = 'Entrar al portal'; }
+      var msg = document.getElementById('msg'); if (msg) msg.textContent = '';
+      // Switch back to login tab
+      switchTab('in');
     });
   };
 
@@ -993,6 +1002,11 @@ function doLogin() {
     }
   });
 }
+// Enter key on login fields
+['li-e','li-p'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+});
 function doReg() {
   var n = document.getElementById('rg-n').value.trim();
   var e = document.getElementById('rg-e').value.trim();

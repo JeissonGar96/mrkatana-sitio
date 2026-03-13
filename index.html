@@ -746,13 +746,6 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
   <div class="flinks"><a href="#">Privacidad</a><a href="#">Términos</a><a href="https://wa.me/tunumero">WhatsApp</a></div>
 </footer>
 
-<!-- PREVIEW BTN (remove before production) -->
-<div style="position:fixed;bottom:20px;right:20px;z-index:9999;">
-  <button id="preview-dash-btn" style="background:linear-gradient(135deg,#c9a84c,#e2c47a);color:#111;border:none;padding:12px 20px;border-radius:8px;font-size:.78rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.4);">
-    👁 Preview Dashboard
-  </button>
-</div>
-
 <!-- MODAL LOGIN -->
 <div id="overlay" class="overlay">
   <div class="mbox">
@@ -913,26 +906,7 @@ window.onload = function() {
   sb.auth.getSession().then(function(r) {
     if (r.data && r.data.session) loadApp(r.data.session.user);
   });
-  // PREVIEW MODE — remove before production
-  var prevBtn = document.getElementById('preview-dash-btn');
-  if (prevBtn) {
-    prevBtn.addEventListener('click', function() {
-      cProfile = {
-        full_name: 'Carlos Martínez',
-        role: 'student',
-        membership_start: new Date(Date.now() - 45*86400000).toISOString(),
-        membership_end: new Date(Date.now() + 135*86400000).toISOString(),
-        next_group_meeting: new Date(Date.now() + 3*86400000).toISOString(),
-        next_1on1_meeting: new Date(Date.now() + 12*86400000).toISOString()
-      };
-      cUser = {id: 'preview', email: 'preview@mrkatana.com'};
-      closeModal();
-      document.getElementById('appdash').style.display = 'block';
-      document.body.style.overflow = 'hidden';
-      document.getElementById('uname').textContent = 'Carlos';
-      rDash();
-    });
-  }
+
   // Counter animation (all screens)
   var counters = document.querySelectorAll('.nv[data-target]');
   var animated = false;
@@ -1265,12 +1239,7 @@ function markDone(lessonId) {
   var sub = taskInput ? taskInput.value.trim() : null;
   var btn = document.getElementById('btn-complete');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-  if (!cUser || cUser.id === 'preview') {
-    var li = document.getElementById('li-' + lessonId);
-    if (li) { li.classList.add('done'); li.querySelector('.lesson-item-num').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'; }
-    if (btn) btn.outerHTML = '<div class="lesson-done-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Completada</div>';
-    tst('✓ Clase completada'); return;
-  }
+
   sb.from('lesson_progress').upsert({ user_id: cUser.id, lesson_id: lessonId, completed: true, task_submission: sub, completed_at: new Date().toISOString() }).then(function(r) {
     if (r.error) { tst('Error al guardar', 1); if (btn) { btn.disabled = false; btn.textContent = 'Marcar como completada'; } return; }
     var li = document.getElementById('li-' + lessonId);

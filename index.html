@@ -985,7 +985,12 @@ function doLogin() {
   var btn = document.getElementById('btn-in');
   btn.disabled = true; btn.textContent = 'Entrando...';
   sb.auth.signInWithPassword({ email: e, password: p }).then(function(r) {
-    if (r.error) { showMsg(fmtE(r.error.message), true); btn.disabled = false; btn.textContent = 'Entrar al portal'; }
+    if (r.error) {
+      showMsg(fmtE(r.error.message), true);
+      btn.disabled = false; btn.textContent = 'Entrar al portal';
+    } else if (r.data && r.data.user) {
+      loadApp(r.data.user);
+    }
   });
 }
 function doReg() {

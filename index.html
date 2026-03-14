@@ -3478,98 +3478,80 @@ function loadCalendar() {
   var c = document.getElementById('econ-cal');
   if (!c) return;
 
-  // Currency colors for major pairs
   var currColors = {
-    'USD': '#4a9eff', 'EUR': '#7da0c8', 'GBP': '#c9a84c',
-    'JPY': '#e88c4a', 'AUD': '#4ade80', 'CAD': '#a78bfa',
-    'CHF': '#f87171', 'NZD': '#34d399', 'CNY': '#fb923c'
+    'USD':'#4a9eff','EUR':'#7da0c8','GBP':'#c9a84c',
+    'JPY':'#e88c4a','AUD':'#4ade80','CAD':'#a78bfa',
+    'CHF':'#f87171','NZD':'#34d399','CNY':'#fb923c'
   };
 
+  // Day names map for "HOY" label
+  var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var todayDow = dayNames[new Date().getDay()];
+
   fetch('/api/calendar')
-    .then(function(r) { return r.json(); })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(data) {
       if (!data.ok || !data.events || !data.events.length) {
         c.innerHTML = '<div class="cal-empty">📅 Sin noticias de alto impacto esta semana.</div>';
         return;
       }
 
-      // Group events by date
-      var groups = {};
-      var order  = [];
+      // Group by date string
+      var groups = {}, order = [];
       data.events.forEach(function(ev) {
-        if (!groups[ev.date]) { groups[ev.date] = []; order.push(ev.date); }
-        groups[ev.date].push(ev);
+        var d = ev.date || 'Sin fecha';
+        if (!groups[d]) { groups[d] = []; order.push(d); }
+        groups[d].push(ev);
       });
-
-      // Today label
-      var todayStr = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
 
       var html = '';
       order.forEach(function(date) {
-        var isToday = date.toLowerCase().indexOf(new Date().toLocaleDateString('en-US',{weekday:'short'}).toLowerCase()) === 0
-                   || date === todayStr;
+        // "Fri, Mar 14" — check if first 3 chars match today's day
+        var isToday = date.indexOf(todayDow) === 0;
 
         html += '<div class="cal-day-group">';
-        html += '<div class="cal-day-header">';
-        html += '<span class="cal-day-name">' + date + '</span>';
+        html += '<div class="cal-day-header"><span class="cal-day-name">' + date + '</span>';
         if (isToday) html += '<span class="cal-day-today">HOY</span>';
         html += '</div>';
 
         groups[date].forEach(function(ev) {
-          var curr   = ev.currency || '';
-          var color  = currColors[curr] || '#9a9a9a';
-          var hasAct = ev.actual && ev.actual !== '—';
-          var isAllDay = !ev.time || ev.time === 'All Day' || ev.time === 'Tentative';
+          var curr     = ev.currency || '';
+          var color    = currColors[curr] || '#9a9a9a';
+          var hasAct   = ev.actual && ev.actual !== '—';
+          var isAllDay = !ev.time || ev.time === 'All Day';
+          var unit     = ev.unit ? ' ' + ev.unit : '';
 
-          // Determine if actual is better or worse than forecast
+          // Better / worse coloring
           var actualClass = 'cal-actual';
           if (hasAct && ev.forecast && ev.forecast !== '—') {
-            var a = parseFloat(ev.actual);
-            var f = parseFloat(ev.forecast);
-            if (!isNaN(a) && !isNaN(f)) {
-              actualClass += a >= f ? ' better' : ' worse';
-            }
+            var a = parseFloat(ev.actual), f = parseFloat(ev.forecast);
+            if (!isNaN(a) && !isNaN(f)) actualClass += a >= f ? ' better' : ' worse';
           }
 
           html += '<div class="cal-event' + (hasAct ? ' cal-released' : '') + '">';
-
-          // Time
           html += '<div class="cal-time' + (isAllDay ? ' cal-allday' : '') + '">' + (isAllDay ? 'All Day' : ev.time) + '</div>';
+          html += '<div class="cal-currency" style="color:' + color + ';border-color:' + color + '22;">' + (curr || '—') + '</div>';
+          html += '<div><div class="cal-name">' + ev.name + '</div>';
+          html += '<div style="margin-top:3px;"><span class="cal-impact-badge">🔴 Alto impacto</span></div></div>';
 
-          // Currency badge
-          html += '<div class="cal-currency" style="color:' + color + ';border-color:' + color + '22;">' + curr + '</div>';
-
-          // Name + impact badge
-          html += '<div>';
-          html += '<div class="cal-name">' + ev.name + '</div>';
-          html += '<div style="margin-top:3px;"><span class="cal-impact-badge">🔴 Alto impacto</span></div>';
-          html += '</div>';
-
-          // Values (forecast / previous / actual)
           html += '<div class="cal-values">';
-          if (hasAct) {
-            html += '<div class="cal-val"><div class="cal-val-label">Real</div><div class="cal-val-num ' + actualClass + '">' + ev.actual + '</div></div>';
-          }
-          if (ev.forecast && ev.forecast !== '—') {
-            html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + ev.forecast + '</div></div>';
-          }
-          if (ev.previous && ev.previous !== '—') {
-            html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + ev.previous + '</div></div>';
-          }
+          if (hasAct) html += '<div class="cal-val"><div class="cal-val-label">Real</div><div class="cal-val-num ' + actualClass + '">' + ev.actual + unit + '</div></div>';
+          if (ev.forecast && ev.forecast !== '—') html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + ev.forecast + unit + '</div></div>';
+          if (ev.previous && ev.previous !== '—') html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + ev.previous + unit + '</div></div>';
           html += '</div>';
-
-          html += '</div>'; // .cal-event
+          html += '</div>';
         });
-
-        html += '</div>'; // .cal-day-group
+        html += '</div>';
       });
 
-      // Footer: last update + link
       html += '<div style="text-align:right;margin-top:8px;">';
-      html += '<a href="https://www.forexfactory.com/calendar" target="_blank" rel="noopener" ';
+      html += '<a href="https://finnhub.io" target="_blank" rel="noopener" ';
       html += 'style="font-size:.65rem;color:#444;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">';
       html += '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
-      html += 'Fuente: ForexFactory</a></div>';
+      html += 'Fuente: Finnhub</a></div>';
 
       c.innerHTML = html;
     })

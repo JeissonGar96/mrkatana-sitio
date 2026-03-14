@@ -1288,6 +1288,175 @@ var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var sb = supabase.createClient(SB_URL, SB_KEY);
 var cUser = null, cProfile = null;
 
+// ── SPA ROUTER (global scope) ──
+function buildUrl(state) {
+  var base = '/app/' + state.section;
+  if (state.section === 'clases') {
+    if (state.lessonId)  return base + '/l/' + state.lessonId;
+    if (state.moduleId)  return base + '/m/' + state.moduleId;
+    if (state.levelId)   return base + '/lv/' + state.levelId;
+  }
+  return base;
+}
+
+function pushRoute(state, replace) {
+  var url = buildUrl(state);
+  if (replace) {
+    history.replaceState(state, '', url);
+  } else {
+    var cur = history.state;
+    if (cur && JSON.stringify(cur) === JSON.stringify(state)) return;
+    history.pushState(state, '', url);
+  }
+}
+
+function _activateNav(v) {
+  document.querySelectorAll('.snav').forEach(function(b) { b.classList.remove('on'); });
+  var sBtn = document.querySelector('.snav[data-v="' + v + '"]');
+  if (sBtn) sBtn.classList.add('on');
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('on'); });
+  var mBtn = document.querySelector('.mob-nav-btn[data-v="' + v + '"]');
+  if (mBtn) mBtn.classList.add('on');
+}
+
+function _renderSection(state) {
+  _activateNav(state.section);
+  if (state.section === 'dash')           rDash();
+  else if (state.section === 'clases') {
+    if (state.lessonId)       _restoreLesson(state);
+    else if (state.moduleId)  _restoreModule(state);
+    else if (state.levelId)   _restoreLevel(state);
+    else                      rClases();
+  }
+  else if (state.section === 'sesiones')  rSes();
+  else if (state.section === 'reuniones') rReun();
+  else if (state.section === 'perfil')    rPerfil();
+  else if (state.section === 'admin')     rAdmin();
+}
+
+function navigateTo(v) {
+  var state = { section: v };
+  pushRoute(state);
+  _renderSection(state);
+}
+
+function _restoreLevel(state) {
+  sb.from('course_levels').select('*, course_modules(id)').eq('id', state.levelId).single().then(function(r) {
+    if (r.data) showModules(r.data);
+    else rClases();
+  });
+}
+
+function _restoreModule(state) {
+  sb.from('course_modules').select('*, course_levels(*)').eq('id', state.moduleId).single().then(function(r) {
+    if (r.data && r.data.course_levels) {
+      var level = r.data.course_levels;
+      sb.from('course_lessons').select('id').eq('module_id', r.data.id).eq('is_published', true).then(function(li) {
+        var lessonIds = (li.data || []).map(function(l){ return l.id; });
+        if (!lessonIds.length) { showLessons(r.data, level, {}); return; }
+        sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
+          var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
+          showLessons(r.data, level, prog);
+        });
+      });
+    } else rClases();
+  });
+}
+
+function _restoreLesson(state) {
+  sb.from('course_lessons').select('*, course_modules(*, course_levels(*))').eq('id', state.lessonId).single().then(function(r) {
+    if (!r.data || !r.data.course_modules) { rClases(); return; }
+    var lesson = r.data;
+    var mod = r.data.course_modules;
+    var level = mod.course_levels;
+    sb.from('course_lessons').select('*').eq('module_id', mod.id).eq('is_published', true).order('sort_order').then(function(lr) {
+      var allLes = lr.data || [];
+      var lessonIds = allLes.map(function(l){ return l.id; });
+      if (!lessonIds.length) { rClases(); return; }
+      sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
+        var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
+        courseState.levelId = level.id;
+        courseState.moduleId = mod.id;
+        var m = document.getElementById('amain');
+        m.innerHTML =
+          '<div class="lesson-layout" id="lesson-layout">' +
+            '<div class="lesson-sidebar" id="lesson-sidebar">' +
+              '<div class="lesson-sidebar-header">' +
+                '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title + '</div>' +
+                '<div class="lesson-mod-title">' + mod.title + '</div>' +
+              '</div>' +
+              '<div id="lesson-list"></div>' +
+            '</div>' +
+            '<div class="lesson-main" id="lesson-main"></div>' +
+          '</div>';
+        document.getElementById('back-mods').addEventListener('click', function() { showModules(level); });
+        var list = document.getElementById('lesson-list');
+        allLes.forEach(function(les, idx) {
+          var done = prog[les.id];
+          var item = document.createElement('div');
+          item.className = 'lesson-item' + (done ? ' done' : '');
+          item.id = 'li-' + les.id;
+          item.innerHTML =
+            '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx+1)) + '</div>' +
+            '<div class="lesson-item-info"><div class="lesson-item-title">' + les.title + '</div><div class="lesson-item-meta">' + (les.duration_minutes ? les.duration_minutes+' min' : '') + (les.has_task ? ' · Tarea' : '') + '</div></div>';
+          item.addEventListener('click', function() { playLesson(les, allLes, prog); });
+          list.appendChild(item);
+        });
+        playLesson(lesson, allLes, prog);
+      });
+    });
+  });
+}
+
+function _parseUrlToState(path) {
+  try {
+    var stored = sessionStorage.getItem('spa_redirect');
+    if (stored) { sessionStorage.removeItem('spa_redirect'); path = stored; }
+  } catch(e) {}
+  var m = path.match(/^\/app\/([^\/]+)(?:\/([^\/]+)\/([^\/]+))?/);
+  if (!m) return { section: 'dash' };
+  var section = m[1] || 'dash';
+  var valid = ['dash','clases','sesiones','reuniones','perfil','admin'];
+  if (valid.indexOf(section) === -1) return { section: 'dash' };
+  var state = { section: section };
+  if (section === 'clases' && m[2] && m[3]) {
+    if (m[2] === 'l')  state.lessonId  = m[3];
+    if (m[2] === 'm')  state.moduleId  = m[3];
+    if (m[2] === 'lv') state.levelId   = m[3];
+  }
+  return state;
+}
+
+// popstate — browser back/forward
+window.addEventListener('popstate', function(e) {
+  var state = e.state;
+  if (!state || !state.section || state.section === '__landing__') {
+    if (cUser) {
+      document.getElementById('appdash').style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.remove('visible');
+    }
+    return;
+  }
+  if (!cUser) {
+    sb.auth.getSession().then(function(r) {
+      if (r.data && r.data.session) loadApp(r.data.session.user);
+    });
+    return;
+  }
+  var appdash = document.getElementById('appdash');
+  if (appdash && appdash.style.display !== 'block') {
+    appdash.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+    var mobNav = document.getElementById('mob-nav');
+    if (mobNav) mobNav.classList.add('visible');
+  }
+  _renderSection(state);
+});
+
 // ── INIT ──
 window.onload = function() {
   // Set baseline state for landing (only if no state yet)
@@ -1374,188 +1543,13 @@ window.onload = function() {
     });
   };
 
-  // Sidebar + mobile nav sync
-  // ── SPA ROUTER ──
-  // Builds a clean URL: /app/dash, /app/clases, /app/clases/level/mod/lesson, etc.
-  function buildUrl(state) {
-    var base = '/app/' + state.section;
-    if (state.section === 'clases') {
-      if (state.lessonId)  return base + '/l/' + state.lessonId;
-      if (state.moduleId)  return base + '/m/' + state.moduleId;
-      if (state.levelId)   return base + '/lv/' + state.levelId;
-    }
-    return base;
-  }
-
-  function pushRoute(state, replace) {
-    var url = buildUrl(state);
-    if (replace) {
-      history.replaceState(state, '', url);
-    } else {
-      // Avoid duplicate entries
-      var cur = history.state;
-      if (cur && JSON.stringify(cur) === JSON.stringify(state)) return;
-      history.pushState(state, '', url);
-    }
-  }
-
-  function _activateNav(v) {
-    document.querySelectorAll('.snav').forEach(function(b) { b.classList.remove('on'); });
-    var sBtn = document.querySelector('.snav[data-v="' + v + '"]');
-    if (sBtn) sBtn.classList.add('on');
-    document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('on'); });
-    var mBtn = document.querySelector('.mob-nav-btn[data-v="' + v + '"]');
-    if (mBtn) mBtn.classList.add('on');
-  }
-
-  // Internal render — called both from navigateTo AND from popstate (no pushState inside)
-  function _renderSection(state) {
-    _activateNav(state.section);
-    if (state.section === 'dash')      rDash();
-    else if (state.section === 'clases') {
-      if (state.lessonId) _restoreLesson(state);
-      else if (state.moduleId) _restoreModule(state);
-      else if (state.levelId) _restoreLevel(state);
-      else rClases();
-    }
-    else if (state.section === 'sesiones')  rSes();
-    else if (state.section === 'reuniones') rReun();
-    else if (state.section === 'perfil')    rPerfil();
-    else if (state.section === 'admin')     rAdmin();
-  }
-
-  // Public navigateTo — pushes history then renders
-  function navigateTo(v) {
-    var state = { section: v };
-    pushRoute(state);
-    _renderSection(state);
-  }
-
-  // Restore: directly open a level
-  function _restoreLevel(state) {
-    sb.from('course_levels').select('*, course_modules(id)').eq('id', state.levelId).single().then(function(r) {
-      if (r.data) showModules(r.data);
-      else rClases();
-    });
-  }
-
-  // Restore: directly open a module (need level too)
-  function _restoreModule(state) {
-    sb.from('course_modules').select('*, course_levels(*)').eq('id', state.moduleId).single().then(function(r) {
-      if (r.data && r.data.course_levels) {
-        var level = r.data.course_levels;
-        var lessonIds = [];
-        sb.from('course_lessons').select('id').eq('module_id', r.data.id).eq('is_published', true).then(function(li) {
-          lessonIds = (li.data || []).map(function(l){ return l.id; });
-          if (!lessonIds.length) { showLessons(r.data, level, {}); return; }
-          sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
-            var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
-            showLessons(r.data, level, prog);
-          });
-        });
-      } else rClases();
-    });
-  }
-
-  // Restore: directly open a specific lesson
-  function _restoreLesson(state) {
-    sb.from('course_lessons').select('*, course_modules(*, course_levels(*))').eq('id', state.lessonId).single().then(function(r) {
-      if (!r.data || !r.data.course_modules) { rClases(); return; }
-      var lesson = r.data;
-      var mod = r.data.course_modules;
-      var level = mod.course_levels;
-      sb.from('course_lessons').select('*').eq('module_id', mod.id).eq('is_published', true).order('sort_order').then(function(lr) {
-        var allLes = lr.data || [];
-        var lessonIds = allLes.map(function(l){ return l.id; });
-        if (!lessonIds.length) { rClases(); return; }
-        sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
-          var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
-          courseState.levelId = level.id;
-          courseState.moduleId = mod.id;
-          var m = document.getElementById('amain');
-          m.innerHTML =
-            '<div class="lesson-layout" id="lesson-layout">' +
-              '<div class="lesson-sidebar" id="lesson-sidebar">' +
-                '<div class="lesson-sidebar-header">' +
-                  '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title + '</div>' +
-                  '<div class="lesson-mod-title">' + mod.title + '</div>' +
-                '</div>' +
-                '<div id="lesson-list"></div>' +
-              '</div>' +
-              '<div class="lesson-main" id="lesson-main"></div>' +
-            '</div>';
-          document.getElementById('back-mods').addEventListener('click', function() { showModules(level); });
-          var list = document.getElementById('lesson-list');
-          allLes.forEach(function(les, idx) {
-            var done = prog[les.id];
-            var item = document.createElement('div');
-            item.className = 'lesson-item' + (done ? ' done' : '');
-            item.id = 'li-' + les.id;
-            item.innerHTML =
-              '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx+1)) + '</div>' +
-              '<div class="lesson-item-info"><div class="lesson-item-title">' + les.title + '</div><div class="lesson-item-meta">' + (les.duration_minutes ? les.duration_minutes+' min' : '') + (les.has_task ? ' · Tarea' : '') + '</div></div>';
-            item.addEventListener('click', function() { playLesson(les, allLes, prog); });
-            list.appendChild(item);
-          });
-          playLesson(lesson, allLes, prog);
-        });
-      });
-    });
-  }
-
-  // popstate — browser back/forward
-  window.addEventListener('popstate', function(e) {
-    var state = e.state;
-
-    // No state or landing state — user went back to landing page
-    if (!state || !state.section || state.section === '__landing__') {
-      if (cUser) {
-        // Hide app, show landing without signing out (they can go forward again)
-        document.getElementById('appdash').style.display = 'none';
-        document.body.style.overflow = '';
-        document.body.style.height = '';
-        var mobNav = document.getElementById('mob-nav');
-        if (mobNav) mobNav.classList.remove('visible');
-      }
-      return;
-    }
-
-    // User went forward again into the app
-    if (!cUser) {
-      // Re-check session (they may have gone back and returned)
-      sb.auth.getSession().then(function(r) {
-        if (r.data && r.data.session) {
-          loadApp(r.data.session.user);
-        }
-      });
-      return;
-    }
-
-    // Show app in case it was hidden
-    var appdash = document.getElementById('appdash');
-    if (appdash && appdash.style.display !== 'block') {
-      appdash.style.display = 'block';
-      document.body.style.overflow = 'hidden';
-      document.body.style.height = '100%';
-      var mobNav = document.getElementById('mob-nav');
-      if (mobNav) mobNav.classList.add('visible');
-    }
-
-    _renderSection(state);
+  // Bind sidebar + mobile nav to global navigateTo
+  document.querySelectorAll('.snav').forEach(function(b) {
+    b.onclick = function() { navigateTo(this.getAttribute('data-v')); };
   });
-
-  var snavs = document.querySelectorAll('.snav');
-  for (var i = 0; i < snavs.length; i++) {
-    snavs[i].onclick = function() {
-      navigateTo(this.getAttribute('data-v'));
-    };
-  }
-  var mnavs = document.querySelectorAll('.mob-nav-btn');
-  for (var i = 0; i < mnavs.length; i++) {
-    mnavs[i].onclick = function() {
-      navigateTo(this.getAttribute('data-v'));
-    };
-  }
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b) {
+    b.onclick = function() { navigateTo(this.getAttribute('data-v')); };
+  });
 
   // Check session
   sb.auth.getSession().then(function(r) {
@@ -1800,27 +1794,6 @@ function loadApp(user) {
   });
 }
 
-function _parseUrlToState(path) {
-  // Check sessionStorage for SPA redirect (direct deep-link load)
-  try {
-    var stored = sessionStorage.getItem('spa_redirect');
-    if (stored) { sessionStorage.removeItem('spa_redirect'); path = stored; }
-  } catch(e) {}
-
-  // /app/dash  /app/clases  /app/clases/l/<id>  /app/clases/m/<id>  /app/clases/lv/<id>
-  var m = path.match(/^\/app\/([^\/]+)(?:\/([^\/]+)\/([^\/]+))?/);
-  if (!m) return { section: 'dash' };
-  var section = m[1] || 'dash';
-  var valid = ['dash','clases','sesiones','reuniones','perfil','admin'];
-  if (valid.indexOf(section) === -1) return { section: 'dash' };
-  var state = { section: section };
-  if (section === 'clases' && m[2] && m[3]) {
-    if (m[2] === 'l')  state.lessonId  = m[3];
-    if (m[2] === 'm')  state.moduleId  = m[3];
-    if (m[2] === 'lv') state.levelId   = m[3];
-  }
-  return state;
-}
 
 function showPending() {
   document.getElementById('amain').innerHTML =

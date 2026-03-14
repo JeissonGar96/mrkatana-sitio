@@ -1,5 +1,5 @@
-// api/calendar.js — Vercel Serverless Function (CommonJS)
-// Scrapes ForexFactory and returns HIGH impact events only
+// api/calendar.js — Vercel Serverless Function
+// Fetches HIGH impact economic events from Finnhub API
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -7,19 +7,41 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate');
 
   try {
-    const response = await fetch('https://www.forexfactory.com/calendar', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.forexfactory.com/',
-      },
-    });
+    const API_KEY = 'd6qrn99r01qgdhqc53lgd6qrn99r01qgdhqc53m0';
 
-    if (!response.ok) throw new Error(`FF responded ${response.status}`);
+    // Get current week range (Mon → Sun)
+    const now   = new Date();
+    const day   = now.getDay(); // 0=Sun
+    const diff  = day === 0 ? -6 : 1 - day;
+    const mon   = new Date(now); mon.setDate(now.getDate() + diff); mon.setHours(0,0,0,0);
+    const sun   = new Date(mon); sun.setDate(mon.getDate() + 6);   sun.setHours(23,59,59,0);
 
-    const html = await response.text();
-    const events = parseCalendar(html);
+    const from = mon.toISOString().slice(0, 10);
+    const to   = sun.toISOString().slice(0, 10);
+
+    const url = `https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${API_KEY}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Finnhub responded ${response.status}`);
+
+    const data = await response.json();
+    const raw  = data.economicCalendar || [];
+
+    // Keep only HIGH impact events
+    // Finnhub impact: 1=low, 2=medium, 3=high (some use strings)
+    const events = raw
+      .filter(e => e.impact === 3 || e.impact === '3' || e.impact === 'high')
+      .map(e => ({
+        date:     formatDate(e.time),
+        time:     formatTime(e.time),
+        currency: e.country ? countryToCurrency(e.country) : '',
+        name:     e.event || '',
+        impact:   'high',
+        forecast: e.estimate  != null ? String(e.estimate)  : '—',
+        previous: e.prev      != null ? String(e.prev)      : '—',
+        actual:   e.actual    != null ? String(e.actual)    : '—',
+        unit:     e.unit      || '',
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
     res.status(200).json({ ok: true, updated: new Date().toISOString(), events });
   } catch (err) {
@@ -28,48 +50,35 @@ module.exports = async function handler(req, res) {
   }
 };
 
-function parseCalendar(html) {
-  const events = [];
-  const rowRegex = /<tr[^>]*class="[^"]*calendar__row[^"]*"[^>]*>([\s\S]*?)<\/tr>/gi;
-  const rows = [...html.matchAll(rowRegex)];
-  let currentDate = '';
+// ── HELPERS ──
 
-  for (const row of rows) {
-    const r = row[1];
-
-    const dateMatch = r.match(/<td[^>]*class="[^"]*calendar__date[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-    if (dateMatch) { const d = strip(dateMatch[1]); if (d) currentDate = d; }
-
-    const impactMatch = r.match(/impact--([a-z]+)/i);
-    if (!impactMatch || impactMatch[1].toLowerCase() !== 'red') continue;
-
-    const timeMatch = r.match(/<td[^>]*class="[^"]*calendar__time[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-    const currMatch = r.match(/<td[^>]*class="[^"]*calendar__currency[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-    const nameMatch = r.match(/<span[^>]*class="[^"]*calendar__event-title[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
-    if (!nameMatch) continue;
-
-    const forecastMatch = r.match(/<td[^>]*class="[^"]*calendar__forecast[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-    const previousMatch = r.match(/<td[^>]*class="[^"]*calendar__previous[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-    const actualMatch   = r.match(/<td[^>]*class="[^"]*calendar__actual[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
-
-    events.push({
-      date:     currentDate,
-      time:     timeMatch ? strip(timeMatch[1]) : 'All Day',
-      currency: currMatch ? strip(currMatch[1]) : '',
-      name:     strip(nameMatch[1]),
-      impact:   'high',
-      forecast: forecastMatch ? (strip(forecastMatch[1]) || '—') : '—',
-      previous: previousMatch ? (strip(previousMatch[1]) || '—') : '—',
-      actual:   actualMatch   ? (strip(actualMatch[1])   || '—') : '—',
-    });
-  }
-  return events;
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    timeZone: 'America/New_York'
+  });
 }
 
-function strip(html) {
-  return html
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/\s+/g, ' ').trim();
+function formatTime(isoStr) {
+  if (!isoStr) return 'All Day';
+  const d = new Date(isoStr);
+  const t = d.toLocaleTimeString('en-US', {
+    hour: '2-digit', minute: '2-digit', hour12: true,
+    timeZone: 'America/New_York'
+  });
+  return t === '12:00 AM' ? 'All Day' : t;
+}
+
+// Map Finnhub country codes to currency symbols
+function countryToCurrency(country) {
+  const map = {
+    'US': 'USD', 'EU': 'EUR', 'GB': 'GBP', 'JP': 'JPY',
+    'AU': 'AUD', 'CA': 'CAD', 'CH': 'CHF', 'NZ': 'NZD',
+    'CN': 'CNY', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR',
+    'ES': 'EUR', 'KR': 'KRW', 'IN': 'INR', 'BR': 'BRL',
+    'MX': 'MXN', 'ZA': 'ZAR', 'SG': 'SGD', 'HK': 'HKD',
+  };
+  return map[country.toUpperCase()] || country;
 }

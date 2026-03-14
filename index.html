@@ -968,14 +968,10 @@ nav{
 }
 .cal-time.cal-soft { font-size: .65rem; color: #555; letter-spacing: .5px; text-transform: uppercase; }
 .cal-flag-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  display: flex; align-items: center; justify-content: center;
 }
-.cal-flag { font-size: 1.3rem; line-height: 1; }
-.cal-currency {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: .72rem; font-weight: 800; letter-spacing: 1px;
-  padding: 0; text-align: center; white-space: nowrap;
-}
+.cal-flag { font-size: 1.7rem; line-height: 1; }
+.cal-currency { display: none; }
 .cal-name { font-size: .84rem; color: #e0e0e0; line-height: 1.35; font-weight: 600; }
 .cal-values {
   display: flex; gap: 10px; align-items: center;
@@ -3557,9 +3553,19 @@ function loadCalendar() {
         return;
       }
 
+      // Filter USD only
+      var usdEvents = data.events.filter(function(ev) {
+        return ev.currency === 'USD';
+      });
+
+      if (!usdEvents.length) {
+        c.innerHTML = '<div class="cal-empty">📅 Sin noticias USD de alto impacto esta semana.</div>';
+        return;
+      }
+
       // Group by date
       var groups = {}, order = [];
-      data.events.forEach(function(ev) {
+      usdEvents.forEach(function(ev) {
         var d = ev.date || 'Sin fecha';
         if (!groups[d]) { groups[d] = []; order.push(d); }
         groups[d].push(ev);
@@ -3593,9 +3599,8 @@ function loadCalendar() {
           // Time
           html += '<div class="cal-time' + (isSoft ? ' cal-soft' : '') + '">' + ev.time + '</div>';
 
-          // Flag + currency
-          html += '<div class="cal-flag-wrap"><div class="cal-flag">' + meta.flag + '</div>';
-          html += '<div class="cal-currency" style="color:' + meta.color + ';">' + curr + '</div></div>';
+          // Flag only (no currency text)
+          html += '<div class="cal-flag-wrap"><div class="cal-flag">' + meta.flag + '</div></div>';
 
           // Name + badge
           html += '<div><div class="cal-name">' + ev.name + '</div>';

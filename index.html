@@ -882,6 +882,8 @@ nav{
   #dash-top{ grid-template-columns:1fr !important; gap:10px !important; }
   #dash-top .acard{ min-height:160px !important; height:160px !important; }
   #dash-top .wk-card{ min-height:160px !important; height:160px !important; }
+  #card-week{ order:3 !important; }
+  #card-1on1{ order:2 !important; }
 }
 </style>
 </head>
@@ -1697,7 +1699,7 @@ function rDash() {
       '</div>' +
 
       // 2. Week navigator
-      '<div class="acard wk-card" style="padding:16px 14px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:160px;">' +
+      '<div class="acard wk-card" id="card-week" style="padding:16px 14px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:160px;">' +
         '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Tu progreso semanal</div>' +
         '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:8px;">' +
           '<button onclick="navWeek(-1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">‹</button>' +
@@ -1769,6 +1771,9 @@ function rDash() {
       '</div>'
     : '') +
 
+    '<div class="sec">Semana en detalle</div>' +
+    '<div id="week-info" style="margin-bottom:20px;"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
+
     '<div class="sec">Próximas actividades</div>' +
     '<div id="upcoming"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>';
 
@@ -1801,7 +1806,57 @@ function rDash() {
         dot.style.transition = '.2s';
       });
     }
+    // Load roadmap week info
+    loadWeekInfo(_viewWeek);
   }
+  function loadWeekInfo(wk) {
+    var c = document.getElementById('week-info');
+    if (!c) return;
+    c.innerHTML = '<div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div>';
+    sb.from('roadmap_weeks').select('*').eq('week_number', wk).single().then(function(r) {
+      if (!r.data) {
+        c.innerHTML = '<div style="background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.07);border-radius:10px;padding:20px;text-align:center;color:#444;font-size:.82rem;">Esta semana aún no tiene contenido cargado.</div>';
+        return;
+      }
+      var w = r.data;
+      var acts = [];
+      try { acts = Array.isArray(w.activities) ? w.activities : JSON.parse(w.activities || '[]'); } catch(e){}
+      var isCurrent = wk === weekNum, isPast = wk < weekNum;
+      var badgeHtml = isCurrent
+        ? '<span style="font-size:.64rem;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);color:#c9a84c;padding:2px 9px;border-radius:20px;">▶ Semana actual</span>'
+        : isPast
+        ? '<span style="font-size:.64rem;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:2px 9px;border-radius:20px;">✓ Completada</span>'
+        : '<span style="font-size:.64rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:#555;padding:2px 9px;border-radius:20px;">Por venir</span>';
+      var html = '<div style="background:var(--bc);border:1px solid rgba(91,127,166,.2);border-radius:14px;overflow:hidden;">';
+      html += '<div style="padding:16px 18px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">';
+      html += '<div><div style="font-size:.62rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Semana ' + wk + '</div>';
+      html += '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">' + (w.title || 'Sin título') + '</div></div>';
+      html += badgeHtml + '</div>';
+      if (w.objective) {
+        html += '<div style="padding:14px 18px;background:rgba(201,168,76,.04);border-bottom:1px solid var(--br);">';
+        html += '<div style="font-size:.62rem;color:#c9a84c;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">🎯 Objetivo</div>';
+        html += '<div style="font-size:.84rem;color:#e2c47a;line-height:1.65;">' + w.objective + '</div>';
+        html += '</div>';
+      }
+      if (acts.length) {
+        html += '<div style="padding:14px 18px;">';
+        html += '<div style="font-size:.62rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Actividades</div>';
+        html += '<div style="display:flex;flex-direction:column;gap:7px;">';
+        acts.forEach(function(a) {
+          html += '<div style="display:flex;align-items:flex-start;gap:9px;">';
+          html += '<div style="width:18px;height:18px;border-radius:50%;background:rgba(91,127,166,.15);border:1px solid rgba(91,127,166,.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>';
+          html += '<div style="font-size:.82rem;color:#ccc;line-height:1.5;">' + a + '</div>';
+          html += '</div>';
+        });
+        html += '</div></div>';
+      }
+      html += '</div>';
+      c.innerHTML = html;
+    });
+  }
+
+  // Load current week info on first render
+  loadWeekInfo(_viewWeek);
 
   // Animate timeline bar
   var timelinePct = (start && end) ? Math.min(100, Math.max(0, ((today-start)/(end-start))*100)) : 0;

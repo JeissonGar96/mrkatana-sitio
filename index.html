@@ -215,7 +215,8 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
 .mbtnn:disabled{opacity:.5;cursor:not-allowed;}
 
 /* APP */
-#appdash{display:none;position:fixed;inset:0;background:#111;z-index:500;overflow-y:auto;}
+#appdash{display:none;position:fixed;inset:0;background:#111;z-index:500;overflow-y:auto;scrollbar-width:none;}
+#appdash::-webkit-scrollbar{display:none;}
 @media(max-width:860px){
   #appdash{padding-bottom:58px;}
 }

@@ -2,6 +2,17 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script>
+// SPA router bootstrap: if loaded via a deep link (/app/clases/l/xxx),
+// store the path so window.onload can restore it, then redirect to root.
+(function() {
+  var path = window.location.pathname;
+  if (path && path.indexOf('/app/') === 0 && path !== '/app/') {
+    // Store intended route for restoration after redirect
+    try { sessionStorage.setItem('spa_redirect', path); } catch(e){}
+  }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mr. Katana | Dominando La Precisión</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1279,6 +1290,10 @@ var cUser = null, cProfile = null;
 
 // ── INIT ──
 window.onload = function() {
+  // Set baseline state for landing (only if no state yet)
+  if (!history.state) {
+    history.replaceState({ section: '__landing__' }, '', window.location.pathname);
+  }
 
   // Scroll nav
   window.addEventListener('scroll', function() {
@@ -1360,23 +1375,174 @@ window.onload = function() {
   };
 
   // Sidebar + mobile nav sync
-  function navigateTo(v) {
-    // Update sidebar
+  // ── SPA ROUTER ──
+  // Builds a clean URL: /app/dash, /app/clases, /app/clases/level/mod/lesson, etc.
+  function buildUrl(state) {
+    var base = '/app/' + state.section;
+    if (state.section === 'clases') {
+      if (state.lessonId)  return base + '/l/' + state.lessonId;
+      if (state.moduleId)  return base + '/m/' + state.moduleId;
+      if (state.levelId)   return base + '/lv/' + state.levelId;
+    }
+    return base;
+  }
+
+  function pushRoute(state, replace) {
+    var url = buildUrl(state);
+    if (replace) {
+      history.replaceState(state, '', url);
+    } else {
+      // Avoid duplicate entries
+      var cur = history.state;
+      if (cur && JSON.stringify(cur) === JSON.stringify(state)) return;
+      history.pushState(state, '', url);
+    }
+  }
+
+  function _activateNav(v) {
     document.querySelectorAll('.snav').forEach(function(b) { b.classList.remove('on'); });
     var sBtn = document.querySelector('.snav[data-v="' + v + '"]');
     if (sBtn) sBtn.classList.add('on');
-    // Update mobile nav
     document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('on'); });
     var mBtn = document.querySelector('.mob-nav-btn[data-v="' + v + '"]');
     if (mBtn) mBtn.classList.add('on');
-    // Navigate
-    if (v==='dash') rDash();
-    else if (v==='clases') rClases();
-    else if (v==='sesiones') rSes();
-    else if (v==='reuniones') rReun();
-    else if (v==='perfil') rPerfil();
-    else if (v==='admin') rAdmin();
   }
+
+  // Internal render — called both from navigateTo AND from popstate (no pushState inside)
+  function _renderSection(state) {
+    _activateNav(state.section);
+    if (state.section === 'dash')      rDash();
+    else if (state.section === 'clases') {
+      if (state.lessonId) _restoreLesson(state);
+      else if (state.moduleId) _restoreModule(state);
+      else if (state.levelId) _restoreLevel(state);
+      else rClases();
+    }
+    else if (state.section === 'sesiones')  rSes();
+    else if (state.section === 'reuniones') rReun();
+    else if (state.section === 'perfil')    rPerfil();
+    else if (state.section === 'admin')     rAdmin();
+  }
+
+  // Public navigateTo — pushes history then renders
+  function navigateTo(v) {
+    var state = { section: v };
+    pushRoute(state);
+    _renderSection(state);
+  }
+
+  // Restore: directly open a level
+  function _restoreLevel(state) {
+    sb.from('course_levels').select('*, course_modules(id)').eq('id', state.levelId).single().then(function(r) {
+      if (r.data) showModules(r.data);
+      else rClases();
+    });
+  }
+
+  // Restore: directly open a module (need level too)
+  function _restoreModule(state) {
+    sb.from('course_modules').select('*, course_levels(*)').eq('id', state.moduleId).single().then(function(r) {
+      if (r.data && r.data.course_levels) {
+        var level = r.data.course_levels;
+        var lessonIds = [];
+        sb.from('course_lessons').select('id').eq('module_id', r.data.id).eq('is_published', true).then(function(li) {
+          lessonIds = (li.data || []).map(function(l){ return l.id; });
+          if (!lessonIds.length) { showLessons(r.data, level, {}); return; }
+          sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
+            var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
+            showLessons(r.data, level, prog);
+          });
+        });
+      } else rClases();
+    });
+  }
+
+  // Restore: directly open a specific lesson
+  function _restoreLesson(state) {
+    sb.from('course_lessons').select('*, course_modules(*, course_levels(*))').eq('id', state.lessonId).single().then(function(r) {
+      if (!r.data || !r.data.course_modules) { rClases(); return; }
+      var lesson = r.data;
+      var mod = r.data.course_modules;
+      var level = mod.course_levels;
+      sb.from('course_lessons').select('*').eq('module_id', mod.id).eq('is_published', true).order('sort_order').then(function(lr) {
+        var allLes = lr.data || [];
+        var lessonIds = allLes.map(function(l){ return l.id; });
+        if (!lessonIds.length) { rClases(); return; }
+        sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
+          var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
+          courseState.levelId = level.id;
+          courseState.moduleId = mod.id;
+          var m = document.getElementById('amain');
+          m.innerHTML =
+            '<div class="lesson-layout" id="lesson-layout">' +
+              '<div class="lesson-sidebar" id="lesson-sidebar">' +
+                '<div class="lesson-sidebar-header">' +
+                  '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title + '</div>' +
+                  '<div class="lesson-mod-title">' + mod.title + '</div>' +
+                '</div>' +
+                '<div id="lesson-list"></div>' +
+              '</div>' +
+              '<div class="lesson-main" id="lesson-main"></div>' +
+            '</div>';
+          document.getElementById('back-mods').addEventListener('click', function() { showModules(level); });
+          var list = document.getElementById('lesson-list');
+          allLes.forEach(function(les, idx) {
+            var done = prog[les.id];
+            var item = document.createElement('div');
+            item.className = 'lesson-item' + (done ? ' done' : '');
+            item.id = 'li-' + les.id;
+            item.innerHTML =
+              '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx+1)) + '</div>' +
+              '<div class="lesson-item-info"><div class="lesson-item-title">' + les.title + '</div><div class="lesson-item-meta">' + (les.duration_minutes ? les.duration_minutes+' min' : '') + (les.has_task ? ' · Tarea' : '') + '</div></div>';
+            item.addEventListener('click', function() { playLesson(les, allLes, prog); });
+            list.appendChild(item);
+          });
+          playLesson(lesson, allLes, prog);
+        });
+      });
+    });
+  }
+
+  // popstate — browser back/forward
+  window.addEventListener('popstate', function(e) {
+    var state = e.state;
+
+    // No state or landing state — user went back to landing page
+    if (!state || !state.section || state.section === '__landing__') {
+      if (cUser) {
+        // Hide app, show landing without signing out (they can go forward again)
+        document.getElementById('appdash').style.display = 'none';
+        document.body.style.overflow = '';
+        document.body.style.height = '';
+        var mobNav = document.getElementById('mob-nav');
+        if (mobNav) mobNav.classList.remove('visible');
+      }
+      return;
+    }
+
+    // User went forward again into the app
+    if (!cUser) {
+      // Re-check session (they may have gone back and returned)
+      sb.auth.getSession().then(function(r) {
+        if (r.data && r.data.session) {
+          loadApp(r.data.session.user);
+        }
+      });
+      return;
+    }
+
+    // Show app in case it was hidden
+    var appdash = document.getElementById('appdash');
+    if (appdash && appdash.style.display !== 'block') {
+      appdash.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100%';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.add('visible');
+    }
+
+    _renderSection(state);
+  });
 
   var snavs = document.querySelectorAll('.snav');
   for (var i = 0; i < snavs.length; i++) {
@@ -1626,8 +1792,34 @@ function loadApp(user) {
         return;
       }
     }
-    rDash();
+    // Restore route from URL or start at dash
+    var path = window.location.pathname; // e.g. /app/clases/l/uuid
+    var routeState = _parseUrlToState(path);
+    pushRoute(routeState, true); // replace so there is always a state object
+    _renderSection(routeState);
   });
+}
+
+function _parseUrlToState(path) {
+  // Check sessionStorage for SPA redirect (direct deep-link load)
+  try {
+    var stored = sessionStorage.getItem('spa_redirect');
+    if (stored) { sessionStorage.removeItem('spa_redirect'); path = stored; }
+  } catch(e) {}
+
+  // /app/dash  /app/clases  /app/clases/l/<id>  /app/clases/m/<id>  /app/clases/lv/<id>
+  var m = path.match(/^\/app\/([^\/]+)(?:\/([^\/]+)\/([^\/]+))?/);
+  if (!m) return { section: 'dash' };
+  var section = m[1] || 'dash';
+  var valid = ['dash','clases','sesiones','reuniones','perfil','admin'];
+  if (valid.indexOf(section) === -1) return { section: 'dash' };
+  var state = { section: section };
+  if (section === 'clases' && m[2] && m[3]) {
+    if (m[2] === 'l')  state.lessonId  = m[3];
+    if (m[2] === 'm')  state.moduleId  = m[3];
+    if (m[2] === 'lv') state.levelId   = m[3];
+  }
+  return state;
 }
 
 function showPending() {
@@ -1683,7 +1875,7 @@ function rDash() {
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;" id="dash-top">' +
 
       // 1. Circular course progress
-      '<div class="acard" style="display:flex;flex-direction:column;align-items:center;padding:20px 14px;">' +
+      '<div class="acard" id="card-progress" style="display:flex;flex-direction:column;align-items:center;padding:20px 14px;cursor:pointer;" onclick="goToLastLesson()">' +
         '<div style="position:relative;width:90px;height:90px;margin-bottom:10px;">' +
           '<svg width="90" height="90" viewBox="0 0 90 90">' +
             '<circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>' +
@@ -1696,6 +1888,7 @@ function rDash() {
         '</div>' +
         '<div style="font-size:.72rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Progreso del curso</div>' +
         '<div id="prog-sub" style="font-size:.7rem;color:#444;margin-top:2px;">Cargando...</div>' +
+        '<div style="margin-top:10px;font-size:.66rem;color:var(--sl);display:flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>Continuar</div>' +
       '</div>' +
 
       // 2. Week navigator
@@ -1937,7 +2130,104 @@ function rClases() {
   showLevels();
 }
 
+function goToLastLesson() {
+  _activateNav('clases');
+  courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
+
+  var m = document.getElementById('amain');
+  m.innerHTML = '<div style="padding:40px;text-align:center;color:#555;font-size:.83rem;"><span class="spin"></span> Cargando tu clase...</div>';
+
+  // Get all published lessons with their module and level info, ordered
+  sb.from('course_levels').select('*, course_modules(*, course_lessons(*))').eq('is_published', true).order('sort_order').then(function(lr) {
+    if (!lr.data || !lr.data.length) { showLevels(); return; }
+
+    // Flatten all lessons preserving level/module references
+    var allLessons = [];
+    lr.data.forEach(function(lv) {
+      if (!lv.course_modules) return;
+      var mods = lv.course_modules.slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
+      mods.forEach(function(mod) {
+        if (!mod.course_lessons) return;
+        var lessons = mod.course_lessons.filter(function(l){ return l.is_published; }).sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
+        lessons.forEach(function(l) {
+          allLessons.push({ lesson: l, mod: mod, level: lv });
+        });
+      });
+    });
+
+    if (!allLessons.length) { showLevels(); return; }
+
+    // Get user lesson progress
+    var lessonIds = allLessons.map(function(x){ return x.lesson.id; });
+    sb.from('lesson_progress').select('lesson_id, completed').eq('user_id', cUser.id).in('lesson_id', lessonIds).then(function(pr) {
+      var completedMap = {};
+      if (pr.data) pr.data.forEach(function(p) { if (p.completed) completedMap[p.lesson_id] = true; });
+
+      // Build progress object for showLessons
+      var progress = completedMap;
+
+      // Find target: first incomplete lesson; if all done, last lesson
+      var target = allLessons.find(function(x){ return !completedMap[x.lesson.id]; });
+      if (!target) target = allLessons[allLessons.length - 1];
+
+      // Navigate: set state and open the module with that lesson
+      courseState.levelId = target.level.id;
+      courseState.moduleId = target.mod.id;
+
+      // Get all lessons for this module to pass to showLessons properly
+      sb.from('course_lessons').select('*').eq('module_id', target.mod.id).eq('is_published', true).order('sort_order').then(function(modLessons) {
+        var modLessonIds = (modLessons.data || []).map(function(l){ return l.id; });
+
+        // Build progress for this module
+        sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', modLessonIds.length ? modLessonIds : ['__none__']).then(function(modPr) {
+          var modProgress = {};
+          if (modPr.data) modPr.data.forEach(function(p){ modProgress[p.lesson_id] = true; });
+
+          // Render the lesson layout
+          m.innerHTML =
+            '<div class="lesson-layout" id="lesson-layout">' +
+              '<div class="lesson-sidebar" id="lesson-sidebar">' +
+                '<div class="lesson-sidebar-header">' +
+                  '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + target.level.title + '</div>' +
+                  '<div class="lesson-mod-title">' + target.mod.title + '</div>' +
+                '</div>' +
+                '<div id="lesson-list"><span class="spin"></span></div>' +
+              '</div>' +
+              '<div class="lesson-main" id="lesson-main">' +
+                '<div class="lesson-placeholder"><div style="color:#444;font-size:.82rem;">Cargando clase...</div></div>' +
+              '</div>' +
+            '</div>';
+
+          document.getElementById('back-mods').addEventListener('click', function() { showModules(target.level); });
+
+          var list = document.getElementById('lesson-list');
+          var allLes = modLessons.data || [];
+          list.innerHTML = '';
+          allLes.forEach(function(lesson, idx) {
+            var done = modProgress[lesson.id];
+            var item = document.createElement('div');
+            item.className = 'lesson-item' + (done ? ' done' : '');
+            item.id = 'li-' + lesson.id;
+            item.innerHTML =
+              '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx + 1)) + '</div>' +
+              '<div class="lesson-item-info">' +
+                '<div class="lesson-item-title">' + lesson.title + '</div>' +
+                '<div class="lesson-item-meta">' + (lesson.duration_minutes ? lesson.duration_minutes + ' min' : '') + (lesson.has_task ? ' · Tarea' : '') + '</div>' +
+              '</div>';
+            item.addEventListener('click', function() { playLesson(lesson, allLes, modProgress); });
+            list.appendChild(item);
+          });
+
+          // Auto-play the target lesson
+          playLesson(target.lesson, allLes, modProgress);
+        });
+      });
+    });
+  });
+}
+
 function showLevels() {
+  pushRoute({ section: 'clases' });
   var m = document.getElementById('amain');
   m.innerHTML = '<div class="atit">Curso Completo</div><div class="asub">Selecciona un módulo para comenzar</div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';
   sb.from('course_levels').select('*, course_modules(id)').eq('is_published', true).order('sort_order').then(function(r) {
@@ -1963,6 +2253,7 @@ function showLevels() {
 
 function showModules(level) {
   courseState.levelId = level.id;
+  pushRoute({ section: 'clases', levelId: level.id });
   var m = document.getElementById('amain');
   m.innerHTML =
     '<div class="course-back" id="back-levels"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Todos los módulos</div>' +
@@ -2012,6 +2303,7 @@ function showModules(level) {
 
 function showLessons(mod, level, progress) {
   courseState.moduleId = mod.id;
+  pushRoute({ section: 'clases', levelId: level.id, moduleId: mod.id });
   var m = document.getElementById('amain');
   m.innerHTML =
     '<div class="lesson-layout" id="lesson-layout">' +
@@ -2052,6 +2344,7 @@ function showLessons(mod, level, progress) {
 
 function playLesson(lesson, allLessons, progress) {
   courseState.lessonId = lesson.id;
+  pushRoute({ section: 'clases', levelId: courseState.levelId, moduleId: courseState.moduleId, lessonId: lesson.id });
   document.querySelectorAll('.lesson-item').forEach(function(el) { el.classList.remove('active'); });
   var li = document.getElementById('li-' + lesson.id);
   if (li) li.classList.add('active');

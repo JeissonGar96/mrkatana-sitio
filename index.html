@@ -800,15 +800,55 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
         <p style="text-align:center;font-size:.71rem;color:#555;margin-top:12px">¿Sin acceso? <a href="#precios" id="lnk-precio" style="color:var(--sl);text-decoration:none">Ver formación →</a></p>
       </div>
       <div id="f-reg" style="display:none">
-        <div class="fg"><label class="fl">Nombre completo</label><input type="text" id="rg-n" class="fi" placeholder="Tu nombre"></div>
-        <div class="fg"><label class="fl">Email</label><input type="email" id="rg-e" class="fi" placeholder="tu@email.com"></div>
-        <div class="fg"><label class="fl">Contraseña</label><input type="password" id="rg-p" class="fi" placeholder="Mínimo 6 caracteres"></div>
-        <div class="fg">
-          <label class="fl">Código de acceso</label>
-          <input type="text" id="rg-code" class="fi" placeholder="KATANA-XXXXXX" style="text-transform:uppercase;letter-spacing:2px;">
-          <div style="font-size:.7rem;color:#555;margin-top:4px;">Ingresa el código que recibiste al realizar tu pago</div>
+        <!-- STEP 1: Account info -->
+        <div id="reg-step1">
+          <div class="fg"><label class="fl">Nombre completo</label><input type="text" id="rg-n" class="fi" placeholder="Tu nombre"></div>
+          <div class="fg"><label class="fl">Email</label><input type="email" id="rg-e" class="fi" placeholder="tu@email.com"></div>
+          <div class="fg"><label class="fl">Contraseña</label><input type="password" id="rg-p" class="fi" placeholder="Mínimo 6 caracteres"></div>
+          <button class="mbtnn" id="btn-step1">Continuar al pago →</button>
         </div>
-        <button class="mbtnn" id="btn-reg">Crear cuenta</button>
+        <!-- STEP 2: Payment -->
+        <div id="reg-step2" style="display:none">
+          <div style="background:rgba(91,127,166,.06);border:1px solid rgba(91,127,166,.15);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div style="font-size:.82rem;color:#9a9a9a;">Formación completa Mr. Katana</div>
+              <div id="price-display" style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:800;color:#f0f0f0;">$600 USD</div>
+            </div>
+            <div style="font-size:.72rem;color:#555;">6 meses · Acceso completo · Sesiones 1-1</div>
+          </div>
+          <!-- Code discount -->
+          <div class="fg" style="margin-bottom:8px;">
+            <label class="fl">¿Tienes un código de acceso?</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="rg-code" class="fi" placeholder="KATANA-XXXXXX" style="text-transform:uppercase;letter-spacing:1px;flex:1;">
+              <button id="btn-apply-code" style="background:rgba(91,127,166,.15);border:1px solid var(--bs);color:var(--sl);padding:0 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;">Aplicar</button>
+            </div>
+            <div id="code-msg" style="font-size:.72rem;margin-top:5px;"></div>
+          </div>
+          <!-- Payment options -->
+          <div id="pay-options">
+            <div id="pay-card-btn" style="display:none;">
+              <!-- Stripe button will go here -->
+              <button class="mbtnn" style="background:linear-gradient(135deg,#635bff,#4f46e5);" onclick="tst('Stripe próximamente — usa un código por ahora',1)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Pagar $600 USD con tarjeta
+              </button>
+            </div>
+            <div id="pay-code-btn" style="display:none;">
+              <button class="mbtnn" id="btn-reg" style="background:linear-gradient(135deg,#4ade80,#22c55e);color:#111;">
+                ✓ Crear cuenta gratis con código
+              </button>
+            </div>
+            <div id="pay-default">
+              <button class="mbtnn" id="btn-reg-card" style="background:linear-gradient(135deg,#635bff,#4f46e5);" onclick="tst('Stripe próximamente — usa un código por ahora',1)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Pagar $600 USD con tarjeta
+              </button>
+              <div style="text-align:center;margin:10px 0;font-size:.72rem;color:#444;">— o ingresa un código de acceso arriba —</div>
+            </div>
+          </div>
+          <button onclick="document.getElementById('reg-step1').style.display='block';document.getElementById('reg-step2').style.display='none';" style="background:none;border:none;color:#555;font-size:.72rem;cursor:pointer;margin-top:8px;">← Volver</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1031,6 +1071,12 @@ function switchTab(t) {
   document.getElementById('f-in').style.display = t==='in' ? 'block' : 'none';
   document.getElementById('f-reg').style.display = t==='reg' ? 'block' : 'none';
   hideMsg();
+  if (t === 'reg') {
+    // Reset to step 1
+    document.getElementById('reg-step1').style.display = 'block';
+    document.getElementById('reg-step2').style.display = 'none';
+    initCheckout();
+  }
 }
 function showMsg(txt, isErr) {
   var m = document.getElementById('msg');
@@ -1064,50 +1110,102 @@ function doLogin() {
   var el = document.getElementById(id);
   if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
 });
-function doReg() {
-  var n = document.getElementById('rg-n').value.trim();
-  var e = document.getElementById('rg-e').value.trim();
-  var p = document.getElementById('rg-p').value;
+// ── CHECKOUT FLOW ──
+var checkoutData = { name:'', email:'', password:'', codeData: null };
+
+function initCheckout() {
+  // Step 1: Continue button
+  var btn1 = document.getElementById('btn-step1');
+  if (btn1) btn1.addEventListener('click', function() {
+    var n = document.getElementById('rg-n').value.trim();
+    var e = document.getElementById('rg-e').value.trim();
+    var p = document.getElementById('rg-p').value;
+    if (!n || !e || !p) return showMsg('Completa todos los campos.', true);
+    if (p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
+    checkoutData.name = n; checkoutData.email = e; checkoutData.password = p;
+    checkoutData.codeData = null;
+    document.getElementById('reg-step1').style.display = 'none';
+    document.getElementById('reg-step2').style.display = 'block';
+    document.getElementById('code-msg').textContent = '';
+    document.getElementById('rg-code').value = '';
+    document.getElementById('price-display').textContent = '$600 USD';
+    document.getElementById('pay-default').style.display = 'block';
+    document.getElementById('pay-code-btn').style.display = 'none';
+    showMsg('', false);
+  });
+  // Apply code button
+  var btnCode = document.getElementById('btn-apply-code');
+  if (btnCode) btnCode.addEventListener('click', applyCode);
+  // Enter on code field
+  var codeField = document.getElementById('rg-code');
+  if (codeField) codeField.addEventListener('keydown', function(e) { if (e.key === 'Enter') applyCode(); });
+  // Register with code button
+  var btnReg = document.getElementById('btn-reg');
+  if (btnReg) btnReg.addEventListener('click', doRegWithCode);
+}
+
+function applyCode() {
   var code = document.getElementById('rg-code').value.trim().toUpperCase();
-  if (!n || !e || !p) return showMsg('Completa todos los campos.', true);
-  if (!code) return showMsg('Ingresa tu código de acceso.', true);
-  if (p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
-  var btn = document.getElementById('btn-reg');
-  btn.disabled = true; btn.textContent = 'Verificando código...';
-  // First validate the code
+  var msg = document.getElementById('code-msg');
+  if (!code) { msg.style.color='#f87171'; msg.textContent = 'Ingresa un código.'; return; }
+  var btn = document.getElementById('btn-apply-code');
+  btn.disabled = true; btn.textContent = 'Verificando...';
   sb.from('access_codes').select('*').eq('code', code).eq('is_used', false).single().then(function(r) {
+    btn.disabled = false; btn.textContent = 'Aplicar';
     if (r.error || !r.data) {
-      showMsg('Código inválido o ya utilizado.', true);
-      btn.disabled = false; btn.textContent = 'Crear cuenta';
-      return;
+      msg.style.color = '#f87171';
+      msg.textContent = '✗ Código inválido o ya utilizado.';
+      checkoutData.codeData = null;
+      document.getElementById('price-display').textContent = '$600 USD';
+      document.getElementById('pay-default').style.display = 'block';
+      document.getElementById('pay-code-btn').style.display = 'none';
+    } else {
+      checkoutData.codeData = r.data;
+      msg.style.color = '#4ade80';
+      msg.textContent = '✓ Código válido — acceso por ' + (r.data.months || 6) + ' meses';
+      document.getElementById('price-display').innerHTML = '<span style="text-decoration:line-through;color:#555;font-size:1rem;">$600</span> <span style="color:#4ade80;">$0</span>';
+      document.getElementById('pay-default').style.display = 'none';
+      document.getElementById('pay-code-btn').style.display = 'block';
     }
-    var codeData = r.data;
-    // Code is valid — create the account
-    btn.textContent = 'Creando cuenta...';
-    sb.auth.signUp({ email: e, password: p, options: { data: { full_name: n } } }).then(function(reg) {
-      if (reg.error) {
-        showMsg(fmtE(reg.error.message), true);
-        btn.disabled = false; btn.textContent = 'Crear cuenta';
-        return;
-      }
-      var userId = reg.data && reg.data.user ? reg.data.user.id : null;
-      // Mark code as used
-      sb.from('access_codes').update({ is_used: true, used_by: userId, used_at: new Date().toISOString() }).eq('id', codeData.id).then(function() {});
-      // Activate membership
-      if (userId) {
-        var months = codeData.months || 6;
-        sb.from('profiles').update({
-          membership_start: new Date().toISOString(),
-          membership_end: new Date(Date.now() + months * 30 * 86400000).toISOString()
-        }).eq('id', userId).then(function() {});
-      }
-      showMsg('✓ ¡Cuenta creada y membresía activada! Inicia sesión ahora.', false);
-      btn.disabled = false; btn.textContent = 'Crear cuenta';
-      // Switch to login tab after 2s
-      setTimeout(function() { switchTab('in'); document.getElementById('li-e').value = e; }, 2000);
-    });
   });
 }
+
+function doRegWithCode() {
+  if (!checkoutData.codeData) return tst('Aplica un código primero', 1);
+  var btn = document.getElementById('btn-reg');
+  btn.disabled = true; btn.textContent = 'Creando cuenta...';
+  sb.auth.signUp({
+    email: checkoutData.email,
+    password: checkoutData.password,
+    options: { data: { full_name: checkoutData.name } }
+  }).then(function(reg) {
+    if (reg.error) {
+      showMsg(fmtE(reg.error.message), true);
+      btn.disabled = false; btn.textContent = '✓ Crear cuenta gratis con código';
+      return;
+    }
+    var userId = reg.data && reg.data.user ? reg.data.user.id : null;
+    var codeId = checkoutData.codeData.id;
+    var months = checkoutData.codeData.months || 6;
+    // Mark code used
+    sb.from('access_codes').update({ is_used: true, used_by: userId, used_at: new Date().toISOString() }).eq('id', codeId).then(function(){});
+    // Activate membership
+    if (userId) {
+      sb.from('profiles').update({
+        membership_start: new Date().toISOString(),
+        membership_end: new Date(Date.now() + months * 30 * 86400000).toISOString()
+      }).eq('id', userId).then(function(){});
+    }
+    showMsg('✓ ¡Cuenta creada! Inicia sesión ahora.', false);
+    btn.disabled = false;
+    setTimeout(function() {
+      switchTab('in');
+      document.getElementById('li-e').value = checkoutData.email;
+    }, 1500);
+  });
+}
+
+function doReg() {} // legacy — replaced by checkout flow
 function fmtE(m) {
   if (m.indexOf('Invalid login') >= 0) return 'Email o contraseña incorrectos.';
   if (m.indexOf('not confirmed') >= 0) return 'Confirma tu email primero.';
@@ -1452,7 +1550,7 @@ function rAdmin() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  ['st','cl','se','codes'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
   if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else rAdmSt();
 }
 function rAdmSt() {

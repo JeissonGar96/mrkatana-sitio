@@ -1,8 +1,9 @@
 // api/calendar.js — Vercel Serverless Function
+// ForexFactory feed — USD High impact only
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=60');
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -12,88 +13,120 @@ module.exports = async function handler(req, res) {
     'Referer': 'https://www.forexfactory.com/',
   };
 
-  try {
-    const r = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json', { headers: HEADERS });
-    if (!r.ok) throw new Error(`Feed ${r.status}`);
-    const all = await r.json();
-
-    // Today UTC-5
-    const nowEC    = new Date(Date.now() - 5 * 3600000);
-    const todayStr = nowEC.toISOString().slice(0, 10);
-
-    function toIsoDate(raw) {
-      raw = (raw || '').trim();
-      if (raw.includes('T')) {
-        const ec = new Date(new Date(raw).getTime() - 5 * 3600000);
-        return ec.toISOString().slice(0, 10);
-      }
-      if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
-        const [mm,dd,yyyy] = raw.split('-');
-        return `${yyyy}-${mm}-${dd}`;
-      }
-      if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) return raw;
-      return '';
+  // Convert ISO date string to YYYY-MM-DD in UTC-5
+  function toIsoDate(raw) {
+    raw = (raw || '').trim();
+    if (!raw) return '';
+    if (raw.includes('T')) {
+      // Keep the original date from the ISO string without timezone conversion
+      // e.g. "2026-03-11T08:30:00-04:00" → date is Mar 11
+      return raw.slice(0, 10); // just take YYYY-MM-DD directly
     }
+    if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
+      const [mm, dd, yyyy] = raw.split('-');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) return raw;
+    return '';
+  }
 
-    // Show raw debug in response so we can diagnose
-    const debugInfo = {
-      total: all.length,
-      today: todayStr,
-      impact_values:  [...new Set(all.map(e => e.impact))],
-      country_values: [...new Set(all.map(e => e.country))].slice(0,10),
-      date_sample:    all.slice(0,2).map(e => ({ date: e.date, parsed: toIsoDate(e.date) })),
-      usd_high_sample: all.filter(e => e.country === 'USD' && e.impact === 'High').slice(0,3),
-      usd_high_total:  all.filter(e => e.country === 'USD' && e.impact === 'High').length,
-      usd_high_future: all.filter(e => e.country === 'USD' && e.impact === 'High' && toIsoDate(e.date) >= todayStr).length,
-    };
+  // Convert ISO time to UTC-5 time label
+  function toTimeLabel(raw) {
+    raw = (raw || '').trim();
+    if (!raw) return 'Tent.';
+    if (raw.includes('T')) {
+      const dt  = new Date(raw);
+      const ec  = new Date(dt.getTime() - 5 * 3600000);
+      const h   = ec.getUTCHours(), m = ec.getUTCMinutes();
+      return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;
+    }
+    const t = raw.toLowerCase();
+    if (t === 'tentative' || t === '') return 'Tent.';
+    if (t === 'all day') return 'Todo el día';
+    return raw.replace(/([ap]m)$/i, s => ' ' + s.toUpperCase());
+  }
 
-    // Filter
-    const filtered = all.filter(e =>
-      e.country === 'USD' && e.impact === 'High' && toIsoDate(e.date) >= todayStr
+  // Parse date label from ISO string
+  function toDateLabel(raw) {
+    raw = (raw || '').trim();
+    if (raw.includes('T')) {
+      const isoDate = raw.slice(0, 10); // YYYY-MM-DD
+      const [yyyy, mm, dd] = isoDate.split('-').map(Number);
+      const dt = new Date(Date.UTC(yyyy, mm-1, dd));
+      return `${DAYS[dt.getUTCDay()]}, ${MONTHS[mm-1]} ${dd}`;
+    }
+    if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
+      const [mm, dd, yyyy] = raw.split('-').map(Number);
+      const dt = new Date(Date.UTC(yyyy, mm-1, dd));
+      return `${DAYS[dt.getUTCDay()]}, ${MONTHS[mm-1]} ${dd}`;
+    }
+    if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [yyyy, mm, dd] = raw.split('-').map(Number);
+      const dt = new Date(Date.UTC(yyyy, mm-1, dd));
+      return `${DAYS[dt.getUTCDay()]}, ${MONTHS[mm-1]} ${dd}`;
+    }
+    return raw;
+  }
+
+  try {
+    // Fetch both feeds
+    const [r1, r2] = await Promise.all([
+      fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json',  { headers: HEADERS }),
+      fetch('https://nfs.faireconomy.media/ff_calendar_nextweek.json', { headers: HEADERS }),
+    ]);
+    const thisWeek = r1.ok ? await r1.json() : [];
+    const nextWeek = r2.ok ? await r2.json() : [];
+    const all = [...thisWeek, ...nextWeek];
+
+    // Today YYYY-MM-DD — use simple UTC date (close enough, max 1 day diff)
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    // Filter USD + High
+    const usdHigh = all.filter(e =>
+      e.country === 'USD' && e.impact === 'High'
     );
 
-    const events = filtered.map(e => {
-      const raw = (e.date || '').trim();
-      let dateLabel = '', isoDate = '', timeLabel = '';
+    // Try future events first
+    let display = usdHigh.filter(e => toIsoDate(e.date) >= todayStr);
 
-      if (raw.includes('T')) {
-        const ec  = new Date(new Date(raw).getTime() - 5 * 3600000);
-        dateLabel = `${DAYS[ec.getUTCDay()]}, ${MONTHS[ec.getUTCMonth()]} ${ec.getUTCDate()}`;
-        isoDate   = ec.toISOString().slice(0, 10);
-        const h   = ec.getUTCHours(), m = ec.getUTCMinutes();
-        timeLabel = `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;
-      } else if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
-        const [mm,dd,yyyy] = raw.split('-').map(Number);
-        const dt = new Date(Date.UTC(yyyy,mm-1,dd));
-        dateLabel = `${DAYS[dt.getUTCDay()]}, ${MONTHS[mm-1]} ${dd}`;
-        isoDate   = `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-      } else {
-        dateLabel = raw; isoDate = toIsoDate(raw);
-      }
+    // If none, show all USD High events (entire week — better than nothing)
+    if (!display.length) {
+      display = usdHigh;
+    }
 
-      if (!timeLabel) {
-        const t = (e.time||'').trim();
-        timeLabel = !t||t.toLowerCase()==='tentative' ? 'Tent.'
-                  : t.toLowerCase()==='all day' ? 'Todo el día'
-                  : t.replace(/([ap]m)$/i, s=>' '+s.toUpperCase());
-      }
+    const s = v => (v != null && String(v).trim() !== '') ? String(v).trim() : '—';
 
-      const s = v => (v!=null && String(v).trim()!=='') ? String(v).trim() : '—';
-      return {
-        date:dateLabel, isoDate, time:timeLabel, currency:'USD',
-        name:(e.title||'').trim(), impact:'high',
-        forecast:s(e.forecast), previous:s(e.previous), actual:s(e.actual),
-      };
-    }).filter(e=>e.name);
+    const events = display.map(e => ({
+      date:     toDateLabel(e.date),
+      isoDate:  toIsoDate(e.date),
+      time:     toTimeLabel(e.date),
+      currency: 'USD',
+      name:     (e.title || '').trim(),
+      impact:   'high',
+      forecast: s(e.forecast),
+      previous: s(e.previous),
+      actual:   s(e.actual),
+    }))
+    .filter(e => e.name)
+    .sort((a, b) => a.isoDate.localeCompare(b.isoDate) || a.time.localeCompare(b.time));
 
-    res.status(200).json({
-      ok:true, updated:new Date().toISOString(),
-      timezone:'UTC-5 (Ecuador)', today:todayStr,
-      debug: debugInfo,
-      events,
+    // Deduplicate
+    const seen = new Set();
+    const unique = events.filter(e => {
+      const k = e.isoDate + '|' + e.name;
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
     });
 
-  } catch(err) {
-    res.status(500).json({ ok:false, error:err.message, events:[] });
+    res.status(200).json({
+      ok:       true,
+      updated:  new Date().toISOString(),
+      timezone: 'UTC-5 (Ecuador)',
+      today:    todayStr,
+      events:   unique,
+    });
+
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message, events: [] });
   }
 };

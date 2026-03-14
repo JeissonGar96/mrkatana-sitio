@@ -1992,23 +1992,60 @@ function cLesson() {
 }
 
 function editLevel(lv) {
-  var newTitle = prompt('Nuevo título del nivel:', lv.title);
-  if (!newTitle || newTitle.trim() === lv.title) return;
-  sb.from('course_levels').update({ title: newTitle.trim() }).eq('id', lv.id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Nivel actualizado');
-    loadAdmLevels();
-  });
+  // Find the cell in the table and make it editable inline
+  var rows = document.querySelectorAll('#lv-table tr');
+  for (var i = 0; i < rows.length; i++) {
+    var cell = rows[i].cells[0];
+    if (cell && cell.textContent.trim() === lv.title && !cell.querySelector('input')) {
+      makeEditable(cell, lv.title, function(newVal) {
+        sb.from('course_levels').update({ title: newVal }).eq('id', lv.id).then(function(r) {
+          if (r.error) { tst('Error: ' + r.error.message, 1); loadAdmLevels(); return; }
+          tst('✓ Nivel actualizado');
+          loadAdmLevels();
+        });
+      });
+      break;
+    }
+  }
 }
 
 function editModule(mod) {
-  var newTitle = prompt('Nuevo título del módulo:', mod.title);
-  if (!newTitle || newTitle.trim() === mod.title) return;
-  sb.from('course_modules').update({ title: newTitle.trim() }).eq('id', mod.id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Módulo actualizado');
-    loadAdmLevels();
+  var rows = document.querySelectorAll('#lv-table tr');
+  for (var i = 0; i < rows.length; i++) {
+    var cell = rows[i].cells[0];
+    if (cell && cell.textContent.trim() === '↳ ' + mod.title && !cell.querySelector('input')) {
+      makeEditable(cell, mod.title, function(newVal) {
+        sb.from('course_modules').update({ title: newVal }).eq('id', mod.id).then(function(r) {
+          if (r.error) { tst('Error: ' + r.error.message, 1); loadAdmLevels(); return; }
+          tst('✓ Módulo actualizado');
+          loadAdmLevels();
+        });
+      });
+      break;
+    }
+  }
+}
+
+function makeEditable(cell, currentVal, onSave) {
+  var prefix = cell.textContent.indexOf('↳') >= 0 ? '↳ ' : '';
+  cell.innerHTML = '';
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.value = currentVal;
+  input.style.cssText = 'background:#1e2736;border:1px solid var(--sl);color:#f0f0f0;padding:4px 8px;border-radius:4px;font-size:.82rem;width:100%;box-sizing:border-box;outline:none;';
+  var save = function() {
+    var newVal = input.value.trim();
+    if (!newVal || newVal === currentVal) { loadAdmLevels(); return; }
+    onSave(newVal);
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { input.blur(); }
+    if (e.key === 'Escape') { loadAdmLevels(); }
   });
+  cell.appendChild(input);
+  input.focus();
+  input.select();
 }
 
 function dModule(id) {

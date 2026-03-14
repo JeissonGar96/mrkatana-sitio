@@ -1036,19 +1036,29 @@ nav{
 /* Calendar mobile fixes */
 @media(max-width:860px) {
   .cal-impact-text { display: none; }
-  .cal-impact-badge { padding: 2px 5px; gap: 0; margin-top: 0; }
+  .cal-impact-badge { padding: 1px 4px; gap: 0; margin-top: 0; font-size: .52rem; }
+
+  /* Single row: time + flag + name + values all inline */
   .cal-event {
-    grid-template-columns: 44px 30px 1fr auto !important;
-    gap: 0 8px !important;
+    grid-template-columns: 40px 24px 1fr auto !important;
+    grid-template-rows: auto !important;
+    gap: 0 6px !important;
+    padding: 9px 10px !important;
+    align-items: center !important;
   }
   .cal-values {
-    flex-direction: column !important;
-    align-items: flex-end !important;
-    justify-content: center !important;
-    gap: 3px !important;
-    min-width: 52px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: unset !important;
+    margin-top: 0 !important;
   }
   .cal-val { text-align: right !important; min-width: unset !important; }
+  .cal-val-label { font-size: .52rem !important; }
+  .cal-val-num   { font-size: .75rem !important; }
+  .cal-time { font-size: .72rem !important; }
+  .cal-flag { font-size: 1.1rem !important; }
+  .cal-name { font-size: .74rem !important; line-height: 1.2 !important; }
 }
 </style>
 </head>

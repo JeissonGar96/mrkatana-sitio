@@ -803,6 +803,11 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
         <div class="fg"><label class="fl">Nombre completo</label><input type="text" id="rg-n" class="fi" placeholder="Tu nombre"></div>
         <div class="fg"><label class="fl">Email</label><input type="email" id="rg-e" class="fi" placeholder="tu@email.com"></div>
         <div class="fg"><label class="fl">Contraseña</label><input type="password" id="rg-p" class="fi" placeholder="Mínimo 6 caracteres"></div>
+        <div class="fg">
+          <label class="fl">Código de acceso</label>
+          <input type="text" id="rg-code" class="fi" placeholder="KATANA-XXXXXX" style="text-transform:uppercase;letter-spacing:2px;">
+          <div style="font-size:.7rem;color:#555;margin-top:4px;">Ingresa el código que recibiste al realizar tu pago</div>
+        </div>
         <button class="mbtnn" id="btn-reg">Crear cuenta</button>
       </div>
     </div>
@@ -1063,14 +1068,44 @@ function doReg() {
   var n = document.getElementById('rg-n').value.trim();
   var e = document.getElementById('rg-e').value.trim();
   var p = document.getElementById('rg-p').value;
+  var code = document.getElementById('rg-code').value.trim().toUpperCase();
   if (!n || !e || !p) return showMsg('Completa todos los campos.', true);
+  if (!code) return showMsg('Ingresa tu código de acceso.', true);
   if (p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
   var btn = document.getElementById('btn-reg');
-  btn.disabled = true; btn.textContent = 'Creando...';
-  sb.auth.signUp({ email: e, password: p, options: { data: { full_name: n } } }).then(function(r) {
-    if (r.error) { showMsg(fmtE(r.error.message), true); }
-    else { showMsg('¡Cuenta creada! Revisa tu email para confirmar.', false); }
-    btn.disabled = false; btn.textContent = 'Crear cuenta';
+  btn.disabled = true; btn.textContent = 'Verificando código...';
+  // First validate the code
+  sb.from('access_codes').select('*').eq('code', code).eq('is_used', false).single().then(function(r) {
+    if (r.error || !r.data) {
+      showMsg('Código inválido o ya utilizado.', true);
+      btn.disabled = false; btn.textContent = 'Crear cuenta';
+      return;
+    }
+    var codeData = r.data;
+    // Code is valid — create the account
+    btn.textContent = 'Creando cuenta...';
+    sb.auth.signUp({ email: e, password: p, options: { data: { full_name: n } } }).then(function(reg) {
+      if (reg.error) {
+        showMsg(fmtE(reg.error.message), true);
+        btn.disabled = false; btn.textContent = 'Crear cuenta';
+        return;
+      }
+      var userId = reg.data && reg.data.user ? reg.data.user.id : null;
+      // Mark code as used
+      sb.from('access_codes').update({ is_used: true, used_by: userId, used_at: new Date().toISOString() }).eq('id', codeData.id).then(function() {});
+      // Activate membership
+      if (userId) {
+        var months = codeData.months || 6;
+        sb.from('profiles').update({
+          membership_start: new Date().toISOString(),
+          membership_end: new Date(Date.now() + months * 30 * 86400000).toISOString()
+        }).eq('id', userId).then(function() {});
+      }
+      showMsg('✓ ¡Cuenta creada y membresía activada! Inicia sesión ahora.', false);
+      btn.disabled = false; btn.textContent = 'Crear cuenta';
+      // Switch to login tab after 2s
+      setTimeout(function() { switchTab('in'); document.getElementById('li-e').value = e; }, 2000);
+    });
   });
 }
 function fmtE(m) {
@@ -1098,8 +1133,32 @@ function loadApp(user) {
     }
     var mobNav = document.getElementById('mob-nav');
     if (mobNav) mobNav.classList.add('visible');
+    // Check membership
+    if (cProfile && cProfile.role !== 'admin') {
+      var now = new Date();
+      var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
+      if (!end || end < now) {
+        showPending();
+        return;
+      }
+    }
     rDash();
   });
+}
+
+function showPending() {
+  document.getElementById('amain').innerHTML =
+    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px;">' +
+      '<div style="width:64px;height:64px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+      '</div>' +
+      '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;text-transform:uppercase;color:#f0f0f0;margin-bottom:12px;">Acceso pendiente</div>' +
+      '<div style="font-size:.88rem;color:#666;line-height:1.7;max-width:360px;margin-bottom:28px;">Tu cuenta está creada pero aún no tiene una membresía activa.<br><strong style="color:#9a9a9a;">Una vez que confirmes tu pago, el equipo activará tu acceso.</strong></div>' +
+      '<a href="https://wa.me/tunumero?text=Hola%2C%20quiero%20activar%20mi%20acceso%20al%20curso%20Mr.%20Katana" target="_blank" style="background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;padding:13px 28px;border-radius:6px;font-weight:600;font-size:.86rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.553 4.1 1.522 5.83L.057 23.998l6.304-1.654A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.001-1.368l-.36-.213-3.733.979.997-3.645-.234-.374A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.388 9.818 9.818 0 5.43-4.388 9.818-9.818 9.818z"/></svg>' +
+        'Contactar por WhatsApp' +
+      '</a>' +
+    '</div>';
 }
 
 // ── DASHBOARD ──
@@ -1374,7 +1433,7 @@ function rAdmin() {
   m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
   var tabs = document.createElement('div');
   tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;';
-  [['st','Alumnos'],['cl','Clases'],['se','Sesiones']].forEach(function(item, i) {
+  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['codes','Códigos']].forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');
     btn.textContent = item[1];
@@ -1382,7 +1441,7 @@ function rAdmin() {
     tabs.appendChild(btn);
   });
   m.appendChild(tabs);
-  ['st','cl','se'].forEach(function(s, i) {
+  ['st','cl','se','codes'].forEach(function(s, i) {
     var div = document.createElement('div');
     div.id = 'a-'+s;
     if (i > 0) div.style.display = 'none';
@@ -1394,7 +1453,7 @@ function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
   ['st','cl','se'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else rAdmSt();
+  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else rAdmSt();
 }
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
@@ -1403,14 +1462,27 @@ function rAdmSt() {
     var t = document.getElementById('st-t'); if(!t) return;
     if(!r.data||!r.data.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos.</p>';return;}
     var today = new Date();
-    t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Vence</th><th>Estado</th></tr></thead><tbody>'+
+    t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Vence</th><th>Estado</th><th>Acción</th></tr></thead><tbody>'+
       r.data.map(function(s){
         var en=s.membership_end?new Date(s.membership_end):null, act=en&&en>today;
         return '<tr><td style="color:#f0f0f0;font-weight:500;">'+s.full_name+'</td><td>'+s.email+'</td>'+
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(s.role==='admin'?'rgba(91,127,166,.14)':'rgba(255,255,255,.05)')+';color:'+(s.role==='admin'?'var(--sl)':'#9a9a9a')+';">'+s.role+'</span></td>'+
           '<td style="font-size:.74rem;">'+(en?en.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}):'—')+'</td>'+
-          '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(act?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(act?'#4ade80':'#f87171')+';">'+(act?'Activo':'Vencido')+'</span></td></tr>';
+          '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(act?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(act?'#4ade80':'#f87171')+';">'+(act?'Activo':'Inactivo')+'</span></td>'+
+          '<td><button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">'+(act?'Desactivar':'Activar')+'</button></td></tr>';
       }).join('')+'</tbody></table></div>';
+  });
+}
+function activateMember(id, isActive) {
+  var msg = isActive ? '¿Desactivar membresía de este alumno?' : '¿Activar membresía por 6 meses?';
+  if (!confirm(msg)) return;
+  var update = isActive
+    ? { membership_end: new Date(Date.now() - 1000).toISOString() }
+    : { membership_start: new Date().toISOString(), membership_end: new Date(Date.now() + 180*86400000).toISOString() };
+  sb.from('profiles').update(update).eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst(isActive ? 'Membresía desactivada' : '✓ Membresía activada — 6 meses');
+    rAdmSt();
   });
 }
 function cSt() {
@@ -1597,6 +1669,65 @@ function cLesson() {
 function dLevel(id) {
   if (!confirm('¿Eliminar nivel y todo su contenido?')) return;
   sb.from('course_levels').delete().eq('id', id).then(function() { tst('Eliminado'); loadAdmLevels(); });
+}
+
+function rAdmCodes() {
+  var c = document.getElementById('a-codes'); if (!c) return;
+  c.innerHTML =
+    '<div class="aform">' +
+      '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">🔑 Generar código de acceso</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 80px;gap:9px;">' +
+        '<div><label class="al">Nota (para quién es)</label><input id="code-note" class="ai" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
+        '<div><label class="al">Meses</label><input id="code-months" type="number" class="ai" value="6" min="1" max="24"></div>' +
+      '</div>' +
+      '<button class="abtn2" id="btn-gen-code" style="margin-top:11px;">Generar código</button>' +
+    '</div>' +
+    '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>';
+  document.getElementById('btn-gen-code').addEventListener('click', genCode);
+  loadCodes();
+}
+
+function genCode() {
+  var note = document.getElementById('code-note').value.trim();
+  var months = parseInt(document.getElementById('code-months').value) || 6;
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code = 'KATANA-';
+  for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  sb.from('access_codes').insert({
+    code: code,
+    created_by: cUser.id,
+    months: months,
+    notes: note
+  }).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Código generado: ' + code);
+    loadCodes();
+  });
+}
+
+function loadCodes() {
+  var c = document.getElementById('codes-list'); if (!c) return;
+  sb.from('access_codes').select('*').order('created_at', {ascending: false}).then(function(r) {
+    if (!r.data || !r.data.length) { c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin códigos generados aún.</p>'; return; }
+    var tbl = document.createElement('table'); tbl.className = 'dtab';
+    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Meses</th><th>Estado</th><th>Usado</th></tr></thead>';
+    var tb = document.createElement('tbody');
+    r.data.forEach(function(cd) {
+      var tr = document.createElement('tr');
+      var usedDate = cd.used_at ? new Date(cd.used_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '—';
+      tr.innerHTML =
+        '<td><span style="font-family:monospace;font-size:.82rem;color:#f0f0f0;letter-spacing:1px;">' + cd.code + '</span>' +
+        '<button onclick="navigator.clipboard.writeText(\'' + cd.code + '\').then(function(){tst(\'✓ Copiado\')})" style="background:none;border:none;color:#555;cursor:pointer;font-size:.7rem;margin-left:6px;padding:2px 5px;border:1px solid var(--br);border-radius:3px;">Copiar</button></td>' +
+        '<td style="font-size:.74rem;color:#666;">' + (cd.notes || '—') + '</td>' +
+        '<td style="font-size:.74rem;">' + cd.months + '</td>' +
+        '<td><span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (cd.is_used ? 'rgba(248,113,113,.1)' : 'rgba(74,222,128,.1)') + ';color:' + (cd.is_used ? '#f87171' : '#4ade80') + ';">' + (cd.is_used ? 'Usado' : 'Disponible') + '</span></td>' +
+        '<td style="font-size:.74rem;color:#555;">' + usedDate + '</td>';
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    c.innerHTML = '';
+    var w = document.createElement('div'); w.className = 'dtab-wrap'; w.appendChild(tbl); c.appendChild(w);
+  });
 }
 
 function rAdmSe() {

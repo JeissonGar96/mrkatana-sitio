@@ -293,8 +293,17 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 /* Level grid */
 .lvl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-top:20px;}
-.lvl-card{background:var(--bc);border:1px solid var(--br);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .25s;}
-.lvl-card:hover{border-color:var(--bs);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.4);}
+.lvl-card{
+  background:linear-gradient(160deg,rgba(255,255,255,.05) 0%,rgba(91,127,166,.08) 30%,rgba(15,20,28,.92) 70%,rgba(91,127,166,.04) 100%);
+  border:1px solid rgba(91,127,166,.2);
+  border-radius:14px;overflow:hidden;cursor:pointer;transition:all .25s;
+  box-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 4px 16px rgba(0,0,0,.4);
+}
+.lvl-card:hover{
+  border-color:rgba(91,127,166,.4);
+  transform:translateY(-3px);
+  box-shadow:0 1px 0 rgba(255,255,255,.1) inset,0 12px 32px rgba(0,0,0,.5);
+}
 .lvl-thumb{height:160px;background-size:cover;background-position:center;position:relative;}
 .lvl-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.7));}
 .lvl-info{padding:18px;}
@@ -3010,7 +3019,18 @@ function rAdmCl() {
   form.innerHTML =
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
       '<div><label class="al">Título del nivel</label><input id="lv-t" class="ai" placeholder="Ej: Módulo Básico"></div>' +
-      '<div><label class="al">Thumbnail URL</label><input id="lv-img" class="ai" placeholder="https://...jpg"></div>' +
+      '<div>' +
+        '<label class="al">Imagen del nivel</label>' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<label style="cursor:pointer;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:7px 14px;border-radius:6px;font-size:.76rem;font-weight:600;white-space:nowrap;">' +
+            '📁 Subir imagen' +
+            '<input type="file" id="lv-img-file" accept="image/*" style="display:none;" onchange="previewLvImg(this)">' +
+          '</label>' +
+          '<span id="lv-img-name" style="font-size:.72rem;color:#555;">Sin imagen seleccionada</span>' +
+        '</div>' +
+        '<div id="lv-img-preview" style="margin-top:8px;display:none;"><img id="lv-img-prev-el" style="height:80px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>' +
+        '<input type="hidden" id="lv-img" value="">' +
+      '</div>' +
     '</div>' +
     '<div style="margin-top:9px;"><label class="al">Descripción</label><input id="lv-d" class="ai" placeholder="Breve descripción"></div>' +
     '<div style="display:grid;grid-template-columns:60px 1fr;gap:9px;margin-top:9px;align-items:end;">' +
@@ -3251,13 +3271,42 @@ function dLesson(id) {
   });
 }
 
-function cLevel() {
+function previewLvImg(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var nameEl = document.getElementById('lv-img-name');
+  var prevWrap = document.getElementById('lv-img-preview');
+  var prevEl = document.getElementById('lv-img-prev-el');
+  if (nameEl) nameEl.textContent = file.name;
+  if (prevEl) {
+    prevEl.src = URL.createObjectURL(file);
+    if (prevWrap) prevWrap.style.display = 'block';
+  }
+}
+
+async function cLevel() {
   var t = document.getElementById('lv-t').value.trim();
   if (!t) return tst('Título requerido', 1);
+
+  var fileInput = document.getElementById('lv-img-file');
+  var file = fileInput && fileInput.files[0];
+  var thumbnailUrl = document.getElementById('lv-img').value.trim();
+
+  // Upload image if selected
+  if (file) {
+    tst('Subiendo imagen...');
+    var ext = file.name.split('.').pop();
+    var path = 'levels/' + Date.now() + '.' + ext;
+    var up = await sb.storage.from('course-images').upload(path, file, { upsert: true });
+    if (up.error) return tst('Error al subir imagen: ' + up.error.message, 1);
+    var pub = sb.storage.from('course-images').getPublicUrl(path);
+    thumbnailUrl = pub.data.publicUrl;
+  }
+
   sb.from('course_levels').insert({
     title: t,
     description: document.getElementById('lv-d').value.trim(),
-    thumbnail_url: document.getElementById('lv-img').value.trim(),
+    thumbnail_url: thumbnailUrl,
     sort_order: parseInt(document.getElementById('lv-ord').value) || 1,
     is_published: document.getElementById('lv-pub').checked
   }).then(function(r) {

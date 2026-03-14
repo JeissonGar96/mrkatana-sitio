@@ -1098,7 +1098,25 @@ function doLogin() {
   btn.disabled = true; btn.textContent = 'Entrando...';
   sb.auth.signInWithPassword({ email: e, password: p }).then(function(r) {
     if (r.error) {
-      showMsg(fmtE(r.error.message), true);
+      var errMsg = fmtE(r.error.message);
+      // Show resend button if email not confirmed
+      if (r.error.message.indexOf('not confirmed') >= 0 || r.error.message.indexOf('Email not confirmed') >= 0) {
+        showMsg('Tu email no está confirmado.', true);
+        var msgDiv = document.getElementById('msg');
+        var resendBtn = document.createElement('button');
+        resendBtn.textContent = 'Reenviar email de confirmación';
+        resendBtn.style.cssText = 'margin-top:8px;background:rgba(91,127,166,.15);border:1px solid var(--bs);color:var(--sl);padding:7px 14px;border-radius:5px;font-size:.76rem;cursor:pointer;width:100%;';
+        resendBtn.onclick = function() {
+          resendBtn.disabled = true; resendBtn.textContent = 'Enviando...';
+          sb.auth.resend({ type: 'signup', email: e }).then(function(res) {
+            if (res.error) { resendBtn.disabled = false; resendBtn.textContent = 'Reenviar email de confirmación'; showMsg('Error al reenviar: ' + res.error.message, true); }
+            else { showMsg('✓ Email de confirmación reenviado. Revisa tu bandeja de entrada.', false); }
+          });
+        };
+        if (msgDiv) msgDiv.appendChild(resendBtn);
+      } else {
+        showMsg(errMsg, true);
+      }
       btn.disabled = false; btn.textContent = 'Entrar al portal';
     } else if (r.data && r.data.user) {
       loadApp(r.data.user);
@@ -1174,34 +1192,50 @@ function doRegWithCode() {
   if (!checkoutData.codeData) return tst('Aplica un código primero', 1);
   var btn = document.getElementById('btn-reg');
   btn.disabled = true; btn.textContent = 'Creando cuenta...';
-  sb.auth.signUp({
-    email: checkoutData.email,
-    password: checkoutData.password,
-    options: { data: { full_name: checkoutData.name } }
-  }).then(function(reg) {
-    if (reg.error) {
-      showMsg(fmtE(reg.error.message), true);
+  var codeId = checkoutData.codeData.id;
+  var months = checkoutData.codeData.months || 6;
+
+  // Step 1: Mark code as used FIRST (prevents double use)
+  sb.from('access_codes').update({
+    is_used: true,
+    used_at: new Date().toISOString()
+  }).eq('id', codeId).eq('is_used', false).then(function(markR) {
+    if (markR.error) {
+      showMsg('Error al validar código. Intenta de nuevo.', true);
       btn.disabled = false; btn.textContent = '✓ Crear cuenta gratis con código';
       return;
     }
-    var userId = reg.data && reg.data.user ? reg.data.user.id : null;
-    var codeId = checkoutData.codeData.id;
-    var months = checkoutData.codeData.months || 6;
-    // Mark code used
-    sb.from('access_codes').update({ is_used: true, used_by: userId, used_at: new Date().toISOString() }).eq('id', codeId).then(function(){});
-    // Activate membership
-    if (userId) {
-      sb.from('profiles').update({
-        membership_start: new Date().toISOString(),
-        membership_end: new Date(Date.now() + months * 30 * 86400000).toISOString()
-      }).eq('id', userId).then(function(){});
-    }
-    showMsg('✓ ¡Cuenta creada! Inicia sesión ahora.', false);
-    btn.disabled = false;
-    setTimeout(function() {
-      switchTab('in');
-      document.getElementById('li-e').value = checkoutData.email;
-    }, 1500);
+
+    // Step 2: Create the account
+    sb.auth.signUp({
+      email: checkoutData.email,
+      password: checkoutData.password,
+      options: { data: { full_name: checkoutData.name } }
+    }).then(function(reg) {
+      if (reg.error) {
+        // Revert code if signup fails
+        sb.from('access_codes').update({ is_used: false, used_at: null }).eq('id', codeId).then(function(){});
+        showMsg(fmtE(reg.error.message), true);
+        btn.disabled = false; btn.textContent = '✓ Crear cuenta gratis con código';
+        return;
+      }
+      var userId = reg.data && reg.data.user ? reg.data.user.id : null;
+      // Update code with user reference
+      if (userId) {
+        sb.from('access_codes').update({ used_by: userId }).eq('id', codeId).then(function(){});
+        // Activate membership
+        sb.from('profiles').update({
+          membership_start: new Date().toISOString(),
+          membership_end: new Date(Date.now() + months * 30 * 86400000).toISOString()
+        }).eq('id', userId).then(function(){});
+      }
+      showMsg('✓ ¡Cuenta creada! Confirma tu email y luego inicia sesión.', false);
+      btn.disabled = false;
+      setTimeout(function() {
+        switchTab('in');
+        document.getElementById('li-e').value = checkoutData.email;
+      }, 2000);
+    });
   });
 }
 
@@ -1572,10 +1606,10 @@ function rAdmSt() {
   });
 }
 function dStudent(id) {
-  if (!confirm('¿Eliminar este alumno permanentemente? Esta acción no se puede deshacer.')) return;
+  if (!confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
   sb.from('profiles').delete().eq('id', id).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Alumno eliminado');
+    tst('✓ Perfil eliminado. Recuerda eliminar también en Auth → Users');
     rAdmSt();
   });
 }

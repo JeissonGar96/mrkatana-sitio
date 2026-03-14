@@ -1,6 +1,5 @@
 // api/calendar.js — Vercel Serverless Function
 // ForexFactory public JSON feed — USD HIGH impact only
-// Shows current week (if Mon-Fri) OR next week (if Sat-Sun)
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,97 +15,97 @@ module.exports = async function handler(req, res) {
     'Origin': 'https://www.forexfactory.com',
   };
 
-  // ── Determine which week(s) to show based on current day (UTC-5) ──
-  const nowUTC  = new Date();
-  const nowEC   = new Date(nowUTC.getTime() - 5 * 3600000); // Ecuador UTC-5
-  const dowEC   = nowEC.getUTCDay(); // 0=Sun, 6=Sat
-  const isWeekend = dowEC === 0 || dowEC === 6;
-
-  // Get Monday of a given week (UTC-5)
-  function getMondayOf(d) {
-    const day = d.getUTCDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    const mon = new Date(d.getTime() + diff * 86400000);
-    mon.setUTCHours(0,0,0,0);
-    return mon;
-  }
-
-  const thisMonday = getMondayOf(nowEC);
-  const nextMonday = new Date(thisMonday.getTime() + 7 * 86400000);
-  const nextSunday = new Date(nextMonday.getTime() + 6 * 86400000);
-  nextSunday.setUTCHours(23,59,59,999);
-
-  // On weekends show NEXT week; on weekdays show THIS week
-  const windowStart = isWeekend
-    ? nextMonday
-    : thisMonday;
-  const windowEnd = isWeekend
-    ? nextSunday
-    : new Date(thisMonday.getTime() + 6 * 86400000 + 86399999);
-
   try {
+    // Fetch both feeds always
     const [r1, r2] = await Promise.all([
       fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json',  { headers: HEADERS }),
       fetch('https://nfs.faireconomy.media/ff_calendar_nextweek.json', { headers: HEADERS }),
     ]);
-
     const thisWeek = r1.ok ? await r1.json() : [];
     const nextWeek = r2.ok ? await r2.json() : [];
     const combined = [...thisWeek, ...nextWeek];
 
-    // ── Filter: USD + High impact ──
+    // Today in YYYY-MM-DD at UTC-5
+    const nowEC    = new Date(Date.now() - 5 * 3600000);
+    const todayStr = nowEC.toISOString().slice(0, 10); // "2026-03-14"
+
+    console.log('[CAL] today UTC-5:', todayStr, '| combined:', combined.length);
+    if (combined.length > 0) {
+      console.log('[CAL] sample keys:', Object.keys(combined[0]));
+      console.log('[CAL] sample[0]:', JSON.stringify(combined[0]));
+      const impactSet = [...new Set(combined.map(e => String(e.impact)))];
+      const currSet   = [...new Set(combined.map(e => String(e.currency || e.country || '')))].slice(0,10);
+      console.log('[CAL] impact set:', impactSet);
+      console.log('[CAL] currency set:', currSet);
+    }
+
+    // ── Filter: USD + High + date >= today ──
     const filtered = combined.filter(e => {
-      const imp  = e.impact;
-      const curr = (e.currency || e.country || '').toString().toUpperCase().trim();
-      const isHigh = imp === 'High' || imp === 3 || imp === '3' || imp === 'high' || imp === 'HIGH';
+      const imp  = String(e.impact  || '').trim();
+      const curr = String(e.currency || e.country || '').toUpperCase().trim();
+      const isHigh = ['high','High','HIGH','3'].includes(imp) || imp === '3';
       const isUSD  = curr === 'USD' || curr === 'US';
-      return isHigh && isUSD;
+      if (!isHigh || !isUSD) return false;
+
+      // Parse event date to YYYY-MM-DD
+      const raw = (e.date || '').trim();
+      let evDate = '';
+      if (raw.includes('T')) {
+        // ISO: convert to UTC-5 date
+        const dt = new Date(raw);
+        const ec = new Date(dt.getTime() - 5 * 3600000);
+        evDate = ec.toISOString().slice(0, 10);
+      } else if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
+        // MM-DD-YYYY
+        const [mm, dd, yyyy] = raw.split('-');
+        evDate = `${yyyy}-${mm}-${dd}`;
+      } else if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        evDate = raw;
+      }
+
+      // Only include events from today onwards
+      return evDate >= todayStr;
     });
 
-    // ── Parse + convert to UTC-5 ──
-    function parseEvent(e) {
-      const rawDate = (e.date || '').trim();
-      let dateLabel = '', isoDate = '', timeLabel = '', eventMs = 0;
+    console.log('[CAL] after filter (USD+High+future):', filtered.length);
 
-      if (rawDate.includes('T')) {
-        try {
-          const dt    = new Date(rawDate);
-          eventMs     = dt.getTime();
-          // Convert to UTC-5 (Ecuador — no DST)
-          const local = new Date(dt.getTime() - 5 * 3600000);
-          dateLabel   = `${DAYS[local.getUTCDay()]}, ${MONTHS[local.getUTCMonth()]} ${local.getUTCDate()}`;
-          isoDate     = `${local.getUTCFullYear()}-${String(local.getUTCMonth()+1).padStart(2,'0')}-${String(local.getUTCDate()).padStart(2,'0')}`;
-          const h     = local.getUTCHours(), m = local.getUTCMinutes();
-          timeLabel   = `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;
-        } catch(_) { dateLabel = rawDate; isoDate = rawDate; }
+    // ── Parse ──
+    const events = filtered.map(e => {
+      const raw = (e.date || '').trim();
+      let dateLabel = '', isoDate = '', timeLabel = '';
 
-      } else if (rawDate.match(/^\d{2}-\d{2}-\d{4}$/)) {
-        const [mm, dd, yyyy] = rawDate.split('-').map(Number);
+      if (raw.includes('T')) {
+        const dt  = new Date(raw);
+        const ec  = new Date(dt.getTime() - 5 * 3600000);
+        dateLabel = `${DAYS[ec.getUTCDay()]}, ${MONTHS[ec.getUTCMonth()]} ${ec.getUTCDate()}`;
+        isoDate   = ec.toISOString().slice(0, 10);
+        const h   = ec.getUTCHours(), m = ec.getUTCMinutes();
+        timeLabel = `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;
+
+      } else if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
+        const [mm, dd, yyyy] = raw.split('-').map(Number);
         const dt = new Date(Date.UTC(yyyy, mm-1, dd));
-        eventMs   = dt.getTime();
         dateLabel = `${DAYS[dt.getUTCDay()]}, ${MONTHS[mm-1]} ${dd}`;
         isoDate   = `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
 
-      } else if (rawDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [yyyy, mm, dd] = rawDate.split('-').map(Number);
+      } else if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [yyyy, mm, dd] = raw.split('-').map(Number);
         const dt = new Date(Date.UTC(yyyy, mm-1, dd));
-        eventMs   = dt.getTime();
         dateLabel = `${DAYS[dt.getUTCDay()]}, ${MONTHS[mm-1]} ${dd}`;
-        isoDate   = rawDate;
+        isoDate   = raw;
       } else {
-        dateLabel = rawDate; isoDate = rawDate;
+        dateLabel = raw; isoDate = raw;
       }
 
-      // Time from separate field
+      // Time from separate field (if no time in ISO)
       if (!timeLabel) {
-        const t = (e.time || '').trim().toLowerCase();
-        if (!t || t === 'tentative') {
+        const t = (e.time || '').trim();
+        if (!t || t.toLowerCase() === 'tentative') {
           timeLabel = 'Tentativo';
-        } else if (t === 'all day') {
+        } else if (t.toLowerCase() === 'all day') {
           timeLabel = 'Todo el día';
         } else {
-          // "8:30am" → "8:30 AM"
-          timeLabel = (e.time || '').replace(/([ap]m)$/i, s => ' ' + s.toUpperCase());
+          timeLabel = t.replace(/([ap]m)$/i, s => ' ' + s.toUpperCase());
         }
       }
 
@@ -114,58 +113,32 @@ module.exports = async function handler(req, res) {
       return {
         date:     dateLabel,
         isoDate:  isoDate,
-        eventMs:  eventMs,
         time:     timeLabel,
-        currency: (e.currency || e.country || '').toString().toUpperCase().trim(),
+        currency: 'USD',
         name:     (e.title || e.name || e.event || '').trim(),
         impact:   'high',
         forecast: str(e.forecast),
         previous: str(e.previous),
         actual:   str(e.actual),
       };
-    }
-
-    const parsed = filtered
-      .map(parseEvent)
-      .filter(e => e.name);
-
-    // ── Keep only events within the display window ──
-    const inWindow = parsed.filter(e => {
-      if (!e.isoDate) return false;
-      // Compare by isoDate string (YYYY-MM-DD) against window
-      const eDate = e.isoDate;
-      const wStart = windowStart.toISOString().slice(0,10);
-      const wEnd   = windowEnd.toISOString().slice(0,10);
-      return eDate >= wStart && eDate <= wEnd;
-    });
-
-    // If nothing in window (edge case), fall back to all filtered future events
-    let display = inWindow;
-    if (!display.length) {
-      const todayStr = nowEC.toISOString().slice(0,10);
-      display = parsed.filter(e => e.isoDate >= todayStr);
-    }
-
-    // Sort by date then time
-    display.sort((a, b) => a.isoDate.localeCompare(b.isoDate) || a.time.localeCompare(b.time));
+    })
+    .filter(e => e.name)
+    .sort((a, b) => a.isoDate.localeCompare(b.isoDate) || a.time.localeCompare(b.time));
 
     // Deduplicate
     const seen = new Set();
-    const unique = display.filter(e => {
+    const unique = events.filter(e => {
       const k = e.isoDate + '|' + e.name;
       if (seen.has(k)) return false;
       seen.add(k); return true;
     });
 
-    // Remove eventMs from output
-    unique.forEach(e => delete e.eventMs);
-
     res.status(200).json({
-      ok:        true,
-      updated:   new Date().toISOString(),
-      timezone:  'UTC-5 (Ecuador)',
-      week:      isWeekend ? 'next' : 'current',
-      events:    unique,
+      ok:       true,
+      updated:  new Date().toISOString(),
+      timezone: 'UTC-5 (Ecuador)',
+      today:    todayStr,
+      events:   unique,
     });
 
   } catch (err) {

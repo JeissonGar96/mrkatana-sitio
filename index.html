@@ -216,6 +216,9 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
 
 /* APP */
 #appdash{display:none;position:fixed;inset:0;background:#111;z-index:500;overflow-y:auto;}
+@media(max-width:860px){
+  #appdash{padding-bottom:58px;}
+}
 .anav{background:rgba(17,17,17,.99);border-bottom:1px solid var(--br);padding:13px 30px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
 .anav img{height:30px;}
 .alay{display:flex;min-height:calc(100vh - 61px);}
@@ -225,7 +228,7 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
 .snav:hover svg,.snav.on svg{opacity:1;}
 .snav:hover{background:rgba(255,255,255,.04);color:#f0f0f0;}
 .snav.on{background:rgba(91,127,166,.12);color:var(--sl);}
-.amain{flex:1;padding:30px;overflow-y:auto;}
+.amain{flex:1;padding:30px;}
 .atit{font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;font-weight:800;text-transform:uppercase;margin-bottom:5px;}
 .asub{font-size:.82rem;color:#555;margin-bottom:26px;}
 .acard{background:var(--bc);border:1px solid var(--br);border-radius:14px;padding:20px;position:relative;overflow:hidden;}
@@ -397,7 +400,7 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
   .pbody{padding:24px 20px !important;}
   .price-header,.price-body{padding:24px 20px !important;}
   .aside{display:none;}
-  .amain{padding:18px;}
+  .amain{padding:18px;padding-bottom:80px;}
   .alay{flex-direction:column;}
 }
 
@@ -491,6 +494,35 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
 }
 #cta-final .wrap { position: relative; z-index: 1; }
 
+
+/* ── MOBILE BOTTOM NAV ── */
+.mob-nav{
+  display:none !important;
+  position:fixed;
+  bottom:0;left:0;right:0;top:auto;
+  height:58px;
+  background:#181818;
+  border-top:1px solid var(--br);
+  border-bottom:none;
+  z-index:700;
+  justify-content:space-around;
+  align-items:center;
+}
+.mob-nav-btn{
+  display:flex;flex-direction:column;align-items:center;
+  gap:3px;background:none;border:none;
+  color:#555;font-size:.58rem;font-weight:500;
+  letter-spacing:.5px;text-transform:uppercase;
+  cursor:pointer;padding:4px 10px;
+  transition:color .2s;
+}
+.mob-nav-btn svg{transition:stroke .2s;}
+.mob-nav-btn.on{color:var(--sl);}
+.mob-nav-btn.on svg{stroke:var(--sl);}
+@media(max-width:860px){
+  .mob-nav.visible{display:flex !important;}
+  #appdash{padding-bottom:58px;}
+}
 </style>
 </head>
 <body>
@@ -797,9 +829,32 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
         </div>
       </div>
     </aside>
-    <main class="amain" id="amain"></main>
   </div>
+
 </div>
+
+<nav class="mob-nav" id="mob-nav" style="display:none;">
+  <button class="mob-nav-btn on" data-v="dash">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span>Inicio</span>
+  </button>
+  <button class="mob-nav-btn" data-v="clases">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polygon points="10,8 16,12 10,16"/></svg>
+    <span>Curso</span>
+  </button>
+  <button class="mob-nav-btn" data-v="sesiones">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>
+    <span>En vivo</span>
+  </button>
+  <button class="mob-nav-btn" data-v="reuniones">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    <span>Reuniones</span>
+  </button>
+  <button class="mob-nav-btn" data-v="admin" id="mob-adm-btn" style="display:none">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    <span>Admin</span>
+  </button>
+</nav>
 
 <div id="tst" class="toast2"></div>
 
@@ -847,7 +902,7 @@ window.onload = function() {
   document.getElementById('btncliente').onclick = function(e) {
     e.preventDefault();
     document.getElementById('overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
   };
 
   // Close modal
@@ -874,8 +929,11 @@ window.onload = function() {
   document.getElementById('btn-out').onclick = function() {
     sb.auth.signOut().then(function() {
       document.getElementById('appdash').style.display = 'none';
-      document.body.style.overflow = '';
+      if (window.innerWidth > 860) document.body.style.overflow = '';
       cUser = null; cProfile = null;
+      // Hide mobile nav
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.remove('visible');
       // Reset login form
       var liE = document.getElementById('li-e'); if (liE) liE.value = '';
       var liP = document.getElementById('li-p'); if (liP) liP.value = '';
@@ -887,18 +945,34 @@ window.onload = function() {
     });
   };
 
-  // Sidebar
+  // Sidebar + mobile nav sync
+  function navigateTo(v) {
+    // Update sidebar
+    document.querySelectorAll('.snav').forEach(function(b) { b.classList.remove('on'); });
+    var sBtn = document.querySelector('.snav[data-v="' + v + '"]');
+    if (sBtn) sBtn.classList.add('on');
+    // Update mobile nav
+    document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('on'); });
+    var mBtn = document.querySelector('.mob-nav-btn[data-v="' + v + '"]');
+    if (mBtn) mBtn.classList.add('on');
+    // Navigate
+    if (v==='dash') rDash();
+    else if (v==='clases') rClases();
+    else if (v==='sesiones') rSes();
+    else if (v==='reuniones') rReun();
+    else if (v==='admin') rAdmin();
+  }
+
   var snavs = document.querySelectorAll('.snav');
   for (var i = 0; i < snavs.length; i++) {
     snavs[i].onclick = function() {
-      for (var j = 0; j < snavs.length; j++) snavs[j].classList.remove('on');
-      this.classList.add('on');
-      var v = this.getAttribute('data-v');
-      if (v==='dash') rDash();
-      else if (v==='clases') rClases();
-      else if (v==='sesiones') rSes();
-      else if (v==='reuniones') rReun();
-      else if (v==='admin') rAdmin();
+      navigateTo(this.getAttribute('data-v'));
+    };
+  }
+  var mnavs = document.querySelectorAll('.mob-nav-btn');
+  for (var i = 0; i < mnavs.length; i++) {
+    mnavs[i].onclick = function() {
+      navigateTo(this.getAttribute('data-v'));
     };
   }
 
@@ -939,7 +1013,7 @@ window.onload = function() {
 // ── MODAL ──
 function closeModal() {
   document.getElementById('overlay').classList.remove('open');
-  document.body.style.overflow = '';
+  if (window.innerWidth > 860) document.body.style.overflow = '';
   hideMsg();
 }
 function switchTab(t) {
@@ -1007,12 +1081,18 @@ function loadApp(user) {
   cUser = user;
   closeModal();
   document.getElementById('appdash').style.display = 'block';
-  document.body.style.overflow = 'hidden';
+  if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
   sb.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
     cProfile = r.data;
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
     document.getElementById('uname').textContent = name;
-    if (cProfile && cProfile.role === 'admin') document.getElementById('adm-lnk').style.display = 'block';
+    if (cProfile && cProfile.role === 'admin') {
+      document.getElementById('adm-lnk').style.display = 'block';
+      var mobAdm = document.getElementById('mob-adm-btn');
+      if (mobAdm) mobAdm.style.display = 'flex';
+    }
+    var mobNav = document.getElementById('mob-nav');
+    if (mobNav) mobNav.classList.add('visible');
     rDash();
   });
 }

@@ -1896,16 +1896,48 @@ function loadAdmLevels() {
       var lesCount = mods.reduce(function(s, m) { return s + (m.course_lessons ? m.course_lessons.length : 0); }, 0);
       var tr = document.createElement('tr');
       tr.innerHTML =
-        '<td style="color:#f0f0f0;">' + lv.title + '</td>' +
+        '<td style="color:#f0f0f0;font-weight:500;">' + lv.title + '</td>' +
         '<td style="font-size:.74rem;">' + mods.length + '</td>' +
         '<td style="font-size:.74rem;">' + lesCount + '</td>' +
         '<td><span style="color:' + (lv.is_published ? '#4ade80' : '#555') + ';font-size:.74rem;">' + (lv.is_published ? '✓' : '—') + '</span></td>' +
-        '<td></td>';
+        '<td style="display:flex;gap:4px;"></td>';
+      // Edit level button
+      var editBtn = document.createElement('button');
+      editBtn.textContent = '✎'; editBtn.title = 'Editar nivel';
+      editBtn.style.cssText = 'background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';
+      editBtn.addEventListener('click', function() { editLevel(lv); });
+      // Delete level button
       var btn = document.createElement('button');
-      btn.textContent = '✕'; btn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';
+      btn.textContent = '✕'; btn.title = 'Eliminar nivel';
+      btn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';
       btn.addEventListener('click', function() { dLevel(lv.id); });
+      tr.cells[4].appendChild(editBtn);
       tr.cells[4].appendChild(btn);
       tb.appendChild(tr);
+
+      // Add sub-rows for each module
+      mods.forEach(function(mod) {
+        var modTr = document.createElement('tr');
+        modTr.style.cssText = 'background:rgba(255,255,255,.02);';
+        var lesLen = mod.course_lessons ? mod.course_lessons.length : 0;
+        modTr.innerHTML =
+          '<td style="color:#777;font-size:.78rem;padding-left:24px;">↳ ' + mod.title + '</td>' +
+          '<td></td>' +
+          '<td style="font-size:.72rem;color:#555;">' + lesLen + ' clase' + (lesLen !== 1 ? 's' : '') + '</td>' +
+          '<td></td>' +
+          '<td style="display:flex;gap:4px;"></td>';
+        var editModBtn = document.createElement('button');
+        editModBtn.textContent = '✎'; editModBtn.title = 'Editar módulo';
+        editModBtn.style.cssText = 'background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:2px 7px;border-radius:2px;font-size:.68rem;cursor:pointer;';
+        editModBtn.addEventListener('click', function() { editModule(mod); });
+        var delModBtn = document.createElement('button');
+        delModBtn.textContent = '✕'; delModBtn.title = 'Eliminar módulo';
+        delModBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:2px 7px;border-radius:2px;font-size:.68rem;cursor:pointer;';
+        delModBtn.addEventListener('click', function() { dModule(mod.id); });
+        modTr.cells[4].appendChild(editModBtn);
+        modTr.cells[4].appendChild(delModBtn);
+        tb.appendChild(modTr);
+      });
     });
     tbl.appendChild(tb); t.innerHTML = ''; var wlv=document.createElement('div'); wlv.className='dtab-wrap'; wlv.appendChild(tbl); t.appendChild(wlv);
   });
@@ -1956,6 +1988,35 @@ function cLesson() {
   }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Clase agregada'); loadAdmLevels();
+  });
+}
+
+function editLevel(lv) {
+  var newTitle = prompt('Nuevo título del nivel:', lv.title);
+  if (!newTitle || newTitle.trim() === lv.title) return;
+  sb.from('course_levels').update({ title: newTitle.trim() }).eq('id', lv.id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Nivel actualizado');
+    loadAdmLevels();
+  });
+}
+
+function editModule(mod) {
+  var newTitle = prompt('Nuevo título del módulo:', mod.title);
+  if (!newTitle || newTitle.trim() === mod.title) return;
+  sb.from('course_modules').update({ title: newTitle.trim() }).eq('id', mod.id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Módulo actualizado');
+    loadAdmLevels();
+  });
+}
+
+function dModule(id) {
+  if (!confirm('¿Eliminar este módulo? Se eliminarán también todas sus clases.')) return;
+  sb.from('course_modules').delete().eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Módulo eliminado');
+    loadAdmLevels();
   });
 }
 

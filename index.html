@@ -920,6 +920,93 @@ nav{
   #card-week{ order:3 !important; }
   #card-1on1{ order:2 !important; }
 }
+
+/* ── ECONOMIC CALENDAR ── */
+.cal-day-group { margin-bottom: 18px; }
+.cal-day-header {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .65rem; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: #555;
+  margin-bottom: 8px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--br);
+}
+.cal-day-header .cal-day-name { color: #9a9a9a; }
+.cal-day-header .cal-day-today {
+  background: rgba(91,127,166,.15); border: 1px solid rgba(91,127,166,.3);
+  color: var(--sl); padding: 1px 8px; border-radius: 20px; font-size: .6rem;
+}
+.cal-event {
+  display: grid;
+  grid-template-columns: 54px 44px 1fr auto;
+  gap: 0 12px;
+  align-items: center;
+  background: var(--bc);
+  border: 1px solid var(--br);
+  border-left: 3px solid #f87171;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 7px;
+  transition: border-color .2s, background .2s;
+}
+.cal-event:hover { background: #252525; border-color: rgba(248,113,113,.4); }
+.cal-event.cal-released { border-left-color: #f87171; }
+.cal-time {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .88rem; font-weight: 700; color: #9a9a9a;
+  white-space: nowrap;
+}
+.cal-time.cal-allday { font-size: .65rem; color: #555; letter-spacing: 1px; text-transform: uppercase; }
+.cal-currency {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .82rem; font-weight: 800; letter-spacing: 1px;
+  color: #f0f0f0;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 4px;
+  padding: 2px 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+.cal-name { font-size: .83rem; color: #d0d0d0; line-height: 1.3; font-weight: 500; }
+.cal-values {
+  display: flex; gap: 8px; align-items: center;
+  flex-wrap: wrap; justify-content: flex-end;
+}
+.cal-val {
+  text-align: center; min-width: 42px;
+}
+.cal-val-label { font-size: .55rem; color: #444; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 1px; }
+.cal-val-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .82rem; font-weight: 700; color: #666;
+}
+.cal-val-num.cal-actual { color: #f0f0f0; }
+.cal-val-num.cal-actual.better { color: #4ade80; }
+.cal-val-num.cal-actual.worse  { color: #f87171; }
+.cal-impact-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .58rem; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 20px;
+  background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.25);
+  color: #f87171; white-space: nowrap;
+}
+.cal-empty {
+  text-align: center; padding: 32px; color: #444;
+  font-size: .82rem; border: 1px dashed rgba(255,255,255,.06);
+  border-radius: 10px;
+}
+.cal-error {
+  background: rgba(248,113,113,.05); border: 1px solid rgba(248,113,113,.15);
+  border-radius: 10px; padding: 16px; font-size: .82rem; color: #f87171;
+  display: flex; align-items: center; gap: 10px;
+}
+@media(max-width:860px) {
+  .cal-event {
+    grid-template-columns: 44px 36px 1fr;
+    grid-template-rows: auto auto;
+  }
+  .cal-values { grid-column: 1 / -1; justify-content: flex-start; margin-top: 6px; }
+}
 </style>
 </head>
 <body>
@@ -1967,7 +2054,10 @@ function rDash() {
     '<div id="week-info" style="margin-bottom:20px;"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
 
     '<div class="sec">Próximas actividades</div>' +
-    '<div id="upcoming"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>';
+    '<div id="upcoming"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
+
+    '<div class="sec" style="margin-top:28px;">Calendario económico — Esta semana</div>' +
+    '<div id="econ-cal"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>';
 
     // Week navigator state
   var _viewWeek = weekNum;
@@ -2072,7 +2162,7 @@ function rDash() {
     });
   });
 
-  chkLive(); loadUp();
+  chkLive(); loadUp(); loadCalendar();
 
   // Countdown timer for 1-1 session
   if (next1on1) {
@@ -3381,5 +3471,112 @@ function tst(m, err) {
     init();
   }
 })();
+
+
+// ── ECONOMIC CALENDAR ──
+function loadCalendar() {
+  var c = document.getElementById('econ-cal');
+  if (!c) return;
+
+  // Currency colors for major pairs
+  var currColors = {
+    'USD': '#4a9eff', 'EUR': '#7da0c8', 'GBP': '#c9a84c',
+    'JPY': '#e88c4a', 'AUD': '#4ade80', 'CAD': '#a78bfa',
+    'CHF': '#f87171', 'NZD': '#34d399', 'CNY': '#fb923c'
+  };
+
+  fetch('/api/calendar')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.ok || !data.events || !data.events.length) {
+        c.innerHTML = '<div class="cal-empty">📅 Sin noticias de alto impacto esta semana.</div>';
+        return;
+      }
+
+      // Group events by date
+      var groups = {};
+      var order  = [];
+      data.events.forEach(function(ev) {
+        if (!groups[ev.date]) { groups[ev.date] = []; order.push(ev.date); }
+        groups[ev.date].push(ev);
+      });
+
+      // Today label
+      var todayStr = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+
+      var html = '';
+      order.forEach(function(date) {
+        var isToday = date.toLowerCase().indexOf(new Date().toLocaleDateString('en-US',{weekday:'short'}).toLowerCase()) === 0
+                   || date === todayStr;
+
+        html += '<div class="cal-day-group">';
+        html += '<div class="cal-day-header">';
+        html += '<span class="cal-day-name">' + date + '</span>';
+        if (isToday) html += '<span class="cal-day-today">HOY</span>';
+        html += '</div>';
+
+        groups[date].forEach(function(ev) {
+          var curr   = ev.currency || '';
+          var color  = currColors[curr] || '#9a9a9a';
+          var hasAct = ev.actual && ev.actual !== '—';
+          var isAllDay = !ev.time || ev.time === 'All Day' || ev.time === 'Tentative';
+
+          // Determine if actual is better or worse than forecast
+          var actualClass = 'cal-actual';
+          if (hasAct && ev.forecast && ev.forecast !== '—') {
+            var a = parseFloat(ev.actual);
+            var f = parseFloat(ev.forecast);
+            if (!isNaN(a) && !isNaN(f)) {
+              actualClass += a >= f ? ' better' : ' worse';
+            }
+          }
+
+          html += '<div class="cal-event' + (hasAct ? ' cal-released' : '') + '">';
+
+          // Time
+          html += '<div class="cal-time' + (isAllDay ? ' cal-allday' : '') + '">' + (isAllDay ? 'All Day' : ev.time) + '</div>';
+
+          // Currency badge
+          html += '<div class="cal-currency" style="color:' + color + ';border-color:' + color + '22;">' + curr + '</div>';
+
+          // Name + impact badge
+          html += '<div>';
+          html += '<div class="cal-name">' + ev.name + '</div>';
+          html += '<div style="margin-top:3px;"><span class="cal-impact-badge">🔴 Alto impacto</span></div>';
+          html += '</div>';
+
+          // Values (forecast / previous / actual)
+          html += '<div class="cal-values">';
+          if (hasAct) {
+            html += '<div class="cal-val"><div class="cal-val-label">Real</div><div class="cal-val-num ' + actualClass + '">' + ev.actual + '</div></div>';
+          }
+          if (ev.forecast && ev.forecast !== '—') {
+            html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + ev.forecast + '</div></div>';
+          }
+          if (ev.previous && ev.previous !== '—') {
+            html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + ev.previous + '</div></div>';
+          }
+          html += '</div>';
+
+          html += '</div>'; // .cal-event
+        });
+
+        html += '</div>'; // .cal-day-group
+      });
+
+      // Footer: last update + link
+      html += '<div style="text-align:right;margin-top:8px;">';
+      html += '<a href="https://www.forexfactory.com/calendar" target="_blank" rel="noopener" ';
+      html += 'style="font-size:.65rem;color:#444;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">';
+      html += '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+      html += 'Fuente: ForexFactory</a></div>';
+
+      c.innerHTML = html;
+    })
+    .catch(function(err) {
+      c.innerHTML = '<div class="cal-error"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>No se pudo cargar el calendario. Intenta más tarde.</div>';
+      console.error('Calendar error:', err);
+    });
+}
 
 </script>

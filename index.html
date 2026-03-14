@@ -404,6 +404,7 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
   .aside{display:none;}
   .amain{padding:18px;padding-bottom:80px;}
   .alay{flex-direction:column;}
+  #amain [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
 }
 
 /* ── SECTION GLOWS ── */
@@ -871,6 +872,7 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
         <button class="snav" data-v="clases"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10,8 16,12 10,16"/></svg> Curso</button>
         <button class="snav" data-v="sesiones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg> En vivo</button>
         <button class="snav" data-v="reuniones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Reuniones 1-1</button>
+        <button class="snav" data-v="perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Mi Perfil</button>
         <div id="adm-lnk" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
           <button class="snav" data-v="admin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg> Admin</button>
         </div>
@@ -897,6 +899,10 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
   <button class="mob-nav-btn" data-v="reuniones">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     <span>Reuniones</span>
+  </button>
+  <button class="mob-nav-btn" data-v="perfil">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span>Perfil</span>
   </button>
   <button class="mob-nav-btn" data-v="admin" id="mob-adm-btn" style="display:none">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
@@ -1009,6 +1015,7 @@ window.onload = function() {
     else if (v==='clases') rClases();
     else if (v==='sesiones') rSes();
     else if (v==='reuniones') rReun();
+    else if (v==='perfil') rPerfil();
     else if (v==='admin') rAdmin();
   }
 
@@ -1543,6 +1550,114 @@ function rReun() {
       return '<div class="mc"><div class="md"><div class="md-d">'+d.getDate()+'</div><div class="md-m">'+d.toLocaleDateString('es-ES',{month:'short'})+'</div></div><div style="flex:1;"><div style="font-size:.85rem;font-weight:600;">Sesión 1-1 con Jeisson</div><div style="font-size:.73rem;color:#555;margin-top:2px;">'+d.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div>'+(m.notes?'<div style="font-size:.71rem;color:#555;">'+m.notes+'</div>':'')+'</div><span style="font-size:.67rem;padding:2px 9px;border-radius:1px;background:rgba(91,127,166,.1);color:var(--sl);">'+(m.status==='completed'?'✓ Hecha':'1-1')+'</span></div>';
     }).join('');
   });
+}
+
+// ── PERFIL ──
+function rPerfil() {
+  var p = cProfile || {};
+  var m = document.getElementById('amain');
+  m.innerHTML =
+    '<div class="atit">Mi Perfil</div>' +
+    '<div class="asub">Personaliza tu cuenta</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;">' +
+
+      // Left: Avatar + basic info
+      '<div>' +
+        '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">' +
+          '<div id="avatar-wrap" style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#fff;margin-bottom:12px;overflow:hidden;cursor:pointer;position:relative;" onclick="document.getElementById(\'avatar-input\').click()">' +
+            (p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : '<span>'+(p.full_name ? p.full_name[0].toUpperCase() : '?')+'</span>') +
+            '<div style="position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>' +
+          '</div>' +
+          '<input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
+          '<div style="font-size:.72rem;color:#555;">Clic para cambiar foto</div>' +
+        '</div>' +
+
+        '<div class="aform">' +
+          '<div style="font-size:.82rem;font-weight:600;margin-bottom:14px;">Información personal</div>' +
+          '<div style="margin-bottom:10px;"><label class="al">Nombre completo</label><input id="pf-name" class="ai" value="'+(p.full_name||'')+'" placeholder="Tu nombre completo"></div>' +
+          '<div style="margin-bottom:10px;"><label class="al">Edad</label><input id="pf-age" type="number" class="ai" value="'+(p.age||'')+'" placeholder="Tu edad" min="16" max="80"></div>' +
+          '<div style="margin-bottom:10px;"><label class="al">País</label><input id="pf-country" class="ai" value="'+(p.country||'')+'" placeholder="Ej: Ecuador"></div>' +
+          '<div style="margin-bottom:10px;"><label class="al">Experiencia en trading</label><select id="pf-exp" class="ai"><option value="">Selecciona...</option><option value="principiante" '+(p.trading_experience==='principiante'?'selected':'')+'>Principiante (0-1 año)</option><option value="intermedio" '+(p.trading_experience==='intermedio'?'selected':'')+'>Intermedio (1-3 años)</option><option value="avanzado" '+(p.trading_experience==='avanzado'?'selected':'')+'>Avanzado (3+ años)</option></select></div>' +
+          '<div style="margin-bottom:14px;"><label class="al">Bio / Presentación</label><textarea id="pf-bio" class="ai" rows="3" placeholder="Cuéntanos sobre ti y tus metas en trading..." style="width:100%;box-sizing:border-box;resize:vertical;">'+(p.bio||'')+'</textarea></div>' +
+          '<button class="abtn2" onclick="savePerfil()">Guardar cambios</button>' +
+        '</div>' +
+      '</div>' +
+
+      // Right: Security
+      '<div>' +
+        '<div class="aform" style="margin-bottom:16px;">' +
+          '<div style="font-size:.82rem;font-weight:600;margin-bottom:14px;">Cambiar contraseña</div>' +
+          '<div style="margin-bottom:10px;"><label class="al">Nueva contraseña</label><input id="pf-pw1" type="password" class="ai" placeholder="Mínimo 6 caracteres"></div>' +
+          '<div style="margin-bottom:14px;"><label class="al">Confirmar contraseña</label><input id="pf-pw2" type="password" class="ai" placeholder="Repite la contraseña"></div>' +
+          '<button class="abtn2" onclick="savePw()">Cambiar contraseña</button>' +
+        '</div>' +
+        '<div class="aform">' +
+          '<div style="font-size:.82rem;font-weight:600;margin-bottom:14px;">Cambiar email</div>' +
+          '<div style="margin-bottom:10px;"><label class="al">Email actual</label><div style="font-size:.82rem;color:#666;padding:8px 0;">'+(cUser ? cUser.email : '')+'</div></div>' +
+          '<div style="margin-bottom:14px;"><label class="al">Nuevo email</label><input id="pf-email" type="email" class="ai" placeholder="nuevo@email.com"></div>' +
+          '<button class="abtn2" onclick="saveEmail()">Cambiar email</button>' +
+        '</div>' +
+      '</div>' +
+
+    '</div>';
+}
+
+function savePerfil() {
+  var update = {
+    full_name: document.getElementById('pf-name').value.trim(),
+    age: parseInt(document.getElementById('pf-age').value) || null,
+    country: document.getElementById('pf-country').value.trim(),
+    trading_experience: document.getElementById('pf-exp').value,
+    bio: document.getElementById('pf-bio').value.trim()
+  };
+  sb.from('profiles').update(update).eq('id', cUser.id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    cProfile = Object.assign(cProfile || {}, update);
+    document.getElementById('uname').textContent = (update.full_name || '').split(' ')[0] || 'Alumno';
+    tst('✓ Perfil actualizado');
+  });
+}
+
+function savePw() {
+  var pw1 = document.getElementById('pf-pw1').value;
+  var pw2 = document.getElementById('pf-pw2').value;
+  if (!pw1) return tst('Ingresa una contraseña', 1);
+  if (pw1.length < 6) return tst('Mínimo 6 caracteres', 1);
+  if (pw1 !== pw2) return tst('Las contraseñas no coinciden', 1);
+  sb.auth.updateUser({ password: pw1 }).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Contraseña actualizada');
+    document.getElementById('pf-pw1').value = '';
+    document.getElementById('pf-pw2').value = '';
+  });
+}
+
+function saveEmail() {
+  var email = document.getElementById('pf-email').value.trim();
+  if (!email) return tst('Ingresa un email', 1);
+  sb.auth.updateUser({ email: email }).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Revisa tu nuevo email para confirmar el cambio');
+    document.getElementById('pf-email').value = '';
+  });
+}
+
+function uploadAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) return tst('Imagen máximo 2MB', 1);
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    // Save as data URL in profile (simple approach without storage bucket)
+    sb.from('profiles').update({ avatar_url: dataUrl }).eq('id', cUser.id).then(function(r) {
+      if (r.error) return tst('Error al subir imagen', 1);
+      cProfile.avatar_url = dataUrl;
+      tst('✓ Foto actualizada');
+      rPerfil(); // Refresh to show new avatar
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── ADMIN ──

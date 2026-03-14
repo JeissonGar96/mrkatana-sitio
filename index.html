@@ -986,6 +986,8 @@ nav{
 .cal-val-num.cal-actual { color: #f0f0f0; }
 .cal-val-num.cal-actual.better { color: #4ade80; }
 .cal-val-num.cal-actual.worse  { color: #f87171; }
+.cal-val-num.cal-pending { color: #2a2a2a; }
+.cal-values { min-width: 160px; }
 .cal-impact-badge {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: .58rem; font-weight: 700; letter-spacing: 1px;
@@ -3606,11 +3608,21 @@ function loadCalendar() {
           html += '<div><div class="cal-name">' + ev.name + '</div>';
           html += '<div><span class="cal-impact-badge">🔴 Alto impacto</span></div></div>';
 
-          // Values
+          // Values — always show all 3 columns
           html += '<div class="cal-values">';
-          if (hasAct) html += '<div class="cal-val"><div class="cal-val-label">Real</div><div class="cal-val-num ' + actualClass + '">' + ev.actual + '</div></div>';
-          if (ev.forecast && ev.forecast !== '—') html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + ev.forecast + '</div></div>';
-          if (ev.previous && ev.previous !== '—') html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + ev.previous + '</div></div>';
+          // Real — always visible, shows "—" if not published yet
+          html += '<div class="cal-val">';
+          html += '<div class="cal-val-label">Real</div>';
+          if (hasAct) {
+            html += '<div class="cal-val-num ' + actualClass + '">' + ev.actual + '</div>';
+          } else {
+            html += '<div class="cal-val-num cal-pending">—</div>';
+          }
+          html += '</div>';
+          // Forecast
+          html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + (ev.forecast !== '—' ? ev.forecast : '—') + '</div></div>';
+          // Previous
+          html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + (ev.previous !== '—' ? ev.previous : '—') + '</div></div>';
           html += '</div>';
 
           // Explanation panel (hidden by default, shown on click)

@@ -404,6 +404,7 @@ footer{background:#181818;border-top:1px solid var(--br);padding:32px 60px;displ
   .aside{display:none;}
   .amain{padding:18px;padding-bottom:80px;}
   .alay{flex-direction:column;}
+  #dash-top{grid-template-columns:1fr !important;}
   #amain [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
 }
 
@@ -1293,31 +1294,143 @@ function rDash() {
   var end = p && p.membership_end ? new Date(p.membership_end) : null;
   var start = p && p.membership_start ? new Date(p.membership_start) : null;
   var dL = end ? Math.max(0, Math.ceil((end-today)/86400000)) : '—';
-  var pct = (end && start) ? Math.min(100, Math.max(0, ((today-start)/(end-start))*100)).toFixed(0) : 0;
-  var gD = p && p.next_group_meeting ? Math.max(0, Math.ceil((new Date(p.next_group_meeting)-today)/86400000)) : '—';
-  var oD = p && p.next_1on1_meeting ? Math.max(0, Math.ceil((new Date(p.next_1on1_meeting)-today)/86400000)) : '—';
   var endS = end ? end.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin fecha';
-  var gS = p && p.next_group_meeting ? new Date(p.next_group_meeting).toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'}) : 'Sin programar';
-  var oS = p && p.next_1on1_meeting ? new Date(p.next_1on1_meeting).toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'}) : 'Sin programar';
+
+  // Week calculation
+  var weekNum = start ? Math.ceil((today - start) / (7*86400000)) : 0;
+  var totalWeeks = (start && end) ? Math.ceil((end - start) / (7*86400000)) : 24;
+  weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
+
+  // Next 1-1
+  var next1on1 = p && p.next_1on1_meeting ? new Date(p.next_1on1_meeting) : null;
+  var days1on1 = next1on1 ? Math.max(0, Math.ceil((next1on1 - today)/86400000)) : null;
+  var date1on1S = next1on1 ? next1on1.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'}) : null;
+
+  // Next group
+  var nextGroup = p && p.next_group_meeting ? new Date(p.next_group_meeting) : null;
+  var daysGroup = nextGroup ? Math.max(0, Math.ceil((nextGroup - today)/86400000)) : null;
+
   document.getElementById('amain').innerHTML =
     '<div class="atit">Mi Dashboard</div>' +
-    '<div class="asub">' + (dL !== '—' && dL > 0 ? 'Tienes '+dL+' días restantes' : 'Bienvenido a Mr. Katana Academy') + '</div>' +
-    '<div id="lbanner" style="display:none;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);border-radius:2px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
-      '<div style="width:7px;height:7px;border-radius:50%;background:#4ade80;flex-shrink:0;"></div>' +
+    '<div class="asub">Semana ' + weekNum + ' de ' + totalWeeks + ' · ' + (dL !== '—' && dL > 0 ? dL+' días restantes' : 'Bienvenido') + '</div>' +
+
+    // Live banner
+    '<div id="lbanner" style="display:none;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);border-radius:8px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
+      '<div style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;animation:pulse 1.5s infinite;"></div>' +
       '<div style="flex:1;"><div id="ltit" style="font-weight:600;font-size:.86rem;"></div><div style="font-size:.73rem;color:#555;">Sesión en curso</div></div>' +
-      '<a id="llnk" href="#" target="_blank" style="background:#4ade80;color:#111;padding:7px 13px;border-radius:2px;font-weight:700;font-size:.76rem;text-decoration:none;">Unirme →</a>' +
+      '<a id="llnk" href="#" target="_blank" style="background:#4ade80;color:#111;padding:7px 13px;border-radius:6px;font-weight:700;font-size:.76rem;text-decoration:none;">Unirme →</a>' +
     '</div>' +
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">' +
-      '<div class="acard"><div class="acard-v">'+dL+'</div><div class="acard-l">Días restantes</div><div class="acard-s">'+endS+'</div></div>' +
-      '<div class="acard" style="border-top-color:#4ade80"><div class="acard-v" style="color:#4ade80">'+gD+'</div><div class="acard-l">Próx. grupal</div><div class="acard-s">'+gS+'</div></div>' +
-      '<div class="acard" style="border-top-color:var(--sl)"><div class="acard-v" style="color:var(--sl)">'+oD+'</div><div class="acard-l">Próx. 1-1</div><div class="acard-s">'+oS+'</div></div>' +
+
+    // Top row: circular progress + week calendar + 1-1 countdown
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;" id="dash-top">' +
+
+      // 1. Circular course progress
+      '<div class="acard" style="display:flex;flex-direction:column;align-items:center;padding:20px 14px;">' +
+        '<div style="position:relative;width:90px;height:90px;margin-bottom:10px;">' +
+          '<svg width="90" height="90" viewBox="0 0 90 90">' +
+            '<circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>' +
+            '<circle id="prog-circle" cx="45" cy="45" r="38" fill="none" stroke="url(#pg)" stroke-width="8" stroke-linecap="round" stroke-dasharray="239" stroke-dashoffset="239" transform="rotate(-90 45 45)" style="transition:stroke-dashoffset 1s ease;"/>' +
+            '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:var(--st)"/><stop offset="100%" style="stop-color:var(--sl)"/></linearGradient></defs>' +
+          '</svg>' +
+          '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+            '<div id="prog-pct" style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.3rem;font-weight:800;color:#f0f0f0;">0%</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:.72rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Progreso del curso</div>' +
+        '<div id="prog-sub" style="font-size:.7rem;color:#444;margin-top:2px;">Cargando...</div>' +
+      '</div>' +
+
+      // 2. Week calendar
+      '<div class="acard" style="padding:16px 14px;">' +
+        '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Tu progreso</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:8px;" id="week-grid"></div>' +
+        '<div style="font-size:.72rem;color:var(--sl);font-weight:600;">Semana ' + weekNum + '</div>' +
+        '<div style="font-size:.68rem;color:#555;">de ' + totalWeeks + ' semanas totales</div>' +
+      '</div>' +
+
+      // 3. Next 1-1 countdown
+      '<div class="acard" style="border-top-color:#c9a84c;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;">' +
+        (days1on1 !== null ?
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:2rem;font-weight:800;color:#c9a84c;line-height:1;">' + (days1on1 === 0 ? '¡HOY!' : days1on1) + '</div>' +
+          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin:4px 0;">' + (days1on1 === 0 ? 'Tu sesión es hoy' : 'días para tu 1-1') + '</div>' +
+          '<div style="font-size:.68rem;color:#777;margin-top:4px;line-height:1.4;">' + date1on1S + '</div>'
+        :
+          '<div style="font-size:1.4rem;color:#333;">📅</div>' +
+          '<div style="font-size:.72rem;color:#555;margin-top:6px;">Sin sesión 1-1<br>agendada</div>'
+        ) +
+        '<div style="font-size:.62rem;color:#444;text-transform:uppercase;letter-spacing:.8px;margin-top:8px;">Próxima sesión 1-1</div>' +
+      '</div>' +
+
     '</div>' +
-    '<div style="margin-bottom:26px;">' +
-      '<div class="sec">Progreso de membresía</div>' +
-      '<div style="height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--st),var(--sl));"></div></div>' +
+
+    // Week timeline bar
+    '<div style="margin-bottom:20px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+        '<div style="font-size:.7rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Línea de tiempo</div>' +
+        '<div style="font-size:.7rem;color:#555;">' + (start ? start.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '') + ' → ' + endS + '</div>' +
+      '</div>' +
+      '<div style="height:6px;background:rgba(255,255,255,.04);border-radius:10px;overflow:hidden;">' +
+        '<div id="timeline-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--st),#c9a84c);border-radius:10px;transition:width 1s ease;"></div>' +
+      '</div>' +
     '</div>' +
+
+    // Next group session
+    (daysGroup !== null ?
+      '<div style="background:rgba(74,158,255,.05);border:1px solid rgba(74,158,255,.12);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">' +
+        '<div style="width:36px;height:36px;border-radius:8px;background:rgba(74,158,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="2"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>' +
+        '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:.78rem;font-weight:600;color:#f0f0f0;">Próxima sesión grupal</div>' +
+          '<div style="font-size:.72rem;color:#555;margin-top:1px;">' + nextGroup.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'}) + ' · ' + nextGroup.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.3rem;font-weight:800;color:#4a9eff;">' + (daysGroup === 0 ? 'HOY' : daysGroup+'d') + '</div>' +
+        '</div>' +
+      '</div>'
+    : '') +
+
     '<div class="sec">Próximas actividades</div>' +
     '<div id="upcoming"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>';
+
+  // Animate week grid
+  var wg = document.getElementById('week-grid');
+  if (wg) {
+    var cols = Math.min(totalWeeks, 24);
+    for (var i = 1; i <= cols; i++) {
+      var cell = document.createElement('div');
+      var isCurrent = i === weekNum;
+      var isPast = i < weekNum;
+      cell.style.cssText = 'height:10px;border-radius:2px;background:' +
+        (isCurrent ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.35)' : 'rgba(255,255,255,.05)') + ';' +
+        (isCurrent ? 'box-shadow:0 0 6px rgba(125,160,200,.5);' : '') + ';position:relative;';
+      cell.title = 'Semana ' + i;
+      wg.appendChild(cell);
+    }
+  }
+
+  // Animate timeline bar
+  var timelinePct = (start && end) ? Math.min(100, Math.max(0, ((today-start)/(end-start))*100)) : 0;
+  setTimeout(function() {
+    var tb = document.getElementById('timeline-bar');
+    if (tb) tb.style.width = timelinePct.toFixed(1) + '%';
+  }, 100);
+
+  // Load course progress
+  sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).then(function(pr) {
+    var completed = pr.data ? pr.data.length : 0;
+    sb.from('course_lessons').select('id', {count:'exact'}).eq('is_published', true).then(function(tot) {
+      var total = tot.count || 0;
+      var pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+      var circle = document.getElementById('prog-circle');
+      var pctEl = document.getElementById('prog-pct');
+      var subEl = document.getElementById('prog-sub');
+      if (circle) circle.style.strokeDashoffset = 239 - (239 * pct / 100);
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (subEl) subEl.textContent = completed + ' de ' + total + ' clases';
+    });
+  });
+
   chkLive(); loadUp();
 }
 function chkLive() {
@@ -1706,6 +1819,20 @@ function rAdmSt() {
       }).join('')+'</tbody></table></div>';
   });
 }
+function schedule1on1(studentId) {
+  var inp = document.getElementById('sch-date-' + studentId);
+  if (!inp || !inp.value) return tst('Selecciona una fecha y hora', 1);
+  var dt = new Date(inp.value).toISOString();
+  sb.from('profiles').update({ next_1on1_meeting: dt }).eq('id', studentId).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Sesión 1-1 agendada');
+    // Close modal and refresh
+    var ov = document.querySelector('div[style*="position:fixed"][style*="z-index:800"]');
+    if (ov) ov.remove();
+    rAdmSt();
+  });
+}
+
 function viewStudentProfile(id) {
   sb.from('profiles').select('*').eq('id', id).single().then(function(r) {
     if (r.error || !r.data) return tst('No se encontró el perfil', 1);
@@ -1753,6 +1880,14 @@ function viewStudentProfile(id) {
           '</div>' +
         '</div>' +
         (p.bio ? '<div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;"><div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Bio</div><div style="font-size:.82rem;color:#9a9a9a;line-height:1.6;">'+p.bio+'</div></div>' : '') +
+      '<div style="margin-top:16px;border-top:1px solid var(--br);padding-top:16px;">' +
+        '<div style="font-size:.74rem;font-weight:600;margin-bottom:10px;color:#9a9a9a;text-transform:uppercase;letter-spacing:.8px;">Agendar sesión 1-1</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          '<input type="datetime-local" id="sch-date-'+p.id+'" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--br);color:#f0f0f0;padding:7px 10px;border-radius:6px;font-size:.78rem;">' +
+          '<button onclick="schedule1on1(\''+p.id+'\')" style="background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;white-space:nowrap;">📅 Agendar</button>' +
+        '</div>' +
+        (p.next_1on1_meeting ? '<div style="font-size:.71rem;color:#555;margin-top:6px;">Actual: '+new Date(p.next_1on1_meeting).toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+new Date(p.next_1on1_meeting).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div>' : '') +
+      '</div>' +
       '</div>';
     ov.appendChild(box);
     document.body.appendChild(ov);

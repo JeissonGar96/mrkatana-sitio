@@ -1192,50 +1192,36 @@ function doRegWithCode() {
   if (!checkoutData.codeData) return tst('Aplica un código primero', 1);
   var btn = document.getElementById('btn-reg');
   btn.disabled = true; btn.textContent = 'Creando cuenta...';
-  var codeId = checkoutData.codeData.id;
-  var months = checkoutData.codeData.months || 6;
+  var codeValue = checkoutData.codeData.code;
 
-  // Step 1: Mark code as used FIRST (prevents double use)
-  sb.from('access_codes').update({
-    is_used: true,
-    used_at: new Date().toISOString()
-  }).eq('id', codeId).eq('is_used', false).then(function(markR) {
-    if (markR.error) {
-      showMsg('Error al validar código. Intenta de nuevo.', true);
+  // Step 1: Create the account
+  sb.auth.signUp({
+    email: checkoutData.email,
+    password: checkoutData.password,
+    options: { data: { full_name: checkoutData.name } }
+  }).then(function(reg) {
+    if (reg.error) {
+      showMsg(fmtE(reg.error.message), true);
       btn.disabled = false; btn.textContent = '✓ Crear cuenta gratis con código';
       return;
     }
+    var userId = reg.data && reg.data.user ? reg.data.user.id : null;
 
-    // Step 2: Create the account
-    sb.auth.signUp({
-      email: checkoutData.email,
-      password: checkoutData.password,
-      options: { data: { full_name: checkoutData.name } }
-    }).then(function(reg) {
-      if (reg.error) {
-        // Revert code if signup fails
-        sb.from('access_codes').update({ is_used: false, used_at: null }).eq('id', codeId).then(function(){});
-        showMsg(fmtE(reg.error.message), true);
-        btn.disabled = false; btn.textContent = '✓ Crear cuenta gratis con código';
-        return;
-      }
-      var userId = reg.data && reg.data.user ? reg.data.user.id : null;
-      // Update code with user reference
-      if (userId) {
-        sb.from('access_codes').update({ used_by: userId }).eq('id', codeId).then(function(){});
-        // Activate membership
-        sb.from('profiles').update({
-          membership_start: new Date().toISOString(),
-          membership_end: new Date(Date.now() + months * 30 * 86400000).toISOString()
-        }).eq('id', userId).then(function(){});
-      }
-      showMsg('✓ ¡Cuenta creada! Confirma tu email y luego inicia sesión.', false);
-      btn.disabled = false;
-      setTimeout(function() {
-        switchTab('in');
-        document.getElementById('li-e').value = checkoutData.email;
-      }, 2000);
-    });
+    // Step 2: Use RPC to mark code and activate membership atomically
+    if (userId) {
+      sb.rpc('use_access_code', { p_code: codeValue, p_user_id: userId }).then(function(r) {
+        if (r.error || r.data === false) {
+          // Code may have been used by someone else simultaneously
+          tst('Advertencia: verifica tu acceso al ingresar', 1);
+        }
+      });
+    }
+    showMsg('✓ ¡Cuenta creada! Confirma tu email y luego inicia sesión.', false);
+    btn.disabled = false;
+    setTimeout(function() {
+      switchTab('in');
+      document.getElementById('li-e').value = checkoutData.email;
+    }, 2000);
   });
 }
 

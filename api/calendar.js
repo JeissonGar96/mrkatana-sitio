@@ -1,9 +1,8 @@
 // api/calendar.js — Vercel Serverless Function
-// ForexFactory feed — field is "country" not "currency", impact = "High"
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=60');
+  res.setHeader('Cache-Control', 'no-store');
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -14,12 +13,11 @@ module.exports = async function handler(req, res) {
   };
 
   try {
-    // Only thisweek feed has data — nextweek is empty
     const r = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json', { headers: HEADERS });
-    if (!r.ok) throw new Error(`Feed responded ${r.status}`);
+    if (!r.ok) throw new Error(`Feed ${r.status}`);
     const all = await r.json();
 
-    // Today in UTC-5 (Ecuador, no DST)
+    // Today UTC-5
     const nowEC    = new Date(Date.now() - 5 * 3600000);
     const todayStr = nowEC.toISOString().slice(0, 10);
 
@@ -30,22 +28,30 @@ module.exports = async function handler(req, res) {
         return ec.toISOString().slice(0, 10);
       }
       if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
-        const [mm, dd, yyyy] = raw.split('-');
+        const [mm,dd,yyyy] = raw.split('-');
         return `${yyyy}-${mm}-${dd}`;
       }
       if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) return raw;
       return '';
     }
 
-    // ── Filter: country=USD + impact=High + date >= today ──
-    const filtered = all.filter(e => {
-      const country = String(e.country ?? '').toUpperCase().trim();
-      const impact  = String(e.impact  ?? '').trim();
-      const date    = toIsoDate(e.date);
-      return country === 'USD' && impact === 'High' && date >= todayStr;
-    });
+    // Show raw debug in response so we can diagnose
+    const debugInfo = {
+      total: all.length,
+      today: todayStr,
+      impact_values:  [...new Set(all.map(e => e.impact))],
+      country_values: [...new Set(all.map(e => e.country))].slice(0,10),
+      date_sample:    all.slice(0,2).map(e => ({ date: e.date, parsed: toIsoDate(e.date) })),
+      usd_high_sample: all.filter(e => e.country === 'USD' && e.impact === 'High').slice(0,3),
+      usd_high_total:  all.filter(e => e.country === 'USD' && e.impact === 'High').length,
+      usd_high_future: all.filter(e => e.country === 'USD' && e.impact === 'High' && toIsoDate(e.date) >= todayStr).length,
+    };
 
-    // ── Parse ──
+    // Filter
+    const filtered = all.filter(e =>
+      e.country === 'USD' && e.impact === 'High' && toIsoDate(e.date) >= todayStr
+    );
+
     const events = filtered.map(e => {
       const raw = (e.date || '').trim();
       let dateLabel = '', isoDate = '', timeLabel = '';
@@ -57,8 +63,8 @@ module.exports = async function handler(req, res) {
         const h   = ec.getUTCHours(), m = ec.getUTCMinutes();
         timeLabel = `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;
       } else if (raw.match(/^\d{2}-\d{2}-\d{4}$/)) {
-        const [mm, dd, yyyy] = raw.split('-').map(Number);
-        const dt = new Date(Date.UTC(yyyy, mm-1, dd));
+        const [mm,dd,yyyy] = raw.split('-').map(Number);
+        const dt = new Date(Date.UTC(yyyy,mm-1,dd));
         dateLabel = `${DAYS[dt.getUTCDay()]}, ${MONTHS[mm-1]} ${dd}`;
         isoDate   = `${yyyy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
       } else {
@@ -66,37 +72,28 @@ module.exports = async function handler(req, res) {
       }
 
       if (!timeLabel) {
-        const t = (e.time || '').trim();
-        timeLabel = !t || t.toLowerCase() === 'tentative' ? 'Tent.'
-                  : t.toLowerCase() === 'all day' ? 'Todo el día'
-                  : t.replace(/([ap]m)$/i, s => ' ' + s.toUpperCase());
+        const t = (e.time||'').trim();
+        timeLabel = !t||t.toLowerCase()==='tentative' ? 'Tent.'
+                  : t.toLowerCase()==='all day' ? 'Todo el día'
+                  : t.replace(/([ap]m)$/i, s=>' '+s.toUpperCase());
       }
 
-      const s = v => (v != null && String(v).trim() !== '') ? String(v).trim() : '—';
+      const s = v => (v!=null && String(v).trim()!=='') ? String(v).trim() : '—';
       return {
-        date: dateLabel, isoDate, time: timeLabel, currency: 'USD',
-        name: (e.title || e.name || '').trim(), impact: 'high',
-        forecast: s(e.forecast), previous: s(e.previous), actual: s(e.actual),
+        date:dateLabel, isoDate, time:timeLabel, currency:'USD',
+        name:(e.title||'').trim(), impact:'high',
+        forecast:s(e.forecast), previous:s(e.previous), actual:s(e.actual),
       };
-    })
-    .filter(e => e.name)
-    .sort((a, b) => a.isoDate.localeCompare(b.isoDate) || a.time.localeCompare(b.time));
-
-    // Deduplicate
-    const seen = new Set();
-    const unique = events.filter(e => {
-      const k = e.isoDate + '|' + e.name;
-      if (seen.has(k)) return false;
-      seen.add(k); return true;
-    });
+    }).filter(e=>e.name);
 
     res.status(200).json({
-      ok: true, updated: new Date().toISOString(),
-      timezone: 'UTC-5 (Ecuador)', today: todayStr,
-      events: unique,
+      ok:true, updated:new Date().toISOString(),
+      timezone:'UTC-5 (Ecuador)', today:todayStr,
+      debug: debugInfo,
+      events,
     });
 
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message, events: [] });
+  } catch(err) {
+    res.status(500).json({ ok:false, error:err.message, events:[] });
   }
 };

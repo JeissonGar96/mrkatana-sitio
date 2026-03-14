@@ -1,5 +1,5 @@
 // api/calendar.js — Vercel Serverless Function
-// Uses ForexFactory's public RSS + JSON calendar (no API key needed)
+// ForexFactory public JSON feed — HIGH impact only
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -7,21 +7,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate');
 
   try {
-    // ForexFactory exposes a public JSON calendar endpoint used by their own site
-    // We fetch the current week with impact filter
-    const now   = new Date();
-    const day   = now.getDay();
-    const diff  = day === 0 ? -6 : 1 - day;
-    const mon   = new Date(now); mon.setDate(now.getDate() + diff); mon.setHours(0,0,0,0);
-    const sun   = new Date(mon); sun.setDate(mon.getDate() + 6);
-
-    const pad   = n => String(n).padStart(2,'0');
-    const fmt   = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-
-    // Try ForexFactory's internal calendar JSON endpoint
-    const ffUrl = `https://nfs.faireconomy.media/ff_calendar_thisweek.json`;
-
-    const response = await fetch(ffUrl, {
+    const response = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json',
@@ -29,41 +15,59 @@ module.exports = async function handler(req, res) {
       },
     });
 
-    if (!response.ok) throw new Error(`Calendar feed responded ${response.status}`);
+    if (!response.ok) throw new Error(`Feed responded ${response.status}`);
 
     const raw = await response.json();
 
-    // Filter HIGH impact only (impact === "High")
+    // Keep only HIGH impact
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
     const events = raw
       .filter(e => e.impact === 'High')
       .map(e => {
-        // Parse date/time — FF format: "03-14-2026" and "8:30am"
-        const dateParts = (e.date || '').split('-');
-        let dateLabel = e.date || '';
-        let timeLabel = e.time || 'All Day';
+        // date format from FF: "03-18-2026"
+        // time format from FF: "8:30am" | "" | "Tentative" | "All Day"
+        let dateLabel = '';
+        let isoDate   = '';
 
-        // Try to build a readable date label
         try {
-          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-          const m = parseInt(dateParts[0]) - 1;
-          const d = parseInt(dateParts[1]);
-          const y = parseInt(dateParts[2]);
-          const dt = new Date(y, m, d);
-          dateLabel = `${days[dt.getDay()]}, ${months[m]} ${d}`;
-        } catch(_) {}
+          const parts = (e.date || '').split('-');
+          const mo = parseInt(parts[0]) - 1;
+          const da = parseInt(parts[1]);
+          const yr = parseInt(parts[2]);
+          const dt = new Date(yr, mo, da);
+          dateLabel = `${DAYS[dt.getDay()]}, ${MONTHS[mo]} ${da}`;
+          isoDate   = `${yr}-${String(mo+1).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
+        } catch(_) {
+          dateLabel = e.date || '';
+          isoDate   = e.date || '';
+        }
+
+        // Normalize time: "8:30am" → "8:30 AM"
+        let timeLabel = e.time || '';
+        if (!timeLabel || timeLabel.toLowerCase() === 'tentative' || timeLabel === '') {
+          timeLabel = 'Tentativo';
+        } else if (timeLabel.toLowerCase() === 'all day') {
+          timeLabel = 'Todo el día';
+        } else {
+          // "8:30am" → "8:30 AM"  |  "12:00pm" → "12:00 PM"
+          timeLabel = timeLabel.replace(/([ap]m)$/i, m => ' ' + m.toUpperCase());
+        }
 
         return {
           date:     dateLabel,
+          isoDate:  isoDate,
           time:     timeLabel,
           currency: e.currency || '',
           name:     e.title    || '',
           impact:   'high',
-          forecast: e.forecast || '—',
-          previous: e.previous || '—',
-          actual:   e.actual   || '—',
+          forecast: (e.forecast && e.forecast !== '') ? e.forecast : '—',
+          previous: (e.previous && e.previous !== '') ? e.previous : '—',
+          actual:   (e.actual   && e.actual   !== '') ? e.actual   : '—',
         };
-      });
+      })
+      .sort((a, b) => a.isoDate.localeCompare(b.isoDate));
 
     res.status(200).json({ ok: true, updated: new Date().toISOString(), events });
 

@@ -993,7 +993,12 @@ nav{
   font-size: .58rem; font-weight: 700; letter-spacing: 1px;
   text-transform: uppercase; padding: 2px 8px; border-radius: 20px;
   background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.2);
-  color: #f87171; white-space: nowrap; margin-top: 4px;
+  color: #f87171; white-space: nowrap; flex-shrink: 0;
+}
+@media(max-width:860px) {
+  .cal-impact-text { display: none; }
+  .cal-impact-badge { padding: 2px 4px; gap: 0; }
+  .cal-values { justify-content: flex-end !important; margin-top: 6px; }
 }
 /* Explanation panel */
 .cal-explain {
@@ -1026,6 +1031,24 @@ nav{
 @media(max-width:860px) {
   .cal-event { grid-template-columns: 48px 46px 1fr; grid-template-rows: auto auto; gap: 0 10px; }
   .cal-values { grid-column: 1 / -1; justify-content: flex-start; margin-top: 8px; }
+}
+
+/* Calendar mobile fixes */
+@media(max-width:860px) {
+  .cal-impact-text { display: none; }
+  .cal-impact-badge { padding: 2px 5px; gap: 0; margin-top: 0; }
+  .cal-event {
+    grid-template-columns: 44px 30px 1fr auto !important;
+    gap: 0 8px !important;
+  }
+  .cal-values {
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    min-width: 52px !important;
+  }
+  .cal-val { text-align: right !important; min-width: unset !important; }
 }
 </style>
 </head>
@@ -3604,9 +3627,8 @@ function loadCalendar() {
           // Flag only (no currency text)
           html += '<div class="cal-flag-wrap"><div class="cal-flag">' + meta.flag + '</div></div>';
 
-          // Name + badge
-          html += '<div><div class="cal-name">' + ev.name + '</div>';
-          html += '<div><span class="cal-impact-badge">🔴 Alto impacto</span></div></div>';
+          // Name + badge inline
+          html += '<div><div class="cal-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + ev.name + '<span class="cal-impact-badge">🔴 <span class="cal-impact-text">Alto impacto</span></span></div></div>';
 
           // Values — always show all 3 columns
           html += '<div class="cal-values">';

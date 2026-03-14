@@ -1702,8 +1702,60 @@ function rAdmSt() {
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(s.role==='admin'?'rgba(91,127,166,.14)':'rgba(255,255,255,.05)')+';color:'+(s.role==='admin'?'var(--sl)':'#9a9a9a')+';">'+s.role+'</span></td>'+
           '<td style="font-size:.74rem;">'+(en?en.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}):'—')+'</td>'+
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(act?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(act?'#4ade80':'#f87171')+';">'+(act?'Activo':'Inactivo')+'</span></td>'+
-          '<td style="display:flex;gap:6px;"><button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">'+(act?'Desactivar':'Activar')+'</button><button onclick="dStudent(\''+s.id+'\')" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:4px;font-size:.71rem;cursor:pointer;" title="Eliminar alumno">🗑</button></td></tr>';
+          '<td style="display:flex;gap:6px;"><button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">'+(act?'Desactivar':'Activar')+'</button><button onclick="dStudent(\''+s.id+'\')" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:4px;font-size:.71rem;cursor:pointer;" title="Eliminar alumno">🗑</button><button onclick="viewStudentProfile(this.dataset.sid)" data-sid="'+s.id+'" style="background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:3px 9px;border-radius:4px;font-size:.71rem;cursor:pointer;" title="Ver perfil">👤</button></td></tr>';
       }).join('')+'</tbody></table></div>';
+  });
+}
+function viewStudentProfile(id) {
+  sb.from('profiles').select('*').eq('id', id).single().then(function(r) {
+    if (r.error || !r.data) return tst('No se encontró el perfil', 1);
+    var p = r.data;
+    var end = p.membership_end ? new Date(p.membership_end) : null;
+    var active = end && end > new Date();
+    // Create modal overlay
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:480px;overflow:hidden;';
+    box.innerHTML =
+      '<div style="padding:20px 24px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">' +
+        '<div style="font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Perfil del alumno</div>' +
+        '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+      '</div>' +
+      '<div style="padding:24px;">' +
+        '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">' +
+          '<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
+            (p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (p.full_name ? p.full_name[0].toUpperCase() : '?')) +
+          '</div>' +
+          '<div>' +
+            '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">'+(p.full_name||'Sin nombre')+'</div>' +
+            '<div style="font-size:.78rem;color:#666;margin-top:2px;">'+(p.email||'')+'</div>' +
+            '<span style="font-size:.68rem;padding:2px 8px;border-radius:10px;background:'+(active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(active?'#4ade80':'#f87171')+';margin-top:4px;display:inline-block;">'+(active?'Activo':'Inactivo')+'</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
+            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Edad</div>' +
+            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.age||'—')+'</div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
+            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">País</div>' +
+            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.country||'—')+'</div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
+            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Experiencia</div>' +
+            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.trading_experience||'—')+'</div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
+            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Membresía vence</div>' +
+            '<div style="font-size:.88rem;color:#f0f0f0;">'+(end ? end.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div>' +
+          '</div>' +
+        '</div>' +
+        (p.bio ? '<div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;"><div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Bio</div><div style="font-size:.82rem;color:#9a9a9a;line-height:1.6;">'+p.bio+'</div></div>' : '') +
+      '</div>';
+    ov.appendChild(box);
+    document.body.appendChild(ov);
   });
 }
 function dStudent(id) {

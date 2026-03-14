@@ -1567,8 +1567,16 @@ function rAdmSt() {
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(s.role==='admin'?'rgba(91,127,166,.14)':'rgba(255,255,255,.05)')+';color:'+(s.role==='admin'?'var(--sl)':'#9a9a9a')+';">'+s.role+'</span></td>'+
           '<td style="font-size:.74rem;">'+(en?en.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}):'—')+'</td>'+
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(act?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(act?'#4ade80':'#f87171')+';">'+(act?'Activo':'Inactivo')+'</span></td>'+
-          '<td><button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">'+(act?'Desactivar':'Activar')+'</button></td></tr>';
+          '<td style="display:flex;gap:6px;"><button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">'+(act?'Desactivar':'Activar')+'</button><button onclick="dStudent(\''+s.id+'\')" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:4px;font-size:.71rem;cursor:pointer;" title="Eliminar alumno">🗑</button></td></tr>';
       }).join('')+'</tbody></table></div>';
+  });
+}
+function dStudent(id) {
+  if (!confirm('¿Eliminar este alumno permanentemente? Esta acción no se puede deshacer.')) return;
+  sb.from('profiles').delete().eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Alumno eliminado');
+    rAdmSt();
   });
 }
 function activateMember(id, isActive) {
@@ -1803,12 +1811,20 @@ function genCode() {
   });
 }
 
+function dCode(id) {
+  if (!confirm('¿Eliminar este código de acceso?')) return;
+  sb.from('access_codes').delete().eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Código eliminado');
+    loadCodes();
+  });
+}
 function loadCodes() {
   var c = document.getElementById('codes-list'); if (!c) return;
   sb.from('access_codes').select('*').order('created_at', {ascending: false}).then(function(r) {
     if (!r.data || !r.data.length) { c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin códigos generados aún.</p>'; return; }
     var tbl = document.createElement('table'); tbl.className = 'dtab';
-    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Meses</th><th>Estado</th><th>Usado</th></tr></thead>';
+    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Meses</th><th>Estado</th><th>Usado</th><th></th></tr></thead>';
     var tb = document.createElement('tbody');
     r.data.forEach(function(cd) {
       var tr = document.createElement('tr');
@@ -1819,7 +1835,15 @@ function loadCodes() {
         '<td style="font-size:.74rem;color:#666;">' + (cd.notes || '—') + '</td>' +
         '<td style="font-size:.74rem;">' + cd.months + '</td>' +
         '<td><span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (cd.is_used ? 'rgba(248,113,113,.1)' : 'rgba(74,222,128,.1)') + ';color:' + (cd.is_used ? '#f87171' : '#4ade80') + ';">' + (cd.is_used ? 'Usado' : 'Disponible') + '</span></td>' +
-        '<td style="font-size:.74rem;color:#555;">' + usedDate + '</td>';
+        '<td style="font-size:.74rem;color:#555;">' + usedDate + '</td>' +
+        '<td></td>';
+      if (!cd.is_used) {
+        var delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';
+        delBtn.addEventListener('click', function() { dCode(cd.id); });
+        tr.cells[tr.cells.length-1].appendChild(delBtn);
+      }
       tb.appendChild(tr);
     });
     tbl.appendChild(tb);

@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
     if (firstHigh) console.log('[DEBUG] first HIGH event:', JSON.stringify(firstHigh));
 
     const events = raw
-      .filter(e => (e.impact || '').toLowerCase() === 'high')
+      .filter(e => (e.impact || '').toLowerCase() === 'high' && (e.currency || '').toUpperCase() === 'USD')
       .map(e => {
         // ── DATE + TIME ──
         // The feed date field can be:

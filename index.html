@@ -1874,72 +1874,167 @@ function rAdmCl() {
 }
 
 function loadAdmLevels() {
-  sb.from('course_levels').select('*, course_modules(id, title, course_lessons(id))').order('sort_order').then(function(r) {
-    // Populate level select
+  sb.from('course_levels').select('*, course_modules(id, title, sort_order, course_lessons(id, title, sort_order, is_published))').order('sort_order').then(function(r) {
+    // Populate selects
     var sel = document.getElementById('mod-lv');
-    if (sel) { sel.innerHTML = r.data ? r.data.map(function(lv) { return '<option value="' + lv.id + '">' + lv.title + '</option>'; }).join('') : ''; }
-    // Also load modules for lesson select
+    if (sel) sel.innerHTML = r.data ? r.data.map(function(lv) { return '<option value="'+lv.id+'">'+lv.title+'</option>'; }).join('') : '';
     if (r.data) {
       var allMods = [];
-      r.data.forEach(function(lv) { if (lv.course_modules) lv.course_modules.forEach(function(m) { allMods.push({id: m.id, title: lv.title + ' › ' + m.title}); }); });
+      r.data.forEach(function(lv) { if (lv.course_modules) lv.course_modules.forEach(function(m) { allMods.push({id:m.id,title:lv.title+' › '+m.title}); }); });
       var sel2 = document.getElementById('les-mod');
-      if (sel2) sel2.innerHTML = allMods.map(function(m) { return '<option value="' + m.id + '">' + m.title + '</option>'; }).join('');
+      if (sel2) sel2.innerHTML = allMods.map(function(m) { return '<option value="'+m.id+'">'+m.title+'</option>'; }).join('');
     }
-    // Build table
+
+    // Build collapsible tree
     var t = document.getElementById('lv-table'); if (!t) return;
     if (!r.data || !r.data.length) { t.innerHTML = '<p style="color:#555;font-size:.82rem;padding:14px 0;">Sin niveles aún.</p>'; return; }
-    var tbl = document.createElement('table'); tbl.className = 'dtab';
-    tbl.innerHTML = '<thead><tr><th>Nivel</th><th>Módulos</th><th>Clases</th><th>Pub</th><th></th></tr></thead>';
-    var tb = document.createElement('tbody');
+
+    t.innerHTML = '';
     r.data.forEach(function(lv) {
       var mods = lv.course_modules || [];
-      var lesCount = mods.reduce(function(s, m) { return s + (m.course_lessons ? m.course_lessons.length : 0); }, 0);
-      var tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td style="color:#f0f0f0;font-weight:500;">' + lv.title + '</td>' +
-        '<td style="font-size:.74rem;">' + mods.length + '</td>' +
-        '<td style="font-size:.74rem;">' + lesCount + '</td>' +
-        '<td><span style="color:' + (lv.is_published ? '#4ade80' : '#555') + ';font-size:.74rem;">' + (lv.is_published ? '✓' : '—') + '</span></td>' +
-        '<td style="display:flex;gap:4px;"></td>';
-      // Edit level button
-      var editBtn = document.createElement('button');
-      editBtn.textContent = '✎'; editBtn.title = 'Editar nivel';
-      editBtn.style.cssText = 'background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';
-      editBtn.addEventListener('click', function() { editLevel(lv); });
-      // Delete level button
-      var btn = document.createElement('button');
-      btn.textContent = '✕'; btn.title = 'Eliminar nivel';
-      btn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';
-      btn.addEventListener('click', function() { dLevel(lv.id); });
-      tr.cells[4].appendChild(editBtn);
-      tr.cells[4].appendChild(btn);
-      tb.appendChild(tr);
+      var lesCount = mods.reduce(function(s,m){ return s+(m.course_lessons?m.course_lessons.length:0); },0);
 
-      // Add sub-rows for each module
-      mods.forEach(function(mod) {
-        var modTr = document.createElement('tr');
-        modTr.style.cssText = 'background:rgba(255,255,255,.02);';
-        var lesLen = mod.course_lessons ? mod.course_lessons.length : 0;
-        modTr.innerHTML =
-          '<td style="color:#777;font-size:.78rem;padding-left:24px;">↳ ' + mod.title + '</td>' +
-          '<td></td>' +
-          '<td style="font-size:.72rem;color:#555;">' + lesLen + ' clase' + (lesLen !== 1 ? 's' : '') + '</td>' +
-          '<td></td>' +
-          '<td style="display:flex;gap:4px;"></td>';
-        var editModBtn = document.createElement('button');
-        editModBtn.textContent = '✎'; editModBtn.title = 'Editar módulo';
-        editModBtn.style.cssText = 'background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:2px 7px;border-radius:2px;font-size:.68rem;cursor:pointer;';
-        editModBtn.addEventListener('click', function() { editModule(mod); });
-        var delModBtn = document.createElement('button');
-        delModBtn.textContent = '✕'; delModBtn.title = 'Eliminar módulo';
-        delModBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:2px 7px;border-radius:2px;font-size:.68rem;cursor:pointer;';
-        delModBtn.addEventListener('click', function() { dModule(mod.id); });
-        modTr.cells[4].appendChild(editModBtn);
-        modTr.cells[4].appendChild(delModBtn);
-        tb.appendChild(modTr);
+      // Level row
+      var lvDiv = document.createElement('div');
+      lvDiv.style.cssText = 'border:1px solid var(--br);border-radius:8px;margin-bottom:8px;overflow:hidden;';
+
+      var lvHeader = document.createElement('div');
+      lvHeader.style.cssText = 'display:flex;align-items:center;padding:10px 14px;background:rgba(255,255,255,.03);cursor:pointer;gap:10px;user-select:none;';
+      lvHeader.innerHTML =
+        '<div id="arr-lv-'+lv.id+'" style="color:#555;font-size:.8rem;transition:.2s;flex-shrink:0;">▶</div>' +
+        '<div style="flex:1;font-weight:600;font-size:.86rem;color:#f0f0f0;">'+lv.title+'</div>' +
+        '<div style="font-size:.7rem;color:#555;margin-right:10px;">'+mods.length+' mód · '+lesCount+' clases</div>' +
+        '<span style="font-size:.65rem;padding:1px 7px;border-radius:10px;background:'+(lv.is_published?'rgba(74,222,128,.1)':'rgba(255,255,255,.05)')+';color:'+(lv.is_published?'#4ade80':'#555')+';">'+(lv.is_published?'Publicado':'Oculto')+'</span>';
+
+      var lvActions = document.createElement('div');
+      lvActions.style.cssText = 'display:flex;gap:4px;flex-shrink:0;margin-left:8px;';
+      var eLvBtn = document.createElement('button');
+      eLvBtn.textContent = '✎'; eLvBtn.title = 'Renombrar';
+      eLvBtn.style.cssText = 'background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;';
+      eLvBtn.addEventListener('click', function(e){ e.stopPropagation(); editLevelInline(lv, lvHeader.querySelector('div:nth-child(2)')); });
+      var dLvBtn = document.createElement('button');
+      dLvBtn.textContent = '✕'; dLvBtn.title = 'Eliminar nivel';
+      dLvBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;';
+      dLvBtn.addEventListener('click', function(e){ e.stopPropagation(); dLevel(lv.id); });
+      lvActions.appendChild(eLvBtn); lvActions.appendChild(dLvBtn);
+      lvHeader.appendChild(lvActions);
+
+      // Modules container (collapsed by default)
+      var modsDiv = document.createElement('div');
+      modsDiv.id = 'mods-'+lv.id;
+      modsDiv.style.cssText = 'display:none;border-top:1px solid var(--br);';
+
+      // Toggle collapse
+      lvHeader.addEventListener('click', function() {
+        var open = modsDiv.style.display !== 'none';
+        modsDiv.style.display = open ? 'none' : 'block';
+        document.getElementById('arr-lv-'+lv.id).style.transform = open ? '' : 'rotate(90deg)';
       });
+
+      mods.forEach(function(mod) {
+        var lessons = mod.course_lessons || [];
+        var modDiv = document.createElement('div');
+        modDiv.style.cssText = 'border-bottom:1px solid rgba(255,255,255,.04);';
+
+        var modHeader = document.createElement('div');
+        modHeader.style.cssText = 'display:flex;align-items:center;padding:8px 14px 8px 28px;cursor:pointer;gap:8px;background:rgba(255,255,255,.01);';
+        modHeader.innerHTML =
+          '<div id="arr-mod-'+mod.id+'" style="color:#444;font-size:.7rem;transition:.2s;flex-shrink:0;">▶</div>' +
+          '<div style="flex:1;font-size:.82rem;color:#ccc;">'+mod.title+'</div>' +
+          '<div style="font-size:.68rem;color:#555;margin-right:8px;">'+lessons.length+' clase'+(lessons.length!==1?'s':'')+'</div>';
+
+        var modActions = document.createElement('div');
+        modActions.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+        var eModBtn = document.createElement('button');
+        eModBtn.textContent = '✎';
+        eModBtn.style.cssText = 'background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:2px 7px;border-radius:3px;font-size:.68rem;cursor:pointer;';
+        eModBtn.addEventListener('click', function(e){ e.stopPropagation(); editModuleInline(mod, modHeader.querySelector('div:nth-child(2)')); });
+        var dModBtn = document.createElement('button');
+        dModBtn.textContent = '✕';
+        dModBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:2px 7px;border-radius:3px;font-size:.68rem;cursor:pointer;';
+        dModBtn.addEventListener('click', function(e){ e.stopPropagation(); dModule(mod.id); });
+        modActions.appendChild(eModBtn); modActions.appendChild(dModBtn);
+        modHeader.appendChild(modActions);
+
+        // Lessons container
+        var lessDiv = document.createElement('div');
+        lessDiv.id = 'less-'+mod.id;
+        lessDiv.style.cssText = 'display:none;background:rgba(0,0,0,.15);';
+
+        modHeader.addEventListener('click', function() {
+          var open = lessDiv.style.display !== 'none';
+          lessDiv.style.display = open ? 'none' : 'block';
+          document.getElementById('arr-mod-'+mod.id).style.transform = open ? '' : 'rotate(90deg)';
+        });
+
+        lessons.forEach(function(les, idx) {
+          var lesDiv = document.createElement('div');
+          lesDiv.style.cssText = 'display:flex;align-items:center;padding:6px 14px 6px 48px;border-top:1px solid rgba(255,255,255,.03);gap:8px;';
+          lesDiv.innerHTML =
+            '<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#555;flex-shrink:0;">'+(idx+1)+'</div>' +
+            '<div style="flex:1;font-size:.77rem;color:#888;">'+les.title+'</div>' +
+            '<span style="font-size:.63rem;color:'+(les.is_published?'#4ade80':'#555')+';">'+(les.is_published?'●':'○')+'</span>';
+          var dLesBtn = document.createElement('button');
+          dLesBtn.textContent = '✕';
+          dLesBtn.style.cssText = 'background:none;border:none;color:#444;font-size:.7rem;cursor:pointer;padding:2px 5px;';
+          dLesBtn.addEventListener('click', function(e){ e.stopPropagation(); dLesson(les.id); });
+          lesDiv.appendChild(dLesBtn);
+          lessDiv.appendChild(lesDiv);
+        });
+
+        modDiv.appendChild(modHeader);
+        modDiv.appendChild(lessDiv);
+        modsDiv.appendChild(modDiv);
+      });
+
+      lvDiv.appendChild(lvHeader);
+      lvDiv.appendChild(modsDiv);
+      t.appendChild(lvDiv);
     });
-    tbl.appendChild(tb); t.innerHTML = ''; var wlv=document.createElement('div'); wlv.className='dtab-wrap'; wlv.appendChild(tbl); t.appendChild(wlv);
+  });
+}
+
+function editLevelInline(lv, cell) {
+  var orig = lv.title;
+  cell.innerHTML = '';
+  var inp = document.createElement('input');
+  inp.type = 'text'; inp.value = orig;
+  inp.style.cssText = 'background:#1e2736;border:1px solid var(--sl);color:#f0f0f0;padding:3px 8px;border-radius:4px;font-size:.84rem;width:100%;box-sizing:border-box;outline:none;';
+  inp.addEventListener('blur', function() {
+    var v = inp.value.trim();
+    if (!v || v === orig) { cell.textContent = orig; return; }
+    sb.from('course_levels').update({title:v}).eq('id',lv.id).then(function(r){
+      if(r.error){tst('Error',1);cell.textContent=orig;return;}
+      tst('✓ Nivel actualizado'); loadAdmLevels();
+    });
+  });
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){cell.textContent=orig;} });
+  cell.appendChild(inp); inp.focus(); inp.select();
+}
+
+function editModuleInline(mod, cell) {
+  var orig = mod.title;
+  cell.innerHTML = '';
+  var inp = document.createElement('input');
+  inp.type = 'text'; inp.value = orig;
+  inp.style.cssText = 'background:#1e2736;border:1px solid var(--sl);color:#f0f0f0;padding:3px 8px;border-radius:4px;font-size:.8rem;width:100%;box-sizing:border-box;outline:none;';
+  inp.addEventListener('blur', function() {
+    var v = inp.value.trim();
+    if (!v || v === orig) { cell.textContent = orig; return; }
+    sb.from('course_modules').update({title:v}).eq('id',mod.id).then(function(r){
+      if(r.error){tst('Error',1);cell.textContent=orig;return;}
+      tst('✓ Módulo actualizado'); loadAdmLevels();
+    });
+  });
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){cell.textContent=orig;} });
+  cell.appendChild(inp); inp.focus(); inp.select();
+}
+
+function dLesson(id) {
+  if (!confirm('¿Eliminar esta clase?')) return;
+  sb.from('course_lessons').delete().eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Clase eliminada'); loadAdmLevels();
   });
 }
 
@@ -1988,72 +2083,6 @@ function cLesson() {
   }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Clase agregada'); loadAdmLevels();
-  });
-}
-
-function editLevel(lv) {
-  // Find the cell in the table and make it editable inline
-  var rows = document.querySelectorAll('#lv-table tr');
-  for (var i = 0; i < rows.length; i++) {
-    var cell = rows[i].cells[0];
-    if (cell && cell.textContent.trim() === lv.title && !cell.querySelector('input')) {
-      makeEditable(cell, lv.title, function(newVal) {
-        sb.from('course_levels').update({ title: newVal }).eq('id', lv.id).then(function(r) {
-          if (r.error) { tst('Error: ' + r.error.message, 1); loadAdmLevels(); return; }
-          tst('✓ Nivel actualizado');
-          loadAdmLevels();
-        });
-      });
-      break;
-    }
-  }
-}
-
-function editModule(mod) {
-  var rows = document.querySelectorAll('#lv-table tr');
-  for (var i = 0; i < rows.length; i++) {
-    var cell = rows[i].cells[0];
-    if (cell && cell.textContent.trim() === '↳ ' + mod.title && !cell.querySelector('input')) {
-      makeEditable(cell, mod.title, function(newVal) {
-        sb.from('course_modules').update({ title: newVal }).eq('id', mod.id).then(function(r) {
-          if (r.error) { tst('Error: ' + r.error.message, 1); loadAdmLevels(); return; }
-          tst('✓ Módulo actualizado');
-          loadAdmLevels();
-        });
-      });
-      break;
-    }
-  }
-}
-
-function makeEditable(cell, currentVal, onSave) {
-  var prefix = cell.textContent.indexOf('↳') >= 0 ? '↳ ' : '';
-  cell.innerHTML = '';
-  var input = document.createElement('input');
-  input.type = 'text';
-  input.value = currentVal;
-  input.style.cssText = 'background:#1e2736;border:1px solid var(--sl);color:#f0f0f0;padding:4px 8px;border-radius:4px;font-size:.82rem;width:100%;box-sizing:border-box;outline:none;';
-  var save = function() {
-    var newVal = input.value.trim();
-    if (!newVal || newVal === currentVal) { loadAdmLevels(); return; }
-    onSave(newVal);
-  };
-  input.addEventListener('blur', save);
-  input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { input.blur(); }
-    if (e.key === 'Escape') { loadAdmLevels(); }
-  });
-  cell.appendChild(input);
-  input.focus();
-  input.select();
-}
-
-function dModule(id) {
-  if (!confirm('¿Eliminar este módulo? Se eliminarán también todas sus clases.')) return;
-  sb.from('course_modules').delete().eq('id', id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Módulo eliminado');
-    loadAdmLevels();
   });
 }
 

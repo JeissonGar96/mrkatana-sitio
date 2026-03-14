@@ -870,6 +870,19 @@ nav{
 .act-menu-item:last-child{border-bottom:none;}
 .act-menu-danger{color:#f87171 !important;}
 .act-menu-danger:hover{background:rgba(248,113,113,.1) !important;}
+
+/* Week card arrows - subtle on desktop, always visible on mobile */
+.wk-arrow{ opacity:0 !important; }
+.wk-card:hover .wk-arrow{ opacity:.6 !important; }
+.wk-arrow:hover{ opacity:1 !important; color:#f0f0f0 !important; }
+
+/* Equal height cards on mobile */
+@media(max-width:860px){
+  .wk-arrow{ opacity:.5 !important; }
+  #dash-top{ grid-template-columns:1fr !important; gap:10px !important; }
+  #dash-top .acard{ min-height:160px !important; height:160px !important; }
+  #dash-top .wk-card{ min-height:160px !important; height:160px !important; }
+}
 </style>
 </head>
 <body>
@@ -1683,25 +1696,48 @@ function rDash() {
         '<div id="prog-sub" style="font-size:.7rem;color:#444;margin-top:2px;">Cargando...</div>' +
       '</div>' +
 
-      // 2. Week calendar
-      '<div class="acard" style="padding:16px 14px;">' +
-        '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Tu progreso</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-bottom:8px;" id="week-grid"></div>' +
-        '<div style="font-size:.72rem;color:var(--sl);font-weight:600;">Semana ' + weekNum + '</div>' +
-        '<div style="font-size:.68rem;color:#555;">de ' + totalWeeks + ' semanas totales</div>' +
+      // 2. Week navigator
+      '<div class="acard wk-card" style="padding:16px 14px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:160px;">' +
+        '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Tu progreso semanal</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:8px;">' +
+          '<button onclick="navWeek(-1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">‹</button>' +
+          '<div style="text-align:center;flex:1;">' +
+            '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;color:var(--sl);line-height:1;" id="wk-label">Semana ' + weekNum + '</div>' +
+            '<div style="font-size:.62rem;margin-top:3px;min-height:14px;" id="wk-status">' + (weekNum <= 1 ? '<span style=\"color:#c9a84c;\">&#9654; Est&aacute;s aqu&iacute;</span>' : '') + '</div>' +
+          '</div>' +
+          '<button onclick="navWeek(1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">›</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;" id="week-dots">' +
+          (function() {
+            var dots = '';
+            for (var i = 1; i <= Math.min(totalWeeks, 24); i++) {
+              var isCur = i === weekNum, isPast = i < weekNum;
+              dots += '<div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:' +
+                (isCur ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)') +
+                ';box-shadow:' + (isCur ? '0 0 6px rgba(125,160,200,.6)' : 'none') +
+                ';cursor:pointer;transition:.2s;" onclick="navWeekTo(' + i + ')" title="Semana ' + i + '"></div>';
+            }
+            return dots;
+          })() +
+        '</div>' +
+        '<div style="font-size:.67rem;color:#444;text-align:center;" id="wk-total">de ' + totalWeeks + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando') + '</div>' +
       '</div>' +
 
       // 3. Next 1-1 countdown
-      '<div class="acard" style="border-top-color:#c9a84c;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;">' +
+      '<div class="acard" id="card-1on1" style="border-top-color:#c9a84c;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;cursor:pointer;" onclick="navigateTo(\'reuniones\')">' +
         (days1on1 !== null ?
-          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:2rem;font-weight:800;color:#c9a84c;line-height:1;">' + (days1on1 === 0 ? '¡HOY!' : days1on1) + '</div>' +
-          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin:4px 0;">' + (days1on1 === 0 ? 'Tu sesión es hoy' : 'días para tu 1-1') + '</div>' +
-          '<div style="font-size:.68rem;color:#777;margin-top:4px;line-height:1.4;">' + date1on1S + '</div>'
+          '<div style="font-size:.62rem;color:#7a5d20;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Próxima sesión 1-1</div>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:2rem;font-weight:800;color:#e2c47a;line-height:1;text-shadow:0 0 20px rgba(201,168,76,.4);" id="cntd-days">' +
+            (days1on1 === 0 ? '¡HOY!' : days1on1 + 'd') +
+          '</div>' +
+          '<div id="cntd-time" style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.1rem;font-weight:700;color:#c9a84c;letter-spacing:2px;margin:4px 0;"></div>' +
+          '<div style="font-size:.68rem;color:#6a5020;line-height:1.4;">' + date1on1S + '</div>' +
+          '<div style="font-size:.6rem;color:#4a3810;margin-top:8px;padding:2px 8px;background:rgba(201,168,76,.07);border-radius:20px;border:1px solid rgba(201,168,76,.12);">Toca para ver reuniones</div>'
         :
           '<div style="font-size:1.4rem;color:#333;">📅</div>' +
-          '<div style="font-size:.72rem;color:#555;margin-top:6px;">Sin sesión 1-1<br>agendada</div>'
+          '<div style="font-size:.72rem;color:#555;margin-top:6px;">Sin sesión 1-1<br>agendada</div>' +
+          '<div style="font-size:.6rem;color:#4a3810;margin-top:8px;padding:2px 8px;background:rgba(201,168,76,.07);border-radius:20px;border:1px solid rgba(201,168,76,.12);">Toca para ver reuniones</div>'
         ) +
-        '<div style="font-size:.62rem;color:#444;text-transform:uppercase;letter-spacing:.8px;margin-top:8px;">Próxima sesión 1-1</div>' +
       '</div>' +
 
     '</div>' +
@@ -1736,22 +1772,34 @@ function rDash() {
     '<div class="sec">Próximas actividades</div>' +
     '<div id="upcoming"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>';
 
-  // Animate week grid
-  var wg = document.getElementById('week-grid');
-  if (wg) {
-    var cols = Math.min(totalWeeks, 24);
-    for (var i = 1; i <= cols; i++) {
-      var cell = document.createElement('div');
-      var isCurrent = i === weekNum;
-      var isPast = i < weekNum;
-      cell.style.cssText = 'height:10px;border-radius:2px;cursor:pointer;transition:.15s;background:' +
-        (isCurrent ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.35)' : 'rgba(255,255,255,.05)') + ';' +
-        (isCurrent ? 'box-shadow:0 0 8px rgba(125,160,200,.6);' : '');
-      cell.title = 'Semana ' + i;
-      cell.onmouseover = function(){ if(!this.classList.contains('cur')) this.style.opacity='.7'; };
-      cell.onmouseout = function(){ this.style.opacity='1'; };
-      (function(week){ cell.addEventListener('click', function(){ openWeekModal(week); }); })(i);
-      wg.appendChild(cell);
+    // Week navigator state
+  var _viewWeek = weekNum;
+  var _totalWeeks = totalWeeks;
+  window.navWeekTo = function(w) { _viewWeek = w; updateWeekDisplay(); };
+  window.navWeek = function(dir) {
+    _viewWeek = Math.max(1, Math.min(_totalWeeks, _viewWeek + dir));
+    updateWeekDisplay();
+  };
+  function updateWeekDisplay() {
+    var lbl = document.getElementById('wk-label');
+    var status = document.getElementById('wk-status');
+    var tot = document.getElementById('wk-total');
+    var dots = document.getElementById('week-dots');
+    if (lbl) lbl.textContent = 'Semana ' + _viewWeek;
+    if (status) {
+      if (_viewWeek === weekNum) { status.textContent = '▶ Estás aquí'; status.style.color = '#c9a84c'; }
+      else if (_viewWeek < weekNum) { status.textContent = '✓ Completada'; status.style.color = '#4ade80'; }
+      else { status.textContent = 'Por venir'; status.style.color = '#555'; }
+    }
+    if (dots) {
+      Array.from(dots.children).forEach(function(dot, i) {
+        var w = i + 1;
+        var isViewed = w === _viewWeek, isPast = w < weekNum, isNow = w === weekNum;
+        dot.style.background = isViewed ? '#c9a84c' : isNow ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)';
+        dot.style.boxShadow = isViewed ? '0 0 6px rgba(201,168,76,.6)' : isNow ? '0 0 6px rgba(125,160,200,.5)' : 'none';
+        dot.style.transform = isViewed ? 'scale(1.5)' : 'scale(1)';
+        dot.style.transition = '.2s';
+      });
     }
   }
 
@@ -1778,6 +1826,26 @@ function rDash() {
   });
 
   chkLive(); loadUp();
+
+  // Countdown timer for 1-1 session
+  if (next1on1) {
+    var _cntdInterval = setInterval(function() {
+      var now = new Date();
+      var diff = next1on1 - now;
+      if (diff <= 0) { clearInterval(_cntdInterval); return; }
+      var days = Math.floor(diff / 86400000);
+      var hrs = Math.floor((diff % 86400000) / 3600000);
+      var mins = Math.floor((diff % 3600000) / 60000);
+      var secs = Math.floor((diff % 60000) / 1000);
+      var dayEl = document.getElementById('cntd-days');
+      var timeEl = document.getElementById('cntd-time');
+      if (dayEl) dayEl.textContent = days > 0 ? days + 'd' : '¡HOY!';
+      if (timeEl) timeEl.textContent = (days > 0 ? '' : '') +
+        String(hrs).padStart(2,'0') + ':' +
+        String(mins).padStart(2,'0') + ':' +
+        String(secs).padStart(2,'0');
+    }, 1000);
+  }
 }
 function chkLive() {
   sb.from('live_sessions').select('*').eq('is_active',true).limit(1).then(function(r) {

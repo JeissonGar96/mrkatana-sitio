@@ -1401,10 +1401,13 @@ function rDash() {
       var cell = document.createElement('div');
       var isCurrent = i === weekNum;
       var isPast = i < weekNum;
-      cell.style.cssText = 'height:10px;border-radius:2px;background:' +
+      cell.style.cssText = 'height:10px;border-radius:2px;cursor:pointer;transition:.15s;background:' +
         (isCurrent ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.35)' : 'rgba(255,255,255,.05)') + ';' +
-        (isCurrent ? 'box-shadow:0 0 6px rgba(125,160,200,.5);' : '') + ';position:relative;';
+        (isCurrent ? 'box-shadow:0 0 8px rgba(125,160,200,.6);' : '');
       cell.title = 'Semana ' + i;
+      cell.onmouseover = function(){ if(!this.classList.contains('cur')) this.style.opacity='.7'; };
+      cell.onmouseout = function(){ this.style.opacity='1'; };
+      (function(week){ cell.addEventListener('click', function(){ openWeekModal(week); }); })(i);
       wg.appendChild(cell);
     }
   }
@@ -1779,7 +1782,7 @@ function rAdmin() {
   m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
   var tabs = document.createElement('div');
   tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;';
-  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['codes','Códigos']].forEach(function(item, i) {
+  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['codes','Códigos'],['roadmap','Roadmap']].forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');
     btn.textContent = item[1];
@@ -1787,7 +1790,7 @@ function rAdmin() {
     tabs.appendChild(btn);
   });
   m.appendChild(tabs);
-  ['st','cl','se','codes'].forEach(function(s, i) {
+  ['st','cl','se','codes','roadmap'].forEach(function(s, i) {
     var div = document.createElement('div');
     div.id = 'a-'+s;
     if (i > 0) div.style.display = 'none';
@@ -1798,8 +1801,8 @@ function rAdmin() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else rAdmSt();
+  ['st','cl','se','codes','roadmap'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else rAdmSt();
 }
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
@@ -1819,6 +1822,159 @@ function rAdmSt() {
       }).join('')+'</tbody></table></div>';
   });
 }
+function openWeekModal(weekNum, studentId) {
+  var sid = studentId || (cUser ? cUser.id : null);
+  sb.from('roadmap_weeks').select('*').eq('week_number', weekNum).single().then(function(r) {
+    var week = r.data || { week_number: weekNum, title: 'Semana ' + weekNum, objective: '', activities: [] };
+    // Load personal note
+    sb.from('student_week_notes').select('*').eq('student_id', sid).eq('week_number', weekNum).single().then(function(nr) {
+      var note = nr.data ? nr.data.note : '';
+      var activities = Array.isArray(week.activities) ? week.activities : JSON.parse(week.activities || '[]');
+      var isAdmin = cProfile && cProfile.role === 'admin';
+
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+      ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;';
+      box.innerHTML =
+        '<div style="padding:18px 22px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#1a1a1a;z-index:1;">' +
+          '<div>' +
+            '<div style="font-size:.64rem;color:#555;text-transform:uppercase;letter-spacing:1px;">Semana '+weekNum+'</div>' +
+            '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;margin-top:2px;">'+week.title+'</div>' +
+          '</div>' +
+          '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+        '</div>' +
+        '<div style="padding:20px 22px;">' +
+          // Objective
+          (week.objective ? '<div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);border-radius:8px;padding:12px 14px;margin-bottom:16px;">' +
+            '<div style="font-size:.64rem;color:#c9a84c;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">🎯 Objetivo de la semana</div>' +
+            '<div style="font-size:.84rem;color:#e2c47a;line-height:1.6;">'+week.objective+'</div>' +
+          '</div>' : '') +
+          // Activities
+          '<div style="margin-bottom:16px;">' +
+            '<div style="font-size:.7rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Actividades</div>' +
+            activities.map(function(a, i) {
+              return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">' +
+                '<div style="width:22px;height:22px;border-radius:50%;background:rgba(91,127,166,.15);border:1px solid rgba(91,127,166,.25);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--sl);flex-shrink:0;margin-top:1px;">'+(i+1)+'</div>' +
+                '<div style="font-size:.82rem;color:#ccc;line-height:1.5;">'+a+'</div>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+          // Personal note
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:14px;">' +
+            '<div style="font-size:.7rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">📝 Nota personal</div>' +
+            (isAdmin ?
+              '<textarea id="week-note-input" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid var(--br);color:#f0f0f0;border-radius:6px;padding:8px 10px;font-size:.8rem;resize:vertical;min-height:70px;" placeholder="Agregar nota para este alumno en esta semana...">'+note+'</textarea>' +
+              '<button onclick="saveWeekNote('+weekNum+',\''+sid+'\')" style="margin-top:8px;background:var(--st);border:none;color:#fff;padding:7px 14px;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;">Guardar nota</button>'
+            :
+              '<div style="font-size:.82rem;color:'+(note?'#ccc':'#444')+';">'+( note || 'Sin notas para esta semana.')+'</div>'
+            ) +
+          '</div>' +
+        '</div>';
+
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+    });
+  });
+}
+
+function saveWeekNote(weekNum, studentId) {
+  var inp = document.getElementById('week-note-input');
+  if (!inp) return;
+  var note = inp.value.trim();
+  sb.from('student_week_notes').upsert({
+    student_id: studentId,
+    week_number: weekNum,
+    note: note,
+    created_by: cUser.id
+  }, { onConflict: 'student_id,week_number' }).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Nota guardada');
+  });
+}
+
+// Admin roadmap editor
+function rAdmRoadmap() {
+  var c = document.getElementById('a-roadmap'); if (!c) return;
+  c.innerHTML = '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">📋 Roadmap semanal — haz clic en una semana para editarla</div><div id="roadmap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;"><span class="spin"></span></div>';
+  sb.from('roadmap_weeks').select('*').order('week_number').then(function(r) {
+    var existing = {};
+    if (r.data) r.data.forEach(function(w) { existing[w.week_number] = w; });
+    var grid = document.getElementById('roadmap-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (var i = 1; i <= 24; i++) {
+      var w = existing[i];
+      var cell = document.createElement('div');
+      cell.style.cssText = 'background:'+(w?'rgba(91,127,166,.12)':'rgba(255,255,255,.03)')+';border:1px solid '+(w?'rgba(91,127,166,.25)':'var(--br)')+';border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;transition:.15s;';
+      cell.innerHTML =
+        '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.1rem;font-weight:800;color:'+(w?'var(--sl)':'#333')+';">'+i+'</div>' +
+        '<div style="font-size:.6rem;color:#555;margin-top:2px;">'+(w?'✓ Listo':'Vacía')+'</div>';
+      cell.onmouseover = function(){ this.style.borderColor='var(--sl)'; };
+      cell.onmouseout = function(){ this.style.borderColor=(this.dataset.has==='1'?'rgba(91,127,166,.25)':'var(--br)'); };
+      if (w) cell.dataset.has = '1';
+      (function(week, wData){ cell.addEventListener('click', function(){ editRoadmapWeek(week, wData); }); })(i, w);
+      grid.appendChild(cell);
+    }
+  });
+}
+
+function editRoadmapWeek(weekNum, existing) {
+  var acts = existing && Array.isArray(existing.activities) ? existing.activities : (existing ? JSON.parse(existing.activities||'[]') : []);
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;';
+  box.innerHTML =
+    '<div style="padding:18px 22px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">' +
+      '<div style="font-weight:700;font-size:.95rem;">Editar Semana '+weekNum+'</div>' +
+      '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+    '</div>' +
+    '<div style="padding:20px 22px;">' +
+      '<div style="margin-bottom:12px;"><label class="al">Título de la semana</label><input id="rw-title" class="ai" value="'+(existing?existing.title:'')+'" placeholder="Ej: Fundamentos del mercado"></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">Objetivo</label><textarea id="rw-obj" class="ai" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="¿Qué debe lograr el alumno esta semana?">'+(existing?existing.objective:'')+'</textarea></div>' +
+      '<div style="margin-bottom:14px;">' +
+        '<label class="al">Actividades (una por línea)</label>' +
+        '<textarea id="rw-acts" class="ai" rows="5" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Actividad 1&#10;Actividad 2&#10;Tarea: ...">' + acts.join('\n') + '</textarea>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="saveRoadmapWeek('+weekNum+')" class="abtn2" style="flex:1;">Guardar semana</button>' +
+        (existing ? '<button onclick="deleteRoadmapWeek('+weekNum+')" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:8px 14px;border-radius:6px;font-size:.78rem;cursor:pointer;">Eliminar</button>' : '') +
+      '</div>' +
+    '</div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+}
+
+function saveRoadmapWeek(weekNum) {
+  var title = document.getElementById('rw-title').value.trim();
+  var obj = document.getElementById('rw-obj').value.trim();
+  var actsRaw = document.getElementById('rw-acts').value.trim();
+  var acts = actsRaw ? actsRaw.split('\n').map(function(a){return a.trim();}).filter(Boolean) : [];
+  if (!title) return tst('El título es requerido', 1);
+  sb.from('roadmap_weeks').upsert({
+    week_number: weekNum, title: title, objective: obj, activities: JSON.stringify(acts)
+  }, { onConflict: 'week_number' }).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Semana ' + weekNum + ' guardada');
+    var ov = document.querySelector('div[style*="z-index:900"]'); if (ov) ov.remove();
+    rAdmRoadmap();
+  });
+}
+
+function deleteRoadmapWeek(weekNum) {
+  if (!confirm('¿Eliminar el contenido de la semana ' + weekNum + '?')) return;
+  sb.from('roadmap_weeks').delete().eq('week_number', weekNum).then(function(r) {
+    if (r.error) return tst('Error', 1);
+    tst('✓ Semana eliminada');
+    var ov = document.querySelector('div[style*="z-index:900"]'); if (ov) ov.remove();
+    rAdmRoadmap();
+  });
+}
+
 function schedule1on1(studentId) {
   var inp = document.getElementById('sch-date-' + studentId);
   if (!inp || !inp.value) return tst('Selecciona una fecha y hora', 1);
@@ -1878,6 +2034,10 @@ function viewStudentProfile(id) {
             '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Membresía vence</div>' +
             '<div style="font-size:.88rem;color:#f0f0f0;">'+(end ? end.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div>' +
           '</div>' +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;grid-column:1/-1;">' +
+          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Semana actual</div>' +
+          (function() { var s=p.membership_start?new Date(p.membership_start):null; var e=p.membership_end?new Date(p.membership_end):null; var t=new Date(); var wk=s?Math.max(1,Math.ceil((t-s)/(7*86400000))):1; var tw=24; var html2='<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;color:var(--sl);margin-bottom:6px;">Semana '+wk+' de '+tw+'</div><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;">'; for(var i=1;i<=tw;i++){var isCur=i===wk;var isPast=i<wk;html2+='<div onclick="openWeekModal('+i+',\''+p.id+'\')" style="height:8px;border-radius:2px;cursor:pointer;background:'+(isCur?'var(--sl)':isPast?'rgba(91,127,166,.35)':'rgba(255,255,255,.05)')+';"></div>';} html2+='</div>'; return html2; })() +
         '</div>' +
         (p.bio ? '<div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;"><div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Bio</div><div style="font-size:.82rem;color:#9a9a9a;line-height:1.6;">'+p.bio+'</div></div>' : '') +
       '<div style="margin-top:16px;border-top:1px solid var(--br);padding-top:16px;">' +

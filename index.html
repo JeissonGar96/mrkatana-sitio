@@ -1036,29 +1036,46 @@ nav{
 /* Calendar mobile fixes */
 @media(max-width:860px) {
   .cal-impact-text { display: none; }
-  .cal-impact-badge { padding: 1px 4px; gap: 0; margin-top: 0; font-size: .52rem; }
+  .cal-impact-badge { padding: 2px 5px; gap: 0; margin-top: 0; }
 
-  /* Single row: time + flag + name + values all inline */
+  /* Row 1: time + flag + name centered vertically */
   .cal-event {
-    grid-template-columns: 40px 24px 1fr auto !important;
-    grid-template-rows: auto !important;
-    gap: 0 6px !important;
-    padding: 9px 10px !important;
+    grid-template-columns: 44px 30px 1fr !important;
+    grid-template-rows: auto auto !important;
+    gap: 0 8px !important;
+    padding: 10px 12px !important;
     align-items: center !important;
   }
+
+  /* Row 2: values full width, horizontal, centered */
   .cal-values {
+    grid-column: 1 / -1 !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 8px !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    margin-top: 8px !important;
+    padding-top: 7px !important;
+    border-top: 1px solid rgba(255,255,255,.05) !important;
     min-width: unset !important;
-    margin-top: 0 !important;
   }
-  .cal-val { text-align: right !important; min-width: unset !important; }
-  .cal-val-label { font-size: .52rem !important; }
-  .cal-val-num   { font-size: .75rem !important; }
-  .cal-time { font-size: .72rem !important; }
-  .cal-flag { font-size: 1.1rem !important; }
-  .cal-name { font-size: .74rem !important; line-height: 1.2 !important; }
+  /* Each value takes equal width and centers its content */
+  .cal-val {
+    flex: 1 !important;
+    text-align: center !important;
+    min-width: unset !important;
+    padding: 0 4px !important;
+  }
+  /* Subtle divider between values */
+  .cal-val + .cal-val {
+    border-left: 1px solid rgba(255,255,255,.06) !important;
+  }
+  .cal-val-label { font-size: .58rem !important; text-align: center !important; }
+  .cal-val-num   { font-size: .82rem !important; text-align: center !important; }
+
+  /* Align time and flag vertically centered */
+  .cal-time { text-align: center !important; }
+  .cal-flag-wrap { justify-content: center !important; }
 }
 </style>
 </head>

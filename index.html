@@ -932,7 +932,8 @@ window.onload = function() {
   document.getElementById('btn-out').onclick = function() {
     sb.auth.signOut().then(function() {
       document.getElementById('appdash').style.display = 'none';
-      if (window.innerWidth > 860) document.body.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
       cUser = null; cProfile = null;
       // Hide mobile nav
       var mobNav = document.getElementById('mob-nav');
@@ -1084,7 +1085,8 @@ function loadApp(user) {
   cUser = user;
   closeModal();
   document.getElementById('appdash').style.display = 'block';
-  if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  document.body.style.height = '100%';
   sb.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
     cProfile = r.data;
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';

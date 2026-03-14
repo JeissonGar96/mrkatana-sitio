@@ -3007,262 +3007,365 @@ function cSt() {
 }
 function rAdmCl() {
   var c = document.getElementById('a-cl'); if (!c) return;
-  // Build admin UI with DOM
-  c.innerHTML = '';
-
-  // Section: Add Level
-  var secTitle = document.createElement('div');
-  secTitle.style.cssText = 'font-size:.86rem;font-weight:600;margin-bottom:14px;';
-  secTitle.textContent = '➕ Agregar nivel del curso';
-  var form = document.createElement('div');
-  form.className = 'aform';
-  form.innerHTML =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
-      '<div><label class="al">Título del nivel</label><input id="lv-t" class="ai" placeholder="Ej: Módulo Básico"></div>' +
-      '<div>' +
-        '<label class="al">Imagen del nivel</label>' +
-        '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<label style="cursor:pointer;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:7px 14px;border-radius:6px;font-size:.76rem;font-weight:600;white-space:nowrap;">' +
-            '📁 Subir imagen' +
-            '<input type="file" id="lv-img-file" accept="image/*" style="display:none;" onchange="previewLvImg(this)">' +
-          '</label>' +
-          '<span id="lv-img-name" style="font-size:.72rem;color:#555;">Sin imagen seleccionada</span>' +
-        '</div>' +
-        '<div id="lv-img-preview" style="margin-top:8px;display:none;"><img id="lv-img-prev-el" style="height:80px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>' +
-        '<input type="hidden" id="lv-img" value="">' +
-      '</div>' +
+  c.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+      '<div style="font-size:.86rem;font-weight:600;">Estructura del curso</div>' +
+      '<button class="abtn2" onclick="openEditModal(\'level\',null)">+ Nuevo nivel</button>' +
     '</div>' +
-    '<div style="margin-top:9px;"><label class="al">Descripción</label><input id="lv-d" class="ai" placeholder="Breve descripción"></div>' +
-    '<div style="display:grid;grid-template-columns:60px 1fr;gap:9px;margin-top:9px;align-items:end;">' +
-      '<div><label class="al">Orden</label><input id="lv-ord" type="number" class="ai" value="1"></div>' +
-      '<label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;padding-bottom:8px;"><input type="checkbox" id="lv-pub" checked> Publicado</label>' +
-    '</div>';
-  var addLvBtn = document.createElement('button');
-  addLvBtn.className = 'abtn2'; addLvBtn.style.marginTop = '11px'; addLvBtn.textContent = 'Agregar nivel';
-  addLvBtn.addEventListener('click', cLevel);
-  form.appendChild(addLvBtn);
-  c.appendChild(secTitle); c.appendChild(form);
-
-  // Section: Add Module
-  var secMod = document.createElement('div');
-  secMod.style.cssText = 'font-size:.86rem;font-weight:600;margin:20px 0 14px;';
-  secMod.textContent = '➕ Agregar módulo';
-  var formMod = document.createElement('div');
-  formMod.className = 'aform';
-  formMod.innerHTML =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
-      '<div><label class="al">Nivel</label><select id="mod-lv" class="ai"><option value="">Cargando...</option></select></div>' +
-      '<div><label class="al">Título del módulo</label><input id="mod-t" class="ai" placeholder="Ej: Order Flow"></div>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 60px;gap:9px;margin-top:9px;">' +
-      '<div><label class="al">Descripción</label><input id="mod-d" class="ai" placeholder="Breve descripción"></div>' +
-      '<div><label class="al">Orden</label><input id="mod-ord" type="number" class="ai" value="1"></div>' +
-    '</div>';
-  var addModBtn = document.createElement('button');
-  addModBtn.className = 'abtn2'; addModBtn.style.marginTop = '11px'; addModBtn.textContent = 'Agregar módulo';
-  addModBtn.addEventListener('click', cModule);
-  formMod.appendChild(addModBtn);
-  c.appendChild(secMod); c.appendChild(formMod);
-
-  // Section: Add Lesson
-  var secLes = document.createElement('div');
-  secLes.style.cssText = 'font-size:.86rem;font-weight:600;margin:20px 0 14px;';
-  secLes.textContent = '➕ Agregar clase';
-  var formLes = document.createElement('div');
-  formLes.className = 'aform';
-  formLes.innerHTML =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
-      '<div><label class="al">Módulo</label><select id="les-mod" class="ai"><option value="">Cargando...</option></select></div>' +
-      '<div><label class="al">Título de la clase</label><input id="les-t" class="ai" placeholder="Ej: ¿Qué es el Order Flow?"></div>' +
-    '</div>' +
-    '<div style="margin-top:9px;"><label class="al">URL del video (YouTube embed o Vimeo)</label><input id="les-u" class="ai" placeholder="https://www.youtube.com/embed/..."></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 80px 60px;gap:9px;margin-top:9px;">' +
-      '<div><label class="al">Descripción</label><input id="les-d" class="ai" placeholder="Breve descripción"></div>' +
-      '<div><label class="al">Min</label><input id="les-m" type="number" class="ai" placeholder="15"></div>' +
-      '<div><label class="al">Orden</label><input id="les-ord" type="number" class="ai" value="1"></div>' +
-    '</div>' +
-    '<div style="margin-top:9px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="les-task"> ¿Tiene tarea?</label></div>' +
-    '<div id="task-wrap" style="display:none;margin-top:9px;"><label class="al">Instrucciones de la tarea</label><textarea id="les-task-ins" class="ai" rows="2" style="width:100%;box-sizing:border-box;" placeholder="Describe qué debe hacer el alumno..."></textarea></div>';
-  document.getElementById && setTimeout(function() {
-    var chk = document.getElementById('les-task');
-    if (chk) chk.addEventListener('change', function() {
-      var tw = document.getElementById('task-wrap');
-      if (tw) tw.style.display = this.checked ? 'block' : 'none';
-    });
-  }, 100);
-  var addLesBtn = document.createElement('button');
-  addLesBtn.className = 'abtn2'; addLesBtn.style.marginTop = '11px'; addLesBtn.textContent = 'Agregar clase';
-  addLesBtn.addEventListener('click', cLesson);
-  formLes.appendChild(addLesBtn);
-  c.appendChild(secLes); c.appendChild(formLes);
-
-  // Table of levels
-  var tDiv = document.createElement('div');
-  tDiv.id = 'lv-table'; tDiv.style.marginTop = '20px';
-  tDiv.innerHTML = '<span class="spin"></span>';
-  c.appendChild(tDiv);
-
-  // Load levels into selects and table
+    '<div id="lv-table"><span class="spin"></span></div>';
   loadAdmLevels();
 }
 
 function loadAdmLevels() {
-  sb.from('course_levels').select('*, course_modules(id, title, sort_order, course_lessons(id, title, sort_order, is_published))').order('sort_order').then(function(r) {
-    // Populate selects
-    var sel = document.getElementById('mod-lv');
-    if (sel) sel.innerHTML = r.data ? r.data.map(function(lv) { return '<option value="'+lv.id+'">'+lv.title+'</option>'; }).join('') : '';
-    if (r.data) {
-      var allMods = [];
-      r.data.forEach(function(lv) { if (lv.course_modules) lv.course_modules.forEach(function(m) { allMods.push({id:m.id,title:lv.title+' › '+m.title}); }); });
-      var sel2 = document.getElementById('les-mod');
-      if (sel2) sel2.innerHTML = allMods.map(function(m) { return '<option value="'+m.id+'">'+m.title+'</option>'; }).join('');
+  sb.from('course_levels')
+    .select('*, course_modules(*, course_lessons(id,title,sort_order,is_published,video_url,description,duration_minutes,has_task,task_instructions))')
+    .order('sort_order')
+    .then(function(r) {
+      var t = document.getElementById('lv-table'); if (!t) return;
+      if (!r.data || !r.data.length) {
+        t.innerHTML = '<div style="color:#555;font-size:.82rem;padding:20px;text-align:center;">Sin niveles aún. Crea el primero con el botón de arriba.</div>';
+        return;
+      }
+      t.innerHTML = '';
+      r.data.forEach(function(lv) {
+        var mods = (lv.course_modules || []).sort(function(a,b){return a.sort_order-b.sort_order;});
+        var lesCount = mods.reduce(function(s,m){return s+(m.course_lessons?m.course_lessons.length:0);},0);
+
+        var lvDiv = document.createElement('div');
+        lvDiv.style.cssText = 'border:1px solid rgba(91,127,166,.2);border-radius:10px;margin-bottom:10px;overflow:hidden;background:rgba(255,255,255,.02);';
+
+        // ── Level header ──
+        var lvH = document.createElement('div');
+        lvH.style.cssText = 'display:flex;align-items:center;padding:11px 14px;cursor:pointer;gap:10px;';
+        lvH.innerHTML =
+          '<div id="arr-lv-'+lv.id+'" style="color:#555;font-size:.75rem;transition:.2s;flex-shrink:0;">▶</div>' +
+          (lv.thumbnail_url ? '<img src="'+lv.thumbnail_url+'" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;" />' : '<div style="width:36px;height:36px;border-radius:6px;background:rgba(91,127,166,.1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;">📚</div>') +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:600;font-size:.86rem;color:#f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+lv.title+'</div>' +
+            '<div style="font-size:.68rem;color:#555;margin-top:1px;">'+mods.length+' módulo'+(mods.length!==1?'s':'')+' · '+lesCount+' clase'+(lesCount!==1?'s':'')+'</div>' +
+          '</div>' +
+          '<span style="font-size:.63rem;padding:2px 8px;border-radius:10px;flex-shrink:0;background:'+(lv.is_published?'rgba(74,222,128,.1)':'rgba(255,255,255,.05)')+';color:'+(lv.is_published?'#4ade80':'#555')+';margin-right:6px;">'+(lv.is_published?'Publicado':'Oculto')+'</span>';
+
+        // Level action buttons
+        var lvAct = document.createElement('div');
+        lvAct.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+        var eLvBtn = document.createElement('button');
+        eLvBtn.textContent = '✎ Editar';
+        eLvBtn.style.cssText = 'background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:4px 10px;border-radius:5px;font-size:.71rem;cursor:pointer;font-weight:600;';
+        (function(lvData){ eLvBtn.addEventListener('click', function(e){ e.stopPropagation(); openEditModal('level', lvData); }); })(lv);
+        var dLvBtn = document.createElement('button');
+        dLvBtn.textContent = '✕';
+        dLvBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:4px 8px;border-radius:5px;font-size:.71rem;cursor:pointer;';
+        dLvBtn.addEventListener('click', function(e){ e.stopPropagation(); dLevel(lv.id); });
+        lvAct.appendChild(eLvBtn); lvAct.appendChild(dLvBtn);
+        lvH.appendChild(lvAct);
+
+        // Modules container
+        var modsDiv = document.createElement('div');
+        modsDiv.id = 'mods-'+lv.id;
+        modsDiv.style.cssText = 'display:none;border-top:1px solid rgba(255,255,255,.05);';
+
+        lvH.addEventListener('click', function() {
+          var open = modsDiv.style.display !== 'none';
+          modsDiv.style.display = open ? 'none' : 'block';
+          document.getElementById('arr-lv-'+lv.id).style.transform = open ? '' : 'rotate(90deg)';
+        });
+
+        // Add module button inside level
+        var addModRow = document.createElement('div');
+        addModRow.style.cssText = 'padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.03);';
+        var addModBtn = document.createElement('button');
+        addModBtn.textContent = '+ Agregar módulo a este nivel';
+        addModBtn.style.cssText = 'background:none;border:1px dashed rgba(91,127,166,.3);color:var(--sl);padding:6px 14px;border-radius:6px;font-size:.72rem;cursor:pointer;width:100%;transition:.2s;';
+        (function(lvId){ addModBtn.addEventListener('click', function(e){ e.stopPropagation(); openEditModal('module', null, lvId); }); })(lv.id);
+        addModRow.appendChild(addModBtn);
+        modsDiv.appendChild(addModRow);
+
+        mods.forEach(function(mod) {
+          var lessons = (mod.course_lessons || []).sort(function(a,b){return a.sort_order-b.sort_order;});
+          var modDiv = document.createElement('div');
+          modDiv.style.cssText = 'border-bottom:1px solid rgba(255,255,255,.03);';
+
+          var modH = document.createElement('div');
+          modH.style.cssText = 'display:flex;align-items:center;padding:9px 14px 9px 30px;cursor:pointer;gap:8px;background:rgba(0,0,0,.1);';
+          modH.innerHTML =
+            '<div id="arr-mod-'+mod.id+'" style="color:#444;font-size:.68rem;transition:.2s;flex-shrink:0;">▶</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:.82rem;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+mod.title+'</div>' +
+              '<div style="font-size:.66rem;color:#444;margin-top:1px;">'+lessons.length+' clase'+(lessons.length!==1?'s':'')+(mod.description?' · '+mod.description:'')+'</div>' +
+            '</div>';
+
+          var modAct = document.createElement('div');
+          modAct.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+          var eModBtn = document.createElement('button');
+          eModBtn.textContent = '✎';
+          eModBtn.style.cssText = 'background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:3px 7px;border-radius:4px;font-size:.68rem;cursor:pointer;';
+          (function(modData){ eModBtn.addEventListener('click', function(e){ e.stopPropagation(); openEditModal('module', modData); }); })(mod);
+          var dModBtn = document.createElement('button');
+          dModBtn.textContent = '✕';
+          dModBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:3px 7px;border-radius:4px;font-size:.68rem;cursor:pointer;';
+          dModBtn.addEventListener('click', function(e){ e.stopPropagation(); dModule(mod.id); });
+          modAct.appendChild(eModBtn); modAct.appendChild(dModBtn);
+          modH.appendChild(modAct);
+
+          // Lessons container
+          var lessDiv = document.createElement('div');
+          lessDiv.id = 'less-'+mod.id;
+          lessDiv.style.cssText = 'display:none;background:rgba(0,0,0,.15);';
+
+          modH.addEventListener('click', function() {
+            var open = lessDiv.style.display !== 'none';
+            lessDiv.style.display = open ? 'none' : 'block';
+            document.getElementById('arr-mod-'+mod.id).style.transform = open ? '' : 'rotate(90deg)';
+          });
+
+          // Add lesson button inside module
+          var addLesRow = document.createElement('div');
+          addLesRow.style.cssText = 'padding:6px 14px 6px 48px;border-bottom:1px solid rgba(255,255,255,.02);';
+          var addLesBtn = document.createElement('button');
+          addLesBtn.textContent = '+ Agregar clase a este módulo';
+          addLesBtn.style.cssText = 'background:none;border:1px dashed rgba(91,127,166,.2);color:#666;padding:5px 12px;border-radius:5px;font-size:.69rem;cursor:pointer;width:100%;transition:.2s;';
+          (function(modId){ addLesBtn.addEventListener('click', function(e){ e.stopPropagation(); openEditModal('lesson', null, null, modId); }); })(mod.id);
+          addLesRow.appendChild(addLesBtn);
+          lessDiv.appendChild(addLesRow);
+
+          lessons.forEach(function(les, idx) {
+            var lesDiv = document.createElement('div');
+            lesDiv.style.cssText = 'display:flex;align-items:center;padding:7px 14px 7px 48px;border-top:1px solid rgba(255,255,255,.02);gap:8px;';
+            lesDiv.innerHTML =
+              '<div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#555;flex-shrink:0;">'+(idx+1)+'</div>' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:.78rem;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+les.title+'</div>' +
+                '<div style="font-size:.64rem;color:#444;margin-top:1px;">'+(les.duration_minutes?les.duration_minutes+' min':'')+(les.has_task?' · Con tarea':'')+'</div>' +
+              '</div>' +
+              '<span style="font-size:.62rem;color:'+(les.is_published?'#4ade80':'#555')+';flex-shrink:0;">'+(les.is_published?'●':'○')+'</span>';
+            var eLesBtn = document.createElement('button');
+            eLesBtn.textContent = '✎';
+            eLesBtn.style.cssText = 'background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.15);color:var(--sl);padding:2px 6px;border-radius:3px;font-size:.65rem;cursor:pointer;flex-shrink:0;';
+            (function(lesData){ eLesBtn.addEventListener('click', function(e){ e.stopPropagation(); openEditModal('lesson', lesData); }); })(les);
+            var dLesBtn = document.createElement('button');
+            dLesBtn.textContent = '✕';
+            dLesBtn.style.cssText = 'background:none;border:none;color:#444;font-size:.68rem;cursor:pointer;padding:2px 5px;flex-shrink:0;';
+            dLesBtn.addEventListener('click', function(e){ e.stopPropagation(); dLesson(les.id); });
+            lesDiv.appendChild(eLesBtn); lesDiv.appendChild(dLesBtn);
+            lessDiv.appendChild(lesDiv);
+          });
+
+          modDiv.appendChild(modH);
+          modDiv.appendChild(lessDiv);
+          modsDiv.appendChild(modDiv);
+        });
+
+        lvDiv.appendChild(lvH);
+        lvDiv.appendChild(modsDiv);
+        t.appendChild(lvDiv);
+      });
+    });
+}
+
+// ── UNIFIED EDIT MODAL ──
+function openEditModal(type, data, parentLvId, parentModId) {
+  var existing = document.getElementById('edit-modal');
+  if (existing) existing.remove();
+
+  var isNew = !data;
+  var title = isNew
+    ? (type==='level' ? '+ Nuevo nivel' : type==='module' ? '+ Nuevo módulo' : '+ Nueva clase')
+    : (type==='level' ? '✎ Editar nivel' : type==='module' ? '✎ Editar módulo' : '✎ Editar clase');
+
+  var modal = document.createElement('div');
+  modal.id = 'edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);overflow-y:auto;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:520px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.6);';
+
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+    '<div style="font-size:.92rem;font-weight:700;color:#f0f0f0;">'+title+'</div>' +
+    '<button onclick="closeEditModal()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;padding:0 4px;">✕</button>' +
+    '</div>';
+
+  if (type === 'level') {
+    html +=
+      '<div style="margin-bottom:12px;"><label class="al">Título del nivel</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: Nivel Básico"></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<label class="al">Imagen del nivel</label>';
+    if (data && data.thumbnail_url) {
+      html += '<div style="margin-bottom:8px;"><img src="'+data.thumbnail_url+'" style="height:70px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>';
     }
+    html +=
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<label style="cursor:pointer;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:7px 14px;border-radius:6px;font-size:.76rem;font-weight:600;white-space:nowrap;">' +
+            (data&&data.thumbnail_url?'🔄 Cambiar imagen':'📁 Subir imagen') +
+            '<input type="file" id="em-img-file" accept="image/*" style="display:none;" onchange="previewEmImg(this)">' +
+          '</label>' +
+          '<span id="em-img-name" style="font-size:.72rem;color:#555;">Sin cambios</span>' +
+        '</div>' +
+        '<div id="em-img-preview" style="margin-top:8px;display:none;"><img id="em-img-prev" style="height:60px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:80px 1fr;gap:10px;margin-bottom:12px;">' +
+        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
+        '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-pub"'+(data&&data.is_published?' checked':' checked')+'> Publicado</label></div>' +
+      '</div>';
 
-    // Build collapsible tree
-    var t = document.getElementById('lv-table'); if (!t) return;
-    if (!r.data || !r.data.length) { t.innerHTML = '<p style="color:#555;font-size:.82rem;padding:14px 0;">Sin niveles aún.</p>'; return; }
+  } else if (type === 'module') {
+    html +=
+      '<div style="margin-bottom:12px;"><label class="al">Título del módulo</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: Fundamentos de Precio"></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'" style="width:80px;"></div>';
 
-    t.innerHTML = '';
-    r.data.forEach(function(lv) {
-      var mods = lv.course_modules || [];
-      var lesCount = mods.reduce(function(s,m){ return s+(m.course_lessons?m.course_lessons.length:0); },0);
+  } else if (type === 'lesson') {
+    html +=
+      '<div style="margin-bottom:12px;"><label class="al">Título de la clase</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: ¿Qué es el Order Flow?"></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">URL del video (YouTube embed)</label><input id="em-url" class="ai" value="'+(data&&data.video_url?data.video_url:'')+'" placeholder="https://www.youtube.com/embed/..."></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="display:grid;grid-template-columns:80px 80px 1fr;gap:10px;margin-bottom:12px;">' +
+        '<div><label class="al">Duración (min)</label><input id="em-min" type="number" class="ai" value="'+(data&&data.duration_minutes?data.duration_minutes:'')+'" placeholder="15"></div>' +
+        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
+        '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-pub"'+(data&&data.is_published?' checked':' checked')+'> Publicado</label></div>' +
+      '</div>' +
+      '<div style="margin-bottom:12px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-task"'+(data&&data.has_task?' checked':'')+'> Tiene tarea</label></div>' +
+      '<div id="em-task-wrap" style="'+(data&&data.has_task?'':'display:none;')+'margin-bottom:12px;"><label class="al">Instrucciones de la tarea</label><textarea id="em-task-ins" class="ai" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Describe qué debe hacer el alumno...">'+(data&&data.task_instructions?data.task_instructions:'')+'</textarea></div>';
+  }
 
-      // Level row
-      var lvDiv = document.createElement('div');
-      lvDiv.style.cssText = 'border:1px solid var(--br);border-radius:8px;margin-bottom:8px;overflow:hidden;';
+  html += '<div style="display:flex;gap:10px;margin-top:6px;">' +
+    '<button id="em-save-btn" style="flex:1;background:var(--st);border:none;color:#fff;padding:10px;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">'+( isNew ? 'Crear' : 'Guardar cambios')+'</button>' +
+    '<button onclick="closeEditModal()" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 18px;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+    '</div>';
 
-      var lvHeader = document.createElement('div');
-      lvHeader.style.cssText = 'display:flex;align-items:center;padding:10px 14px;background:rgba(255,255,255,.03);cursor:pointer;gap:10px;user-select:none;';
-      lvHeader.innerHTML =
-        '<div id="arr-lv-'+lv.id+'" style="color:#555;font-size:.8rem;transition:.2s;flex-shrink:0;">▶</div>' +
-        '<div style="flex:1;font-weight:600;font-size:.86rem;color:#f0f0f0;">'+lv.title+'</div>' +
-        '<div style="font-size:.7rem;color:#555;margin-right:10px;">'+mods.length+' mód · '+lesCount+' clases</div>' +
-        '<span style="font-size:.65rem;padding:1px 7px;border-radius:10px;background:'+(lv.is_published?'rgba(74,222,128,.1)':'rgba(255,255,255,.05)')+';color:'+(lv.is_published?'#4ade80':'#555')+';">'+(lv.is_published?'Publicado':'Oculto')+'</span>';
+  box.innerHTML = html;
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) closeEditModal(); });
 
-      var lvActions = document.createElement('div');
-      lvActions.style.cssText = 'display:flex;gap:4px;flex-shrink:0;margin-left:8px;';
-      var eLvBtn = document.createElement('button');
-      eLvBtn.textContent = '✎'; eLvBtn.title = 'Renombrar';
-      eLvBtn.style.cssText = 'background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;';
-      eLvBtn.addEventListener('click', function(e){ e.stopPropagation(); editLevelInline(lv, lvHeader.querySelector('div:nth-child(2)')); });
-      var dLvBtn = document.createElement('button');
-      dLvBtn.textContent = '✕'; dLvBtn.title = 'Eliminar nivel';
-      dLvBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;';
-      dLvBtn.addEventListener('click', function(e){ e.stopPropagation(); dLevel(lv.id); });
-      lvActions.appendChild(eLvBtn); lvActions.appendChild(dLvBtn);
-      lvHeader.appendChild(lvActions);
-
-      // Modules container (collapsed by default)
-      var modsDiv = document.createElement('div');
-      modsDiv.id = 'mods-'+lv.id;
-      modsDiv.style.cssText = 'display:none;border-top:1px solid var(--br);';
-
-      // Toggle collapse
-      lvHeader.addEventListener('click', function() {
-        var open = modsDiv.style.display !== 'none';
-        modsDiv.style.display = open ? 'none' : 'block';
-        document.getElementById('arr-lv-'+lv.id).style.transform = open ? '' : 'rotate(90deg)';
-      });
-
-      mods.forEach(function(mod) {
-        var lessons = mod.course_lessons || [];
-        var modDiv = document.createElement('div');
-        modDiv.style.cssText = 'border-bottom:1px solid rgba(255,255,255,.04);';
-
-        var modHeader = document.createElement('div');
-        modHeader.style.cssText = 'display:flex;align-items:center;padding:8px 14px 8px 28px;cursor:pointer;gap:8px;background:rgba(255,255,255,.01);';
-        modHeader.innerHTML =
-          '<div id="arr-mod-'+mod.id+'" style="color:#444;font-size:.7rem;transition:.2s;flex-shrink:0;">▶</div>' +
-          '<div style="flex:1;font-size:.82rem;color:#ccc;">'+mod.title+'</div>' +
-          '<div style="font-size:.68rem;color:#555;margin-right:8px;">'+lessons.length+' clase'+(lessons.length!==1?'s':'')+'</div>';
-
-        var modActions = document.createElement('div');
-        modActions.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
-        var eModBtn = document.createElement('button');
-        eModBtn.textContent = '✎';
-        eModBtn.style.cssText = 'background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:2px 7px;border-radius:3px;font-size:.68rem;cursor:pointer;';
-        eModBtn.addEventListener('click', function(e){ e.stopPropagation(); editModuleInline(mod, modHeader.querySelector('div:nth-child(2)')); });
-        var dModBtn = document.createElement('button');
-        dModBtn.textContent = '✕';
-        dModBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:2px 7px;border-radius:3px;font-size:.68rem;cursor:pointer;';
-        dModBtn.addEventListener('click', function(e){ e.stopPropagation(); dModule(mod.id); });
-        modActions.appendChild(eModBtn); modActions.appendChild(dModBtn);
-        modHeader.appendChild(modActions);
-
-        // Lessons container
-        var lessDiv = document.createElement('div');
-        lessDiv.id = 'less-'+mod.id;
-        lessDiv.style.cssText = 'display:none;background:rgba(0,0,0,.15);';
-
-        modHeader.addEventListener('click', function() {
-          var open = lessDiv.style.display !== 'none';
-          lessDiv.style.display = open ? 'none' : 'block';
-          document.getElementById('arr-mod-'+mod.id).style.transform = open ? '' : 'rotate(90deg)';
-        });
-
-        lessons.forEach(function(les, idx) {
-          var lesDiv = document.createElement('div');
-          lesDiv.style.cssText = 'display:flex;align-items:center;padding:6px 14px 6px 48px;border-top:1px solid rgba(255,255,255,.03);gap:8px;';
-          lesDiv.innerHTML =
-            '<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#555;flex-shrink:0;">'+(idx+1)+'</div>' +
-            '<div style="flex:1;font-size:.77rem;color:#888;">'+les.title+'</div>' +
-            '<span style="font-size:.63rem;color:'+(les.is_published?'#4ade80':'#555')+';">'+(les.is_published?'●':'○')+'</span>';
-          var dLesBtn = document.createElement('button');
-          dLesBtn.textContent = '✕';
-          dLesBtn.style.cssText = 'background:none;border:none;color:#444;font-size:.7rem;cursor:pointer;padding:2px 5px;';
-          dLesBtn.addEventListener('click', function(e){ e.stopPropagation(); dLesson(les.id); });
-          lesDiv.appendChild(dLesBtn);
-          lessDiv.appendChild(lesDiv);
-        });
-
-        modDiv.appendChild(modHeader);
-        modDiv.appendChild(lessDiv);
-        modsDiv.appendChild(modDiv);
-      });
-
-      lvDiv.appendChild(lvHeader);
-      lvDiv.appendChild(modsDiv);
-      t.appendChild(lvDiv);
+  // Bind checkbox for task
+  if (type === 'lesson') {
+    var taskChk = document.getElementById('em-task');
+    if (taskChk) taskChk.addEventListener('change', function() {
+      var w = document.getElementById('em-task-wrap');
+      if (w) w.style.display = this.checked ? 'block' : 'none';
     });
+  }
+
+  // Bind save button
+  var saveBtn = document.getElementById('em-save-btn');
+  if (saveBtn) saveBtn.addEventListener('click', function() {
+    saveEditModal(type, data, parentLvId, parentModId);
   });
 }
 
-function editLevelInline(lv, cell) {
-  var orig = lv.title;
-  cell.innerHTML = '';
-  var inp = document.createElement('input');
-  inp.type = 'text'; inp.value = orig;
-  inp.style.cssText = 'background:#1e2736;border:1px solid var(--sl);color:#f0f0f0;padding:3px 8px;border-radius:4px;font-size:.84rem;width:100%;box-sizing:border-box;outline:none;';
-  inp.addEventListener('blur', function() {
-    var v = inp.value.trim();
-    if (!v || v === orig) { cell.textContent = orig; return; }
-    sb.from('course_levels').update({title:v}).eq('id',lv.id).then(function(r){
-      if(r.error){tst('Error',1);cell.textContent=orig;return;}
-      tst('✓ Nivel actualizado'); loadAdmLevels();
-    });
-  });
-  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){cell.textContent=orig;} });
-  cell.appendChild(inp); inp.focus(); inp.select();
+function previewEmImg(input) {
+  var file = input.files[0]; if (!file) return;
+  document.getElementById('em-img-name').textContent = file.name;
+  var prev = document.getElementById('em-img-prev');
+  var wrap = document.getElementById('em-img-preview');
+  if (prev) { prev.src = URL.createObjectURL(file); wrap.style.display = 'block'; }
 }
 
-function editModuleInline(mod, cell) {
-  var orig = mod.title;
-  cell.innerHTML = '';
-  var inp = document.createElement('input');
-  inp.type = 'text'; inp.value = orig;
-  inp.style.cssText = 'background:#1e2736;border:1px solid var(--sl);color:#f0f0f0;padding:3px 8px;border-radius:4px;font-size:.8rem;width:100%;box-sizing:border-box;outline:none;';
-  inp.addEventListener('blur', function() {
-    var v = inp.value.trim();
-    if (!v || v === orig) { cell.textContent = orig; return; }
-    sb.from('course_modules').update({title:v}).eq('id',mod.id).then(function(r){
-      if(r.error){tst('Error',1);cell.textContent=orig;return;}
-      tst('✓ Módulo actualizado'); loadAdmLevels();
-    });
-  });
-  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){cell.textContent=orig;} });
-  cell.appendChild(inp); inp.focus(); inp.select();
+function closeEditModal() {
+  var m = document.getElementById('edit-modal'); if (m) m.remove();
 }
 
+async function saveEditModal(type, data, parentLvId, parentModId) {
+  var btn = document.getElementById('em-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  var title = (document.getElementById('em-title')||{}).value || '';
+  if (!title.trim()) { tst('El título es requerido', 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+
+  if (type === 'level') {
+    var thumbnailUrl = data ? (data.thumbnail_url || '') : '';
+    var fileInput = document.getElementById('em-img-file');
+    var file = fileInput && fileInput.files[0];
+    if (file) {
+      tst('Subiendo imagen...');
+      var ext = file.name.split('.').pop();
+      var path = 'levels/' + (data ? data.id : Date.now()) + '_' + Date.now() + '.' + ext;
+      var up = await sb.storage.from('course-images').upload(path, file, { upsert: true });
+      if (up.error) { tst('Error imagen: ' + up.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+      thumbnailUrl = sb.storage.from('course-images').getPublicUrl(path).data.publicUrl;
+    }
+    var payload = {
+      title: title.trim(),
+      description: (document.getElementById('em-desc')||{}).value || '',
+      thumbnail_url: thumbnailUrl,
+      sort_order: parseInt((document.getElementById('em-ord')||{}).value) || 1,
+      is_published: (document.getElementById('em-pub')||{}).checked !== false,
+    };
+    var q = data ? sb.from('course_levels').update(payload).eq('id', data.id) : sb.from('course_levels').insert(payload);
+    q.then(function(r) {
+      if (r.error) { tst('Error: '+r.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+      tst(data ? '✓ Nivel actualizado' : '✓ Nivel creado');
+      closeEditModal(); loadAdmLevels();
+    });
+
+  } else if (type === 'module') {
+    var lvId = data ? data.level_id : parentLvId;
+    if (!lvId) { tst('Sin nivel asignado', 1); return; }
+    var payload2 = {
+      title: title.trim(),
+      description: (document.getElementById('em-desc')||{}).value || '',
+      sort_order: parseInt((document.getElementById('em-ord')||{}).value) || 1,
+      level_id: lvId,
+    };
+    var q2 = data ? sb.from('course_modules').update(payload2).eq('id', data.id) : sb.from('course_modules').insert(payload2);
+    q2.then(function(r) {
+      if (r.error) { tst('Error: '+r.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+      tst(data ? '✓ Módulo actualizado' : '✓ Módulo creado');
+      closeEditModal(); loadAdmLevels();
+    });
+
+  } else if (type === 'lesson') {
+    var modId = data ? data.module_id : parentModId;
+    if (!modId) { tst('Sin módulo asignado', 1); return; }
+    var hasTask = (document.getElementById('em-task')||{}).checked;
+    var payload3 = {
+      title: title.trim(),
+      video_url: (document.getElementById('em-url')||{}).value.trim() || '',
+      description: (document.getElementById('em-desc')||{}).value || '',
+      duration_minutes: parseInt((document.getElementById('em-min')||{}).value) || null,
+      sort_order: parseInt((document.getElementById('em-ord')||{}).value) || 1,
+      is_published: (document.getElementById('em-pub')||{}).checked !== false,
+      has_task: hasTask,
+      task_instructions: hasTask ? ((document.getElementById('em-task-ins')||{}).value || '') : null,
+      module_id: modId,
+    };
+    var q3 = data ? sb.from('course_lessons').update(payload3).eq('id', data.id) : sb.from('course_lessons').insert(payload3);
+    q3.then(function(r) {
+      if (r.error) { tst('Error: '+r.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+      tst(data ? '✓ Clase actualizada' : '✓ Clase creada');
+      closeEditModal(); loadAdmLevels();
+    });
+  }
+}
+
+// Legacy helpers kept for compatibility
+function previewLvImg(input) {
+  var file = input.files[0]; if (!file) return;
+  var n = document.getElementById('lv-img-name'); if (n) n.textContent = file.name;
+  var p = document.getElementById('lv-img-prev-el'); var w = document.getElementById('lv-img-preview');
+  if (p) { p.src = URL.createObjectURL(file); if(w) w.style.display='block'; }
+}
+
+async function cLevel() {
+  var t = (document.getElementById('lv-t')||{}).value; if (!t||!t.trim()) return;
+  openEditModal('level', null); // redirect to new modal
+}
+function cModule() { openEditModal('module', null); }
+function cLesson() { openEditModal('lesson', null); }
+
+function editLevelInline(lv) { openEditModal('level', lv); }
+function editModuleInline(mod) { openEditModal('module', mod); }
+
+function dLevel(id) {
+  if (!confirm('¿Eliminar nivel y todo su contenido?')) return;
+  sb.from('course_levels').delete().eq('id', id).then(function() { tst('Eliminado'); loadAdmLevels(); });
+}
+function dModule(id) {
+  if (!confirm('¿Eliminar módulo y sus clases?')) return;
+  sb.from('course_modules').delete().eq('id', id).then(function() { tst('Módulo eliminado'); loadAdmLevels(); });
+}
 function dLesson(id) {
   if (!confirm('¿Eliminar esta clase?')) return;
   sb.from('course_lessons').delete().eq('id', id).then(function(r) {
@@ -3271,87 +3374,7 @@ function dLesson(id) {
   });
 }
 
-function previewLvImg(input) {
-  var file = input.files[0];
-  if (!file) return;
-  var nameEl = document.getElementById('lv-img-name');
-  var prevWrap = document.getElementById('lv-img-preview');
-  var prevEl = document.getElementById('lv-img-prev-el');
-  if (nameEl) nameEl.textContent = file.name;
-  if (prevEl) {
-    prevEl.src = URL.createObjectURL(file);
-    if (prevWrap) prevWrap.style.display = 'block';
-  }
-}
 
-async function cLevel() {
-  var t = document.getElementById('lv-t').value.trim();
-  if (!t) return tst('Título requerido', 1);
-
-  var fileInput = document.getElementById('lv-img-file');
-  var file = fileInput && fileInput.files[0];
-  var thumbnailUrl = document.getElementById('lv-img').value.trim();
-
-  // Upload image if selected
-  if (file) {
-    tst('Subiendo imagen...');
-    var ext = file.name.split('.').pop();
-    var path = 'levels/' + Date.now() + '.' + ext;
-    var up = await sb.storage.from('course-images').upload(path, file, { upsert: true });
-    if (up.error) return tst('Error al subir imagen: ' + up.error.message, 1);
-    var pub = sb.storage.from('course-images').getPublicUrl(path);
-    thumbnailUrl = pub.data.publicUrl;
-  }
-
-  sb.from('course_levels').insert({
-    title: t,
-    description: document.getElementById('lv-d').value.trim(),
-    thumbnail_url: thumbnailUrl,
-    sort_order: parseInt(document.getElementById('lv-ord').value) || 1,
-    is_published: document.getElementById('lv-pub').checked
-  }).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Nivel agregado'); loadAdmLevels();
-  });
-}
-
-function cModule() {
-  var t = document.getElementById('mod-t').value.trim();
-  var lv = document.getElementById('mod-lv').value;
-  if (!t || !lv) return tst('Nivel y título requeridos', 1);
-  sb.from('course_modules').insert({
-    level_id: lv, title: t,
-    description: document.getElementById('mod-d').value.trim(),
-    sort_order: parseInt(document.getElementById('mod-ord').value) || 1
-  }).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Módulo agregado'); loadAdmLevels();
-  });
-}
-
-function cLesson() {
-  var t = document.getElementById('les-t').value.trim();
-  var mod = document.getElementById('les-mod').value;
-  if (!t || !mod) return tst('Módulo y título requeridos', 1);
-  var hasTask = document.getElementById('les-task').checked;
-  sb.from('course_lessons').insert({
-    module_id: mod, title: t,
-    video_url: document.getElementById('les-u').value.trim(),
-    description: document.getElementById('les-d').value.trim(),
-    duration_minutes: parseInt(document.getElementById('les-m').value) || null,
-    sort_order: parseInt(document.getElementById('les-ord').value) || 1,
-    has_task: hasTask,
-    task_instructions: hasTask ? document.getElementById('les-task-ins').value.trim() : null
-  }).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Clase agregada'); loadAdmLevels();
-  });
-}
-
-function dLevel(id) {
-  if (!confirm('¿Eliminar nivel y todo su contenido?')) return;
-  sb.from('course_levels').delete().eq('id', id).then(function() { tst('Eliminado'); loadAdmLevels(); });
-}
 
 function rAdmCodes() {
   var c = document.getElementById('a-codes'); if (!c) return;

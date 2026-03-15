@@ -3,12 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <script>
-// SPA router bootstrap: if loaded via a deep link (/app/clases/l/xxx),
-// store the path so window.onload can restore it, then redirect to root.
+// SPA router bootstrap: save current /app/ path for restoration after auth loads
 (function() {
   var path = window.location.pathname;
-  if (path && path.indexOf('/app/') === 0 && path !== '/app/') {
-    // Store intended route for restoration after redirect
+  if (path && path.indexOf('/app/') === 0) {
     try { sessionStorage.setItem('spa_redirect', path); } catch(e){}
   }
 })();
@@ -3355,4 +3353,274 @@ function toggleCalExplain(id) {
 }
 
 
+
+// ── WINDOW ONLOAD ──
+(function() {
+
+  // Popstate — browser back/forward
+  window.addEventListener('popstate', function(e) {
+    var state = e.state;
+    if (!state) return;
+    if (state.section === '__landing__') {
+      // Going back to landing
+      var appdash = document.getElementById('appdash');
+      if (appdash) appdash.style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.remove('visible');
+      return;
+    }
+    // Still in app
+    var appdash = document.getElementById('appdash');
+    if (appdash && appdash.style.display !== 'block') {
+      appdash.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+    _renderSection(state);
+  });
+
+  function loadApp(user) {
+    cUser = user;
+    sb.from('profiles').select('*').eq('id', user.id).single().then(function(pr) {
+      cProfile = pr.data || {};
+      var isAdmin = cProfile.role === 'admin';
+
+      // Show admin nav items
+      var admBtn = document.getElementById('adm-btn');
+      var mobAdmBtn = document.getElementById('mob-adm-btn');
+      if (admBtn) admBtn.style.display = isAdmin ? 'flex' : 'none';
+      if (mobAdmBtn) mobAdmBtn.style.display = isAdmin ? 'flex' : 'none';
+
+      // Update header name
+      var nameEl = document.getElementById('user-name');
+      if (nameEl) nameEl.textContent = cProfile.full_name || user.email.split('@')[0];
+
+      // Show dashboard
+      var appdashEl = document.getElementById('appdash');
+      appdashEl.style.display = 'block';
+      appdashEl.scrollTop = 0;
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100%';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.add('visible');
+
+      // Restore route from saved path (covers reload on any /app/* URL)
+      var redirect = null;
+      try { redirect = sessionStorage.getItem('spa_redirect'); sessionStorage.removeItem('spa_redirect'); } catch(e){}
+
+      // Also check current URL directly if no sessionStorage path
+      if (!redirect || redirect === '/app/') {
+        var curPath = window.location.pathname;
+        if (curPath && curPath.indexOf('/app/') === 0) redirect = curPath;
+      }
+
+      if (redirect && redirect.indexOf('/app/') === 0) {
+        var parts = redirect.replace('/app/', '').split('/');
+        var section = parts[0] || 'dash';
+        var state = { section: section };
+        if (section === 'clases') {
+          if (parts[1] === 'l' && parts[2]) state.lessonId = parts[2];
+          else if (parts[1] === 'm' && parts[2]) state.moduleId = parts[2];
+          else if (parts[1] === 'lv' && parts[2]) state.levelId = parts[2];
+        }
+        history.replaceState(state, '', redirect);
+        _renderSection(state);
+      } else {
+        var state = { section: 'dash' };
+        history.replaceState(state, '', '/app/dash');
+        rDash();
+      }
+    });
+  }
+
+  function doLogin(email, pw) {
+    var btn = document.getElementById('btn-login');
+    if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
+    sb.auth.signInWithPassword({ email: email, password: pw }).then(function(r) {
+      if (r.error) {
+        tst('Email o contraseña incorrectos', 1);
+        if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+        return;
+      }
+      loadApp(r.data.user);
+      closeModal();
+    });
+  }
+
+  function doRegister(name, email, pw) {
+    var btn = document.getElementById('btn-reg');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
+    // Check if access code is required
+    var code = (document.getElementById('m-code') || {}).value || '';
+    sb.from('access_codes').select('*').eq('code', code.trim().toUpperCase()).eq('is_used', false).single().then(function(ac) {
+      if (ac.error || !ac.data) {
+        tst('Código de acceso inválido', 1);
+        if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
+        return;
+      }
+      var months = ac.data.months || 6;
+      var codeId = ac.data.id;
+      sb.auth.signUp({ email: email, password: pw, options: { data: { full_name: name } } }).then(function(r) {
+        if (r.error) {
+          tst('Error: ' + r.error.message, 1);
+          if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
+          return;
+        }
+        // Mark code as used
+        var start = new Date().toISOString();
+        var end = new Date(Date.now() + months * 30 * 24 * 3600000).toISOString();
+        sb.from('access_codes').update({ is_used: true, used_at: start }).eq('id', codeId).then(function(){});
+        sb.from('profiles').upsert({ id: r.data.user.id, full_name: name, role: 'student', membership_start: start, membership_end: end }).then(function(){});
+        tst('✓ Cuenta creada. Inicia sesión.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
+        // Switch to login tab
+        var loginTab = document.querySelector('.mtab[data-t="login"]');
+        if (loginTab) loginTab.click();
+      });
+    });
+  }
+
+  function closeModal() {
+    var ov = document.getElementById('overlay');
+    if (ov) ov.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function doLogout() {
+    sb.auth.signOut().then(function() {
+      cUser = null; cProfile = null;
+      var appdash = document.getElementById('appdash');
+      if (appdash) appdash.style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.remove('visible');
+      history.replaceState({ section: '__landing__' }, '', '/');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  function init() {
+    // Check existing session on page load
+    sb.auth.getSession().then(function(r) {
+      if (r.data && r.data.session) {
+        loadApp(r.data.session.user);
+      }
+    });
+
+    // Nav scroll effect
+    window.addEventListener('scroll', function() {
+      var nav = document.getElementById('nav');
+      if (!nav) return;
+      if (window.innerWidth > 860) {
+        nav.style.padding = window.scrollY > 50 ? '10px 60px' : '14px 60px';
+      }
+    });
+
+    // Hamburger menu
+    var hbtn = document.getElementById('hbtn');
+    var navlinks = document.getElementById('navlinks');
+    if (hbtn && navlinks) {
+      hbtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        navlinks.classList.toggle('open');
+      });
+      navlinks.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', function() { navlinks.classList.remove('open'); });
+      });
+      document.addEventListener('click', function(e) {
+        if (!hbtn.contains(e.target) && !navlinks.contains(e.target)) {
+          navlinks.classList.remove('open');
+        }
+      });
+    }
+
+    // Open login modal
+    var btncliente = document.getElementById('btncliente');
+    if (btncliente) {
+      btncliente.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('overlay').classList.add('open');
+        if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
+      });
+    }
+
+    // Close modal
+    var mcls = document.getElementById('mcls');
+    if (mcls) mcls.addEventListener('click', closeModal);
+    var overlay = document.getElementById('overlay');
+    if (overlay) overlay.addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+    // Modal tabs (login / register)
+    document.querySelectorAll('.mtab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.mtab').forEach(function(t) { t.classList.remove('on'); });
+        this.classList.add('on');
+        var t = this.dataset.t;
+        var loginForm = document.getElementById('form-login');
+        var regForm   = document.getElementById('form-reg');
+        if (loginForm) loginForm.style.display = t === 'login' ? 'block' : 'none';
+        if (regForm)   regForm.style.display   = t === 'reg'   ? 'block' : 'none';
+      });
+    });
+
+    // Login form submit
+    var btnLogin = document.getElementById('btn-login');
+    if (btnLogin) {
+      btnLogin.addEventListener('click', function() {
+        var email = (document.getElementById('m-email') || {}).value || '';
+        var pw    = (document.getElementById('m-pass')  || {}).value || '';
+        if (!email || !pw) { tst('Completa todos los campos', 1); return; }
+        doLogin(email.trim(), pw);
+      });
+    }
+
+    // Register form submit
+    var btnReg = document.getElementById('btn-reg');
+    if (btnReg) {
+      btnReg.addEventListener('click', function() {
+        var name  = (document.getElementById('m-name')  || {}).value || '';
+        var email = (document.getElementById('m-email2')|| {}).value || '';
+        var pw    = (document.getElementById('m-pass2') || {}).value || '';
+        if (!name || !email || !pw) { tst('Completa todos los campos', 1); return; }
+        doRegister(name.trim(), email.trim(), pw);
+      });
+    }
+
+    // Logout button
+    var logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
+
+    // Counter animations on landing
+    var counters = document.querySelectorAll('.nv[data-target]');
+    var animated = false;
+    function runCounters() {
+      if (animated) return;
+      animated = true;
+      counters.forEach(function(el) {
+        var target = parseInt(el.getAttribute('data-target'));
+        var current = 0;
+        var step = Math.ceil(target / 40);
+        var timer = setInterval(function() {
+          current = Math.min(current + step, target);
+          el.textContent = current + (el.dataset.suffix || '');
+          if (current >= target) clearInterval(timer);
+        }, 30);
+      });
+    }
+    if (counters.length) {
+      var obs = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting) runCounters();
+      });
+      obs.observe(counters[0]);
+    }
+  }
+
+})();
 </script>

@@ -329,10 +329,9 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 /* ── LESSON SIDEBAR — Teachable style ── */
 .lesson-layout {
   display: flex !important;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 61px);
   overflow: hidden;
-  margin: -18px;
-  opacity: 1;
+  margin: -30px;
 }
 .lesson-sidebar {
   width: 300px;
@@ -513,7 +512,7 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 /* Mobile */
 @media(max-width:860px) {
-  .lesson-layout { flex-direction: column; height: auto; margin: -18px; }
+  .lesson-layout { flex-direction: column; height: auto; margin: -18px; margin-bottom: -80px; }
   .lesson-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--br); max-height: 45vh; }
   .lesson-main { min-height: 60vh; }
   .lesson-info-panel { padding: 16px; }
@@ -2534,7 +2533,7 @@ function goToLastLesson() {
               '</div>' +
             '</div>';
 
-          document.getElementById('back-mods').addEventListener('click', function() { showModules(target.level); });
+          document.getElementById('back-mods') && document.getElementById('back-mods').addEventListener('click', function() { var am = document.getElementById('amain'); if(am){am.style.padding='';am.style.overflow='';} showLevels(); });
 
           var list = document.getElementById('lesson-list');
           var allLes = modLessons.data || [];
@@ -2681,15 +2680,14 @@ function showLessons(mod, level, progress) {
     '</div>';
 
   document.getElementById('back-levels-btn').addEventListener('click', function() {
-    // Restore amain padding when going back
     var am = document.getElementById('amain');
-    if (am) am.style.padding = '';
+    if (am) { am.style.padding = ''; am.style.overflow = ''; }
     showLevels();
   });
 
   // Remove amain padding so lesson-layout fills correctly
   var amain = document.getElementById('amain');
-  if (amain) amain.style.padding = '0';
+  if (amain) { amain.style.padding = '0'; amain.style.overflow = 'hidden'; }
 
   // Force reflow
   var layoutEl = document.getElementById('lesson-layout');

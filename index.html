@@ -3974,8 +3974,10 @@ function rAdmSe() {
   c.innerHTML =
     '<div class="aform">' +
       '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">➕ Programar sesión</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;">' +
-        '<div><label class="al">Título</label><input id="s-t" class="ai" placeholder="Pre-Market ES Futuros"></div>' +
+      '<div style="margin-bottom:9px;">' +
+        '<label class="al">Título</label><input id="s-t" class="ai" placeholder="Pre-Market ES Futuros">' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
         '<div><label class="al">Inicio</label><input id="s-d" type="datetime-local" class="ai"></div>' +
         '<div><label class="al">Fin (auto-desactivar)</label><input id="s-end" type="datetime-local" class="ai"></div>' +
       '</div>' +
@@ -4073,8 +4075,10 @@ function openEditSe(id) {
           '<div style="font-size:.92rem;font-weight:700;">✎ Editar sesión</div>' +
           '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:10px;">' +
-          '<div><label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '"></div>' +
+        '<div style="margin-bottom:9px;">' +
+          '<label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '">' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
           '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai" value="' + localDt + '"></div>' +
           '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai" value="' + localEndDt + '"></div>' +
         '</div>' +

@@ -1095,6 +1095,12 @@ nav{
   #card-1on1{ order:2 !important; }
 }
 
+/* Live pulse animation */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74,158,255,.4); }
+  50% { opacity: .6; box-shadow: 0 0 0 4px rgba(74,158,255,0); }
+}
+
 /* iOS input zoom fix — font-size must be >= 16px to prevent auto-zoom */
 @media(max-width:860px) {
   input, select, textarea,
@@ -2950,21 +2956,145 @@ var vM = null;
 
 // ── SESIONES ──
 function rSes() {
-  document.getElementById('amain').innerHTML = '<div class="atit">Sesiones en Vivo</div><div class="asub">Análisis en tiempo real</div><div id="sl"><span class="spin"></span></div>';
+  var m = document.getElementById('amain');
+  m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
+
+  // Check if user has Discord connected
+  var hasDiscord = cProfile && cProfile.discord_id;
+
   sb.from('live_sessions').select('*').order('scheduled_at').then(function(r) {
-    var c = document.getElementById('sl');
-    if (!c) return;
-    if (!r.data || !r.data.length) { c.innerHTML='<div style="padding:40px;text-align:center;color:#555;">Sin sesiones programadas</div>'; return; }
-    c.innerHTML = r.data.map(function(s) {
-      var d = new Date(s.scheduled_at);
-      return '<div class="mc" style="'+(s.is_active?'border-color:rgba(74,222,128,.28);':'')+'">'+
-        '<div class="md" style="'+(s.is_active?'background:rgba(74,222,128,.09);border-color:rgba(74,222,128,.3);':'')+'"><div class="md-d" style="'+(s.is_active?'color:#4ade80;font-size:1rem;':'')+'">'+( s.is_active?'●':d.getDate())+'</div><div class="md-m">'+(s.is_active?'LIVE':d.toLocaleDateString('es-ES',{month:'short'}))+'</div></div>'+
-        '<div style="flex:1;"><div style="font-size:.85rem;font-weight:600;">'+s.title+(s.is_active?' <span style="color:#4ade80;font-size:.68rem;">● EN VIVO</span>':'')+'</div><div style="font-size:.73rem;color:#555;margin-top:2px;">'+d.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div>'+(s.description?'<div style="font-size:.71rem;color:#555;margin-top:1px;">'+s.description+'</div>':'')+'</div>'+
-        (s.is_active?'<a href="'+(s.discord_url||'#')+'" target="_blank" style="background:#4ade80;color:#111;padding:7px 13px;border-radius:2px;font-weight:700;font-size:.76rem;text-decoration:none;white-space:nowrap;">Unirme →</a>':'')+
+    var sessions = r.data || [];
+    var now = new Date();
+
+    // Separate active, upcoming, past
+    var active   = sessions.filter(function(s){ return s.is_active; });
+    var upcoming = sessions.filter(function(s){ return !s.is_active && new Date(s.scheduled_at) > now; });
+    var past     = sessions.filter(function(s){ return !s.is_active && new Date(s.scheduled_at) <= now && s.recording_url; });
+
+    var html = '<div class="atit">En Vivo</div>';
+
+    // ── SESIÓN ACTIVA ──
+    if (active.length) {
+      var s = active[0];
+      html +=
+        '<div style="background:linear-gradient(135deg,rgba(74,158,255,.08),rgba(74,158,255,.03));border:1px solid rgba(74,158,255,.25);border-radius:14px;padding:22px;margin-bottom:22px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+            '<div style="width:8px;height:8px;border-radius:50%;background:#4a9eff;animation:live-pulse 1.5s infinite;"></div>' +
+            '<span style="font-size:.68rem;color:#4a9eff;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">En vivo ahora</span>' +
+          '</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;margin-bottom:4px;">' + s.title + '</div>' +
+          (s.description ? '<div style="font-size:.78rem;color:#555;margin-bottom:14px;">' + s.description + '</div>' : '<div style="margin-bottom:14px;"></div>') +
+          '<button class="abtn2" id="btn-join-live" style="width:100%;padding:12px;font-size:.88rem;" data-url="' + (s.discord_url||'') + '">Unirme a la sesión →</button>' +
         '</div>';
-    }).join('');
+    } else {
+      html +=
+        '<div style="background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.08);border-radius:14px;padding:22px;margin-bottom:22px;text-align:center;">' +
+          '<div style="font-size:1.5rem;margin-bottom:8px;">📡</div>' +
+          '<div style="font-size:.84rem;color:#555;">No hay sesión en vivo en este momento</div>' +
+        '</div>';
+    }
+
+    // ── PRÓXIMAS SESIONES ──
+    if (upcoming.length) {
+      html += '<div class="sec" style="margin-bottom:12px;">Próximas sesiones</div>';
+      upcoming.forEach(function(s) {
+        var d = new Date(s.scheduled_at);
+        html +=
+          '<div class="mc" style="margin-bottom:8px;">' +
+            '<div class="md"><div class="md-d">' + d.getDate() + '</div><div class="md-m">' + d.toLocaleDateString('es-ES',{month:'short'}) + '</div></div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:.85rem;font-weight:600;">' + s.title + '</div>' +
+              '<div style="font-size:.73rem;color:#555;margin-top:2px;">' + d.toLocaleDateString('es-ES',{weekday:'long'}) + ' · ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
+            '</div>' +
+            '<span style="font-size:.68rem;padding:2px 9px;border-radius:4px;background:rgba(74,158,255,.1);color:#4a9eff;">Grupal</span>' +
+          '</div>';
+      });
+    }
+
+    // ── SESIONES GRABADAS ──
+    if (past.length) {
+      html += '<div class="sec" style="margin:20px 0 12px;">Sesiones grabadas</div>';
+      past.forEach(function(s) {
+        var d = new Date(s.scheduled_at);
+        var embedUrl = (s.recording_url||'').replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/');
+        html +=
+          '<div style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:12px;overflow:hidden;margin-bottom:12px;">' +
+            (embedUrl ? '<div style="aspect-ratio:16/9;"><iframe src="' + embedUrl + '" frameborder="0" allowfullscreen style="width:100%;height:100%;"></iframe></div>' : '') +
+            '<div style="padding:14px;">' +
+              '<div style="font-size:.86rem;font-weight:600;">' + s.title + '</div>' +
+              '<div style="font-size:.72rem;color:#555;margin-top:3px;">' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '</div>' +
+            '</div>' +
+          '</div>';
+      });
+    }
+
+    m.innerHTML = html;
+
+    // ── Bind join button ──
+    var joinBtn = document.getElementById('btn-join-live');
+    if (joinBtn) {
+      joinBtn.addEventListener('click', function() {
+        var discordUrl = this.getAttribute('data-url');
+        if (hasDiscord) {
+          // Already connected — go straight to Discord
+          if (discordUrl) window.open(discordUrl, '_blank');
+        } else {
+          // Show Discord connect modal
+          showDiscordModal(discordUrl);
+        }
+      });
+    }
   });
 }
+
+function showDiscordModal(discordUrl) {
+  var existing = document.getElementById('discord-modal');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'discord-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+
+  overlay.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:18px;width:100%;max-width:380px;padding:32px 28px;text-align:center;">' +
+      '<div style="width:56px;height:56px;background:rgba(88,101,242,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">' +
+        '<svg width="32" height="24" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="#5865F2"/></svg>' +
+      '</div>' +
+      '<div style="font-size:1.1rem;font-weight:700;color:#f0f0f0;margin-bottom:10px;">Conecta tu Discord</div>' +
+      '<div style="font-size:.82rem;color:#666;line-height:1.7;margin-bottom:22px;">Para unirte a las sesiones en vivo necesitas vincular tu cuenta de Discord. Recibirás el rol de estudiante automáticamente.</div>' +
+      '<button id="btn-discord-connect" style="background:#5865F2;border:none;color:#fff;padding:12px 20px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">' +
+        '<svg width="18" height="14" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="white"/></svg>' +
+        'Conectar con Discord' +
+      '</button>' +
+      '<button id="btn-discord-skip" style="background:none;border:none;color:#444;font-size:.78rem;cursor:pointer;padding:6px;">Ahora no</button>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  // Connect button — redirect to Discord OAuth
+  document.getElementById('btn-discord-connect').addEventListener('click', function() {
+    var params = new URLSearchParams({
+      client_id:     '1482794976118046851',
+      redirect_uri:  'https://www.mrkatanafx.com/api/discord-callback',
+      response_type: 'code',
+      scope:         'identify guilds.join',
+      state:         cUser ? cUser.id : '',
+    });
+    window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
+  });
+
+  document.getElementById('btn-discord-skip').addEventListener('click', function() {
+    overlay.remove();
+    // If they skip, open Discord URL directly anyway
+    if (discordUrl) window.open(discordUrl, '_blank');
+  });
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.remove();
+  });
+}
+
+
 
 // ── REUNIONES ──
 function rReun() {
@@ -3869,7 +3999,7 @@ function rAdmSe() {
     tbl2.appendChild(tb2); t.innerHTML=''; var w2=document.createElement('div'); w2.className='dtab-wrap'; w2.appendChild(tbl2); t.appendChild(w2);
   });
 }
-function cSe(){var t=document.getElementById('s-t').value.trim(),d=document.getElementById('s-d').value;if(!t||!d)return tst('Título y fecha requeridos',1);sb.from('live_sessions').insert({title:t,scheduled_at:new Date(d).toISOString(),discord_url:document.getElementById('s-u').value.trim(),description:document.getElementById('s-desc').value.trim(),is_active:document.getElementById('s-act').checked}).then(function(r){if(r.error)return tst('Error: '+r.error.message,1);tst('✓ Programada');rAdmSe();});}
+function cSe(){var t=document.getElementById('s-t').value.trim(),d=document.getElementById('s-d').value;if(!t||!d)return tst('Título y fecha requeridos',1);sb.from('live_sessions').insert({title:t,scheduled_at:new Date(d).toISOString(),discord_url:document.getElementById('s-u').value.trim(),description:document.getElementById('s-desc').value.trim(),is_active:document.getElementById('s-act').checked,recording_url:document.getElementById('s-rec').value.trim()||null}).then(function(r){if(r.error)return tst('Error: '+r.error.message,1);tst('✓ Programada');rAdmSe();});}
 function togSe(id,v){sb.from('live_sessions').update({is_active:v}).eq('id',id).then(function(){tst(v?'✓ Banner activo':'Desactivado');rAdmSe();});}
 function dSe(id){if(!confirm('¿Eliminar?'))return;sb.from('live_sessions').delete().eq('id',id).then(function(){tst('Eliminada');rAdmSe();});}
 

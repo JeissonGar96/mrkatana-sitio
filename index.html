@@ -3385,84 +3385,129 @@ function tst(m, err) {
   var currentPull = 0;
 
   function init() {
-    el        = document.getElementById('appdash');
-    indicator = document.getElementById('ptr-indicator');
-    label     = document.getElementById('ptr-label');
-    if (!el || !indicator) return;
+    // ── Check existing session ──
+    sb.auth.getSession().then(function(r) {
+      if (r.data && r.data.session) loadApp(r.data.session.user);
+    });
 
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
-    el.addEventListener('touchend',   onTouchEnd,   { passive: true });
-  }
-
-  function onTouchStart(e) {
-    // Only activate when already scrolled to the very top
-    if (el.scrollTop > 2) return;
-    startY   = e.touches[0].clientY;
-    pulling  = true;
-    triggered = false;
-    currentPull = 0;
-  }
-
-  function onTouchMove(e) {
-    if (!pulling) return;
-    var dy = e.touches[0].clientY - startY;
-    if (dy <= 0) { pulling = false; resetIndicator(); return; }
-    // Only cancel native scroll when we're pulling down from top
-    if (el.scrollTop <= 2 && dy > 0) {
-      e.preventDefault(); // prevent native scroll interference
+    // ── Nav bindings ──
+    var snavs = document.querySelectorAll('.snav');
+    for (var i = 0; i < snavs.length; i++) {
+      snavs[i].onclick = function() { navigateTo(this.getAttribute('data-v')); };
     }
-    currentPull = Math.min(dy * 0.5, PTR_MAX); // dampen
-    setIndicatorHeight(currentPull);
+    var mnavs = document.querySelectorAll('.mob-nav-btn');
+    for (var i = 0; i < mnavs.length; i++) {
+      mnavs[i].onclick = function() { navigateTo(this.getAttribute('data-v')); };
+    }
 
-    if (currentPull >= PTR_THRESHOLD) {
-      indicator.classList.add('ptr-ready');
-      label.textContent = 'Suelta para recargar';
-      triggered = true;
-    } else {
-      indicator.classList.remove('ptr-ready');
-      label.textContent = 'Baja para recargar';
-      triggered = false;
+    // ── Hamburger ──
+    var hbtn = document.getElementById('hbtn');
+    var navlinks = document.getElementById('navlinks');
+    if (hbtn && navlinks) {
+      hbtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        navlinks.classList.toggle('open');
+      });
+      navlinks.querySelectorAll('a').forEach(function(a) {
+        a.addEventListener('click', function() { navlinks.classList.remove('open'); });
+      });
+      document.addEventListener('click', function(e) {
+        if (!hbtn.contains(e.target) && !navlinks.contains(e.target)) navlinks.classList.remove('open');
+      });
+    }
+
+    // ── Login / Register form ──
+    var btnLogin = document.getElementById('btn-login');
+    if (btnLogin) {
+      btnLogin.addEventListener('click', function() {
+        var email = (document.getElementById('m-email') || {}).value || '';
+        var pw    = (document.getElementById('m-pw')    || {}).value || '';
+        if (!email || !pw) { tst('Completa todos los campos', 1); return; }
+        doLogin(email, pw);
+      });
+    }
+    var btnReg = document.getElementById('btn-reg');
+    if (btnReg) {
+      btnReg.addEventListener('click', function() {
+        var name  = (document.getElementById('m-name')  || {}).value || '';
+        var email = (document.getElementById('m-email2')|| {}).value || '';
+        var pw    = (document.getElementById('m-pw2')   || {}).value || '';
+        if (!name || !email || !pw) { tst('Completa todos los campos', 1); return; }
+        doRegister(name, email, pw);
+      });
+    }
+
+    // ── Logout button ──
+    var btnOut = document.getElementById('btn-logout');
+    if (btnOut) btnOut.addEventListener('click', doLogout);
+
+    // ── Modal tabs ──
+    document.querySelectorAll('.mtab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var t = this.getAttribute('data-t');
+        document.querySelectorAll('.mtab').forEach(function(tb){ tb.classList.remove('on'); });
+        this.classList.add('on');
+        document.querySelectorAll('.mform').forEach(function(f){ f.style.display='none'; });
+        var form = document.getElementById('mf-' + t);
+        if (form) form.style.display = 'block';
+      });
+    });
+
+    // ── Open modal ──
+    var btnCliente = document.getElementById('btncliente');
+    if (btnCliente) {
+      btnCliente.addEventListener('click', function(e) {
+        e.preventDefault();
+        var ov = document.getElementById('overlay');
+        if (ov) ov.classList.add('open');
+        if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
+      });
+    }
+    var mcls = document.getElementById('mcls');
+    if (mcls) mcls.addEventListener('click', closeModal);
+    var overlay = document.getElementById('overlay');
+    if (overlay) overlay.addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+    // ── Scroll nav ──
+    window.addEventListener('scroll', function() {
+      if (window.innerWidth > 860) {
+        var nav = document.getElementById('nav');
+        if (nav) nav.style.padding = window.scrollY > 50 ? '10px 60px' : '14px 60px';
+      }
+    });
+
+    // ── Counter animation ──
+    var counters = document.querySelectorAll('.nv[data-target]');
+    var animated = false;
+    function runCounters() {
+      if (animated) return;
+      animated = true;
+      counters.forEach(function(el) {
+        var target = parseInt(el.getAttribute('data-target'));
+        var suffix = el.getAttribute('data-suffix') || '';
+        var current = 0;
+        var step = Math.ceil(target / 50);
+        var timer = setInterval(function() {
+          current = Math.min(current + step, target);
+          el.textContent = current + suffix;
+          if (current >= target) clearInterval(timer);
+        }, 30);
+      });
+    }
+    if (counters.length) {
+      var obs = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting) runCounters();
+      });
+      obs.observe(counters[0]);
     }
   }
 
-  function onTouchEnd() {
-    if (!pulling) return;
-    pulling = false;
-    if (triggered) {
-      // Show loading state briefly then reload
-      indicator.classList.add('ptr-loading');
-      label.textContent = 'Recargando...';
-      setIndicatorHeight(56);
-      setTimeout(function() { location.reload(); }, 400);
-    } else {
-      resetIndicator();
-    }
-  }
-
-  function setIndicatorHeight(h) {
-    if (!indicator) return;
-    indicator.style.height = h + 'px';
-    var inner = document.getElementById('ptr-inner');
-    if (inner) inner.style.opacity = Math.min(h / PTR_THRESHOLD, 1).toString();
-  }
-
-  function resetIndicator() {
-    if (!indicator) return;
-    indicator.style.height = '0';
-    indicator.classList.remove('ptr-ready','ptr-loading');
-    var inner = document.getElementById('ptr-inner');
-    if (inner) inner.style.opacity = '0';
-    currentPull = 0;
-    triggered   = false;
-  }
-
-  // Init after DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
+
 })();
 
 

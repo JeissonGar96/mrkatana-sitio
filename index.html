@@ -2749,7 +2749,13 @@ function showLessons(mod, level, progress) {
 
 function openMobilePlayer(lesson, allLessons, progress, level, module) {
   courseState.lessonId = lesson.id;
+
+  // Find current index in allLessons
+  var idx = allLessons.findIndex(function(l){ return l.id === lesson.id; });
+  var hasPrev = idx > 0;
+  var hasNext = idx < allLessons.length - 1;
   var done = progress && progress[lesson.id];
+
   var embedUrl = (lesson.video_url || '').trim();
   if (embedUrl) {
     embedUrl = embedUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/');
@@ -2762,40 +2768,95 @@ function openMobilePlayer(lesson, allLessons, progress, level, module) {
   var overlay = document.createElement('div');
   overlay.id = 'mobile-player-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:#0f1318;z-index:800;overflow-y:auto;padding-bottom:80px;';
+
   overlay.innerHTML =
-    '<div style="position:sticky;top:0;z-index:2;background:#0f1318;border-bottom:1px solid var(--br);padding:12px 16px;display:flex;align-items:center;gap:10px;">' +
-      '<button id="mob-player-back" style="background:none;border:none;color:#9a9a9a;display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;padding:4px 0;font-family:sans-serif;">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Atrás' +
+    // ── Top bar ──
+    '<div style="position:sticky;top:0;z-index:2;background:#0f1318;border-bottom:1px solid var(--br);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">' +
+      '<button id="mob-player-back" style="background:none;border:none;color:#9a9a9a;display:flex;align-items:center;gap:5px;font-size:.82rem;cursor:pointer;padding:4px 0;">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Lista' +
       '</button>' +
+      '<div style="font-size:.68rem;color:#555;">' + (idx+1) + ' / ' + allLessons.length + '</div>' +
     '</div>' +
+
+    // ── Video ──
     '<div style="width:100%;aspect-ratio:16/9;background:#000;">' +
       (embedUrl
-        ? '<iframe src="' + embedUrl + '?rel=0&autoplay=1&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;display:block;"></iframe>'
-        : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0a0d12;color:#333;font-size:.8rem;">Video próximamente</div>') +
+        ? '<iframe src="' + embedUrl + '?rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;display:block;"></iframe>'
+        : '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0d12;gap:10px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div style="color:#333;font-size:.8rem;">Video próximamente</div></div>') +
     '</div>' +
-    '<div style="padding:18px 16px;">' +
-      '<div style="font-size:.66rem;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">' + (module ? module.title : '') + '</div>' +
-      '<div style="font-family:var(--font-cond,sans-serif);font-size:1.4rem;font-weight:800;color:#f0f0f0;text-transform:uppercase;margin-bottom:12px;line-height:1.2;">' + lesson.title + '</div>' +
-      (lesson.description ? '<div style="font-size:.83rem;color:#666;line-height:1.7;margin-bottom:16px;">' + lesson.description + '</div>' : '') +
+
+    // ── Info ──
+    '<div style="padding:16px;">' +
+      '<div style="font-size:.65rem;color:#444;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">' + (module ? module.title : '') + '</div>' +
+      '<div style="font-family:var(--font-cond,sans-serif);font-size:1.3rem;font-weight:800;color:#f0f0f0;text-transform:uppercase;margin-bottom:10px;line-height:1.2;">' + lesson.title + '</div>' +
+      (lesson.description ? '<div style="font-size:.82rem;color:#666;line-height:1.7;margin-bottom:14px;">' + lesson.description + '</div>' : '') +
       (lesson.has_task && lesson.task_instructions
-        ? '<div style="background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:14px;margin-bottom:16px;">' +
-            '<div style="font-size:.7rem;font-weight:700;color:#c9a84c;text-transform:uppercase;margin-bottom:8px;">📝 Tarea</div>' +
-            '<div style="font-size:.81rem;color:#9a9a9a;line-height:1.6;">' + lesson.task_instructions + '</div>' +
+        ? '<div style="background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:14px;margin-bottom:14px;">' +
+            '<div style="font-size:.68rem;font-weight:700;color:#c9a84c;text-transform:uppercase;margin-bottom:6px;">📝 Tarea</div>' +
+            '<div style="font-size:.8rem;color:#9a9a9a;line-height:1.6;">' + lesson.task_instructions + '</div>' +
             (!done ? '<textarea id="mob-task-input" class="ai" placeholder="Escribe tu respuesta..." rows="3" style="margin-top:10px;width:100%;box-sizing:border-box;font-size:16px;resize:vertical;"></textarea>' : '') +
           '</div>'
         : '') +
-      '<div style="margin-top:16px;">' +
-        (!done
-          ? '<button class="abtn2" id="mob-btn-complete" style="width:100%;padding:12px;font-size:.86rem;">✓ Marcar como completada</button>'
-          : '<div style="display:flex;align-items:center;justify-content:center;gap:8px;color:#4ade80;font-size:.82rem;padding:12px;border:1px solid rgba(74,222,128,.2);border-radius:8px;background:rgba(74,222,128,.05);">✓ Completada</div>') +
+
+      // ── Action buttons ──
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">' +
+
+        // Mark as done button
+        '<div id="mob-done-wrap">' +
+          (done
+            ? '<div style="display:flex;align-items:center;justify-content:center;gap:8px;color:#4ade80;font-size:.84rem;padding:12px;border:1px solid rgba(74,222,128,.2);border-radius:8px;background:rgba(74,222,128,.05);">✓ Marcada como vista</div>'
+            : '<button id="mob-btn-complete" class="abtn2" style="width:100%;padding:12px;font-size:.86rem;">✓ Marcar como vista</button>') +
+        '</div>' +
+
+        // Prev / Next buttons
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+          '<button id="mob-btn-prev" style="padding:11px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;' +
+            (hasPrev ? 'background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.25);color:var(--sl);' : 'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#333;cursor:default;') +
+            '">' + (hasPrev ? '← Anterior' : '← Anterior') + '</button>' +
+          '<button id="mob-btn-next" style="padding:11px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;' +
+            (hasNext ? 'background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.25);color:var(--sl);' : 'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#333;cursor:default;') +
+            '">' + (hasNext ? 'Siguiente →' : 'Siguiente →') + '</button>' +
+        '</div>' +
+
       '</div>' +
     '</div>';
 
   document.body.appendChild(overlay);
 
-  document.getElementById('mob-player-back').addEventListener('click', function() { overlay.remove(); });
+  // Back button
+  document.getElementById('mob-player-back').addEventListener('click', function() {
+    overlay.remove();
+  });
+
+  // Mark as done
   var btnC = document.getElementById('mob-btn-complete');
-  if (btnC) btnC.addEventListener('click', function() { markDone(lesson.id, true); });
+  if (btnC) btnC.addEventListener('click', function() {
+    markDone(lesson.id, true);
+    progress[lesson.id] = true;
+    var wrap = document.getElementById('mob-done-wrap');
+    if (wrap) wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;color:#4ade80;font-size:.84rem;padding:12px;border:1px solid rgba(74,222,128,.2);border-radius:8px;background:rgba(74,222,128,.05);">✓ Marcada como vista</div>';
+    // Update sidebar item
+    var li = document.getElementById('li-' + lesson.id);
+    if (li) li.classList.add('done');
+  });
+
+  // Previous button
+  var btnPrev = document.getElementById('mob-btn-prev');
+  if (btnPrev && hasPrev) {
+    btnPrev.addEventListener('click', function() {
+      overlay.remove();
+      openMobilePlayer(allLessons[idx-1], allLessons, progress, level, module);
+    });
+  }
+
+  // Next button
+  var btnNext = document.getElementById('mob-btn-next');
+  if (btnNext && hasNext) {
+    btnNext.addEventListener('click', function() {
+      overlay.remove();
+      openMobilePlayer(allLessons[idx+1], allLessons, progress, level, module);
+    });
+  }
 }
 
 

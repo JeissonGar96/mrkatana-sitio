@@ -930,6 +930,14 @@ nav{
   #card-1on1{ order:2 !important; }
 }
 
+/* iOS input zoom fix — font-size must be >= 16px to prevent auto-zoom */
+@media(max-width:860px) {
+  input, select, textarea,
+  .fi, .ai, .fi:focus, .ai:focus {
+    font-size: 16px !important;
+  }
+}
+
 /* ── ECONOMIC CALENDAR ── */
 .cal-day-group { margin-bottom: 22px; }
 .cal-day-header {
@@ -1955,9 +1963,12 @@ function fmtE(m) {
 function loadApp(user) {
   cUser = user;
   closeModal();
-  document.getElementById('appdash').style.display = 'block';
+  var appdashEl = document.getElementById('appdash');
+  appdashEl.style.display = 'block';
+  appdashEl.scrollTop = 0;
   document.body.style.overflow = 'hidden';
   document.body.style.height = '100%';
+
   sb.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
     cProfile = r.data;
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
@@ -3508,7 +3519,7 @@ function toggleActMenu(btn) {
   menu.style.left = Math.min(rect.right - 140, window.innerWidth - 150) + 'px';
 }
 document.addEventListener('click', function(e) {
-  if (!e.target.closest || (!e.target.closest('.act-menu') && !e.target.getAttribute('onclick')?.includes('toggleActMenu'))) {
+  if (!e.target.closest || (!e.target.closest('.act-menu') && !(e.target.getAttribute('onclick') && e.target.getAttribute('onclick').includes('toggleActMenu')))) {
     document.querySelectorAll('.act-menu').forEach(function(m){ m.style.display='none'; });
   }
 });

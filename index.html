@@ -1787,7 +1787,7 @@ function openLevel(level) {
   m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
 
   // Load first module to pass to showLessons
-  sb.from('course_modules').select('id').eq('level_id', level.id).eq('is_published', true).order('sort_order').limit(1).then(function(r) {
+  sb.from('course_modules').select('id').eq('level_id', level.id).order('sort_order').limit(1).then(function(r) {
     var firstMod = r.data && r.data.length ? r.data[0] : { id: null };
     showLessons(firstMod, level, {});
   });
@@ -1942,7 +1942,7 @@ function showLessons(mod, level, progress) {
           item.id = 'li-' + lesson.id;
           item.innerHTML =
             (thumbUrl
-              ? '<img src="' + thumbUrl + '" class="ls-lesson-thumb" onerror="this.style.display=\"none\"" />'
+              ? '<img src="' + thumbUrl + '" class="ls-lesson-thumb" width="72" height="44" onerror="this.style.display=\"none\"" loading="eager" />'
               : '<div class="ls-lesson-thumb ls-lesson-thumb-empty"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="rgba(255,255,255,.15)"/></svg></div>') +
             '<div class="ls-lesson-info">' +
               '<div class="ls-lesson-title">' + lesson.title + '</div>' +

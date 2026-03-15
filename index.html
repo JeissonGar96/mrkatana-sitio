@@ -2968,8 +2968,8 @@ function rSes() {
 
     // Separate active, upcoming, past
     var active   = sessions.filter(function(s){ return s.is_active; });
-    var upcoming = sessions.filter(function(s){ return !s.is_active && new Date(s.scheduled_at) > now; });
-    var past     = sessions.filter(function(s){ return !s.is_active && new Date(s.scheduled_at) <= now && s.recording_url; });
+    var upcoming = sessions.filter(function(s){ return !s.is_active && new Date(s.scheduled_at) > now; }).sort(function(a,b){ return new Date(a.scheduled_at)-new Date(b.scheduled_at); });
+    var past     = sessions.filter(function(s){ return !s.is_active && s.recording_url; }).sort(function(a,b){ return new Date(b.scheduled_at)-new Date(a.scheduled_at); });
 
     var html = '<div class="atit">En Vivo</div>';
 
@@ -3967,41 +3967,181 @@ function loadCodes() {
 }
 
 function rAdmSe() {
-  var c=document.getElementById('a-se');if(!c)return;
-  c.innerHTML='<div class="aform"><div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">➕ Programar sesión</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;"><div><label class="al">Título</label><input id="s-t" class="ai" placeholder="Pre-Market"></div><div><label class="al">Fecha y hora</label><input id="s-d" type="datetime-local" class="ai"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;"><div><label class="al">Link Discord/Zoom</label><input id="s-u" class="ai" placeholder="https://discord.gg/..."></div><div><label class="al">Descripción</label><input id="s-desc" class="ai" placeholder="Descripción"></div></div><div style="display:flex;gap:11px;align-items:center;margin-top:11px;"><button onclick="cSe()" class="abtn2">Programar</button><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="s-act"> Activar ahora</label></div></div><div id="se-t"><span class="spin"></span></div>';
-  sb.from('live_sessions').select('*').order('scheduled_at',{ascending:false}).then(function(r){
-    var t=document.getElementById('se-t');if(!t)return;
-    if(!r.data||!r.data.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin sesiones.</p>';return;}
-    var tbl2 = document.createElement('table'); tbl2.className='dtab';
-    tbl2.innerHTML = '<thead><tr><th>Título</th><th>Fecha</th><th>En vivo</th><th></th></tr></thead>';
-    var tb2 = document.createElement('tbody');
+  var c = document.getElementById('a-se'); if (!c) return;
+  c.innerHTML =
+    '<div class="aform">' +
+      '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">➕ Programar sesión</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
+        '<div><label class="al">Título</label><input id="s-t" class="ai" placeholder="Pre-Market ES Futuros"></div>' +
+        '<div><label class="al">Fecha y hora</label><input id="s-d" type="datetime-local" class="ai"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;">' +
+        '<div><label class="al">Link Discord</label><input id="s-u" class="ai" placeholder="https://discord.gg/..."></div>' +
+        '<div><label class="al">Descripción</label><input id="s-desc" class="ai" placeholder="Descripción opcional"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:11px;align-items:center;margin-top:11px;">' +
+        '<button onclick="cSe()" class="abtn2">Programar</button>' +
+        '<label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="s-act"> Activar ahora</label>' +
+      '</div>' +
+    '</div>' +
+    '<div id="se-t"><span class="spin"></span></div>';
+
+  sb.from('live_sessions').select('*').order('scheduled_at', {ascending: false}).then(function(r) {
+    var t = document.getElementById('se-t'); if (!t) return;
+    if (!r.data || !r.data.length) {
+      t.innerHTML = '<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin sesiones.</p>';
+      return;
+    }
+
+    t.innerHTML = '';
     r.data.forEach(function(s) {
-      var tr2 = document.createElement('tr');
-      var dateStr = new Date(s.scheduled_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
-      tr2.innerHTML = '<td style="color:#f0f0f0;">'+(s.title||'')+'</td><td style="font-size:.74rem;">'+dateStr+'</td><td></td><td></td>';
-      var lbl = document.createElement('label');
-      lbl.style.cssText = 'cursor:pointer;display:flex;align-items:center;gap:5px;';
-      var chk = document.createElement('input');
-      chk.type = 'checkbox'; chk.checked = !!s.is_active;
-      chk.addEventListener('change', function(){ togSe(s.id, this.checked); });
-      var spn = document.createElement('span');
-      spn.style.cssText = 'font-size:.74rem;color:'+(s.is_active?'#4ade80':'#555')+';';
-      spn.textContent = s.is_active ? 'Activo' : 'Inactivo';
-      lbl.appendChild(chk); lbl.appendChild(spn);
-      tr2.cells[2].appendChild(lbl);
-      var btn2 = document.createElement('button');
-      btn2.textContent = '✕';
-      btn2.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';
-      btn2.addEventListener('click', function(){ dSe(s.id); });
-      tr2.cells[3].appendChild(btn2);
-      tb2.appendChild(tr2);
+      var card = document.createElement('div');
+      card.style.cssText = 'background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;';
+
+      var dateStr = new Date(s.scheduled_at).toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+      var timeStr = new Date(s.scheduled_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+
+      card.innerHTML =
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">' +
+          '<div>' +
+            '<div style="font-size:.86rem;font-weight:600;color:#f0f0f0;">' + (s.title||'') + '</div>' +
+            '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + dateStr + ' · ' + timeStr + '</div>' +
+            (s.description ? '<div style="font-size:.72rem;color:#666;margin-top:2px;">' + s.description + '</div>' : '') +
+          '</div>' +
+          '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">' +
+            '<label style="cursor:pointer;display:flex;align-items:center;gap:5px;font-size:.72rem;color:' + (s.is_active?'#4ade80':'#555') + ';">' +
+              '<input type="checkbox" ' + (s.is_active?'checked':'') + ' data-id="' + s.id + '" onchange="togSe(this.dataset.id, this.checked)"> ' +
+              (s.is_active ? 'Activo' : 'Inactivo') +
+            '</label>' +
+          '</div>' +
+        '</div>' +
+
+        // Recording URL field
+        '<div style="margin-bottom:10px;">' +
+          '<label class="al">URL Grabación (YouTube)</label>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<input id="rec-' + s.id + '" class="ai" style="flex:1;" placeholder="https://youtube.com/embed/..." value="' + (s.recording_url||'') + '">' +
+            '<button onclick="saveRec(this.dataset.id)" data-id="' + s.id + '" style="background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:6px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;white-space:nowrap;">Guardar</button>' +
+          '</div>' +
+        '</div>' +
+
+        // Edit + Delete buttons
+        '<div style="display:flex;gap:8px;">' +
+          '<button onclick="openEditSe(this.dataset.id)" data-id="' + s.id + '" style="flex:1;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:6px;border-radius:6px;font-size:.72rem;cursor:pointer;">✎ Editar</button>' +
+          '<button onclick="dSe(this.dataset.id)" data-id="' + s.id + '" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:6px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;">✕</button>' +
+        '</div>';
+
+      t.appendChild(card);
     });
-    tbl2.appendChild(tb2); t.innerHTML=''; var w2=document.createElement('div'); w2.className='dtab-wrap'; w2.appendChild(tbl2); t.appendChild(w2);
   });
 }
-function cSe(){var t=document.getElementById('s-t').value.trim(),d=document.getElementById('s-d').value;if(!t||!d)return tst('Título y fecha requeridos',1);sb.from('live_sessions').insert({title:t,scheduled_at:new Date(d).toISOString(),discord_url:document.getElementById('s-u').value.trim(),description:document.getElementById('s-desc').value.trim(),is_active:document.getElementById('s-act').checked,recording_url:(document.getElementById('s-rec')||{value:''}).value.trim()||null}).then(function(r){if(r.error)return tst('Error: '+r.error.message,1);tst('✓ Programada');rAdmSe();});}
-function togSe(id,v){sb.from('live_sessions').update({is_active:v}).eq('id',id).then(function(){tst(v?'✓ Banner activo':'Desactivado');rAdmSe();});}
-function dSe(id){if(!confirm('¿Eliminar?'))return;sb.from('live_sessions').delete().eq('id',id).then(function(){tst('Eliminada');rAdmSe();});}
+
+function saveRec(id) {
+  var recId = typeof id === 'string' ? id : id;
+  var val = (document.getElementById('rec-' + recId)||{}).value || '';
+  id = recId;
+  sb.from('live_sessions').update({ recording_url: val.trim() || null }).eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Grabación guardada');
+  });
+}
+
+function openEditSe(id) {
+  sb.from('live_sessions').select('*').eq('id', id).single().then(function(r) {
+    if (!r.data) return;
+    var s = r.data;
+    var existing = document.getElementById('edit-se-modal');
+    if (existing) existing.remove();
+
+    // Format datetime for input
+    var dt = new Date(s.scheduled_at);
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    var localDt = dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate()) + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+
+    var overlay = document.createElement('div');
+    overlay.id = 'edit-se-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+    overlay.innerHTML =
+      '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:480px;padding:24px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
+          '<div style="font-size:.92rem;font-weight:700;">✎ Editar sesión</div>' +
+          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
+          '<div><label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '"></div>' +
+          '<div><label class="al">Fecha y hora</label><input id="es-d" type="datetime-local" class="ai" value="' + localDt + '"></div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
+          '<div><label class="al">Link Discord</label><input id="es-u" class="ai" value="' + (s.discord_url||'') + '"></div>' +
+          '<div><label class="al">Descripción</label><input id="es-desc" class="ai" value="' + (s.description||'') + '"></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:6px;">' +
+          '<button id="es-save-btn" onclick="saveSe(this.dataset.id)" data-id="' + s.id + '" class="abtn2" style="flex:1;padding:10px;">Guardar cambios</button>' +
+          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 16px;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  });
+}
+
+function saveSe(id) {
+  var t = (document.getElementById('es-t')||{}).value || '';
+  var d = (document.getElementById('es-d')||{}).value || '';
+  if (!t || !d) return tst('Título y fecha requeridos', 1);
+  var btn = document.getElementById('es-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  sb.from('live_sessions').update({
+    title: t.trim(),
+    scheduled_at: new Date(d).toISOString(),
+    discord_url: (document.getElementById('es-u')||{}).value.trim() || '',
+    description: (document.getElementById('es-desc')||{}).value.trim() || '',
+  }).eq('id', id).then(function(r) {
+    if (r.error) { tst('Error: ' + r.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+    tst('✓ Sesión actualizada');
+    var m = document.getElementById('edit-se-modal');
+    if (m) m.remove();
+    rAdmSe();
+  });
+}
+
+function cSe() {
+  var t = document.getElementById('s-t').value.trim();
+  var d = document.getElementById('s-d').value;
+  if (!t || !d) return tst('Título y fecha requeridos', 1);
+  sb.from('live_sessions').insert({
+    title: t,
+    scheduled_at: new Date(d).toISOString(),
+    discord_url: document.getElementById('s-u').value.trim(),
+    description: document.getElementById('s-desc').value.trim(),
+    is_active: document.getElementById('s-act').checked,
+    recording_url: null,
+  }).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Programada');
+    document.getElementById('s-t').value = '';
+    document.getElementById('s-d').value = '';
+    document.getElementById('s-u').value = '';
+    document.getElementById('s-desc').value = '';
+    document.getElementById('s-act').checked = false;
+    rAdmSe();
+  });
+}
+
+function togSe(id, v) {
+  sb.from('live_sessions').update({ is_active: v }).eq('id', id).then(function() {
+    tst(v ? '✓ Sesión activada' : 'Sesión desactivada');
+    rAdmSe();
+  });
+}
+
+function dSe(id) {
+  if (!confirm('¿Eliminar esta sesión?')) return;
+  sb.from('live_sessions').delete().eq('id', id).then(function() {
+    tst('Eliminada'); rAdmSe();
+  });
+}
+
 
 function toggleActMenu(btn) {
   document.querySelectorAll('.act-menu').forEach(function(m) {

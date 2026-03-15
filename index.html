@@ -3339,7 +3339,7 @@ function rAdmCl() {
 
 function loadAdmLevels() {
   sb.from('course_levels')
-    .select('*, course_modules(*, course_lessons(id,title,sort_order,is_published,video_url,description,duration_minutes,has_task,task_instructions))')
+    .select('*, course_modules(*, course_lessons(id,title,sort_order,is_published,video_url,description,duration_minutes,has_task,task_instructions,module_id))')
     .order('sort_order')
     .then(function(r) {
       var t = document.getElementById('lv-table'); if (!t) return;
@@ -3638,7 +3638,7 @@ async function saveEditModal(type, data, parentLvId, parentModId) {
     });
 
   } else if (type === 'lesson') {
-    var modId = data ? data.module_id : parentModId;
+    var modId = (data && data.module_id) ? data.module_id : parentModId;
     if (!modId) { tst('Sin módulo asignado', 1); return; }
     var hasTask = (document.getElementById('em-task')||{}).checked;
     var payload3 = {

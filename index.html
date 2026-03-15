@@ -1741,45 +1741,12 @@ function _restoreModule(state) {
 function _restoreLesson(state) {
   sb.from('course_lessons').select('*, course_modules(*, course_levels(*))').eq('id', state.lessonId).single().then(function(r) {
     if (!r.data || !r.data.course_modules) { rClases(); return; }
-    var lesson = r.data;
-    var mod = r.data.course_modules;
+    var mod   = r.data.course_modules;
     var level = mod.course_levels;
-    sb.from('course_lessons').select('*').eq('module_id', mod.id).eq('is_published', true).order('sort_order').then(function(lr) {
-      var allLes = lr.data || [];
-      var lessonIds = allLes.map(function(l){ return l.id; });
-      if (!lessonIds.length) { rClases(); return; }
-      sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
-        var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
-        courseState.levelId = level.id;
-        courseState.moduleId = mod.id;
-        var m = document.getElementById('amain');
-        m.innerHTML =
-          '<div class="lesson-layout" id="lesson-layout">' +
-            '<div class="lesson-sidebar" id="lesson-sidebar">' +
-              '<div class="lesson-sidebar-header">' +
-                '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title + '</div>' +
-                '<div class="lesson-mod-title">' + mod.title + '</div>' +
-              '</div>' +
-              '<div id="lesson-list"></div>' +
-            '</div>' +
-            '<div class="lesson-main" id="lesson-main"></div>' +
-          '</div>';
-        document.getElementById('back-mods').addEventListener('click', function() { showModules(level); });
-        var list = document.getElementById('lesson-list');
-        allLes.forEach(function(les, idx) {
-          var done = prog[les.id];
-          var item = document.createElement('div');
-          item.className = 'lesson-item' + (done ? ' done' : '');
-          item.id = 'li-' + les.id;
-          item.innerHTML =
-            '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx+1)) + '</div>' +
-            '<div class="lesson-item-info"><div class="lesson-item-title">' + les.title + '</div><div class="lesson-item-meta">' + (les.duration_minutes ? les.duration_minutes+' min' : '') + (les.has_task ? ' · Tarea' : '') + '</div></div>';
-          item.addEventListener('click', function() { playLesson(les, allLes, prog); });
-          list.appendChild(item);
-        });
-        playLesson(lesson, allLes, prog);
-      });
-    });
+    courseState.levelId  = level.id;
+    courseState.moduleId = mod.id;
+    courseState.lessonId = state.lessonId;
+    showLessons(mod, level, {});
   });
 }
 
@@ -1788,10 +1755,6 @@ function _parseUrlToState(path) {
     var stored = sessionStorage.getItem('spa_redirect');
     if (stored) { sessionStorage.removeItem('spa_redirect'); path = stored; }
   } catch(e) {}
-  // Si no hay path guardado, usar la URL actual (recarga de página)
-  if (!path || path === '/app/' || path === '/app') {
-    path = window.location.pathname;
-  }
   var m = path.match(/^\/app\/([^\/]+)(?:\/([^\/]+)\/([^\/]+))?/);
   if (!m) return { section: 'dash' };
   var section = m[1] || 'dash';
@@ -2531,55 +2494,7 @@ function goToLastLesson() {
       // Navigate: set state and open the module with that lesson
       courseState.levelId = target.level.id;
       courseState.moduleId = target.mod.id;
-
-      // Get all lessons for this module to pass to showLessons properly
-      sb.from('course_lessons').select('*').eq('module_id', target.mod.id).eq('is_published', true).order('sort_order').then(function(modLessons) {
-        var modLessonIds = (modLessons.data || []).map(function(l){ return l.id; });
-
-        // Build progress for this module
-        sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', modLessonIds.length ? modLessonIds : ['__none__']).then(function(modPr) {
-          var modProgress = {};
-          if (modPr.data) modPr.data.forEach(function(p){ modProgress[p.lesson_id] = true; });
-
-          // Render the lesson layout
-          m.innerHTML =
-            '<div class="lesson-layout" id="lesson-layout">' +
-              '<div class="lesson-sidebar" id="lesson-sidebar">' +
-                '<div class="lesson-sidebar-header">' +
-                  '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + target.level.title + '</div>' +
-                  '<div class="lesson-mod-title">' + target.mod.title + '</div>' +
-                '</div>' +
-                '<div id="lesson-list"><span class="spin"></span></div>' +
-              '</div>' +
-              '<div class="lesson-main" id="lesson-main">' +
-                '<div class="lesson-placeholder"><div style="color:#444;font-size:.82rem;">Cargando clase...</div></div>' +
-              '</div>' +
-            '</div>';
-
-          document.getElementById('back-mods') && document.getElementById('back-mods').addEventListener('click', function() { var am = document.getElementById('amain'); if(am){am.style.padding='';am.style.overflow='';} showLevels(); });
-
-          var list = document.getElementById('lesson-list');
-          var allLes = modLessons.data || [];
-          list.innerHTML = '';
-          allLes.forEach(function(lesson, idx) {
-            var done = modProgress[lesson.id];
-            var item = document.createElement('div');
-            item.className = 'lesson-item' + (done ? ' done' : '');
-            item.id = 'li-' + lesson.id;
-            item.innerHTML =
-              '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx + 1)) + '</div>' +
-              '<div class="lesson-item-info">' +
-                '<div class="lesson-item-title">' + lesson.title + '</div>' +
-                '<div class="lesson-item-meta">' + (lesson.duration_minutes ? lesson.duration_minutes + ' min' : '') + (lesson.has_task ? ' · Tarea' : '') + '</div>' +
-              '</div>';
-            item.addEventListener('click', function() { playLesson(lesson, allLes, modProgress); });
-            list.appendChild(item);
-          });
-
-          // Auto-play the target lesson
-          playLesson(target.lesson, allLes, modProgress);
-        });
-      });
+      openLevel(target.level);
     });
   });
 }

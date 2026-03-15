@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <script>
-// SPA router bootstrap: save current /app/ path for restoration after auth loads
+// SPA router bootstrap: if loaded via a deep link (/app/clases/l/xxx),
+// store the path so window.onload can restore it, then redirect to root.
 (function() {
   var path = window.location.pathname;
-  if (path && path.indexOf('/app/') === 0) {
+  if (path && path.indexOf('/app/') === 0 && path !== '/app/') {
+    // Store intended route for restoration after redirect
     try { sessionStorage.setItem('spa_redirect', path); } catch(e){}
   }
 })();
@@ -326,25 +328,20 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 /* ── LESSON SIDEBAR — Teachable style ── */
 .lesson-layout {
-  display: flex;
-  height: calc(100vh - 130px);
-  min-height: 500px;
+  display: flex !important;
+  height: calc(100vh - 61px);
   overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid rgba(91,127,166,.2);
-  background: #111418;
-  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+  margin: -30px;
 }
 .lesson-sidebar {
   width: 300px;
   min-width: 300px;
   flex-shrink: 0;
-  border-right: 1px solid rgba(91,127,166,.15);
+  border-right: 1px solid var(--br);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   background: #111418;
-  border-radius: 12px 0 0 12px;
 }
 .lesson-sidebar::-webkit-scrollbar { width: 4px; }
 .lesson-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
@@ -358,8 +355,6 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   flex: 1;
   overflow-y: auto;
   background: #0f1318;
-  border-radius: 0 12px 12px 0;
-  min-width: 0;
 }
 .lesson-main::-webkit-scrollbar { width: 4px; }
 .lesson-main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
@@ -442,14 +437,12 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 .lesson-layout-mobile {
   display: block !important;
   height: auto !important;
-  border-radius: 10px !important;
-  min-height: unset !important;
+  margin: -18px !important;
 }
 .lesson-layout-mobile .lesson-sidebar {
   width: 100% !important;
   height: auto !important;
   border-right: none !important;
-  border-radius: 10px !important;
   max-height: none !important;
   overflow-y: visible !important;
 }
@@ -519,7 +512,7 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 /* Mobile */
 @media(max-width:860px) {
-  .lesson-layout { flex-direction: column; height: auto; min-height: unset; }
+  .lesson-layout { flex-direction: column; height: auto; margin: -18px; margin-bottom: -80px; }
   .lesson-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--br); max-height: 45vh; }
   .lesson-main { min-height: 60vh; }
   .lesson-info-panel { padding: 16px; }
@@ -1715,7 +1708,7 @@ function navigateTo(v) {
 
 function _restoreLevel(state) {
   sb.from('course_levels').select('*, course_modules(id)').eq('id', state.levelId).single().then(function(r) {
-    if (r.data) openLevel(r.data);
+    if (r.data) showModules(r.data);
     else rClases();
   });
 }
@@ -1737,17 +1730,844 @@ function _restoreModule(state) {
 }
 
 function _restoreLesson(state) {
-  // Load the lesson's module and level, then open the full sidebar layout
   sb.from('course_lessons').select('*, course_modules(*, course_levels(*))').eq('id', state.lessonId).single().then(function(r) {
     if (!r.data || !r.data.course_modules) { rClases(); return; }
     var lesson = r.data;
-    var mod    = r.data.course_modules;
-    var level  = mod.course_levels;
-    courseState.levelId  = level.id;
-    courseState.moduleId = mod.id;
-    courseState.lessonId = lesson.id;
-    // Open the full sidebar, then auto-play this specific lesson
-    showLessons(mod, level, {});
+    var mod = r.data.course_modules;
+    var level = mod.course_levels;
+    sb.from('course_lessons').select('*').eq('module_id', mod.id).eq('is_published', true).order('sort_order').then(function(lr) {
+      var allLes = lr.data || [];
+      var lessonIds = allLes.map(function(l){ return l.id; });
+      if (!lessonIds.length) { rClases(); return; }
+      sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', lessonIds).then(function(pr) {
+        var prog = {}; if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id]=true; });
+        courseState.levelId = level.id;
+        courseState.moduleId = mod.id;
+        var m = document.getElementById('amain');
+        m.innerHTML =
+          '<div class="lesson-layout" id="lesson-layout">' +
+            '<div class="lesson-sidebar" id="lesson-sidebar">' +
+              '<div class="lesson-sidebar-header">' +
+                '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title + '</div>' +
+                '<div class="lesson-mod-title">' + mod.title + '</div>' +
+              '</div>' +
+              '<div id="lesson-list"></div>' +
+            '</div>' +
+            '<div class="lesson-main" id="lesson-main"></div>' +
+          '</div>';
+        document.getElementById('back-mods').addEventListener('click', function() { showModules(level); });
+        var list = document.getElementById('lesson-list');
+        allLes.forEach(function(les, idx) {
+          var done = prog[les.id];
+          var item = document.createElement('div');
+          item.className = 'lesson-item' + (done ? ' done' : '');
+          item.id = 'li-' + les.id;
+          item.innerHTML =
+            '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx+1)) + '</div>' +
+            '<div class="lesson-item-info"><div class="lesson-item-title">' + les.title + '</div><div class="lesson-item-meta">' + (les.duration_minutes ? les.duration_minutes+' min' : '') + (les.has_task ? ' · Tarea' : '') + '</div></div>';
+          item.addEventListener('click', function() { playLesson(les, allLes, prog); });
+          list.appendChild(item);
+        });
+        playLesson(lesson, allLes, prog);
+      });
+    });
+  });
+}
+
+function _parseUrlToState(path) {
+  try {
+    var stored = sessionStorage.getItem('spa_redirect');
+    if (stored) { sessionStorage.removeItem('spa_redirect'); path = stored; }
+  } catch(e) {}
+  var m = path.match(/^\/app\/([^\/]+)(?:\/([^\/]+)\/([^\/]+))?/);
+  if (!m) return { section: 'dash' };
+  var section = m[1] || 'dash';
+  var valid = ['dash','clases','sesiones','reuniones','perfil','admin'];
+  if (valid.indexOf(section) === -1) return { section: 'dash' };
+  var state = { section: section };
+  if (section === 'clases' && m[2] && m[3]) {
+    if (m[2] === 'l')  state.lessonId  = m[3];
+    if (m[2] === 'm')  state.moduleId  = m[3];
+    if (m[2] === 'lv') state.levelId   = m[3];
+  }
+  return state;
+}
+
+// popstate — browser back/forward
+window.addEventListener('popstate', function(e) {
+  var state = e.state;
+  if (!state || !state.section || state.section === '__landing__') {
+    if (cUser) {
+      document.getElementById('appdash').style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.remove('visible');
+    }
+    return;
+  }
+  if (!cUser) {
+    sb.auth.getSession().then(function(r) {
+      if (r.data && r.data.session) loadApp(r.data.session.user);
+    });
+    return;
+  }
+  var appdash = document.getElementById('appdash');
+  if (appdash && appdash.style.display !== 'block') {
+    appdash.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+    var mobNav = document.getElementById('mob-nav');
+    if (mobNav) mobNav.classList.add('visible');
+  }
+  _renderSection(state);
+});
+
+// ── INIT ──
+window.onload = function() {
+  // Set baseline state for landing (only if no state yet)
+  if (!history.state) {
+    history.replaceState({ section: '__landing__' }, '', window.location.pathname);
+  }
+
+  // Scroll nav
+  window.addEventListener('scroll', function() {
+    if (window.innerWidth > 860) {
+      document.getElementById('nav').style.padding = window.scrollY > 50 ? '10px 60px' : '14px 60px';
+    }
+  });
+
+  // Hamburger
+  var hbtn = document.getElementById('hbtn');
+  var navlinks = document.getElementById('navlinks');
+  if (hbtn && navlinks) {
+    hbtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      navlinks.classList.toggle('open');
+    });
+    // Close when clicking a link
+    navlinks.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        navlinks.classList.remove('open');
+      });
+    });
+    // Close when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!hbtn.contains(e.target) && !navlinks.contains(e.target)) {
+        navlinks.classList.remove('open');
+      }
+    });
+  }
+
+  // reveal disabled - all sections visible
+
+  // Open modal button
+  document.getElementById('btncliente').onclick = function(e) {
+    e.preventDefault();
+    document.getElementById('overlay').classList.add('open');
+    if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
+  };
+
+  // Close modal
+  document.getElementById('mcls').onclick = closeModal;
+  document.getElementById('overlay').onclick = function(e) {
+    if (e.target === this) closeModal();
+  };
+  document.getElementById('lnk-precio').onclick = function() { closeModal(); };
+
+  // Tabs
+  document.getElementById('t-in').onclick = function() { switchTab('in'); };
+  document.getElementById('t-reg').onclick = function() { switchTab('reg'); };
+
+  // Auth
+  document.getElementById('btn-in').onclick = doLogin;
+  document.getElementById('btn-reg').onclick = doReg;
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // Logout
+  document.getElementById('btn-out').onclick = function() {
+    sb.auth.signOut().then(function() {
+      document.getElementById('appdash').style.display = 'none';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      cUser = null; cProfile = null;
+      // Hide mobile nav
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.classList.remove('visible');
+      // Reset login form
+      var liE = document.getElementById('li-e'); if (liE) liE.value = '';
+      var liP = document.getElementById('li-p'); if (liP) liP.value = '';
+      var btnIn = document.getElementById('btn-in');
+      if (btnIn) { btnIn.disabled = false; btnIn.textContent = 'Entrar al portal'; }
+      var msg = document.getElementById('msg'); if (msg) msg.textContent = '';
+      // Switch back to login tab
+      switchTab('in');
+    });
+  };
+
+  // Bind sidebar + mobile nav to global navigateTo
+  document.querySelectorAll('.snav').forEach(function(b) {
+    b.onclick = function() { navigateTo(this.getAttribute('data-v')); };
+  });
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b) {
+    b.onclick = function() { navigateTo(this.getAttribute('data-v')); };
+  });
+
+  // Check session
+  sb.auth.getSession().then(function(r) {
+    if (r.data && r.data.session) loadApp(r.data.session.user);
+  });
+
+  // Counter animation (all screens)
+  var counters = document.querySelectorAll('.nv[data-target]');
+  var animated = false;
+  function runCounters() {
+    if (animated) return;
+    animated = true;
+    counters.forEach(function(el) {
+      var target = parseInt(el.getAttribute('data-target'));
+      var prefix = el.getAttribute('data-prefix') || '';
+      var suffix = el.getAttribute('data-suffix') || '';
+      var duration = 1400;
+      var start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        var progress = Math.min((ts - start) / duration, 1);
+        var ease = 1 - Math.pow(1 - progress, 3);
+        el.textContent = prefix + Math.floor(ease * target) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = prefix + target + suffix;
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) runCounters(); });
+  }, {threshold: 0.3});
+  if (counters.length) obs.observe(counters[0].closest('.nums') || counters[0]);
+};
+
+// ── MODAL ──
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  if (window.innerWidth > 860) document.body.style.overflow = '';
+  hideMsg();
+}
+function switchTab(t) {
+  document.getElementById('t-in').classList.toggle('on', t==='in');
+  document.getElementById('t-reg').classList.toggle('on', t==='reg');
+  document.getElementById('f-in').style.display = t==='in' ? 'block' : 'none';
+  document.getElementById('f-reg').style.display = t==='reg' ? 'block' : 'none';
+  hideMsg();
+  if (t === 'reg') {
+    // Reset to step 1
+    document.getElementById('reg-step1').style.display = 'block';
+    document.getElementById('reg-step2').style.display = 'none';
+    initCheckout();
+  }
+}
+function showMsg(txt, isErr) {
+  var m = document.getElementById('msg');
+  m.textContent = txt;
+  m.className = 'msg ' + (isErr ? 'err' : 'ok');
+  m.style.display = 'block';
+}
+function hideMsg() {
+  var m = document.getElementById('msg');
+  m.style.display = 'none';
+}
+
+// ── AUTH ──
+function doLogin() {
+  var e = document.getElementById('li-e').value.trim();
+  var p = document.getElementById('li-p').value;
+  if (!e || !p) return showMsg('Completa todos los campos.', true);
+  var btn = document.getElementById('btn-in');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  sb.auth.signInWithPassword({ email: e, password: p }).then(function(r) {
+    if (r.error) {
+      var errMsg = fmtE(r.error.message);
+      // Show resend button if email not confirmed
+      if (r.error.message.indexOf('not confirmed') >= 0 || r.error.message.indexOf('Email not confirmed') >= 0) {
+        showMsg('Tu email no está confirmado.', true);
+        var msgDiv = document.getElementById('msg');
+        var resendBtn = document.createElement('button');
+        resendBtn.textContent = 'Reenviar email de confirmación';
+        resendBtn.style.cssText = 'margin-top:8px;background:rgba(91,127,166,.15);border:1px solid var(--bs);color:var(--sl);padding:7px 14px;border-radius:5px;font-size:.76rem;cursor:pointer;width:100%;';
+        resendBtn.onclick = function() {
+          resendBtn.disabled = true; resendBtn.textContent = 'Enviando...';
+          sb.auth.resend({ type: 'signup', email: e }).then(function(res) {
+            if (res.error) { resendBtn.disabled = false; resendBtn.textContent = 'Reenviar email de confirmación'; showMsg('Error al reenviar: ' + res.error.message, true); }
+            else { showMsg('✓ Email de confirmación reenviado. Revisa tu bandeja de entrada.', false); }
+          });
+        };
+        if (msgDiv) msgDiv.appendChild(resendBtn);
+      } else {
+        showMsg(errMsg, true);
+      }
+      btn.disabled = false; btn.textContent = 'Entrar al portal';
+    } else if (r.data && r.data.user) {
+      loadApp(r.data.user);
+    }
+  });
+}
+// Enter key on login fields
+['li-e','li-p'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+});
+// ── CHECKOUT FLOW ──
+var checkoutData = { name:'', email:'', password:'', codeData: null };
+
+function initCheckout() {
+  // Step 1: Continue button
+  var btn1 = document.getElementById('btn-step1');
+  if (btn1) btn1.addEventListener('click', function() {
+    var n = document.getElementById('rg-n').value.trim();
+    var e = document.getElementById('rg-e').value.trim();
+    var p = document.getElementById('rg-p').value;
+    if (!n || !e || !p) return showMsg('Completa todos los campos.', true);
+    if (p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
+    checkoutData.name = n; checkoutData.email = e; checkoutData.password = p;
+    checkoutData.codeData = null;
+    document.getElementById('reg-step1').style.display = 'none';
+    document.getElementById('reg-step2').style.display = 'block';
+    document.getElementById('code-msg').textContent = '';
+    document.getElementById('rg-code').value = '';
+    document.getElementById('price-display').textContent = '$600 USD';
+    document.getElementById('pay-default').style.display = 'block';
+    document.getElementById('pay-code-btn').style.display = 'none';
+    showMsg('', false);
+  });
+  // Apply code button
+  var btnCode = document.getElementById('btn-apply-code');
+  if (btnCode) btnCode.addEventListener('click', applyCode);
+  // Enter on code field
+  var codeField = document.getElementById('rg-code');
+  if (codeField) codeField.addEventListener('keydown', function(e) { if (e.key === 'Enter') applyCode(); });
+  // Register with code button
+  var btnReg = document.getElementById('btn-reg');
+  if (btnReg) btnReg.addEventListener('click', doRegWithCode);
+}
+
+function applyCode() {
+  var code = document.getElementById('rg-code').value.trim().toUpperCase();
+  var msg = document.getElementById('code-msg');
+  if (!code) { msg.style.color='#f87171'; msg.textContent = 'Ingresa un código.'; return; }
+  var btn = document.getElementById('btn-apply-code');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  sb.from('access_codes').select('*').eq('code', code).eq('is_used', false).single().then(function(r) {
+    btn.disabled = false; btn.textContent = 'Aplicar';
+    if (r.error || !r.data) {
+      msg.style.color = '#f87171';
+      msg.textContent = '✗ Código inválido o ya utilizado.';
+      checkoutData.codeData = null;
+      document.getElementById('price-display').textContent = '$600 USD';
+      document.getElementById('pay-default').style.display = 'block';
+      document.getElementById('pay-code-btn').style.display = 'none';
+    } else {
+      checkoutData.codeData = r.data;
+      msg.style.color = '#4ade80';
+      msg.textContent = '✓ Código válido — acceso por ' + (r.data.months || 6) + ' meses';
+      document.getElementById('price-display').innerHTML = '<span style="text-decoration:line-through;color:#555;font-size:1rem;">$600</span> <span style="color:#4ade80;">$0</span>';
+      document.getElementById('pay-default').style.display = 'none';
+      document.getElementById('pay-code-btn').style.display = 'block';
+    }
+  });
+}
+
+function doRegWithCode() {
+  if (!checkoutData.codeData) return tst('Aplica un código primero', 1);
+  var btn = document.getElementById('btn-reg');
+  btn.disabled = true; btn.textContent = 'Creando cuenta...';
+  var codeValue = checkoutData.codeData.code;
+
+  // Step 1: Create the account
+  sb.auth.signUp({
+    email: checkoutData.email,
+    password: checkoutData.password,
+    options: { data: { full_name: checkoutData.name } }
+  }).then(function(reg) {
+    if (reg.error) {
+      showMsg(fmtE(reg.error.message), true);
+      btn.disabled = false; btn.textContent = '✓ Crear cuenta gratis con código';
+      return;
+    }
+    var userId = reg.data && reg.data.user ? reg.data.user.id : null;
+
+    // Step 2: Use RPC to mark code and activate membership atomically
+    if (userId) {
+      sb.rpc('use_access_code', { p_code: codeValue, p_user_id: userId }).then(function(r) {
+        if (r.error || r.data === false) {
+          // Code may have been used by someone else simultaneously
+          tst('Advertencia: verifica tu acceso al ingresar', 1);
+        }
+      });
+    }
+    showMsg('✓ ¡Cuenta creada! Confirma tu email y luego inicia sesión.', false);
+    btn.disabled = false;
+    setTimeout(function() {
+      switchTab('in');
+      document.getElementById('li-e').value = checkoutData.email;
+    }, 2000);
+  });
+}
+
+function doReg() {} // legacy — replaced by checkout flow
+function fmtE(m) {
+  if (m.indexOf('Invalid login') >= 0) return 'Email o contraseña incorrectos.';
+  if (m.indexOf('not confirmed') >= 0) return 'Confirma tu email primero.';
+  if (m.indexOf('already registered') >= 0) return 'Email ya registrado.';
+  return m;
+}
+
+// ── APP ──
+function loadApp(user) {
+  cUser = user;
+  closeModal();
+  var appdashEl = document.getElementById('appdash');
+  appdashEl.style.display = 'block';
+  appdashEl.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  document.body.style.height = '100%';
+
+  sb.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
+    cProfile = r.data;
+    var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
+    document.getElementById('uname').textContent = name;
+    if (cProfile && cProfile.role === 'admin') {
+      document.getElementById('adm-lnk').style.display = 'block';
+      var mobAdm = document.getElementById('mob-adm-btn');
+      if (mobAdm) mobAdm.style.display = 'flex';
+    }
+    var mobNav = document.getElementById('mob-nav');
+    if (mobNav) mobNav.classList.add('visible');
+    // Check membership
+    if (cProfile && cProfile.role !== 'admin') {
+      var now = new Date();
+      var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
+      if (!end || end < now) {
+        showPending();
+        return;
+      }
+    }
+    // Restore route from URL or start at dash
+    var path = window.location.pathname; // e.g. /app/clases/l/uuid
+    var routeState = _parseUrlToState(path);
+    pushRoute(routeState, true); // replace so there is always a state object
+    _renderSection(routeState);
+  });
+}
+
+
+function showPending() {
+  document.getElementById('amain').innerHTML =
+    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px;">' +
+      '<div style="width:64px;height:64px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+      '</div>' +
+      '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;text-transform:uppercase;color:#f0f0f0;margin-bottom:12px;">Acceso pendiente</div>' +
+      '<div style="font-size:.88rem;color:#666;line-height:1.7;max-width:360px;margin-bottom:28px;">Tu cuenta está creada pero aún no tiene una membresía activa.<br><strong style="color:#9a9a9a;">Una vez que confirmes tu pago, el equipo activará tu acceso.</strong></div>' +
+      '<a href="https://wa.me/tunumero?text=Hola%2C%20quiero%20activar%20mi%20acceso%20al%20curso%20Mr.%20Katana" target="_blank" style="background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;padding:13px 28px;border-radius:6px;font-weight:600;font-size:.86rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.553 4.1 1.522 5.83L.057 23.998l6.304-1.654A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.808 9.808 0 01-5.001-1.368l-.36-.213-3.733.979.997-3.645-.234-.374A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.388 9.818 9.818 0 5.43-4.388 9.818-9.818 9.818z"/></svg>' +
+        'Contactar por WhatsApp' +
+      '</a>' +
+    '</div>';
+}
+
+// ── DASHBOARD ──
+function rDash() {
+  var p = cProfile;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var end = p && p.membership_end ? new Date(p.membership_end) : null;
+  var start = p && p.membership_start ? new Date(p.membership_start) : null;
+  var dL = end ? Math.max(0, Math.ceil((end-today)/86400000)) : '—';
+  var endS = end ? end.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin fecha';
+
+  // Week calculation
+  var weekNum = start ? Math.ceil((today - start) / (7*86400000)) : 0;
+  var totalWeeks = (start && end) ? Math.ceil((end - start) / (7*86400000)) : 24;
+  weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
+
+  // Next 1-1
+  var next1on1 = p && p.next_1on1_meeting ? new Date(p.next_1on1_meeting) : null;
+  var days1on1 = next1on1 ? Math.max(0, Math.ceil((next1on1 - today)/86400000)) : null;
+  var date1on1S = next1on1 ? next1on1.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'}) : null;
+
+  // Next group
+  var nextGroup = p && p.next_group_meeting ? new Date(p.next_group_meeting) : null;
+  var daysGroup = nextGroup ? Math.max(0, Math.ceil((nextGroup - today)/86400000)) : null;
+
+  document.getElementById('amain').innerHTML =
+    '<div class="atit">Mi Dashboard</div>' +
+    '<div class="asub">Semana ' + weekNum + ' de ' + totalWeeks + ' · ' + (dL !== '—' && dL > 0 ? dL+' días restantes' : 'Bienvenido') + '</div>' +
+
+    // Live banner
+    '<div id="lbanner" style="display:none;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);border-radius:8px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
+      '<div style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;animation:pulse 1.5s infinite;"></div>' +
+      '<div style="flex:1;"><div id="ltit" style="font-weight:600;font-size:.86rem;"></div><div style="font-size:.73rem;color:#555;">Sesión en curso</div></div>' +
+      '<a id="llnk" href="#" target="_blank" style="background:#4ade80;color:#111;padding:7px 13px;border-radius:6px;font-weight:700;font-size:.76rem;text-decoration:none;">Unirme →</a>' +
+    '</div>' +
+
+    // Top row: circular progress + week calendar + 1-1 countdown
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;" id="dash-top">' +
+
+      // 1. Circular course progress
+      '<div class="acard" id="card-progress" style="display:flex;flex-direction:column;align-items:center;padding:20px 14px;cursor:pointer;" onclick="goToLastLesson()">' +
+        '<div style="position:relative;width:90px;height:90px;margin-bottom:10px;">' +
+          '<svg width="90" height="90" viewBox="0 0 90 90">' +
+            '<circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>' +
+            '<circle id="prog-circle" cx="45" cy="45" r="38" fill="none" stroke="url(#pg)" stroke-width="8" stroke-linecap="round" stroke-dasharray="239" stroke-dashoffset="239" transform="rotate(-90 45 45)" style="transition:stroke-dashoffset 1s ease;"/>' +
+            '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:var(--st)"/><stop offset="100%" style="stop-color:var(--sl)"/></linearGradient></defs>' +
+          '</svg>' +
+          '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+            '<div id="prog-pct" style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.3rem;font-weight:800;color:#f0f0f0;">0%</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:.72rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Progreso del curso</div>' +
+        '<div id="prog-sub" style="font-size:.7rem;color:#444;margin-top:2px;">Cargando...</div>' +
+        '<div style="margin-top:10px;font-size:.66rem;color:var(--sl);display:flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>Continuar</div>' +
+      '</div>' +
+
+      // 2. Week navigator
+      '<div class="acard wk-card" id="card-week" style="padding:16px 14px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:160px;">' +
+        '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Tu progreso semanal</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:8px;">' +
+          '<button onclick="navWeek(-1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">‹</button>' +
+          '<div style="text-align:center;flex:1;">' +
+            '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;color:var(--sl);line-height:1;" id="wk-label">Semana ' + weekNum + '</div>' +
+            '<div style="font-size:.62rem;margin-top:3px;min-height:14px;" id="wk-status">' + (weekNum <= 1 ? '<span style=\"color:#c9a84c;\">&#9654; Est&aacute;s aqu&iacute;</span>' : '') + '</div>' +
+          '</div>' +
+          '<button onclick="navWeek(1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">›</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;" id="week-dots">' +
+          (function() {
+            var dots = '';
+            for (var i = 1; i <= Math.min(totalWeeks, 24); i++) {
+              var isCur = i === weekNum, isPast = i < weekNum;
+              dots += '<div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:' +
+                (isCur ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)') +
+                ';box-shadow:' + (isCur ? '0 0 6px rgba(125,160,200,.6)' : 'none') +
+                ';cursor:pointer;transition:.2s;" onclick="navWeekTo(' + i + ')" title="Semana ' + i + '"></div>';
+            }
+            return dots;
+          })() +
+        '</div>' +
+        '<div style="font-size:.67rem;color:#444;text-align:center;" id="wk-total">de ' + totalWeeks + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando') + '</div>' +
+      '</div>' +
+
+      // 3. Next 1-1 countdown
+      '<div class="acard" id="card-1on1" style="border-top-color:#c9a84c;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;cursor:pointer;" onclick="navigateTo(\'reuniones\')">' +
+        (days1on1 !== null ?
+          '<div style="font-size:.62rem;color:#7a5d20;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Próxima sesión 1-1</div>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:2rem;font-weight:800;color:#e2c47a;line-height:1;text-shadow:0 0 20px rgba(201,168,76,.4);" id="cntd-days">' +
+            (days1on1 === 0 ? '¡HOY!' : days1on1 + 'd') +
+          '</div>' +
+          '<div id="cntd-time" style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.1rem;font-weight:700;color:#c9a84c;letter-spacing:2px;margin:4px 0;"></div>' +
+          '<div style="font-size:.68rem;color:#6a5020;line-height:1.4;">' + date1on1S + '</div>' +
+          '<div style="font-size:.6rem;color:#4a3810;margin-top:8px;padding:2px 8px;background:rgba(201,168,76,.07);border-radius:20px;border:1px solid rgba(201,168,76,.12);">Toca para ver reuniones</div>'
+        :
+          '<div style="font-size:1.4rem;color:#333;">📅</div>' +
+          '<div style="font-size:.72rem;color:#555;margin-top:6px;">Sin sesión 1-1<br>agendada</div>' +
+          '<div style="font-size:.6rem;color:#4a3810;margin-top:8px;padding:2px 8px;background:rgba(201,168,76,.07);border-radius:20px;border:1px solid rgba(201,168,76,.12);">Toca para ver reuniones</div>'
+        ) +
+      '</div>' +
+
+    '</div>' +
+
+    // Week timeline bar
+    '<div style="margin-bottom:20px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+        '<div style="font-size:.7rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Línea de tiempo</div>' +
+        '<div style="font-size:.7rem;color:#555;">' + (start ? start.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '') + ' → ' + endS + '</div>' +
+      '</div>' +
+      '<div style="height:6px;background:rgba(255,255,255,.04);border-radius:10px;overflow:hidden;">' +
+        '<div id="timeline-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--st),#c9a84c);border-radius:10px;transition:width 1s ease;"></div>' +
+      '</div>' +
+    '</div>' +
+
+    // Next group session
+    (daysGroup !== null ?
+      '<div style="background:rgba(74,158,255,.05);border:1px solid rgba(74,158,255,.12);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">' +
+        '<div style="width:36px;height:36px;border-radius:8px;background:rgba(74,158,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="2"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>' +
+        '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:.78rem;font-weight:600;color:#f0f0f0;">Próxima sesión grupal</div>' +
+          '<div style="font-size:.72rem;color:#555;margin-top:1px;">' + nextGroup.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'}) + ' · ' + nextGroup.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.3rem;font-weight:800;color:#4a9eff;">' + (daysGroup === 0 ? 'HOY' : daysGroup+'d') + '</div>' +
+        '</div>' +
+      '</div>'
+    : '') +
+
+    '<div class="sec">Semana en detalle</div>' +
+    '<div id="week-info" style="margin-bottom:20px;"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
+
+    '<div class="sec">Próximas actividades</div>' +
+    '<div id="upcoming"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
+
+    '<div class="sec" style="margin-top:28px;">Calendario económico <span style="font-size:.6rem;color:#444;font-weight:400;letter-spacing:.5px;text-transform:none;">· Solo USD · Horario Ecuador (UTC-5)</span></div>' +
+    '<div id="econ-cal"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>';
+
+    // Week navigator state
+  var _viewWeek = weekNum;
+  var _totalWeeks = totalWeeks;
+  window.navWeekTo = function(w) { _viewWeek = w; updateWeekDisplay(); };
+  window.navWeek = function(dir) {
+    _viewWeek = Math.max(1, Math.min(_totalWeeks, _viewWeek + dir));
+    updateWeekDisplay();
+  };
+  function updateWeekDisplay() {
+    var lbl = document.getElementById('wk-label');
+    var status = document.getElementById('wk-status');
+    var tot = document.getElementById('wk-total');
+    var dots = document.getElementById('week-dots');
+    if (lbl) lbl.textContent = 'Semana ' + _viewWeek;
+    if (status) {
+      if (_viewWeek === weekNum) { status.textContent = '▶ Estás aquí'; status.style.color = '#c9a84c'; }
+      else if (_viewWeek < weekNum) { status.textContent = '✓ Completada'; status.style.color = '#4ade80'; }
+      else { status.textContent = 'Por venir'; status.style.color = '#555'; }
+    }
+    if (dots) {
+      Array.from(dots.children).forEach(function(dot, i) {
+        var w = i + 1;
+        var isViewed = w === _viewWeek, isPast = w < weekNum, isNow = w === weekNum;
+        dot.style.background = isViewed ? '#c9a84c' : isNow ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)';
+        dot.style.boxShadow = isViewed ? '0 0 6px rgba(201,168,76,.6)' : isNow ? '0 0 6px rgba(125,160,200,.5)' : 'none';
+        dot.style.transform = isViewed ? 'scale(1.5)' : 'scale(1)';
+        dot.style.transition = '.2s';
+      });
+    }
+    // Load roadmap week info
+    loadWeekInfo(_viewWeek);
+  }
+  function loadWeekInfo(wk) {
+    var c = document.getElementById('week-info');
+    if (!c) return;
+    c.innerHTML = '<div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div>';
+    sb.from('roadmap_weeks').select('*').eq('week_number', wk).single().then(function(r) {
+      if (!r.data) {
+        c.innerHTML = '<div style="background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.07);border-radius:10px;padding:20px;text-align:center;color:#444;font-size:.82rem;">Esta semana aún no tiene contenido cargado.</div>';
+        return;
+      }
+      var w = r.data;
+      var acts = [];
+      try { acts = Array.isArray(w.activities) ? w.activities : JSON.parse(w.activities || '[]'); } catch(e){}
+      var isCurrent = wk === weekNum, isPast = wk < weekNum;
+      var badgeHtml = isCurrent
+        ? '<span style="font-size:.64rem;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);color:#c9a84c;padding:2px 9px;border-radius:20px;">▶ Semana actual</span>'
+        : isPast
+        ? '<span style="font-size:.64rem;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:2px 9px;border-radius:20px;">✓ Completada</span>'
+        : '<span style="font-size:.64rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:#555;padding:2px 9px;border-radius:20px;">Por venir</span>';
+      var html = '<div style="background:var(--bc);border:1px solid rgba(91,127,166,.2);border-radius:14px;overflow:hidden;">';
+      html += '<div style="padding:16px 18px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">';
+      html += '<div><div style="font-size:.62rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Semana ' + wk + '</div>';
+      html += '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">' + (w.title || 'Sin título') + '</div></div>';
+      html += badgeHtml + '</div>';
+      if (w.objective) {
+        html += '<div style="padding:14px 18px;background:rgba(201,168,76,.04);border-bottom:1px solid var(--br);">';
+        html += '<div style="font-size:.62rem;color:#c9a84c;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">🎯 Objetivo</div>';
+        html += '<div style="font-size:.84rem;color:#e2c47a;line-height:1.65;">' + w.objective + '</div>';
+        html += '</div>';
+      }
+      if (acts.length) {
+        html += '<div style="padding:14px 18px;">';
+        html += '<div style="font-size:.62rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Actividades</div>';
+        html += '<div style="display:flex;flex-direction:column;gap:7px;">';
+        acts.forEach(function(a) {
+          html += '<div style="display:flex;align-items:flex-start;gap:9px;">';
+          html += '<div style="width:18px;height:18px;border-radius:50%;background:rgba(91,127,166,.15);border:1px solid rgba(91,127,166,.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>';
+          html += '<div style="font-size:.82rem;color:#ccc;line-height:1.5;">' + a + '</div>';
+          html += '</div>';
+        });
+        html += '</div></div>';
+      }
+      html += '</div>';
+      c.innerHTML = html;
+    });
+  }
+
+  // Load current week info on first render
+  loadWeekInfo(_viewWeek);
+
+  // Animate timeline bar
+  var timelinePct = (start && end) ? Math.min(100, Math.max(0, ((today-start)/(end-start))*100)) : 0;
+  setTimeout(function() {
+    var tb = document.getElementById('timeline-bar');
+    if (tb) tb.style.width = timelinePct.toFixed(1) + '%';
+  }, 100);
+
+  // Load course progress
+  sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).then(function(pr) {
+    var completed = pr.data ? pr.data.length : 0;
+    sb.from('course_lessons').select('id', {count:'exact'}).eq('is_published', true).then(function(tot) {
+      var total = tot.count || 0;
+      var pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+      var circle = document.getElementById('prog-circle');
+      var pctEl = document.getElementById('prog-pct');
+      var subEl = document.getElementById('prog-sub');
+      if (circle) circle.style.strokeDashoffset = 239 - (239 * pct / 100);
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (subEl) subEl.textContent = completed + ' de ' + total + ' clases';
+    });
+  });
+
+  chkLive(); loadUp(); loadCalendar();
+
+  // Countdown timer for 1-1 session
+  if (next1on1) {
+    var _cntdInterval = setInterval(function() {
+      var now = new Date();
+      var diff = next1on1 - now;
+      if (diff <= 0) { clearInterval(_cntdInterval); return; }
+      var days = Math.floor(diff / 86400000);
+      var hrs = Math.floor((diff % 86400000) / 3600000);
+      var mins = Math.floor((diff % 3600000) / 60000);
+      var secs = Math.floor((diff % 60000) / 1000);
+      var dayEl = document.getElementById('cntd-days');
+      var timeEl = document.getElementById('cntd-time');
+      if (dayEl) dayEl.textContent = days > 0 ? days + 'd' : '¡HOY!';
+      if (timeEl) timeEl.textContent = (days > 0 ? '' : '') +
+        String(hrs).padStart(2,'0') + ':' +
+        String(mins).padStart(2,'0') + ':' +
+        String(secs).padStart(2,'0');
+    }, 1000);
+  }
+}
+function chkLive() {
+  sb.from('live_sessions').select('*').eq('is_active',true).limit(1).then(function(r) {
+    if (r.data && r.data.length) {
+      var b = document.getElementById('lbanner');
+      if (b) { b.style.display='flex'; document.getElementById('ltit').textContent=r.data[0].title; document.getElementById('llnk').href=r.data[0].discord_url||'#'; }
+    }
+  });
+}
+function loadUp() {
+  var p1 = sb.from('live_sessions').select('*').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(3);
+  var p2 = sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(2);
+  Promise.all([p1, p2]).then(function(res) {
+    var ss = (res[0].data || []).map(function(s){ return Object.assign({},s,{_t:'g'}); });
+    var mm = (res[1].data || []).map(function(m){ return Object.assign({},m,{_t:'1'}); });
+    var all = ss.concat(mm).sort(function(a,b){ return new Date(a.scheduled_at)-new Date(b.scheduled_at); }).slice(0,4);
+    var c = document.getElementById('upcoming');
+    if (!c) return;
+    if (!all.length) { c.innerHTML='<div style="background:var(--bc);border:1px dashed var(--br);border-radius:2px;padding:24px;text-align:center;color:#555;font-size:.82rem;">Sin actividades próximas</div>'; return; }
+    c.innerHTML = all.map(function(x) {
+      var d = new Date(x.scheduled_at);
+      return '<div class="mc"><div class="md"><div class="md-d">'+d.getDate()+'</div><div class="md-m">'+d.toLocaleDateString('es-ES',{month:'short'})+'</div></div><div style="flex:1;"><div style="font-size:.85rem;font-weight:600;">'+x.title+'</div><div style="font-size:.73rem;color:#555;margin-top:2px;">'+d.toLocaleDateString('es-ES',{weekday:'long'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div></div><span style="font-size:.68rem;padding:2px 9px;border-radius:1px;background:'+(x._t==='g'?'rgba(74,158,255,.1)':'rgba(91,127,166,.1)')+';color:'+(x._t==='g'?'#4a9eff':'var(--sl)')+';">'+(x._t==='g'?'Grupal':'1-1')+'</span></div>';
+    }).join('');
+  });
+}
+
+// ── CLASES ──
+
+// ── CLASES — Sistema de Curso ──
+var courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
+
+function rClases() {
+  courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
+  showLevels();
+}
+
+function goToLastLesson() {
+  _activateNav('clases');
+  courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
+
+  var m = document.getElementById('amain');
+  m.innerHTML = '<div style="padding:40px;text-align:center;color:#555;font-size:.83rem;"><span class="spin"></span> Cargando tu clase...</div>';
+
+  // Get all published lessons with their module and level info, ordered
+  sb.from('course_levels').select('*, course_modules(*, course_lessons(*))').eq('is_published', true).order('sort_order').then(function(lr) {
+    if (!lr.data || !lr.data.length) { showLevels(); return; }
+
+    // Flatten all lessons preserving level/module references
+    var allLessons = [];
+    lr.data.forEach(function(lv) {
+      if (!lv.course_modules) return;
+      var mods = lv.course_modules.slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
+      mods.forEach(function(mod) {
+        if (!mod.course_lessons) return;
+        var lessons = mod.course_lessons.filter(function(l){ return l.is_published; }).sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
+        lessons.forEach(function(l) {
+          allLessons.push({ lesson: l, mod: mod, level: lv });
+        });
+      });
+    });
+
+    if (!allLessons.length) { showLevels(); return; }
+
+    // Get user lesson progress
+    var lessonIds = allLessons.map(function(x){ return x.lesson.id; });
+    sb.from('lesson_progress').select('lesson_id, completed').eq('user_id', cUser.id).in('lesson_id', lessonIds).then(function(pr) {
+      var completedMap = {};
+      if (pr.data) pr.data.forEach(function(p) { if (p.completed) completedMap[p.lesson_id] = true; });
+
+      // Build progress object for showLessons
+      var progress = completedMap;
+
+      // Find target: first incomplete lesson; if all done, last lesson
+      var target = allLessons.find(function(x){ return !completedMap[x.lesson.id]; });
+      if (!target) target = allLessons[allLessons.length - 1];
+
+      // Navigate: set state and open the module with that lesson
+      courseState.levelId = target.level.id;
+      courseState.moduleId = target.mod.id;
+
+      // Get all lessons for this module to pass to showLessons properly
+      sb.from('course_lessons').select('*').eq('module_id', target.mod.id).eq('is_published', true).order('sort_order').then(function(modLessons) {
+        var modLessonIds = (modLessons.data || []).map(function(l){ return l.id; });
+
+        // Build progress for this module
+        sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', modLessonIds.length ? modLessonIds : ['__none__']).then(function(modPr) {
+          var modProgress = {};
+          if (modPr.data) modPr.data.forEach(function(p){ modProgress[p.lesson_id] = true; });
+
+          // Render the lesson layout
+          m.innerHTML =
+            '<div class="lesson-layout" id="lesson-layout">' +
+              '<div class="lesson-sidebar" id="lesson-sidebar">' +
+                '<div class="lesson-sidebar-header">' +
+                  '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + target.level.title + '</div>' +
+                  '<div class="lesson-mod-title">' + target.mod.title + '</div>' +
+                '</div>' +
+                '<div id="lesson-list"><span class="spin"></span></div>' +
+              '</div>' +
+              '<div class="lesson-main" id="lesson-main">' +
+                '<div class="lesson-placeholder"><div style="color:#444;font-size:.82rem;">Cargando clase...</div></div>' +
+              '</div>' +
+            '</div>';
+
+          document.getElementById('back-mods') && document.getElementById('back-mods').addEventListener('click', function() { var am = document.getElementById('amain'); if(am){am.style.padding='';am.style.overflow='';} showLevels(); });
+
+          var list = document.getElementById('lesson-list');
+          var allLes = modLessons.data || [];
+          list.innerHTML = '';
+          allLes.forEach(function(lesson, idx) {
+            var done = modProgress[lesson.id];
+            var item = document.createElement('div');
+            item.className = 'lesson-item' + (done ? ' done' : '');
+            item.id = 'li-' + lesson.id;
+            item.innerHTML =
+              '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx + 1)) + '</div>' +
+              '<div class="lesson-item-info">' +
+                '<div class="lesson-item-title">' + lesson.title + '</div>' +
+                '<div class="lesson-item-meta">' + (lesson.duration_minutes ? lesson.duration_minutes + ' min' : '') + (lesson.has_task ? ' · Tarea' : '') + '</div>' +
+              '</div>';
+            item.addEventListener('click', function() { playLesson(lesson, allLes, modProgress); });
+            list.appendChild(item);
+          });
+
+          // Auto-play the target lesson
+          playLesson(target.lesson, allLes, modProgress);
+        });
+      });
+    });
   });
 }
 
@@ -1871,14 +2691,18 @@ function showLessons(mod, level, progress) {
     '</div>';
 
   document.getElementById('back-levels-btn').addEventListener('click', function() {
+    var am = document.getElementById('amain');
+    if (am) { am.style.padding = ''; am.style.overflow = ''; }
     showLevels();
   });
 
-  // Force browser to compute layout before loading data
-  requestAnimationFrame(function() {
-    var layoutEl = document.getElementById('lesson-layout');
-    if (layoutEl) layoutEl.offsetHeight;
-  });
+  // Remove amain padding so lesson-layout fills correctly
+  var amain = document.getElementById('amain');
+  if (amain) { amain.style.padding = '0'; amain.style.overflow = 'hidden'; }
+
+  // Force reflow
+  var layoutEl = document.getElementById('lesson-layout');
+  if (layoutEl) { layoutEl.offsetHeight; }
 
   sb.from('course_modules').select('*, course_lessons(*)').eq('level_id', level.id).order('sort_order').then(function(mr) {
     var list = document.getElementById('lesson-list'); if (!list) return;
@@ -2133,284 +2957,6 @@ function markDone(lessonId, isMobile) {
     tst('✓ Clase completada');
   });
 }
-
-// ── DASHBOARD ──
-function rDash() {
-  pushRoute({ section: 'dash' });
-  var m = document.getElementById('amain');
-  if (!m) return;
-  m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
-
-  // Get user progress and profile data
-  var today = new Date();
-  var start = cProfile && cProfile.membership_start ? new Date(cProfile.membership_start) : null;
-  var totalWeeks = 27;
-  var weekNum = start ? Math.ceil((today - start) / (7*86400000)) : 1;
-  weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
-
-  var next1on1 = cProfile && cProfile.next_1on1_meeting ? new Date(cProfile.next_1on1_meeting) : null;
-  var daysLeft = next1on1 ? Math.ceil((next1on1 - today) / 86400000) : null;
-  var date1on1S = next1on1 ? next1on1.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'}) : null;
-  var time1on1S = next1on1 ? next1on1.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : null;
-
-  // Get course progress
-  sb.from('course_levels').select('*, course_modules(*, course_lessons(*))').eq('is_published', true).order('sort_order').then(function(lr) {
-    var totalLessons = 0, completedLessons = 0;
-    var allLessonIds = [];
-    if (lr.data) {
-      lr.data.forEach(function(lv) {
-        (lv.course_modules||[]).forEach(function(mod) {
-          (mod.course_lessons||[]).forEach(function(l) {
-            totalLessons++;
-            allLessonIds.push(l.id);
-          });
-        });
-      });
-    }
-
-    var loadDash = function(progress) {
-      if (allLessonIds.length) {
-        completedLessons = allLessonIds.filter(function(id){ return progress[id]; }).length;
-      }
-      var pct = totalLessons > 0 ? Math.round((completedLessons/totalLessons)*100) : 0;
-
-      // Countdown timer for next 1-1
-      var countdownId = 'c1on1-' + Date.now();
-      var secsLeft = next1on1 ? Math.max(0, Math.floor((next1on1 - new Date()) / 1000)) : 0;
-      var hh = String(Math.floor(secsLeft/3600)).padStart(2,'0');
-      var mm = String(Math.floor((secsLeft%3600)/60)).padStart(2,'0');
-      var ss = String(secsLeft%60).padStart(2,'0');
-
-      m.innerHTML =
-        '<div id="dash-top" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px;">' +
-
-          // Card 1: Course progress
-          '<div class="acard" style="cursor:pointer;" onclick="goToLastLesson()" title="Ir a tu última clase">' +
-            '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px 0;">' +
-              '<div style="position:relative;width:80px;height:80px;margin-bottom:10px;">' +
-                '<svg width="80" height="80" viewBox="0 0 80 80">' +
-                  '<circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>' +
-                  '<circle cx="40" cy="40" r="34" fill="none" stroke="var(--sl)" stroke-width="7" stroke-dasharray="213.6" stroke-dashoffset="' + (213.6 - (213.6*pct/100)) + '" stroke-linecap="round" transform="rotate(-90 40 40)"/>' +
-                '</svg>' +
-                '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-cond,sans-serif);font-size:1.4rem;font-weight:800;color:var(--sl);">' + pct + '%</div>' +
-              '</div>' +
-              '<div style="font-size:.68rem;color:#555;text-transform:uppercase;letter-spacing:1px;">PROGRESO DEL CURSO</div>' +
-              '<div style="font-size:.72rem;color:#444;margin-top:3px;">' + completedLessons + ' de ' + totalLessons + ' clases</div>' +
-              '<div style="font-size:.7rem;color:var(--sl);margin-top:6px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/></svg> Continuar</div>' +
-            '</div>' +
-          '</div>' +
-
-          // Card 2: Week
-          '<div class="acard wk-card" id="card-week">' +
-            '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px 0;position:relative;">' +
-              '<button class="wk-arrow" onclick="navWeekTo(' + Math.max(1,weekNum-1) + ')" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:1.1rem;cursor:pointer;padding:4px;">‹</button>' +
-              '<div style="font-size:.62rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">SEMANA ACTUAL</div>' +
-              '<div id="wk-label" style="font-family:var(--font-cond,sans-serif);font-size:1.6rem;font-weight:800;color:var(--sl);line-height:1;">Semana ' + weekNum + '</div>' +
-              '<div id="wk-status" style="font-size:.62rem;margin-top:3px;min-height:14px;color:#c9a84c;">&#9654; Estás aquí</div>' +
-              '<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin:8px 0;" id="week-dots">' +
-                (function(){
-                  var dots = '';
-                  for(var i=1;i<=totalWeeks;i++){
-                    var isCur = i===weekNum, isPast = i<weekNum;
-                    dots += '<div style="width:' + (isCur?'10px':'6px') + ';height:' + (isCur?'10px':'6px') + ';border-radius:50%;background:' + (isCur?'var(--sl)':isPast?'rgba(91,127,166,.5)':'rgba(255,255,255,.12)') + ';cursor:pointer;transition:.2s;" onclick="navWeekTo(' + i + ')" title="Semana ' + i + '"></div>';
-                  }
-                  return dots;
-                })() +
-              '</div>' +
-              '<div id="wk-total" style="font-size:.67rem;color:#444;text-align:center;">de ' + totalWeeks + ' semanas · ' + (weekNum>1?(weekNum-1)+' completadas':'comenzando') + '</div>' +
-              '<button class="wk-arrow" onclick="navWeekTo(' + Math.min(totalWeeks,weekNum+1) + ')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;font-size:1.1rem;cursor:pointer;padding:4px;">›</button>' +
-            '</div>' +
-          '</div>' +
-
-          // Card 3: 1-on-1 countdown
-          '<div class="acard" id="card-1on1" style="cursor:pointer;" onclick="navigateTo(\'reuniones\')">' +
-            '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px 0;">' +
-              (next1on1 && secsLeft > 0
-                ? '<div style="font-family:var(--font-cond,sans-serif);font-size:2rem;font-weight:800;color:#c9a84c;line-height:1;" id="' + countdownId + '">' + hh + ':' + mm + ':' + ss + '</div>' +
-                  '<div style="font-size:.62rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-top:6px;">PRÓXIMA REUNIÓN 1-1</div>' +
-                  '<div style="font-size:.7rem;color:#9a9a9a;margin-top:4px;text-align:center;">' + date1on1S + ' · ' + time1on1S + '</div>' +
-                  '<button style="margin-top:8px;font-size:.66rem;color:var(--sl);background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);padding:3px 10px;border-radius:4px;cursor:pointer;">Toca para ver reuniones</button>'
-                : '<div style="font-size:2rem;">📅</div>' +
-                  '<div style="font-size:.68rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-top:8px;">REUNIÓN 1-1</div>' +
-                  '<div style="font-size:.72rem;color:#444;margin-top:4px;">Sin reunión programada</div>' +
-                  '<button style="margin-top:8px;font-size:.66rem;color:var(--sl);background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);padding:3px 10px;border-radius:4px;cursor:pointer;">Toca para ver reuniones</button>'
-              ) +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-
-        // Timeline
-        '<div class="sec" style="margin-top:18px;">Línea de tiempo<span style="margin-left:auto;font-size:.65rem;color:#333;font-weight:400;text-transform:none;letter-spacing:0;">' +
-          (start ? start.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) + ' → ' + new Date(start.getTime()+totalWeeks*7*86400000).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '') +
-        '</span></div>' +
-        '<div style="position:relative;height:6px;background:rgba(255,255,255,.06);border-radius:3px;margin-bottom:22px;">' +
-          '<div style="position:absolute;left:0;top:0;height:100%;width:' + Math.round((weekNum/totalWeeks)*100) + '%;background:linear-gradient(90deg,var(--st),var(--sl));border-radius:3px;transition:width .5s;"></div>' +
-          '<div style="position:absolute;left:' + Math.round((weekNum/totalWeeks)*100) + '%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--sl);border:2px solid #111;box-shadow:0 0 8px rgba(91,127,166,.6);"></div>' +
-        '</div>' +
-
-        // Week detail
-        '<div class="sec" style="margin-top:4px;">Semana en detalle</div>' +
-        '<div id="week-detail-card" style="margin-bottom:22px;"><span class="spin"></span></div>' +
-
-        // Upcoming
-        '<div class="sec">Próximas actividades</div>' +
-        '<div id="upcoming"><span class="spin"></span></div>' +
-
-        // Calendar
-        '<div class="sec" style="margin-top:28px;">Calendario económico <span style="font-size:.6rem;color:#444;font-weight:400;letter-spacing:.5px;text-transform:none;">· Solo USD · Horario Ecuador (UTC-5)</span></div>' +
-        '<div id="econ-cal"><span class="spin"></span></div>';
-
-      // Start countdown timer
-      if (next1on1 && secsLeft > 0) {
-        var timerEl = document.getElementById(countdownId);
-        var interval = setInterval(function() {
-          var s = Math.max(0, Math.floor((next1on1 - new Date()) / 1000));
-          if (!document.getElementById(countdownId)) { clearInterval(interval); return; }
-          var timeEl = document.getElementById(countdownId);
-          if (timeEl) timeEl.textContent = String(Math.floor(s/3600)).padStart(2,'0') + ':' + String(Math.floor((s%3600)/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
-          if (s <= 0) clearInterval(interval);
-        }, 1000);
-      }
-
-      // Load week detail
-      var _viewWeek = weekNum;
-      function renderWeekDetail(wn) {
-        var wd = document.getElementById('week-detail-card');
-        if (!wd) return;
-        sb.from('roadmap_weeks').select('*').eq('week_number', wn).single().then(function(wr) {
-          if (!wr.data) { wd.innerHTML = '<div style="color:#444;font-size:.8rem;padding:14px;">Sin datos para esta semana.</div>'; return; }
-          var wk = wr.data;
-          var acts = Array.isArray(wk.activities) ? wk.activities : (typeof wk.activities === 'string' ? JSON.parse(wk.activities||'[]') : []);
-          wd.innerHTML =
-            '<div style="background:var(--bc);border:1px solid var(--br);border-radius:12px;padding:18px;">' +
-              '<div style="font-size:.62rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">SEMANA ' + wn + '</div>' +
-              '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;margin-bottom:10px;">' + (wk.title||'') + '</div>' +
-              (wk.objective ? '<div style="margin-bottom:12px;"><div style="font-size:.64rem;color:#c9a84c;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">🎯 Objetivo</div><div style="font-size:.82rem;color:#c9a84c;">' + wk.objective + '</div></div>' : '') +
-              (acts.length ? '<div><div style="font-size:.64rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📋 Actividades</div>' + acts.map(function(a){ return '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:.81rem;color:#9a9a9a;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(91,127,166,.6)" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><polyline points="20 6 9 17 4 12"/></svg>' + a + '</div>'; }).join('') + '</div>' : '') +
-            '</div>';
-        });
-      }
-      renderWeekDetail(weekNum);
-
-      // navWeekTo
-      window.navWeekTo = function(wn) {
-        _viewWeek = Math.max(1, Math.min(totalWeeks, wn));
-        var lbl = document.getElementById('wk-label');
-        var status = document.getElementById('wk-status');
-        var total = document.getElementById('wk-total');
-        var dots = document.getElementById('week-dots');
-        if (lbl) lbl.textContent = 'Semana ' + _viewWeek;
-        if (status) {
-          if (_viewWeek === weekNum) { status.innerHTML = '&#9654; Estás aquí'; status.style.color = '#c9a84c'; }
-          else if (_viewWeek < weekNum) { status.textContent = '✓ Completada'; status.style.color = '#4ade80'; }
-          else { status.textContent = ''; }
-        }
-        if (total) total.textContent = 'de ' + totalWeeks + ' semanas';
-        if (dots) {
-          Array.from(dots.children).forEach(function(dot, i) {
-            var w = i+1;
-            dot.style.width = w === _viewWeek ? '10px' : '6px';
-            dot.style.height = w === _viewWeek ? '10px' : '6px';
-            dot.style.background = w === _viewWeek ? 'var(--sl)' : w < weekNum ? 'rgba(91,127,166,.5)' : 'rgba(255,255,255,.12)';
-          });
-        }
-        renderWeekDetail(_viewWeek);
-      };
-
-      // Load upcoming activities
-      loadUp();
-      // Load calendar
-      loadCalendar();
-      // Check live session
-      chkLive();
-    };
-
-    if (allLessonIds.length && cUser) {
-      sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', allLessonIds).then(function(pr) {
-        var prog = {};
-        if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id] = true; });
-        loadDash(prog);
-      });
-    } else {
-      loadDash({});
-    }
-  });
-}
-
-function chkLive() {
-  sb.from('live_sessions').select('*').eq('is_active', true).limit(1).then(function(r) {
-    if (r.data && r.data.length) {
-      var b = document.getElementById('lbanner');
-      if (b) {
-        b.style.display = 'flex';
-        var tEl = document.getElementById('ltit');
-        var lEl = document.getElementById('llnk');
-        if (tEl) tEl.textContent = r.data[0].title;
-        if (lEl) lEl.href = r.data[0].discord_url || '#';
-      }
-    }
-  });
-}
-
-function loadUp() {
-  var p1 = sb.from('live_sessions').select('*').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(3);
-  var p2 = sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(2);
-  Promise.all([p1, p2]).then(function(res) {
-    var ss = (res[0].data || []).map(function(s){ return Object.assign({}, s, {_t:'g'}); });
-    var mm = (res[1].data || []).map(function(m){ return Object.assign({}, m, {_t:'1'}); });
-    var all = ss.concat(mm).sort(function(a,b){ return new Date(a.scheduled_at)-new Date(b.scheduled_at); }).slice(0,4);
-    var c = document.getElementById('upcoming');
-    if (!c) return;
-    if (!all.length) {
-      c.innerHTML = '<div style="background:var(--bc);border:1px dashed var(--br);border-radius:2px;padding:24px;text-align:center;color:#555;font-size:.82rem;">Sin actividades próximas</div>';
-      return;
-    }
-    c.innerHTML = all.map(function(x) {
-      var d = new Date(x.scheduled_at);
-      return '<div class="mc"><div class="md"><div class="md-d">' + d.getDate() + '</div><div class="md-m">' + d.toLocaleDateString('es-ES',{month:'short'}) + '</div></div>' +
-        '<div style="flex:1;"><div style="font-size:.85rem;font-weight:600;">' + x.title + '</div>' +
-        '<div style="font-size:.73rem;color:#555;margin-top:2px;">' + d.toLocaleDateString('es-ES',{weekday:'long'}) + ' · ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</div></div>' +
-        '<span style="font-size:.68rem;padding:2px 9px;border-radius:1px;background:' + (x._t==='g'?'rgba(74,158,255,.1)':'rgba(91,127,166,.1)') + ';color:' + (x._t==='g'?'#4a9eff':'var(--sl)') + ';">' + (x._t==='g'?'Grupal':'1-1') + '</span></div>';
-    }).join('');
-  });
-}
-
-function rClases() {
-  courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
-  showLevels();
-}
-
-function goToLastLesson() {
-  _activateNav('clases');
-  courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
-  var m = document.getElementById('amain');
-  m.innerHTML = '<div style="padding:40px;text-align:center;color:#555;font-size:.83rem;"><span class="spin"></span> Cargando tu clase...</div>';
-  sb.from('course_levels').select('*, course_modules(*, course_lessons(*))').eq('is_published', true).order('sort_order').then(function(lr) {
-    if (!lr.data || !lr.data.length) { showLevels(); return; }
-    var allLessons = [];
-    lr.data.forEach(function(lv) {
-      if (!lv.course_modules) return;
-      var mods = lv.course_modules.slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
-      mods.forEach(function(mod) {
-        if (!mod.course_lessons) return;
-        var lessons = mod.course_lessons.filter(function(l){ return l.is_published; }).sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
-        lessons.forEach(function(l) { allLessons.push({ lesson: l, mod: mod, level: lv }); });
-      });
-    });
-    if (!allLessons.length) { showLevels(); return; }
-    var lessonIds = allLessons.map(function(x){ return x.lesson.id; });
-    sb.from('lesson_progress').select('lesson_id, completed').eq('user_id', cUser.id).in('lesson_id', lessonIds).then(function(pr) {
-      var completedMap = {};
-      if (pr.data) pr.data.forEach(function(p) { if (p.completed) completedMap[p.lesson_id] = true; });
-      var target = allLessons.find(function(x){ return !completedMap[x.lesson.id]; });
-      if (!target) target = allLessons[allLessons.length - 1];
-      courseState.levelId = target.level.id;
-      courseState.moduleId = target.mod.id;
-      openLevel(target.level);
-    });
-  });
-}
-
 
 var vM = null;
 
@@ -3385,129 +3931,84 @@ function tst(m, err) {
   var currentPull = 0;
 
   function init() {
-    // ── Check existing session ──
-    sb.auth.getSession().then(function(r) {
-      if (r.data && r.data.session) loadApp(r.data.session.user);
-    });
+    el        = document.getElementById('appdash');
+    indicator = document.getElementById('ptr-indicator');
+    label     = document.getElementById('ptr-label');
+    if (!el || !indicator) return;
 
-    // ── Nav bindings ──
-    var snavs = document.querySelectorAll('.snav');
-    for (var i = 0; i < snavs.length; i++) {
-      snavs[i].onclick = function() { navigateTo(this.getAttribute('data-v')); };
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    el.addEventListener('touchend',   onTouchEnd,   { passive: true });
+  }
+
+  function onTouchStart(e) {
+    // Only activate when already scrolled to the very top
+    if (el.scrollTop > 2) return;
+    startY   = e.touches[0].clientY;
+    pulling  = true;
+    triggered = false;
+    currentPull = 0;
+  }
+
+  function onTouchMove(e) {
+    if (!pulling) return;
+    var dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { pulling = false; resetIndicator(); return; }
+    // Only cancel native scroll when we're pulling down from top
+    if (el.scrollTop <= 2 && dy > 0) {
+      e.preventDefault(); // prevent native scroll interference
     }
-    var mnavs = document.querySelectorAll('.mob-nav-btn');
-    for (var i = 0; i < mnavs.length; i++) {
-      mnavs[i].onclick = function() { navigateTo(this.getAttribute('data-v')); };
-    }
+    currentPull = Math.min(dy * 0.5, PTR_MAX); // dampen
+    setIndicatorHeight(currentPull);
 
-    // ── Hamburger ──
-    var hbtn = document.getElementById('hbtn');
-    var navlinks = document.getElementById('navlinks');
-    if (hbtn && navlinks) {
-      hbtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        navlinks.classList.toggle('open');
-      });
-      navlinks.querySelectorAll('a').forEach(function(a) {
-        a.addEventListener('click', function() { navlinks.classList.remove('open'); });
-      });
-      document.addEventListener('click', function(e) {
-        if (!hbtn.contains(e.target) && !navlinks.contains(e.target)) navlinks.classList.remove('open');
-      });
-    }
-
-    // ── Login / Register form ──
-    var btnLogin = document.getElementById('btn-login');
-    if (btnLogin) {
-      btnLogin.addEventListener('click', function() {
-        var email = (document.getElementById('m-email') || {}).value || '';
-        var pw    = (document.getElementById('m-pw')    || {}).value || '';
-        if (!email || !pw) { tst('Completa todos los campos', 1); return; }
-        doLogin(email, pw);
-      });
-    }
-    var btnReg = document.getElementById('btn-reg');
-    if (btnReg) {
-      btnReg.addEventListener('click', function() {
-        var name  = (document.getElementById('m-name')  || {}).value || '';
-        var email = (document.getElementById('m-email2')|| {}).value || '';
-        var pw    = (document.getElementById('m-pw2')   || {}).value || '';
-        if (!name || !email || !pw) { tst('Completa todos los campos', 1); return; }
-        doRegister(name, email, pw);
-      });
-    }
-
-    // ── Logout button ──
-    var btnOut = document.getElementById('btn-logout');
-    if (btnOut) btnOut.addEventListener('click', doLogout);
-
-    // ── Modal tabs ──
-    document.querySelectorAll('.mtab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        var t = this.getAttribute('data-t');
-        document.querySelectorAll('.mtab').forEach(function(tb){ tb.classList.remove('on'); });
-        this.classList.add('on');
-        document.querySelectorAll('.mform').forEach(function(f){ f.style.display='none'; });
-        var form = document.getElementById('mf-' + t);
-        if (form) form.style.display = 'block';
-      });
-    });
-
-    // ── Open modal ──
-    var btnCliente = document.getElementById('btncliente');
-    if (btnCliente) {
-      btnCliente.addEventListener('click', function(e) {
-        e.preventDefault();
-        var ov = document.getElementById('overlay');
-        if (ov) ov.classList.add('open');
-        if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
-      });
-    }
-    var mcls = document.getElementById('mcls');
-    if (mcls) mcls.addEventListener('click', closeModal);
-    var overlay = document.getElementById('overlay');
-    if (overlay) overlay.addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-
-    // ── Scroll nav ──
-    window.addEventListener('scroll', function() {
-      if (window.innerWidth > 860) {
-        var nav = document.getElementById('nav');
-        if (nav) nav.style.padding = window.scrollY > 50 ? '10px 60px' : '14px 60px';
-      }
-    });
-
-    // ── Counter animation ──
-    var counters = document.querySelectorAll('.nv[data-target]');
-    var animated = false;
-    function runCounters() {
-      if (animated) return;
-      animated = true;
-      counters.forEach(function(el) {
-        var target = parseInt(el.getAttribute('data-target'));
-        var suffix = el.getAttribute('data-suffix') || '';
-        var current = 0;
-        var step = Math.ceil(target / 50);
-        var timer = setInterval(function() {
-          current = Math.min(current + step, target);
-          el.textContent = current + suffix;
-          if (current >= target) clearInterval(timer);
-        }, 30);
-      });
-    }
-    if (counters.length) {
-      var obs = new IntersectionObserver(function(entries) {
-        if (entries[0].isIntersecting) runCounters();
-      });
-      obs.observe(counters[0]);
+    if (currentPull >= PTR_THRESHOLD) {
+      indicator.classList.add('ptr-ready');
+      label.textContent = 'Suelta para recargar';
+      triggered = true;
+    } else {
+      indicator.classList.remove('ptr-ready');
+      label.textContent = 'Baja para recargar';
+      triggered = false;
     }
   }
 
+  function onTouchEnd() {
+    if (!pulling) return;
+    pulling = false;
+    if (triggered) {
+      // Show loading state briefly then reload
+      indicator.classList.add('ptr-loading');
+      label.textContent = 'Recargando...';
+      setIndicatorHeight(56);
+      setTimeout(function() { location.reload(); }, 400);
+    } else {
+      resetIndicator();
+    }
+  }
+
+  function setIndicatorHeight(h) {
+    if (!indicator) return;
+    indicator.style.height = h + 'px';
+    var inner = document.getElementById('ptr-inner');
+    if (inner) inner.style.opacity = Math.min(h / PTR_THRESHOLD, 1).toString();
+  }
+
+  function resetIndicator() {
+    if (!indicator) return;
+    indicator.style.height = '0';
+    indicator.classList.remove('ptr-ready','ptr-loading');
+    var inner = document.getElementById('ptr-inner');
+    if (inner) inner.style.opacity = '0';
+    currentPull = 0;
+    triggered   = false;
+  }
+
+  // Init after DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-
 })();
 
 
@@ -3676,274 +4177,4 @@ function toggleCalExplain(id) {
 }
 
 
-
-// ── WINDOW ONLOAD ──
-(function() {
-
-  // Popstate — browser back/forward
-  window.addEventListener('popstate', function(e) {
-    var state = e.state;
-    if (!state) return;
-    if (state.section === '__landing__') {
-      // Going back to landing
-      var appdash = document.getElementById('appdash');
-      if (appdash) appdash.style.display = 'none';
-      document.body.style.overflow = '';
-      document.body.style.height = '';
-      var mobNav = document.getElementById('mob-nav');
-      if (mobNav) mobNav.classList.remove('visible');
-      return;
-    }
-    // Still in app
-    var appdash = document.getElementById('appdash');
-    if (appdash && appdash.style.display !== 'block') {
-      appdash.style.display = 'block';
-      document.body.style.overflow = 'hidden';
-    }
-    _renderSection(state);
-  });
-
-  function loadApp(user) {
-    cUser = user;
-    sb.from('profiles').select('*').eq('id', user.id).single().then(function(pr) {
-      cProfile = pr.data || {};
-      var isAdmin = cProfile.role === 'admin';
-
-      // Show admin nav items
-      var admBtn = document.getElementById('adm-btn');
-      var mobAdmBtn = document.getElementById('mob-adm-btn');
-      if (admBtn) admBtn.style.display = isAdmin ? 'flex' : 'none';
-      if (mobAdmBtn) mobAdmBtn.style.display = isAdmin ? 'flex' : 'none';
-
-      // Update header name
-      var nameEl = document.getElementById('user-name');
-      if (nameEl) nameEl.textContent = cProfile.full_name || user.email.split('@')[0];
-
-      // Show dashboard
-      var appdashEl = document.getElementById('appdash');
-      appdashEl.style.display = 'block';
-      appdashEl.scrollTop = 0;
-      document.body.style.overflow = 'hidden';
-      document.body.style.height = '100%';
-      var mobNav = document.getElementById('mob-nav');
-      if (mobNav) mobNav.classList.add('visible');
-
-      // Restore route from saved path (covers reload on any /app/* URL)
-      var redirect = null;
-      try { redirect = sessionStorage.getItem('spa_redirect'); sessionStorage.removeItem('spa_redirect'); } catch(e){}
-
-      // Also check current URL directly if no sessionStorage path
-      if (!redirect || redirect === '/app/') {
-        var curPath = window.location.pathname;
-        if (curPath && curPath.indexOf('/app/') === 0) redirect = curPath;
-      }
-
-      if (redirect && redirect.indexOf('/app/') === 0) {
-        var parts = redirect.replace('/app/', '').split('/');
-        var section = parts[0] || 'dash';
-        var state = { section: section };
-        if (section === 'clases') {
-          if (parts[1] === 'l' && parts[2]) state.lessonId = parts[2];
-          else if (parts[1] === 'm' && parts[2]) state.moduleId = parts[2];
-          else if (parts[1] === 'lv' && parts[2]) state.levelId = parts[2];
-        }
-        history.replaceState(state, '', redirect);
-        _renderSection(state);
-      } else {
-        var state = { section: 'dash' };
-        history.replaceState(state, '', '/app/dash');
-        rDash();
-      }
-    });
-  }
-
-  function doLogin(email, pw) {
-    var btn = document.getElementById('btn-login');
-    if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
-    sb.auth.signInWithPassword({ email: email, password: pw }).then(function(r) {
-      if (r.error) {
-        tst('Email o contraseña incorrectos', 1);
-        if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
-        return;
-      }
-      loadApp(r.data.user);
-      closeModal();
-    });
-  }
-
-  function doRegister(name, email, pw) {
-    var btn = document.getElementById('btn-reg');
-    if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
-    // Check if access code is required
-    var code = (document.getElementById('m-code') || {}).value || '';
-    sb.from('access_codes').select('*').eq('code', code.trim().toUpperCase()).eq('is_used', false).single().then(function(ac) {
-      if (ac.error || !ac.data) {
-        tst('Código de acceso inválido', 1);
-        if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
-        return;
-      }
-      var months = ac.data.months || 6;
-      var codeId = ac.data.id;
-      sb.auth.signUp({ email: email, password: pw, options: { data: { full_name: name } } }).then(function(r) {
-        if (r.error) {
-          tst('Error: ' + r.error.message, 1);
-          if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
-          return;
-        }
-        // Mark code as used
-        var start = new Date().toISOString();
-        var end = new Date(Date.now() + months * 30 * 24 * 3600000).toISOString();
-        sb.from('access_codes').update({ is_used: true, used_at: start }).eq('id', codeId).then(function(){});
-        sb.from('profiles').upsert({ id: r.data.user.id, full_name: name, role: 'student', membership_start: start, membership_end: end }).then(function(){});
-        tst('✓ Cuenta creada. Inicia sesión.');
-        if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
-        // Switch to login tab
-        var loginTab = document.querySelector('.mtab[data-t="login"]');
-        if (loginTab) loginTab.click();
-      });
-    });
-  }
-
-  function closeModal() {
-    var ov = document.getElementById('overlay');
-    if (ov) ov.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  function doLogout() {
-    sb.auth.signOut().then(function() {
-      cUser = null; cProfile = null;
-      var appdash = document.getElementById('appdash');
-      if (appdash) appdash.style.display = 'none';
-      document.body.style.overflow = '';
-      document.body.style.height = '';
-      var mobNav = document.getElementById('mob-nav');
-      if (mobNav) mobNav.classList.remove('visible');
-      history.replaceState({ section: '__landing__' }, '', '/');
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
-  function init() {
-    // Check existing session on page load
-    sb.auth.getSession().then(function(r) {
-      if (r.data && r.data.session) {
-        loadApp(r.data.session.user);
-      }
-    });
-
-    // Nav scroll effect
-    window.addEventListener('scroll', function() {
-      var nav = document.getElementById('nav');
-      if (!nav) return;
-      if (window.innerWidth > 860) {
-        nav.style.padding = window.scrollY > 50 ? '10px 60px' : '14px 60px';
-      }
-    });
-
-    // Hamburger menu
-    var hbtn = document.getElementById('hbtn');
-    var navlinks = document.getElementById('navlinks');
-    if (hbtn && navlinks) {
-      hbtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        navlinks.classList.toggle('open');
-      });
-      navlinks.querySelectorAll('a').forEach(function(link) {
-        link.addEventListener('click', function() { navlinks.classList.remove('open'); });
-      });
-      document.addEventListener('click', function(e) {
-        if (!hbtn.contains(e.target) && !navlinks.contains(e.target)) {
-          navlinks.classList.remove('open');
-        }
-      });
-    }
-
-    // Open login modal
-    var btncliente = document.getElementById('btncliente');
-    if (btncliente) {
-      btncliente.addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('overlay').classList.add('open');
-        if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
-      });
-    }
-
-    // Close modal
-    var mcls = document.getElementById('mcls');
-    if (mcls) mcls.addEventListener('click', closeModal);
-    var overlay = document.getElementById('overlay');
-    if (overlay) overlay.addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-
-    // Modal tabs (login / register)
-    document.querySelectorAll('.mtab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.mtab').forEach(function(t) { t.classList.remove('on'); });
-        this.classList.add('on');
-        var t = this.dataset.t;
-        var loginForm = document.getElementById('form-login');
-        var regForm   = document.getElementById('form-reg');
-        if (loginForm) loginForm.style.display = t === 'login' ? 'block' : 'none';
-        if (regForm)   regForm.style.display   = t === 'reg'   ? 'block' : 'none';
-      });
-    });
-
-    // Login form submit
-    var btnLogin = document.getElementById('btn-login');
-    if (btnLogin) {
-      btnLogin.addEventListener('click', function() {
-        var email = (document.getElementById('m-email') || {}).value || '';
-        var pw    = (document.getElementById('m-pass')  || {}).value || '';
-        if (!email || !pw) { tst('Completa todos los campos', 1); return; }
-        doLogin(email.trim(), pw);
-      });
-    }
-
-    // Register form submit
-    var btnReg = document.getElementById('btn-reg');
-    if (btnReg) {
-      btnReg.addEventListener('click', function() {
-        var name  = (document.getElementById('m-name')  || {}).value || '';
-        var email = (document.getElementById('m-email2')|| {}).value || '';
-        var pw    = (document.getElementById('m-pass2') || {}).value || '';
-        if (!name || !email || !pw) { tst('Completa todos los campos', 1); return; }
-        doRegister(name.trim(), email.trim(), pw);
-      });
-    }
-
-    // Logout button
-    var logoutBtn = document.getElementById('btn-logout');
-    if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
-
-    // Counter animations on landing
-    var counters = document.querySelectorAll('.nv[data-target]');
-    var animated = false;
-    function runCounters() {
-      if (animated) return;
-      animated = true;
-      counters.forEach(function(el) {
-        var target = parseInt(el.getAttribute('data-target'));
-        var current = 0;
-        var step = Math.ceil(target / 40);
-        var timer = setInterval(function() {
-          current = Math.min(current + step, target);
-          el.textContent = current + (el.dataset.suffix || '');
-          if (current >= target) clearInterval(timer);
-        }, 30);
-      });
-    }
-    if (counters.length) {
-      var obs = new IntersectionObserver(function(entries) {
-        if (entries[0].isIntersecting) runCounters();
-      });
-      obs.observe(counters[0]);
-    }
-  }
-
-})();
 </script>

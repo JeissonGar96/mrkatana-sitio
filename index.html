@@ -1675,8 +1675,18 @@ function _activateNav(v) {
   if (mBtn) mBtn.classList.add('on');
 }
 
+function _restoreAmain() {
+  var am = document.getElementById('amain');
+  if (am) { am.style.padding = ''; am.style.overflow = ''; }
+  // Also remove mobile player overlay if open
+  var mob = document.getElementById('mobile-player-overlay');
+  if (mob) mob.remove();
+}
+
 function _renderSection(state) {
   _activateNav(state.section);
+  // Always restore amain when navigating away from lesson layout
+  if (state.section !== 'clases') _restoreAmain();
   if (state.section === 'dash')           rDash();
   else if (state.section === 'clases') {
     if (state.lessonId)       _restoreLesson(state);
@@ -2562,6 +2572,7 @@ function goToLastLesson() {
 }
 
 function showLevels() {
+  _restoreAmain();
   pushRoute({ section: 'clases' });
   var m = document.getElementById('amain');
   m.innerHTML = '<div class="atit">Curso Completo</div><div class="asub">Selecciona un módulo para comenzar</div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';

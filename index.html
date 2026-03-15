@@ -325,44 +325,182 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 .mod-progress-fill{height:100%;background:linear-gradient(90deg,var(--st),var(--sl));border-radius:2px;transition:width .5s ease;}
 .mod-progress-label{font-size:.7rem;color:#555;}
 
-/* Lesson layout */
-.lesson-layout{display:flex;height:calc(100vh - 60px);overflow:hidden;margin:-18px;}
-.lesson-sidebar{width:300px;flex-shrink:0;border-right:1px solid var(--br);overflow-y:auto;display:flex;flex-direction:column;}
-.lesson-sidebar-header{padding:16px;border-bottom:1px solid var(--br);background:rgba(0,0,0,.2);}
-.lesson-mod-title{font-size:.88rem;font-weight:600;color:#f0f0f0;margin-top:8px;line-height:1.3;}
-.lesson-main{flex:1;overflow-y:auto;}
-.lesson-placeholder{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 
-/* Lesson list items */
-#lesson-list{padding:8px 0;}
-.lesson-item{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;}
-.lesson-item:hover{background:rgba(255,255,255,.03);}
-.lesson-item.active{background:rgba(91,127,166,.08);border-left-color:var(--sl);}
-.lesson-item.done .lesson-item-num{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.3);color:#4ade80;}
-.lesson-item-num{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:.68rem;color:#666;flex-shrink:0;}
-.lesson-item-info{flex:1;min-width:0;}
-.lesson-item-title{font-size:.8rem;color:#ccc;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.lesson-item.active .lesson-item-title{color:#f0f0f0;}
-.lesson-item-meta{font-size:.68rem;color:#555;margin-top:2px;}
+/* ── LESSON SIDEBAR — Teachable style ── */
+.lesson-layout {
+  display: flex;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+  margin: -18px;
+}
+.lesson-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--br);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: #111418;
+}
+.lesson-sidebar::-webkit-scrollbar { width: 4px; }
+.lesson-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
+.lesson-sidebar-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--br);
+  background: rgba(0,0,0,.2);
+  position: sticky; top: 0; z-index: 2;
+}
+.lesson-main {
+  flex: 1;
+  overflow-y: auto;
+  background: #0f1318;
+}
+.lesson-main::-webkit-scrollbar { width: 4px; }
+.lesson-main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
+
+/* Module sections in sidebar */
+.ls-module-section { border-bottom: 1px solid rgba(255,255,255,.05); }
+.ls-module-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background .15s;
+  user-select: none;
+}
+.ls-module-header:hover { background: rgba(255,255,255,.03); }
+.ls-module-header.active { background: rgba(91,127,166,.06); }
+.ls-mod-arrow { flex-shrink: 0; color: #444; }
+.ls-mod-info { flex: 1; min-width: 0; }
+.ls-mod-title {
+  font-size: .8rem;
+  font-weight: 700;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ls-mod-meta { font-size: .66rem; color: #444; margin-top: 2px; }
+.ls-lessons-wrap { background: rgba(0,0,0,.15); }
+
+/* Lesson items in sidebar */
+.ls-lesson-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px 9px 36px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all .15s;
+  border-top: 1px solid rgba(255,255,255,.02);
+}
+.ls-lesson-item:hover { background: rgba(255,255,255,.03); }
+.ls-lesson-item.active {
+  background: rgba(91,127,166,.1);
+  border-left-color: var(--sl);
+}
+.ls-lesson-item.done .ls-lesson-num {
+  background: rgba(74,222,128,.1);
+  border-color: rgba(74,222,128,.25);
+}
+.ls-lesson-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .62rem; color: #555; flex-shrink: 0;
+}
+.ls-lesson-info { flex: 1; min-width: 0; }
+.ls-lesson-title {
+  font-size: .78rem;
+  color: #999;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ls-lesson-item.active .ls-lesson-title { color: #f0f0f0; }
+.ls-lesson-meta {
+  font-size: .65rem;
+  color: #444;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
 
 /* Video player */
-.lesson-player{display:flex;flex-direction:column;height:100%;}
-.lesson-video-wrap{aspect-ratio:16/9;background:#000;flex-shrink:0;}
-.lesson-no-video{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.lesson-info-panel{padding:20px 24px;flex:1;}
-.lesson-title-big{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:#f0f0f0;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
-.lesson-desc-text{font-size:.82rem;color:#666;line-height:1.6;margin-bottom:16px;}
-.lesson-task-box{background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:14px;margin-bottom:16px;}
-.lesson-task-label{display:flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;color:#c9a84c;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
-.lesson-task-text{font-size:.8rem;color:#9a9a9a;line-height:1.6;}
-.lesson-actions{display:flex;align-items:center;gap:12px;}
-.lesson-done-badge{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);padding:7px 14px;border-radius:6px;}
-
-@media(max-width:860px){
-  .lesson-layout{flex-direction:column;height:auto;}
-  .lesson-sidebar{width:100%;border-right:none;border-bottom:1px solid var(--br);}
-  .lvl-grid,.mod-grid{grid-template-columns:1fr;}
+.lesson-player { display: flex; flex-direction: column; min-height: 100%; }
+.lesson-video-wrap {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  flex-shrink: 0;
 }
+.lesson-video-wrap iframe { width: 100%; height: 100%; display: block; }
+.lesson-no-video {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #0a0d12;
+}
+.lesson-info-panel { padding: 24px 28px; flex: 1; }
+.lesson-breadcrumb { font-size: .68rem; color: #444; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.lesson-title-big {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #f0f0f0;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+.lesson-desc-text { font-size: .84rem; color: #666; line-height: 1.7; margin-bottom: 18px; }
+.lesson-task-box {
+  background: rgba(201,168,76,.05);
+  border: 1px solid rgba(201,168,76,.18);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.lesson-task-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .72rem; font-weight: 700;
+  color: #c9a84c; letter-spacing: .5px;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.lesson-task-text { font-size: .81rem; color: #9a9a9a; line-height: 1.6; }
+.lesson-actions { display: flex; align-items: center; gap: 12px; padding-bottom: 30px; }
+.lesson-done-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .78rem; color: #4ade80;
+  background: rgba(74,222,128,.08);
+  border: 1px solid rgba(74,222,128,.2);
+  padding: 8px 16px; border-radius: 8px;
+}
+
+/* Placeholder */
+.lesson-placeholder {
+  height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 300px;
+}
+
+/* Mobile */
+@media(max-width:860px) {
+  .lesson-layout { flex-direction: column; height: auto; margin: -18px; }
+  .lesson-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--br); max-height: 45vh; }
+  .lesson-main { min-height: 60vh; }
+  .lesson-info-panel { padding: 16px; }
+  .lesson-title-big { font-size: 1.2rem; }
+}
+
 .admtab{padding:7px 16px;border-radius:2px;border:1px solid var(--br);background:transparent;color:#555;font-family:'Barlow',sans-serif;font-size:.8rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
 .admtab.on{background:rgba(91,127,166,.11);border-color:var(--bs);color:var(--sl);}
 .aform{background:var(--bc);border:1px solid var(--br);border-radius:14px;padding:20px;margin-bottom:16px;}
@@ -2483,76 +2621,190 @@ function showModules(level) {
 function showLessons(mod, level, progress) {
   courseState.moduleId = mod.id;
   pushRoute({ section: 'clases', levelId: level.id, moduleId: mod.id });
+
   var m = document.getElementById('amain');
   m.innerHTML =
     '<div class="lesson-layout" id="lesson-layout">' +
       '<div class="lesson-sidebar" id="lesson-sidebar">' +
         '<div class="lesson-sidebar-header">' +
-          '<div class="course-back" id="back-mods"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title + '</div>' +
-          '<div class="lesson-mod-title">' + mod.title + '</div>' +
+          '<div class="course-back" id="back-levels-btn">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title +
+          '</div>' +
         '</div>' +
         '<div id="lesson-list"><span class="spin"></span></div>' +
       '</div>' +
       '<div class="lesson-main" id="lesson-main">' +
-        '<div class="lesson-placeholder"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/></svg><div style="color:#444;margin-top:12px;font-size:.82rem;">Selecciona una clase</div></div>' +
+        '<div class="lesson-placeholder">' +
+          '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/></svg>' +
+          '<div style="color:#333;margin-top:14px;font-size:.84rem;">Selecciona una clase para comenzar</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
-  document.getElementById('back-mods').addEventListener('click', function() { showModules(level); });
-  sb.from('course_lessons').select('*').eq('module_id', mod.id).eq('is_published', true).order('sort_order').then(function(r) {
+
+  document.getElementById('back-levels-btn').addEventListener('click', function() { showModules(level); });
+
+  // Load ALL modules of this level with their lessons
+  sb.from('course_modules').select('*, course_lessons(*)').eq('level_id', level.id).eq('is_published', true).order('sort_order').then(function(mr) {
     var list = document.getElementById('lesson-list'); if (!list) return;
-    if (!r.data || !r.data.length) { list.innerHTML = '<div style="padding:16px;color:#555;font-size:.82rem;">Sin clases publicadas.</div>'; return; }
-    list.innerHTML = '';
-    r.data.forEach(function(lesson, idx) {
-      var done = progress && progress[lesson.id];
-      var item = document.createElement('div');
-      item.className = 'lesson-item' + (done ? ' done' : '');
-      item.id = 'li-' + lesson.id;
-      item.innerHTML =
-        '<div class="lesson-item-num">' + (done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' : (idx + 1)) + '</div>' +
-        '<div class="lesson-item-info">' +
-          '<div class="lesson-item-title">' + lesson.title + '</div>' +
-          '<div class="lesson-item-meta">' + (lesson.duration_minutes ? lesson.duration_minutes + ' min' : '') + (lesson.has_task ? ' · Tarea' : '') + '</div>' +
-        '</div>';
-      item.addEventListener('click', function() { playLesson(lesson, r.data, progress || {}); });
-      list.appendChild(item);
-    });
-    var first = r.data.find(function(l) { return !progress || !progress[l.id]; }) || r.data[0];
-    if (first) playLesson(first, r.data, progress || {});
+    if (!mr.data || !mr.data.length) { list.innerHTML = '<div style="padding:16px;color:#555;font-size:.82rem;">Sin módulos publicados.</div>'; return; }
+
+    // Collect all lesson IDs for progress check
+    var allIds = [];
+    mr.data.forEach(function(m) { if (m.course_lessons) m.course_lessons.forEach(function(l){ allIds.push(l.id); }); });
+
+    function buildSidebar(prog) {
+      list.innerHTML = '';
+      var allLessonsFlat = [];
+      mr.data.forEach(function(module) {
+        var lessons = (module.course_lessons || []).filter(function(l){ return l.is_published; }).sort(function(a,b){ return a.sort_order-b.sort_order; });
+        lessons.forEach(function(l){ allLessonsFlat.push({ lesson: l, module: module }); });
+
+        // Module section header
+        var modSection = document.createElement('div');
+        modSection.className = 'ls-module-section';
+        modSection.id = 'ls-mod-' + module.id;
+
+        var isCurrentMod = module.id === mod.id;
+        var doneCount = lessons.filter(function(l){ return prog[l.id]; }).length;
+
+        var modHeader = document.createElement('div');
+        modHeader.className = 'ls-module-header' + (isCurrentMod ? ' active' : '');
+        modHeader.innerHTML =
+          '<div class="ls-mod-arrow" id="ls-arr-' + module.id + '">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:.2s;' + (isCurrentMod ? 'transform:rotate(90deg)' : '') + '"><path d="M9 18l6-6-6-6"/></svg>' +
+          '</div>' +
+          '<div class="ls-mod-info">' +
+            '<div class="ls-mod-title">' + module.title + '</div>' +
+            '<div class="ls-mod-meta">' + lessons.length + ' clase' + (lessons.length!==1?'s':'') + (doneCount?' · '+doneCount+' completada'+(doneCount!==1?'s':''):'') + '</div>' +
+          '</div>';
+
+        var lessonsDiv = document.createElement('div');
+        lessonsDiv.className = 'ls-lessons-wrap';
+        lessonsDiv.id = 'ls-lessons-' + module.id;
+        lessonsDiv.style.display = isCurrentMod ? 'block' : 'none';
+
+        modHeader.addEventListener('click', function() {
+          var open = lessonsDiv.style.display !== 'none';
+          lessonsDiv.style.display = open ? 'none' : 'block';
+          var arr = document.getElementById('ls-arr-' + module.id);
+          if (arr) arr.querySelector('svg').style.transform = open ? '' : 'rotate(90deg)';
+        });
+
+        lessons.forEach(function(lesson, idx) {
+          var done = prog[lesson.id];
+          var item = document.createElement('div');
+          item.className = 'ls-lesson-item' + (done ? ' done' : '');
+          item.id = 'li-' + lesson.id;
+          item.innerHTML =
+            '<div class="ls-lesson-num">' +
+              (done
+                ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
+                : '<span>' + (idx+1) + '</span>') +
+            '</div>' +
+            '<div class="ls-lesson-info">' +
+              '<div class="ls-lesson-title">' + lesson.title + '</div>' +
+              '<div class="ls-lesson-meta">' +
+                (lesson.duration_minutes ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg> ' + lesson.duration_minutes + ' min' : '') +
+                (lesson.has_task ? ' · 📝' : '') +
+              '</div>' +
+            '</div>';
+          item.addEventListener('click', function() {
+            courseState.moduleId = module.id;
+            playLesson(lesson, allLessonsFlat.map(function(x){return x.lesson;}), prog);
+          });
+          lessonsDiv.appendChild(item);
+        });
+
+        modSection.appendChild(modHeader);
+        modSection.appendChild(lessonsDiv);
+        list.appendChild(modSection);
+      });
+
+      // Auto-play: first incomplete lesson of current module, or first lesson
+      var target = null;
+      mr.data.forEach(function(module) {
+        if (module.id === mod.id) {
+          var lessons = (module.course_lessons || []).filter(function(l){ return l.is_published; }).sort(function(a,b){ return a.sort_order-b.sort_order; });
+          target = lessons.find(function(l){ return !prog[l.id]; }) || lessons[0];
+        }
+      });
+      if (target) {
+        courseState.moduleId = mod.id;
+        playLesson(target, allLessonsFlat.map(function(x){return x.lesson;}), prog);
+      }
+    }
+
+    if (allIds.length && cUser && cUser.id !== 'preview') {
+      sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', allIds).then(function(pr) {
+        var prog = {};
+        if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id] = true; });
+        buildSidebar(prog);
+      });
+    } else {
+      buildSidebar(progress || {});
+    }
   });
 }
 
 function playLesson(lesson, allLessons, progress) {
   courseState.lessonId = lesson.id;
   pushRoute({ section: 'clases', levelId: courseState.levelId, moduleId: courseState.moduleId, lessonId: lesson.id });
-  document.querySelectorAll('.lesson-item').forEach(function(el) { el.classList.remove('active'); });
+
+  // Highlight active item in sidebar
+  document.querySelectorAll('.ls-lesson-item, .lesson-item').forEach(function(el) { el.classList.remove('active'); });
   var li = document.getElementById('li-' + lesson.id);
-  if (li) li.classList.add('active');
+  if (li) {
+    li.classList.add('active');
+    // Auto-expand the module section if collapsed
+    var parent = li.parentElement;
+    if (parent && parent.classList.contains('ls-lessons-wrap') && parent.style.display === 'none') {
+      parent.style.display = 'block';
+    }
+    // Scroll sidebar item into view
+    setTimeout(function() { li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 100);
+  }
+
   var main = document.getElementById('lesson-main'); if (!main) return;
-  var done = progress[lesson.id];
-  var embedUrl = lesson.video_url || '';
-  embedUrl = embedUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/');
+  var done = progress && progress[lesson.id];
+
+  // Fix YouTube URL
+  var embedUrl = (lesson.video_url || '').trim();
+  if (embedUrl) {
+    embedUrl = embedUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/');
+    if (!embedUrl.includes('embed')) embedUrl = '';
+  }
+
   main.innerHTML =
     '<div class="lesson-player">' +
       '<div class="lesson-video-wrap">' +
-        (embedUrl ? '<iframe src="' + embedUrl + '" frameborder="0" allowfullscreen style="width:100%;height:100%;"></iframe>' : '<div class="lesson-no-video"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div style="color:#444;margin-top:8px;font-size:.8rem;">Video próximamente</div></div>') +
+        (embedUrl
+          ? '<iframe src="' + embedUrl + '?rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;"></iframe>'
+          : '<div class="lesson-no-video">' +
+              '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' +
+              '<div style="color:#333;margin-top:10px;font-size:.8rem;">Video próximamente</div>' +
+            '</div>') +
       '</div>' +
       '<div class="lesson-info-panel">' +
         '<div class="lesson-title-big">' + lesson.title + '</div>' +
-        '<div class="lesson-desc-text">' + (lesson.description || '') + '</div>' +
-        (lesson.has_task && lesson.task_instructions ?
-          '<div class="lesson-task-box">' +
-            '<div class="lesson-task-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Tarea pendiente</div>' +
-            '<div class="lesson-task-text">' + lesson.task_instructions + '</div>' +
-            (!done ? '<textarea id="task-input" class="ai" placeholder="Escribe tu respuesta o pega un link..." rows="3" style="margin-top:10px;width:100%;box-sizing:border-box;resize:vertical;"></textarea>' : '') +
-          '</div>' : '') +
+        (lesson.description ? '<div class="lesson-desc-text">' + lesson.description + '</div>' : '') +
+        (lesson.has_task && lesson.task_instructions
+          ? '<div class="lesson-task-box">' +
+              '<div class="lesson-task-label">' +
+                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>' +
+                ' Tarea' +
+              '</div>' +
+              '<div class="lesson-task-text">' + lesson.task_instructions + '</div>' +
+              (!done ? '<textarea id="task-input" class="ai" placeholder="Escribe tu respuesta o pega un link..." rows="3" style="margin-top:10px;width:100%;box-sizing:border-box;resize:vertical;font-size:16px;"></textarea>' : '') +
+            '</div>'
+          : '') +
         '<div class="lesson-actions">' +
-          (!done ?
-            '<button class="abtn2" id="btn-complete">Marcar como completada</button>' :
-            '<div class="lesson-done-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Completada</div>'
-          ) +
+          (!done
+            ? '<button class="abtn2" id="btn-complete" style="padding:10px 22px;">✓ Marcar como completada</button>'
+            : '<div class="lesson-done-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Completada</div>') +
         '</div>' +
       '</div>' +
     '</div>';
+
   var btnC = document.getElementById('btn-complete');
   if (btnC) btnC.addEventListener('click', function() { markDone(lesson.id); });
 }

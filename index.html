@@ -328,13 +328,15 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 /* ── LESSON SIDEBAR — Teachable style ── */
 .lesson-layout {
-  display: flex;
+  display: flex !important;
   height: calc(100vh - 60px);
   overflow: hidden;
   margin: -18px;
+  opacity: 1;
 }
 .lesson-sidebar {
   width: 300px;
+  min-width: 300px;
   flex-shrink: 0;
   border-right: 1px solid var(--br);
   overflow-y: auto;
@@ -2678,7 +2680,20 @@ function showLessons(mod, level, progress) {
         : '') +
     '</div>';
 
-  document.getElementById('back-levels-btn').addEventListener('click', function() { showLevels(); });
+  document.getElementById('back-levels-btn').addEventListener('click', function() {
+    // Restore amain padding when going back
+    var am = document.getElementById('amain');
+    if (am) am.style.padding = '';
+    showLevels();
+  });
+
+  // Remove amain padding so lesson-layout fills correctly
+  var amain = document.getElementById('amain');
+  if (amain) amain.style.padding = '0';
+
+  // Force reflow
+  var layoutEl = document.getElementById('lesson-layout');
+  if (layoutEl) { layoutEl.offsetHeight; }
 
   sb.from('course_modules').select('*, course_lessons(*)').eq('level_id', level.id).order('sort_order').then(function(mr) {
     var list = document.getElementById('lesson-list'); if (!list) return;

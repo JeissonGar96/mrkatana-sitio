@@ -2562,9 +2562,25 @@ function showLevels() {
           '<div class="lvl-desc">' + (lv.description || '') + '</div>' +
           '<div class="lvl-meta">' + modCount + ' módulo' + (modCount !== 1 ? 's' : '') + '</div>' +
         '</div>';
-      card.addEventListener('click', function() { showModules(lv); });
+      (function(level) {
+        card.addEventListener('click', function() { openLevel(level); });
+      })(lv);
       g.appendChild(card);
     });
+  });
+}
+
+function openLevel(level) {
+  // Go straight to sidebar layout — no intermediate module cards
+  courseState.levelId = level.id;
+  pushRoute({ section: 'clases', levelId: level.id });
+  var m = document.getElementById('amain');
+  m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
+
+  // Load first module to pass to showLessons
+  sb.from('course_modules').select('id').eq('level_id', level.id).eq('is_published', true).order('sort_order').limit(1).then(function(r) {
+    var firstMod = r.data && r.data.length ? r.data[0] : { id: null };
+    showLessons(firstMod, level, {});
   });
 }
 

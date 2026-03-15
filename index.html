@@ -2140,6 +2140,9 @@ function loadApp(user) {
         return;
       }
     }
+    // Start auto session checker
+    startSessionChecker();
+
     // Restore route from URL or start at dash
     var path = window.location.pathname; // e.g. /app/clases/l/uuid
     var routeState = _parseUrlToState(path);
@@ -3971,9 +3974,10 @@ function rAdmSe() {
   c.innerHTML =
     '<div class="aform">' +
       '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">➕ Programar sesión</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;">' +
         '<div><label class="al">Título</label><input id="s-t" class="ai" placeholder="Pre-Market ES Futuros"></div>' +
-        '<div><label class="al">Fecha y hora</label><input id="s-d" type="datetime-local" class="ai"></div>' +
+        '<div><label class="al">Inicio</label><input id="s-d" type="datetime-local" class="ai"></div>' +
+        '<div><label class="al">Fin (auto-desactivar)</label><input id="s-end" type="datetime-local" class="ai"></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;">' +
         '<div><label class="al">Link Discord</label><input id="s-u" class="ai" placeholder="https://discord.gg/..."></div>' +
@@ -4057,6 +4061,8 @@ function openEditSe(id) {
     var dt = new Date(s.scheduled_at);
     var pad = function(n){ return String(n).padStart(2,'0'); };
     var localDt = dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate()) + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+    var endDt = s.end_time ? new Date(s.end_time) : null;
+    var localEndDt = endDt ? endDt.getFullYear() + '-' + pad(endDt.getMonth()+1) + '-' + pad(endDt.getDate()) + 'T' + pad(endDt.getHours()) + ':' + pad(endDt.getMinutes()) : '';
 
     var overlay = document.createElement('div');
     overlay.id = 'edit-se-modal';
@@ -4067,9 +4073,10 @@ function openEditSe(id) {
           '<div style="font-size:.92rem;font-weight:700;">✎ Editar sesión</div>' +
           '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:10px;">' +
           '<div><label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '"></div>' +
-          '<div><label class="al">Fecha y hora</label><input id="es-d" type="datetime-local" class="ai" value="' + localDt + '"></div>' +
+          '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai" value="' + localDt + '"></div>' +
+          '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai" value="' + localEndDt + '"></div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
           '<div><label class="al">Link Discord</label><input id="es-u" class="ai" value="' + (s.discord_url||'') + '"></div>' +
@@ -4091,9 +4098,11 @@ function saveSe(id) {
   if (!t || !d) return tst('Título y fecha requeridos', 1);
   var btn = document.getElementById('es-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  var endV = (document.getElementById('es-end')||{}).value || '';
   sb.from('live_sessions').update({
     title: t.trim(),
     scheduled_at: new Date(d).toISOString(),
+    end_time: endV ? new Date(endV).toISOString() : null,
     discord_url: (document.getElementById('es-u')||{}).value.trim() || '',
     description: (document.getElementById('es-desc')||{}).value.trim() || '',
   }).eq('id', id).then(function(r) {
@@ -4109,9 +4118,11 @@ function cSe() {
   var t = document.getElementById('s-t').value.trim();
   var d = document.getElementById('s-d').value;
   if (!t || !d) return tst('Título y fecha requeridos', 1);
+  var endVal = document.getElementById('s-end').value;
   sb.from('live_sessions').insert({
     title: t,
     scheduled_at: new Date(d).toISOString(),
+    end_time: endVal ? new Date(endVal).toISOString() : null,
     discord_url: document.getElementById('s-u').value.trim(),
     description: document.getElementById('s-desc').value.trim(),
     is_active: document.getElementById('s-act').checked,
@@ -4426,6 +4437,46 @@ function loadCalendar() {
       c.innerHTML = '<div class="cal-error"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>No se pudo cargar el calendario. Intenta más tarde.</div>';
       console.error('Calendar error:', err);
     });
+}
+
+// ── AUTO SESSION ACTIVATOR ──
+// Runs every 30 seconds — activates sessions when start time is reached,
+// deactivates when end_time passes or manually toggled
+function checkSessionTimes() {
+  var now = new Date();
+  sb.from('live_sessions').select('id, scheduled_at, end_time, is_active').then(function(r) {
+    if (!r.data) return;
+    r.data.forEach(function(s) {
+      var start = new Date(s.scheduled_at);
+      var end   = s.end_time ? new Date(s.end_time) : null;
+
+      // Should be active: start <= now AND (no end OR now < end)
+      var shouldBeActive = start <= now && (!end || now < end);
+      // Should be inactive: end exists AND now >= end
+      var shouldBeInactive = end && now >= end;
+
+      if (shouldBeActive && !s.is_active) {
+        // Auto-activate
+        sb.from('live_sessions').update({ is_active: true }).eq('id', s.id).then(function() {
+          // Refresh En Vivo section if currently visible
+          var cur = history.state;
+          if (cur && cur.section === 'sesiones') rSes();
+        });
+      } else if (shouldBeInactive && s.is_active) {
+        // Auto-deactivate
+        sb.from('live_sessions').update({ is_active: false }).eq('id', s.id).then(function() {
+          var cur = history.state;
+          if (cur && cur.section === 'sesiones') rSes();
+        });
+      }
+    });
+  });
+}
+
+// Start checker when user is logged in
+function startSessionChecker() {
+  checkSessionTimes(); // run immediately
+  setInterval(checkSessionTimes, 30000); // then every 30 seconds
 }
 
 function toggleCalExplain(id) {

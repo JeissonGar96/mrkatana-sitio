@@ -1152,7 +1152,7 @@ nav{
 .cal-flag-wrap {
   display: flex; align-items: center; justify-content: center;
 }
-.cal-flag { font-size: 1.7rem; line-height: 1; }
+.cal-flag { font-size: 1.7rem; line-height: 1; display:flex; align-items:center; justify-content:center; }
 .cal-currency { display: none; }
 .cal-name { font-size: .84rem; color: #e0e0e0; line-height: 1.35; font-weight: 600; }
 .cal-values {
@@ -4007,7 +4007,7 @@ function loadCalendar() {
 
   // Currency → flag emoji + color
   var currMeta = {
-    'USD': { flag: '🇺🇸', color: '#4a9eff' },
+    'USD': { flag: '<img src="https://flagcdn.com/24x18/us.png" width="24" height="18" style="border-radius:2px;vertical-align:middle;" alt="US">', color: '#4a9eff' },
     'EUR': { flag: '🇪🇺', color: '#7da0c8' },
     'GBP': { flag: '🇬🇧', color: '#c9a84c' },
     'JPY': { flag: '🇯🇵', color: '#e88c4a' },
@@ -4090,7 +4090,7 @@ function loadCalendar() {
 
         groups[date].forEach(function(ev, idx) {
           var curr     = ev.currency || '';
-          var meta     = currMeta[curr] || { flag: '🌐', color: '#9a9a9a' };
+          var meta     = currMeta[curr] || { flag: '<img src="https://flagcdn.com/24x18/un.png" width="24" height="18" style="border-radius:2px;vertical-align:middle;" alt="">', color: '#9a9a9a' };
           var hasAct   = ev.actual && ev.actual !== '—';
           var isSoft   = !ev.time || ev.time === 'Todo el día' || ev.time === 'Tentativo';
           var expl     = getExplanation(ev.name);

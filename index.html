@@ -1694,6 +1694,9 @@ function _restoreAmain() {
 
 function _renderSection(state) {
   _activateNav(state.section);
+  // Reset scroll to top on every section change
+  var appdash = document.getElementById('appdash');
+  if (appdash) appdash.scrollTop = 0;
   // Always restore amain when navigating away from lesson layout
   if (state.section !== 'clases') _restoreAmain();
   if (state.section === 'dash')           rDash();
@@ -2663,7 +2666,7 @@ function showLessons(mod, level, progress) {
         modHeader.className = 'ls-module-header' + (isCurrentMod ? ' active' : '');
         modHeader.innerHTML =
           '<div class="ls-mod-arrow" id="ls-arr-' + module.id + '">' +
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:.2s;' + (isCurrentMod ? 'transform:rotate(90deg)' : '') + '"><path d="M9 18l6-6-6-6"/></svg>' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:.2s;' + (isCurrentMod || isMobile ? 'transform:rotate(90deg)' : '') + '"><path d="M9 18l6-6-6-6"/></svg>' +
           '</div>' +
           '<div class="ls-mod-info">' +
             '<div class="ls-mod-title">' + module.title + '</div>' +
@@ -2673,7 +2676,7 @@ function showLessons(mod, level, progress) {
         var lessonsDiv = document.createElement('div');
         lessonsDiv.className = 'ls-lessons-wrap';
         lessonsDiv.id = 'ls-lessons-' + module.id;
-        lessonsDiv.style.display = isCurrentMod ? 'block' : 'none';
+        lessonsDiv.style.display = (isCurrentMod || isMobile) ? 'block' : 'none';
 
         modHeader.addEventListener('click', function() {
           var open = lessonsDiv.style.display !== 'none';

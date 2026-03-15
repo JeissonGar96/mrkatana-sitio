@@ -2657,10 +2657,10 @@ function showLessons(mod, level, progress) {
       '</div>' +
     '</div>';
 
-  document.getElementById('back-levels-btn').addEventListener('click', function() { showModules(level); });
+  document.getElementById('back-levels-btn').addEventListener('click', function() { showLevels(); });
 
   // Load ALL modules of this level with their lessons
-  sb.from('course_modules').select('*, course_lessons(*)').eq('level_id', level.id).eq('is_published', true).order('sort_order').then(function(mr) {
+  sb.from('course_modules').select('*, course_lessons(*)').eq('level_id', level.id).order('sort_order').then(function(mr) {
     var list = document.getElementById('lesson-list'); if (!list) return;
     if (!mr.data || !mr.data.length) { list.innerHTML = '<div style="padding:16px;color:#555;font-size:.82rem;">Sin módulos publicados.</div>'; return; }
 
@@ -2672,7 +2672,7 @@ function showLessons(mod, level, progress) {
       list.innerHTML = '';
       var allLessonsFlat = [];
       mr.data.forEach(function(module) {
-        var lessons = (module.course_lessons || []).filter(function(l){ return l.is_published; }).sort(function(a,b){ return a.sort_order-b.sort_order; });
+        var lessons = (module.course_lessons || []).sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
         lessons.forEach(function(l){ allLessonsFlat.push({ lesson: l, module: module }); });
 
         // Module section header

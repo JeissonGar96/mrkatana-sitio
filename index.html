@@ -3026,7 +3026,7 @@ function rSes() {
                'data-title="' + s.title.replace(/"/g,"'") + '" ' +
                'data-date="' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '" ' +
                'data-url="' + embedUrl + '" ' +
-               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;margin-bottom:4px;">' +
+               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);">' +
 '<div style="width:36px;height:36px;border-radius:6px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="#4a9eff"><polygon points="5,3 19,12 5,21"/></svg>' +
             '</div>' +
@@ -4045,8 +4045,21 @@ function rAdmSe() {
     }
 
     t.innerHTML = '';
-    r.data.forEach(function(s) {
-      var card = document.createElement('div');
+    var sesPage = 0;
+    var SES_PAGE_SIZE = 5;
+
+    function renderSesPage() {
+      var slice = r.data.slice(0, (sesPage + 1) * SES_PAGE_SIZE);
+      var hasMore = r.data.length > slice.length;
+
+      // Remove existing "ver más" button if any
+      var oldBtn = document.getElementById('ses-more-btn');
+      if (oldBtn) oldBtn.remove();
+
+      slice.forEach(function(s, i) {
+        if (document.getElementById('ses-card-' + s.id)) return; // already rendered
+        var card = document.createElement('div');
+        card.id = 'ses-card-' + s.id;
       card.style.cssText = 'background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;';
 
       var dateStr = new Date(s.scheduled_at).toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
@@ -4083,7 +4096,23 @@ function rAdmSe() {
         '</div>';
 
       t.appendChild(card);
-    });
+      });
+
+      // "Ver más" button
+      if (hasMore) {
+        var moreBtn = document.createElement('button');
+        moreBtn.id = 'ses-more-btn';
+        moreBtn.textContent = 'Ver 5 más ↓';
+        moreBtn.style.cssText = 'width:100%;padding:10px;margin-top:4px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);border-radius:8px;font-size:.78rem;cursor:pointer;';
+        moreBtn.addEventListener('click', function() {
+          sesPage++;
+          renderSesPage();
+        });
+        t.appendChild(moreBtn);
+      }
+    }
+
+    renderSesPage();
   });
 }
 

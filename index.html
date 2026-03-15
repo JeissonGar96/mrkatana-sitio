@@ -3999,7 +3999,7 @@ function rAdmSe() {
     tbl2.appendChild(tb2); t.innerHTML=''; var w2=document.createElement('div'); w2.className='dtab-wrap'; w2.appendChild(tbl2); t.appendChild(w2);
   });
 }
-function cSe(){var t=document.getElementById('s-t').value.trim(),d=document.getElementById('s-d').value;if(!t||!d)return tst('Título y fecha requeridos',1);sb.from('live_sessions').insert({title:t,scheduled_at:new Date(d).toISOString(),discord_url:document.getElementById('s-u').value.trim(),description:document.getElementById('s-desc').value.trim(),is_active:document.getElementById('s-act').checked,recording_url:document.getElementById('s-rec').value.trim()||null}).then(function(r){if(r.error)return tst('Error: '+r.error.message,1);tst('✓ Programada');rAdmSe();});}
+function cSe(){var t=document.getElementById('s-t').value.trim(),d=document.getElementById('s-d').value;if(!t||!d)return tst('Título y fecha requeridos',1);sb.from('live_sessions').insert({title:t,scheduled_at:new Date(d).toISOString(),discord_url:document.getElementById('s-u').value.trim(),description:document.getElementById('s-desc').value.trim(),is_active:document.getElementById('s-act').checked,recording_url:(document.getElementById('s-rec')||{value:''}).value.trim()||null}).then(function(r){if(r.error)return tst('Error: '+r.error.message,1);tst('✓ Programada');rAdmSe();});}
 function togSe(id,v){sb.from('live_sessions').update({is_active:v}).eq('id',id).then(function(){tst(v?'✓ Banner activo':'Desactivado');rAdmSe();});}
 function dSe(id){if(!confirm('¿Eliminar?'))return;sb.from('live_sessions').delete().eq('id',id).then(function(){tst('Eliminada');rAdmSe();});}
 

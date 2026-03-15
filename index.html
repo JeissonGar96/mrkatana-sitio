@@ -328,20 +328,25 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 /* ── LESSON SIDEBAR — Teachable style ── */
 .lesson-layout {
-  display: flex !important;
-  height: calc(100vh - 61px);
+  display: flex;
+  height: calc(100vh - 130px);
+  min-height: 500px;
   overflow: hidden;
-  margin: -30px;
+  border-radius: 12px;
+  border: 1px solid rgba(91,127,166,.2);
+  background: #111418;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
 }
 .lesson-sidebar {
   width: 300px;
   min-width: 300px;
   flex-shrink: 0;
-  border-right: 1px solid var(--br);
+  border-right: 1px solid rgba(91,127,166,.15);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   background: #111418;
+  border-radius: 12px 0 0 12px;
 }
 .lesson-sidebar::-webkit-scrollbar { width: 4px; }
 .lesson-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
@@ -355,6 +360,8 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   flex: 1;
   overflow-y: auto;
   background: #0f1318;
+  border-radius: 0 12px 12px 0;
+  min-width: 0;
 }
 .lesson-main::-webkit-scrollbar { width: 4px; }
 .lesson-main::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
@@ -437,12 +444,14 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 .lesson-layout-mobile {
   display: block !important;
   height: auto !important;
-  margin: -18px !important;
+  border-radius: 10px !important;
+  min-height: unset !important;
 }
 .lesson-layout-mobile .lesson-sidebar {
   width: 100% !important;
   height: auto !important;
   border-right: none !important;
+  border-radius: 10px !important;
   max-height: none !important;
   overflow-y: visible !important;
 }
@@ -512,7 +521,7 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 /* Mobile */
 @media(max-width:860px) {
-  .lesson-layout { flex-direction: column; height: auto; margin: -18px; margin-bottom: -80px; }
+  .lesson-layout { flex-direction: column; height: auto; min-height: unset; }
   .lesson-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--br); max-height: 45vh; }
   .lesson-main { min-height: 60vh; }
   .lesson-info-panel { padding: 16px; }
@@ -2691,18 +2700,14 @@ function showLessons(mod, level, progress) {
     '</div>';
 
   document.getElementById('back-levels-btn').addEventListener('click', function() {
-    var am = document.getElementById('amain');
-    if (am) { am.style.padding = ''; am.style.overflow = ''; }
     showLevels();
   });
 
-  // Remove amain padding so lesson-layout fills correctly
-  var amain = document.getElementById('amain');
-  if (amain) { amain.style.padding = '0'; amain.style.overflow = 'hidden'; }
-
-  // Force reflow
-  var layoutEl = document.getElementById('lesson-layout');
-  if (layoutEl) { layoutEl.offsetHeight; }
+  // Force browser to compute layout before loading data
+  requestAnimationFrame(function() {
+    var layoutEl = document.getElementById('lesson-layout');
+    if (layoutEl) layoutEl.offsetHeight;
+  });
 
   sb.from('course_modules').select('*, course_lessons(*)').eq('level_id', level.id).order('sort_order').then(function(mr) {
     var list = document.getElementById('lesson-list'); if (!list) return;

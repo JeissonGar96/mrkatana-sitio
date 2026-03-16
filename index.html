@@ -4022,9 +4022,9 @@ function rAdmSe() {
       '<div style="margin-bottom:9px;">' +
         '<label class="al">Título</label><input id="s-t" class="ai" placeholder="Pre-Market ES Futuros">' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
-        '<div><label class="al">Inicio</label><input id="s-d" type="datetime-local" class="ai"></div>' +
-        '<div><label class="al">Fin (auto-desactivar)</label><input id="s-end" type="datetime-local" class="ai"></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;">' +
+        '<div><label class="al">Inicio</label><input id="s-d" type="datetime-local" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
+        '<div><label class="al">Fin (auto-desactivar)</label><input id="s-end" type="datetime-local" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;">' +
         '<div><label class="al">Link Discord</label><input id="s-u" class="ai" placeholder="https://discord.gg/..."></div>' +
@@ -4183,9 +4183,9 @@ function openEditSe(id) {
         '<div style="margin-bottom:9px;">' +
           '<label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '">' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
-          '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai" value="' + localDt + '"></div>' +
-          '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai" value="' + localEndDt + '"></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-bottom:10px;">' +
+          '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai" value="' + localDt + '" style="width:100%;box-sizing:border-box;"></div>' +
+          '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai" value="' + localEndDt + '" style="width:100%;box-sizing:border-box;"></div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
           '<div><label class="al">Link Discord</label><input id="es-u" class="ai" value="' + (s.discord_url||'') + '"></div>' +

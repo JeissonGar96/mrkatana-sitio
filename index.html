@@ -1729,14 +1729,18 @@ function toEmbedUrl(url) {
   }
 
   // ── Bunny.net ──
-  // iframe.mediadelivery.net/embed/LIBRARY/ID or play.bunny.net
   if (url.indexOf('mediadelivery.net') !== -1 || url.indexOf('bunny.net') !== -1) {
-    // Already an embed URL — return as-is
+    // Already correct embed format
     if (url.indexOf('iframe.mediadelivery.net/embed') !== -1) return url;
+    // player.mediadelivery.net/play/LIBRARY/ID → convert to embed
+    var bunnyMatch1 = url.match(/mediadelivery\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
+    if (bunnyMatch1) {
+      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch1[1] + '/' + bunnyMatch1[2] + '?autoplay=false';
+    }
     // play.bunny.net/play/LIBRARY/ID → convert to embed
-    var bunnyMatch = url.match(/bunny\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
-    if (bunnyMatch) {
-      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch[1] + '/' + bunnyMatch[2] + '?autoplay=false';
+    var bunnyMatch2 = url.match(/bunny\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
+    if (bunnyMatch2) {
+      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch2[1] + '/' + bunnyMatch2[2] + '?autoplay=false';
     }
     return url;
   }

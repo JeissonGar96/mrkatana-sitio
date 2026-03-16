@@ -3983,7 +3983,12 @@ async function saveEditModal(type, data, parentLvId, parentModId) {
     var lesThumbUrl = data ? (data.thumbnail_url || '') : '';
     var lesThumbDel = (document.getElementById('em-thumb-del')||{}).checked;
     if (lesThumbDel) {
-      lesThumbUrl = null; // delete thumbnail
+      // Also delete from storage
+      if (data && data.thumbnail_url) {
+        var oldPath = data.thumbnail_url.split('/course-images/')[1];
+        if (oldPath) sb.storage.from('course-images').remove([oldPath]);
+      }
+      lesThumbUrl = null;
     } else {
       var lesThumbFile = document.getElementById('em-thumb-file');
       var lesThumbFileObj = lesThumbFile && lesThumbFile.files && lesThumbFile.files[0];

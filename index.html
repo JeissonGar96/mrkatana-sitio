@@ -1728,7 +1728,7 @@ function toEmbedUrl(url) {
 
   // Bunny.net — iframe.mediadelivery.net/embed/LIB/ID
   if (url.indexOf('iframe.mediadelivery.net/embed') !== -1) {
-    return url.indexOf('autoplay') === -1 ? url + '?autoplay=0' : url;
+    return url.indexOf('autoplay') === -1 ? url + '' : url;
   }
 
   // Bunny.net — player.mediadelivery.net/play/LIB/ID
@@ -1737,7 +1737,7 @@ function toEmbedUrl(url) {
     var videoId = parts[parts.length - 1];
     var libId   = parts[parts.length - 2];
     if (libId && videoId) {
-      return 'https://iframe.mediadelivery.net/embed/' + libId + '/' + videoId + '?autoplay=0';
+      return 'https://iframe.mediadelivery.net/embed/' + libId + '/' + videoId + '';
     }
   }
 
@@ -1747,7 +1747,7 @@ function toEmbedUrl(url) {
     var videoId2 = parts2[parts2.length - 1];
     var libId2   = parts2[parts2.length - 2];
     if (libId2 && videoId2) {
-      return 'https://iframe.mediadelivery.net/embed/' + libId2 + '/' + videoId2 + '?autoplay=0';
+      return 'https://iframe.mediadelivery.net/embed/' + libId2 + '/' + videoId2 + '';
     }
   }
 

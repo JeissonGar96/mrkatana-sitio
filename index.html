@@ -4688,15 +4688,15 @@ function checkSessionTimes() {
       // Should be inactive: end exists AND now >= end
       var shouldBeInactive = end && now >= end;
 
-      if (shouldBeActive && !s.is_active && !s.manually_deactivated) {
+      if (shouldBeActive && !s.is_active && s.manually_deactivated !== true) {
         // Auto-activate only if not manually deactivated
         sb.from('live_sessions').update({ is_active: true }).eq('id', s.id).then(function() {
           var cur = history.state;
           if (cur && cur.section === 'sesiones') rSes();
         });
       } else if (shouldBeInactive && s.is_active) {
-        // Auto-deactivate
-        sb.from('live_sessions').update({ is_active: false }).eq('id', s.id).then(function() {
+        // Auto-deactivate by end_time
+        sb.from('live_sessions').update({ is_active: false, manually_deactivated: false }).eq('id', s.id).then(function() {
           var cur = history.state;
           if (cur && cur.section === 'sesiones') rSes();
         });

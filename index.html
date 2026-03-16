@@ -4045,74 +4045,105 @@ function rAdmSe() {
     }
 
     t.innerHTML = '';
-    var sesPage = 0;
-    var SES_PAGE_SIZE = 5;
+    var now = new Date();
 
-    function renderSesPage() {
-      var slice = r.data.slice(0, (sesPage + 1) * SES_PAGE_SIZE);
-      var hasMore = r.data.length > slice.length;
+    // Split into upcoming and past
+    var upcoming = r.data.filter(function(s){ return new Date(s.scheduled_at) >= now || s.is_active; });
+    var past     = r.data.filter(function(s){ return new Date(s.scheduled_at) < now && !s.is_active; });
 
-      // Remove existing "ver más" button if any
-      var oldBtn = document.getElementById('ses-more-btn');
-      if (oldBtn) oldBtn.remove();
-
-      slice.forEach(function(s, i) {
-        if (document.getElementById('ses-card-' + s.id)) return; // already rendered
-        var card = document.createElement('div');
-        card.id = 'ses-card-' + s.id;
-      card.style.cssText = 'background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;';
-
-      var dateStr = new Date(s.scheduled_at).toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
-      var timeStr = new Date(s.scheduled_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-
-      card.innerHTML =
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">' +
-          '<div>' +
-            '<div style="font-size:.86rem;font-weight:600;color:#f0f0f0;">' + (s.title||'') + '</div>' +
-            '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + dateStr + ' · ' + timeStr + '</div>' +
-            (s.description ? '<div style="font-size:.72rem;color:#666;margin-top:2px;">' + s.description + '</div>' : '') +
-          '</div>' +
-          '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">' +
-            '<label style="cursor:pointer;display:flex;align-items:center;gap:5px;font-size:.72rem;color:' + (s.is_active?'#4ade80':'#555') + ';">' +
-              '<input type="checkbox" ' + (s.is_active?'checked':'') + ' data-id="' + s.id + '" onchange="togSe(this.dataset.id, this.checked)"> ' +
-              (s.is_active ? 'Activo' : 'Inactivo') +
-            '</label>' +
-          '</div>' +
-        '</div>' +
-
-        // Recording URL field
-        '<div style="margin-bottom:10px;">' +
-          '<label class="al">URL Grabación (YouTube)</label>' +
-          '<div style="display:flex;gap:8px;">' +
-            '<input id="rec-' + s.id + '" class="ai" style="flex:1;" placeholder="https://youtube.com/embed/..." value="' + (s.recording_url||'') + '">' +
-            '<button onclick="saveRec(this.dataset.id)" data-id="' + s.id + '" style="background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:6px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;white-space:nowrap;">Guardar</button>' +
-          '</div>' +
-        '</div>' +
-
-        // Edit + Delete buttons
-        '<div style="display:flex;gap:8px;">' +
-          '<button onclick="openEditSe(this.dataset.id)" data-id="' + s.id + '" style="flex:1;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:6px;border-radius:6px;font-size:.72rem;cursor:pointer;">✎ Editar</button>' +
-          '<button onclick="dSe(this.dataset.id)" data-id="' + s.id + '" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:6px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;">✕</button>' +
-        '</div>';
-
-      t.appendChild(card);
-      });
-
-      // "Ver más" button
-      if (hasMore) {
-        var moreBtn = document.createElement('button');
-        moreBtn.id = 'ses-more-btn';
-        moreBtn.textContent = 'Ver 5 más ↓';
-        moreBtn.style.cssText = 'width:100%;padding:10px;margin-top:4px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);border-radius:8px;font-size:.78rem;cursor:pointer;';
-        moreBtn.addEventListener('click', function() {
-          sesPage++;
-          renderSesPage();
+    // ── Render a paginated list into a container ──
+    function renderPaginatedList(container, items, pageSize) {
+      var page = 0;
+      function render() {
+        var slice = items.slice(0, (page + 1) * pageSize);
+        var hasMore = items.length > slice.length;
+        container.innerHTML = '';
+        slice.forEach(function(s) {
+          var card = document.createElement('div');
+          card.id = 'ses-card-' + s.id;
+          card.style.cssText = 'background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;';
+          var dateStr = new Date(s.scheduled_at).toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+          var timeStr = new Date(s.scheduled_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+          card.innerHTML =
+            '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">' +
+              '<div>' +
+                '<div style="font-size:.86rem;font-weight:600;color:#f0f0f0;">' + (s.title||'') + '</div>' +
+                '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + dateStr + ' · ' + timeStr + '</div>' +
+                (s.description ? '<div style="font-size:.72rem;color:#666;margin-top:2px;">' + s.description + '</div>' : '') +
+              '</div>' +
+              '<label style="cursor:pointer;display:flex;align-items:center;gap:5px;font-size:.72rem;color:' + (s.is_active?'#4ade80':'#555') + ';flex-shrink:0;">' +
+                '<input type="checkbox" ' + (s.is_active?'checked':'') + ' data-id="' + s.id + '" onchange="togSe(this.dataset.id, this.checked)"> ' +
+                (s.is_active ? 'Activo' : 'Inactivo') +
+              '</label>' +
+            '</div>' +
+            '<div style="margin-bottom:10px;">' +
+              '<label class="al">URL Grabación (YouTube)</label>' +
+              '<div style="display:flex;gap:8px;">' +
+                '<input id="rec-' + s.id + '" class="ai" style="flex:1;" placeholder="https://youtube.com/embed/..." value="' + (s.recording_url||'') + '">' +
+                '<button onclick="saveRec(this.dataset.id)" data-id="' + s.id + '" style="background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:6px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;white-space:nowrap;">Guardar</button>' +
+              '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;">' +
+              '<button onclick="openEditSe(this.dataset.id)" data-id="' + s.id + '" style="flex:1;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:6px;border-radius:6px;font-size:.72rem;cursor:pointer;">✎ Editar</button>' +
+              '<button onclick="dSe(this.dataset.id)" data-id="' + s.id + '" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:6px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;">✕</button>' +
+            '</div>';
+          container.appendChild(card);
         });
-        t.appendChild(moreBtn);
+        // Ver más button
+        var oldBtn = container.querySelector('.ses-more-btn');
+        if (oldBtn) oldBtn.remove();
+        if (hasMore) {
+          var btn = document.createElement('button');
+          btn.className = 'ses-more-btn';
+          btn.textContent = 'Ver 5 más ↓';
+          btn.style.cssText = 'width:100%;padding:10px;margin-top:4px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);color:var(--sl);border-radius:8px;font-size:.78rem;cursor:pointer;';
+          btn.addEventListener('click', function(){ page++; render(); });
+          container.appendChild(btn);
+        }
       }
+      render();
     }
 
-    renderSesPage();
+    // ── PRÓXIMAS SESIONES ──
+    var upcomingWrap = document.createElement('div');
+    upcomingWrap.style.cssText = 'margin-bottom:20px;';
+    var upcomingLabel = document.createElement('div');
+    upcomingLabel.style.cssText = 'font-size:.68rem;color:#9a9a9a;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--br);';
+    upcomingLabel.textContent = 'Próximas sesiones';
+    upcomingWrap.appendChild(upcomingLabel);
+    if (upcoming.length) {
+      renderPaginatedList(upcomingWrap, upcoming, 5);
+    } else {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'color:#555;font-size:.8rem;padding:10px 0;';
+      empty.textContent = 'Sin sesiones próximas.';
+      upcomingWrap.appendChild(empty);
+    }
+    t.appendChild(upcomingWrap);
+
+    // ── SESIONES PASADAS (colapsable) ──
+    var pastWrap = document.createElement('div');
+    var pastHeader = document.createElement('div');
+    pastHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0;border-top:1px solid var(--br);margin-bottom:0;';
+    pastHeader.innerHTML =
+      '<div style="font-size:.68rem;color:#555;text-transform:uppercase;letter-spacing:1.5px;">Sesiones pasadas / grabaciones (' + past.length + ')</div>' +
+      '<svg id="past-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.5" style="transition:.2s;"><path d="M6 9l6 6 6-6"/></svg>';
+    var pastList = document.createElement('div');
+    pastList.id = 'past-ses-list';
+    pastList.style.display = 'none';
+    pastHeader.addEventListener('click', function() {
+      var open = pastList.style.display !== 'none';
+      pastList.style.display = open ? 'none' : 'block';
+      var arrow = document.getElementById('past-arrow');
+      if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+      if (!open && !pastList.dataset.loaded) {
+        pastList.dataset.loaded = '1';
+        renderPaginatedList(pastList, past, 5);
+      }
+    });
+    pastWrap.appendChild(pastHeader);
+    pastWrap.appendChild(pastList);
+    t.appendChild(pastWrap);
   });
 }
 

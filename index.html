@@ -2734,7 +2734,15 @@ function showLessons(mod, level, progress) {
       if (u.indexOf('embed/') > -1) vidId = u.split('embed/')[1].split('?')[0];
       else if (u.indexOf('watch?v=') > -1) vidId = u.split('watch?v=')[1].split('&')[0];
       else if (u.indexOf('youtu.be/') > -1) vidId = u.split('youtu.be/')[1].split('?')[0];
-      return vidId ? 'https://img.youtube.com/vi/' + vidId + '/mqdefault.jpg' : '';
+      if (vidId) return 'https://img.youtube.com/vi/' + vidId + '/mqdefault.jpg';
+      // Bunny.net thumbnail
+      if (u.indexOf('mediadelivery.net') !== -1 || u.indexOf('bunny.net') !== -1) {
+        var bparts = u.split('/');
+        var bVideoId = bparts[bparts.length - 1].split('?')[0];
+        var bLibId   = bparts[bparts.length - 2];
+        if (bLibId && bVideoId) return 'https://vz-' + bLibId + '.b-cdn.net/' + bVideoId + '/thumbnail.jpg';
+      }
+      return '';
     }
 
     function buildSidebar(prog) {
@@ -2868,7 +2876,7 @@ function openMobilePlayer(lesson, allLessons, progress, level, module) {
     // ── Video ──
     '<div style="width:100%;aspect-ratio:16/9;background:#000;">' +
       (embedUrl
-        ? '<iframe src="' + embedUrl + '?rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;display:block;"></iframe>'
+        ? '<iframe src="' + embedUrl + '?rel=0&modestbranding=1" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;display:block;"></iframe>'
         : '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0d12;gap:10px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div style="color:#333;font-size:.8rem;">Video próximamente</div></div>') +
     '</div>' +
 
@@ -2979,7 +2987,7 @@ function playLesson(lesson, allLessons, progress) {
     '<div class="lesson-player">' +
       '<div class="lesson-video-wrap">' +
         (embedUrl
-          ? '<iframe src="' + embedUrl + '?rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;"></iframe>'
+          ? '<iframe src="' + embedUrl + '?rel=0&modestbranding=1" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;"></iframe>'
           : '<div class="lesson-no-video">' +
               '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' +
               '<div style="color:#333;margin-top:10px;font-size:.8rem;">Video próximamente</div>' +
@@ -3856,7 +3864,11 @@ function openEditModal(type, data, parentLvId, parentModId) {
   } else if (type === 'lesson') {
     html +=
       '<div style="margin-bottom:12px;"><label class="al">Título de la clase</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: ¿Qué es el Order Flow?"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">URL del video (YouTube embed)</label><input id="em-url" class="ai" value="'+(data&&data.video_url?data.video_url:'')+'" placeholder="https://www.youtube.com/embed/..."></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">URL del video (YouTube / Bunny / Vimeo)</label><input id="em-url" class="ai" value="'+(data&&data.video_url?data.video_url:'')+'" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">Miniatura de la clase</label>' +
+        (data&&data.thumbnail_url ? '<div style="margin-bottom:6px;"><img src="'+data.thumbnail_url+'" style="height:60px;border-radius:6px;border:1px solid var(--br);object-fit:cover;"></div>' : '') +
+        '<input type="file" id="em-thumb-file" accept="image/*" class="ai" style="font-size:.78rem;padding:6px;">' +
+      '</div>' +
       '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
       '<div style="display:grid;grid-template-columns:80px 80px 1fr;gap:10px;margin-bottom:12px;">' +
         '<div><label class="al">Duración (min)</label><input id="em-min" type="number" class="ai" value="'+(data&&data.duration_minutes?data.duration_minutes:'')+'" placeholder="15"></div>' +
@@ -3957,9 +3969,24 @@ async function saveEditModal(type, data, parentLvId, parentModId) {
   } else if (type === 'lesson') {
     var modId = (data && data.module_id) ? data.module_id : parentModId;
     if (!modId) { tst('Sin módulo asignado', 1); return; }
+
+    // Handle thumbnail upload for lesson
+    var lesThumbUrl = data ? (data.thumbnail_url || '') : '';
+    var lesThumbFile = document.getElementById('em-thumb-file');
+    var lesThumbFileObj = lesThumbFile && lesThumbFile.files && lesThumbFile.files[0];
+    if (lesThumbFileObj) {
+      tst('Subiendo miniatura...');
+      var lesExt = lesThumbFileObj.name.split('.').pop();
+      var lesPath = 'lessons/' + (data ? data.id : Date.now()) + '_' + Date.now() + '.' + lesExt;
+      var lesUp = await sb.storage.from('course-images').upload(lesPath, lesThumbFileObj, { upsert: true });
+      if (lesUp.error) { tst('Error miniatura: ' + lesUp.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+      lesThumbUrl = sb.storage.from('course-images').getPublicUrl(lesPath).data.publicUrl;
+    }
+
     var hasTask = (document.getElementById('em-task')||{}).checked;
     var payload3 = {
       title: title.trim(),
+      thumbnail_url: lesThumbUrl || null,
       video_url: (document.getElementById('em-url')||{}).value.trim() || '',
       description: (document.getElementById('em-desc')||{}).value || '',
       duration_minutes: parseInt((document.getElementById('em-min')||{}).value) || null,

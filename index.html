@@ -1101,6 +1101,26 @@ nav{
   50% { opacity: .6; box-shadow: 0 0 0 4px rgba(74,158,255,0); }
 }
 
+/* Session datetime grid */
+.ses-dt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  overflow: hidden;
+}
+.ses-dt-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none;
+}
+@media (max-width: 600px) {
+  .ses-dt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* iOS input zoom fix — font-size must be >= 16px to prevent auto-zoom */
 @media(max-width:860px) {
   input, select, textarea,
@@ -1792,6 +1812,17 @@ window.addEventListener('popstate', function(e) {
     return;
   }
   if (!cUser) {
+    // Block Esc from showing body scrollbar while in app
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var appdash = document.getElementById('appdash');
+        if (appdash && appdash.style.display === 'block') {
+          document.body.style.overflow = 'hidden';
+          document.body.style.height = '100%';
+        }
+      }
+    });
+
     sb.auth.getSession().then(function(r) {
       if (r.data && r.data.session) loadApp(r.data.session.user);
     });
@@ -4022,9 +4053,9 @@ function rAdmSe() {
       '<div style="margin-bottom:9px;">' +
         '<label class="al">Título</label><input id="s-t" class="ai" placeholder="Pre-Market ES Futuros">' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;">' +
-        '<div><label class="al">Inicio</label><input id="s-d" type="datetime-local" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-        '<div><label class="al">Fin (auto-desactivar)</label><input id="s-end" type="datetime-local" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
+      '<div class="ses-dt-grid">' +
+        '<div><label class="al">Inicio</label><input id="s-d" type="datetime-local" class="ai ses-dt-input"></div>' +
+        '<div><label class="al">Fin (auto-desactivar)</label><input id="s-end" type="datetime-local" class="ai ses-dt-input"></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;">' +
         '<div><label class="al">Link Discord</label><input id="s-u" class="ai" placeholder="https://discord.gg/..."></div>' +
@@ -4183,9 +4214,9 @@ function openEditSe(id) {
         '<div style="margin-bottom:9px;">' +
           '<label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '">' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-bottom:10px;">' +
-          '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai" value="' + localDt + '" style="width:100%;box-sizing:border-box;"></div>' +
-          '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai" value="' + localEndDt + '" style="width:100%;box-sizing:border-box;"></div>' +
+        '<div class="ses-dt-grid" style="margin-bottom:10px;">' +
+          '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai ses-dt-input" value="' + localDt + '"></div>' +
+          '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai ses-dt-input" value="' + localEndDt + '"></div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
           '<div><label class="al">Link Discord</label><input id="es-u" class="ai" value="' + (s.discord_url||'') + '"></div>' +

@@ -2783,7 +2783,7 @@ function showLessons(mod, level, progress) {
 
         lessons.forEach(function(lesson, idx) {
           var done = prog[lesson.id];
-          var thumbUrl = getThumb(lesson.video_url);
+          var thumbUrl = lesson.thumbnail_url || getThumb(lesson.video_url);
           var item = document.createElement('div');
           item.className = 'ls-lesson-item' + (done ? ' done' : '');
           item.id = 'li-' + lesson.id;
@@ -3664,7 +3664,7 @@ function rAdmCl() {
 
 function loadAdmLevels() {
   sb.from('course_levels')
-    .select('*, course_modules(*, course_lessons(id,title,sort_order,is_published,video_url,description,duration_minutes,has_task,task_instructions,module_id))')
+    .select('*, course_modules(*, course_lessons(id,title,sort_order,is_published,video_url,description,duration_minutes,has_task,task_instructions,module_id,thumbnail_url))')
     .order('sort_order')
     .then(function(r) {
       var t = document.getElementById('lv-table'); if (!t) return;

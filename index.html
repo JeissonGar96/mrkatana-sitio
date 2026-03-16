@@ -1714,39 +1714,46 @@ function toEmbedUrl(url) {
   if (!url) return '';
   url = url.trim();
 
-  // ── YouTube ──
-  // youtube.com/watch?v=ID or youtu.be/ID or already embed
+  // YouTube
   var ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) {
     return 'https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0&modestbranding=1';
   }
 
-  // ── Vimeo ──
-  // vimeo.com/ID or player.vimeo.com/video/ID
+  // Vimeo
   var vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
   if (vimeoMatch) {
     return 'https://player.vimeo.com/video/' + vimeoMatch[1] + '?byline=0&portrait=0&title=0';
   }
 
-  // ── Bunny.net ──
-  if (url.indexOf('mediadelivery.net') !== -1 || url.indexOf('bunny.net') !== -1) {
-    // Already correct embed format
-    if (url.indexOf('iframe.mediadelivery.net/embed') !== -1) return url;
-    // player.mediadelivery.net/play/LIBRARY/ID → convert to embed
-    var bunnyMatch1 = url.match(/mediadelivery\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
-    if (bunnyMatch1) {
-      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch1[1] + '/' + bunnyMatch1[2] + '?autoplay=0';
+  // Bunny.net — iframe.mediadelivery.net/embed/LIB/ID
+  if (url.indexOf('iframe.mediadelivery.net/embed') !== -1) {
+    return url.indexOf('autoplay') === -1 ? url + '?autoplay=0' : url;
+  }
+
+  // Bunny.net — player.mediadelivery.net/play/LIB/ID
+  if (url.indexOf('mediadelivery.net') !== -1) {
+    var parts = url.split('/');
+    var videoId = parts[parts.length - 1];
+    var libId   = parts[parts.length - 2];
+    if (libId && videoId) {
+      return 'https://iframe.mediadelivery.net/embed/' + libId + '/' + videoId + '?autoplay=0';
     }
-    // play.bunny.net/play/LIBRARY/ID → convert to embed
-    var bunnyMatch2 = url.match(/bunny\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
-    if (bunnyMatch2) {
-      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch2[1] + '/' + bunnyMatch2[2] + '?autoplay=0';
+  }
+
+  // Bunny.net — play.bunny.net/play/LIB/ID
+  if (url.indexOf('bunny.net') !== -1) {
+    var parts2 = url.split('/');
+    var videoId2 = parts2[parts2.length - 1];
+    var libId2   = parts2[parts2.length - 2];
+    if (libId2 && videoId2) {
+      return 'https://iframe.mediadelivery.net/embed/' + libId2 + '/' + videoId2 + '?autoplay=0';
     }
-    return url;
   }
 
   return '';
 }
+
 
 function _restoreAmain() {
   var am = document.getElementById('amain');

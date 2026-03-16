@@ -1735,12 +1735,12 @@ function toEmbedUrl(url) {
     // player.mediadelivery.net/play/LIBRARY/ID → convert to embed
     var bunnyMatch1 = url.match(/mediadelivery\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
     if (bunnyMatch1) {
-      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch1[1] + '/' + bunnyMatch1[2] + '?autoplay=false';
+      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch1[1] + '/' + bunnyMatch1[2] + '?autoplay=0';
     }
     // play.bunny.net/play/LIBRARY/ID → convert to embed
     var bunnyMatch2 = url.match(/bunny\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
     if (bunnyMatch2) {
-      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch2[1] + '/' + bunnyMatch2[2] + '?autoplay=false';
+      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch2[1] + '/' + bunnyMatch2[2] + '?autoplay=0';
     }
     return url;
   }

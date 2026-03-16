@@ -1710,6 +1710,40 @@ function _activateNav(v) {
   if (mBtn) mBtn.classList.add('on');
 }
 
+function toEmbedUrl(url) {
+  if (!url) return '';
+  url = url.trim();
+
+  // ── YouTube ──
+  // youtube.com/watch?v=ID or youtu.be/ID or already embed
+  var ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) {
+    return 'https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0&modestbranding=1';
+  }
+
+  // ── Vimeo ──
+  // vimeo.com/ID or player.vimeo.com/video/ID
+  var vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
+  if (vimeoMatch) {
+    return 'https://player.vimeo.com/video/' + vimeoMatch[1] + '?byline=0&portrait=0&title=0';
+  }
+
+  // ── Bunny.net ──
+  // iframe.mediadelivery.net/embed/LIBRARY/ID or play.bunny.net
+  if (url.indexOf('mediadelivery.net') !== -1 || url.indexOf('bunny.net') !== -1) {
+    // Already an embed URL — return as-is
+    if (url.indexOf('iframe.mediadelivery.net/embed') !== -1) return url;
+    // play.bunny.net/play/LIBRARY/ID → convert to embed
+    var bunnyMatch = url.match(/bunny\.net\/play\/(\d+)\/([a-zA-Z0-9-]+)/);
+    if (bunnyMatch) {
+      return 'https://iframe.mediadelivery.net/embed/' + bunnyMatch[1] + '/' + bunnyMatch[2] + '?autoplay=false';
+    }
+    return url;
+  }
+
+  return '';
+}
+
 function _restoreAmain() {
   var am = document.getElementById('amain');
   if (am) { am.style.padding = ''; am.style.overflow = ''; }
@@ -2799,11 +2833,7 @@ function openMobilePlayer(lesson, allLessons, progress, level, module) {
   var hasNext = idx < allLessons.length - 1;
   var done = progress && progress[lesson.id];
 
-  var embedUrl = (lesson.video_url || '').trim();
-  if (embedUrl) {
-    embedUrl = embedUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/');
-    if (embedUrl.indexOf('embed') === -1) embedUrl = '';
-  }
+  var embedUrl = toEmbedUrl(lesson.video_url || '');
 
   var existing = document.getElementById('mobile-player-overlay');
   if (existing) existing.remove();
@@ -3051,7 +3081,7 @@ function rSes() {
       html += '<div style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:420px;padding:8px;">';
       past.forEach(function(s) {
         var d = new Date(s.scheduled_at);
-        var embedUrl = (s.recording_url||'').replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/');
+        var embedUrl = toEmbedUrl(s.recording_url||'');
         html +=
           '<div onclick="openRecModal(this.dataset.title, this.dataset.date, this.dataset.url)" ' +
                'data-title="' + s.title.replace(/"/g,"'") + '" ' +

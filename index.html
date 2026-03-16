@@ -4370,7 +4370,10 @@ function cSe() {
 }
 
 function togSe(id, v) {
-  sb.from('live_sessions').update({ is_active: v }).eq('id', id).then(function() {
+  sb.from('live_sessions').update({
+    is_active: v,
+    manually_deactivated: v ? false : true
+  }).eq('id', id).then(function() {
     tst(v ? '✓ Sesión activada' : 'Sesión desactivada');
     rAdmSe();
   });
@@ -4674,7 +4677,7 @@ function loadCalendar() {
 // deactivates when end_time passes or manually toggled
 function checkSessionTimes() {
   var now = new Date();
-  sb.from('live_sessions').select('id, scheduled_at, end_time, is_active').then(function(r) {
+  sb.from('live_sessions').select('id, scheduled_at, end_time, is_active, manually_deactivated').then(function(r) {
     if (!r.data) return;
     r.data.forEach(function(s) {
       var start = new Date(s.scheduled_at);
@@ -4685,10 +4688,9 @@ function checkSessionTimes() {
       // Should be inactive: end exists AND now >= end
       var shouldBeInactive = end && now >= end;
 
-      if (shouldBeActive && !s.is_active) {
-        // Auto-activate
+      if (shouldBeActive && !s.is_active && !s.manually_deactivated) {
+        // Auto-activate only if not manually deactivated
         sb.from('live_sessions').update({ is_active: true }).eq('id', s.id).then(function() {
-          // Refresh En Vivo section if currently visible
           var cur = history.state;
           if (cur && cur.section === 'sesiones') rSes();
         });

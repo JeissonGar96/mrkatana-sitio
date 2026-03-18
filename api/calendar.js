@@ -3,7 +3,7 @@
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=30');
+  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=300');
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -25,12 +25,10 @@ module.exports = async function handler(req, res) {
     return '';
   }
 
-  // Returns UTC timestamp for sorting (keeps proper chronological order)
   function toSortKey(raw) {
     if (!raw) return 0;
     raw = raw.trim();
     if (raw.includes('T')) return new Date(raw).getTime();
-    // Date only — use midnight UTC
     const isoDate = toIsoDate(raw);
     return isoDate ? new Date(isoDate + 'T00:00:00Z').getTime() : 0;
   }
@@ -76,7 +74,11 @@ module.exports = async function handler(req, res) {
     ];
 
     const results = await Promise.allSettled(
-      urls.map(url => fetch(url, { headers: HEADERS }).then(r => r.ok ? r.json() : []))
+      urls.map(url =>
+        fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(8000) })
+          .then(r => r.ok ? r.json() : [])
+          .catch(() => [])
+      )
     );
 
     const all = [];
@@ -84,7 +86,11 @@ module.exports = async function handler(req, res) {
       if (r.status === 'fulfilled' && Array.isArray(r.value)) all.push(...r.value);
     }
 
-    // Deduplicate
+    // If all fetches failed return error so client keeps cached data
+    if (!all.length) {
+      return res.status(503).json({ ok: false, error: 'Feed unavailable', events: [] });
+    }
+
     const rawSeen = new Set();
     const unique_raw = all.filter(e => {
       const k = (e.title||'') + '|' + (e.date||'');
@@ -92,7 +98,6 @@ module.exports = async function handler(req, res) {
       rawSeen.add(k); return true;
     });
 
-    // Filter: USD + High
     const usdHigh = unique_raw.filter(e => e.country === 'USD' && e.impact === 'High');
 
     const future = usdHigh.filter(e => toIsoDate(e.date) >= todayStr);
@@ -104,7 +109,7 @@ module.exports = async function handler(req, res) {
     const events = display.map(e => ({
       date:     toDateLabel(toIsoDate(e.date)),
       isoDate:  toIsoDate(e.date),
-      sortKey:  toSortKey(e.date),          // UTC ms for correct chronological sort
+      sortKey:  toSortKey(e.date),
       time:     toTimeLabel(e.date),
       currency: 'USD',
       name:     (e.title||'').trim(),
@@ -114,10 +119,8 @@ module.exports = async function handler(req, res) {
       actual:   s(e.actual),
     }))
     .filter(e => e.name)
-    // Sort by UTC timestamp — always chronologically correct
     .sort((a, b) => a.sortKey - b.sortKey);
 
-    // Final dedup
     const seenFinal = new Set();
     const final = events
       .filter(e => {
@@ -125,7 +128,7 @@ module.exports = async function handler(req, res) {
         if (seenFinal.has(k)) return false;
         seenFinal.add(k); return true;
       })
-      .map(e => { delete e.sortKey; return e; }); // remove internal sort key
+      .map(e => { delete e.sortKey; return e; });
 
     res.status(200).json({
       ok:       true,
@@ -136,6 +139,6 @@ module.exports = async function handler(req, res) {
     });
 
   } catch(err) {
-    res.status(500).json({ ok:false, error:err.message, events:[] });
+    res.status(500).json({ ok: false, error: err.message, events: [] });
   }
 };

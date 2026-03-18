@@ -4518,6 +4518,21 @@ function tst(m, err) {
 function loadCalendar() {
   var c = document.getElementById('econ-cal');
   if (!c) return;
+  // Load manual overrides from Supabase
+  sb.from('cal_overrides').select('event_name,event_date,actual_value').then(function(ov) {
+    window._calOverrides = {};
+    if (ov.data) ov.data.forEach(function(o) {
+      window._calOverrides[o.event_date + '|' + o.event_name] = o.actual_value;
+    });
+  });
+
+  // Auto-refresh every 2 minutes to catch Real values
+  if (!window._calInterval) {
+    window._calInterval = setInterval(function() {
+      if (document.getElementById('econ-cal')) loadCalendar();
+      else clearInterval(window._calInterval), window._calInterval = null;
+    }, 120000);
+  }
 
   // Currency → flag emoji + color
   var currMeta = {
@@ -4534,26 +4549,91 @@ function loadCalendar() {
 
   // Event keyword → explanation (mayor/menor/igual)
   var explanations = {
-    'CPI':             { up: '📈 USD sube — inflación mayor presiona a la Fed a mantener tasas altas.', down: '📉 USD baja — inflación menor da margen para bajar tasas.', neutral: '➡️ Mercado sin cambios significativos.' },
-    'Core CPI':        { up: '📈 USD sube — inflación subyacente alta mantiene política restrictiva.', down: '📉 USD baja — menor presión inflacionaria, posibles recortes de tasas.', neutral: '➡️ Sin impacto relevante.' },
-    'NFP':             { up: '📈 USD sube — más empleos = economía fuerte, Fed sin prisa para recortar.', down: '📉 USD baja — menos empleos debilitan al dólar y acercan recortes de tasas.', neutral: '➡️ Reacción neutral del mercado.' },
-    'Non-Farm':        { up: '📈 USD sube — empleo sólido fortalece al dólar.', down: '📉 USD baja — empleo débil, expectativas de recorte de tasas.', neutral: '➡️ Sin movimiento claro.' },
-    'Unemployment':    { up: '📉 USD baja — más desempleo debilita la economía y al dólar.', down: '📈 USD sube — menor desempleo, economía fuerte.', neutral: '➡️ Sin cambio relevante.' },
-    'GDP':             { up: '📈 USD sube — crecimiento económico por encima de lo esperado.', down: '📉 USD baja — economía creciendo menos de lo esperado.', neutral: '➡️ En línea con expectativas.' },
-    'Retail Sales':    { up: '📈 USD sube — consumo fuerte señala economía saludable.', down: '📉 USD baja — consumo débil, señal de desaceleración.', neutral: '➡️ Sin reacción significativa.' },
-    'PPI':             { up: '📈 USD sube — presión inflacionaria en productor, Fed hawkish.', down: '📉 USD baja — presión inflacionaria baja, posibles recortes.', neutral: '➡️ Datos en línea, sin movimiento.' },
-    'PMI':             { up: '📈 USD sube — sector en expansión, economía creciendo.', down: '📉 USD baja — sector en contracción, señal negativa.', neutral: '➡️ Actividad estable, sin impacto.' },
-    'FOMC':            { up: '📈 USD sube — Fed más agresiva (hawkish), tasas más altas.', down: '📉 USD baja — Fed más dovish, posibles recortes próximos.', neutral: '➡️ Sin cambios en política monetaria.' },
-    'Interest Rate':   { up: '📈 USD sube — subida de tasas atrae capital al dólar.', down: '📉 USD baja — bajada de tasas reduce atractivo del dólar.', neutral: '➡️ Tasas sin cambio, mercado esperaba esto.' },
-    'Trade Balance':   { up: '📈 Moneda sube — superávit comercial mayor al esperado.', down: '📉 Moneda baja — déficit comercial más alto de lo previsto.', neutral: '➡️ Balance en línea con pronóstico.' },
-    'Housing':         { up: '📈 USD sube — sector inmobiliario fuerte, economía sólida.', down: '📉 USD baja — sector inmobiliario débil, señal de enfriamiento.', neutral: '➡️ Sin impacto significativo.' },
-    'Durable Goods':   { up: '📈 USD sube — demanda industrial fuerte.', down: '📉 USD baja — caída en pedidos industriales.', neutral: '➡️ Sin cambio relevante.' },
-    'Consumer Confidence': { up: '📈 USD sube — consumidores más optimistas, más gasto esperado.', down: '📉 USD baja — consumidores pesimistas, menos gasto proyectado.', neutral: '➡️ Confianza estable.' },
-    'Claims':          { up: '📉 USD baja — más solicitudes de desempleo = mercado laboral débil.', down: '📈 USD sube — menos solicitudes = mercado laboral fuerte.', neutral: '➡️ Sin impacto relevante.' },
-    'BOE':             { up: '📈 GBP sube — Banco de Inglaterra más restrictivo.', down: '📉 GBP baja — Banco de Inglaterra más dovish.', neutral: '➡️ Sin cambios en política monetaria.' },
-    'ECB':             { up: '📈 EUR sube — BCE más restrictivo.', down: '📉 EUR baja — BCE más dovish, posibles recortes.', neutral: '➡️ BCE mantiene postura actual.' },
-    'BOJ':             { up: '📈 JPY sube — Banco de Japón más restrictivo.', down: '📉 JPY baja — Banco de Japón mantiene política ultra-laxa.', neutral: '➡️ Sin cambios relevantes.' },
-    'default':         { up: '📈 Dato mayor al pronóstico — generalmente positivo para la moneda.', down: '📉 Dato menor al pronóstico — generalmente negativo para la moneda.', neutral: '➡️ Dato en línea con expectativas, impacto neutral.' },
+    'CPI': {
+      up:      '📈 USD sube · 📉 SP500/NQ/US30 bajan · 📉 Oro baja — Inflación mayor presiona a la Fed a mantener tasas altas. Malo para acciones y oro.',
+      down:    '📉 USD baja · 📈 SP500/NQ/US30 suben · 📈 Oro sube — Inflación menor da margen para bajar tasas. Bueno para acciones y oro.',
+      neutral: '➡️ Sin cambios relevantes en USD, índices ni oro.'
+    },
+    'Core CPI': {
+      up:      '📈 USD sube · 📉 SP500/NQ/US30 bajan · 📉 Oro baja — Inflación subyacente alta mantiene política restrictiva de la Fed.',
+      down:    '📉 USD baja · 📈 SP500/NQ/US30 suben · 📈 Oro sube — Menor presión inflacionaria, posibles recortes de tasas.',
+      neutral: '➡️ Sin impacto relevante.'
+    },
+    'NFP': {
+      up:      '📈 USD sube · 📉 SP500/NQ/US30 reacción mixta · 📉 Oro baja — Más empleos = economía fuerte, Fed sin prisa para recortar. Índices pueden bajar si se teme menos estímulo.',
+      down:    '📉 USD baja · 📈 SP500/NQ/US30 pueden subir · 📈 Oro sube — Menos empleos acercan recortes de tasas, lo que beneficia a índices y oro.',
+      neutral: '➡️ Reacción neutral en todos los activos.'
+    },
+    'Non-Farm': {
+      up:      '📈 USD sube · 📉 Oro baja · Índices reacción mixta — Empleo sólido fortalece al dólar pero puede presionar a la Fed a no recortar.',
+      down:    '📉 USD baja · 📈 Oro sube · 📈 Índices pueden subir — Empleo débil, expectativas de recorte de tasas.',
+      neutral: '➡️ Sin movimiento claro en ningún activo.'
+    },
+    'Unemployment': {
+      up:      '📉 USD baja · 📈 SP500/NQ/US30 reacción mixta · 📈 Oro sube — Más desempleo debilita la economía, Fed podría recortar tasas.',
+      down:    '📈 USD sube · 📉 Oro baja — Menor desempleo, economía fuerte, Fed hawkish.',
+      neutral: '➡️ Sin cambio relevante.'
+    },
+    'GDP': {
+      up:      '📈 USD sube · 📈 SP500/NQ/US30 suben · 📉 Oro baja — Crecimiento económico por encima de lo esperado, positivo para riesgo.',
+      down:    '📉 USD baja · 📉 SP500/NQ/US30 bajan · 📈 Oro sube — Economía creciendo menos de lo esperado, fuga hacia activos seguros.',
+      neutral: '➡️ En línea con expectativas, sin reacción fuerte.'
+    },
+    'Retail Sales': {
+      up:      '📈 USD sube · 📈 SP500/NQ/US30 suben · 📉 Oro baja — Consumo fuerte señala economía saludable.',
+      down:    '📉 USD baja · 📉 SP500/NQ/US30 bajan · 📈 Oro sube — Consumo débil, señal de desaceleración económica.',
+      neutral: '➡️ Sin reacción significativa.'
+    },
+    'PPI': {
+      up:      '📈 USD sube · 📉 SP500/NQ/US30 bajan · 📉 Oro baja — Presión inflacionaria en productor, Fed hawkish.',
+      down:    '📉 USD baja · 📈 SP500/NQ/US30 suben · 📈 Oro sube — Presión inflacionaria baja, posibles recortes.',
+      neutral: '➡️ Datos en línea, sin movimiento.'
+    },
+    'PMI': {
+      up:      '📈 USD sube · 📈 SP500/NQ/US30 suben — Sector en expansión, economía creciendo. Positivo para riesgo.',
+      down:    '📉 USD baja · 📉 SP500/NQ/US30 bajan · 📈 Oro sube — Sector en contracción, fuga a activos seguros.',
+      neutral: '➡️ Actividad estable, sin impacto.'
+    },
+    'FOMC': {
+      up:      '📈 USD sube · 📉 SP500/NQ/US30 bajan · 📉 Oro baja — Fed más agresiva (hawkish), tasas más altas perjudican a índices y oro.',
+      down:    '📉 USD baja · 📈 SP500/NQ/US30 suben · 📈 Oro sube — Fed más dovish, posibles recortes benefician a índices y oro.',
+      neutral: '➡️ Sin cambios en política monetaria, mercado ya lo esperaba.'
+    },
+    'Interest Rate': {
+      up:      '📈 USD sube · 📉 SP500/NQ/US30 bajan · 📉 Oro baja — Subida de tasas atrae capital al dólar, encarece crédito para empresas.',
+      down:    '📉 USD baja · 📈 SP500/NQ/US30 suben · 📈 Oro sube — Bajada de tasas reduce atractivo del dólar, beneficia a índices y oro.',
+      neutral: '➡️ Tasas sin cambio, mercado esperaba esto.'
+    },
+    'Trade Balance': {
+      up:      '📈 USD sube · Índices reacción mixta — Superávit comercial mayor al esperado, positivo para el dólar.',
+      down:    '📉 USD baja · 📈 Oro puede subir — Déficit comercial más alto de lo previsto.',
+      neutral: '➡️ Balance en línea con pronóstico.'
+    },
+    'Housing': {
+      up:      '📈 USD sube · 📈 SP500/US30 suben — Sector inmobiliario fuerte, economía sólida.',
+      down:    '📉 USD baja · 📉 SP500/US30 bajan · 📈 Oro sube — Sector inmobiliario débil, señal de enfriamiento.',
+      neutral: '➡️ Sin impacto significativo.'
+    },
+    'Durable Goods': {
+      up:      '📈 USD sube · 📈 SP500/NQ suben — Demanda industrial fuerte, bueno para empresas.',
+      down:    '📉 USD baja · 📉 SP500/NQ bajan — Caída en pedidos industriales, señal negativa.',
+      neutral: '➡️ Sin cambio relevante.'
+    },
+    'Consumer Confidence': {
+      up:      '📈 USD sube · 📈 SP500/NQ/US30 suben — Consumidores optimistas, más gasto esperado, bueno para empresas.',
+      down:    '📉 USD baja · 📉 SP500/NQ/US30 bajan · 📈 Oro sube — Consumidores pesimistas, posible desaceleración.',
+      neutral: '➡️ Confianza en línea con expectativas.'
+    },
+    'ADP': {
+      up:      '📈 USD sube · Índices reacción mixta — Empleo privado fuerte, puede anticipar buen NFP.',
+      down:    '📉 USD baja · 📈 Índices pueden subir — Empleo privado débil, posibles recortes de tasas.',
+      neutral: '➡️ Sin movimiento claro.'
+    },
+    'default': {
+      up:      '📈 Dato mayor al pronóstico — generalmente positivo para USD, revisar impacto en índices y oro según contexto.',
+      down:    '📉 Dato menor al pronóstico — generalmente negativo para USD, posible beneficio para oro e índices.',
+      neutral: '➡️ Dato en línea con expectativas, impacto neutral.'
+    },
   };
 
   function getExplanation(name) {
@@ -4612,6 +4692,12 @@ function loadCalendar() {
 
           // Better/worse
           var actualClass = 'cal-actual';
+          // Apply manual override if exists
+          if (window._calOverrides && window._calOverrides[ev.isoDate + '|' + ev.name]) {
+            ev.actual = window._calOverrides[ev.isoDate + '|' + ev.name];
+            hasAct = true;
+          }
+
           if (hasAct && ev.forecast && ev.forecast !== '—') {
             var a = parseFloat(ev.actual), f = parseFloat(ev.forecast);
             if (!isNaN(a) && !isNaN(f)) actualClass += a >= f ? ' better' : ' worse';
@@ -4644,6 +4730,13 @@ function loadCalendar() {
           // Previous
           html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + (ev.previous !== '—' ? ev.previous : '—') + '</div></div>';
           html += '</div>';
+
+          // Admin edit button for Real value
+          if (cProfile && cProfile.role === 'admin') {
+            html += '<button onclick="event.stopPropagation();editCalReal(this.dataset.name,this.dataset.date,this.dataset.val)" ' +
+              'data-name="' + ev.name.replace(/"/g,"'") + '" data-date="' + ev.isoDate + '" data-val="' + (ev.actual||'') + '" ' +
+              'style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:2px 8px;border-radius:4px;font-size:.65rem;cursor:pointer;margin-top:6px;display:block;">✎ Editar Real</button>';
+          }
 
           // Explanation panel (hidden by default, shown on click)
           html += '<div class="cal-explain" id="' + uid + '">';
@@ -4709,6 +4802,47 @@ function checkSessionTimes() {
 function startSessionChecker() {
   checkSessionTimes(); // run immediately
   setInterval(checkSessionTimes, 30000); // then every 30 seconds
+}
+
+function editCalReal(name, isoDate, currentVal) {
+  var existing = document.getElementById('cal-edit-modal');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'cal-edit-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  overlay.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
+      '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;margin-bottom:6px;">✎ Editar valor Real</div>' +
+      '<div style="font-size:.75rem;color:#555;margin-bottom:16px;">' + name + ' · ' + isoDate + '</div>' +
+      '<label class="al">Valor Real</label>' +
+      '<input id="cal-real-input" class="ai" value="' + (currentVal||'') + '" placeholder="Ej: 3.2%" style="margin-bottom:14px;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button id="cal-real-save" class="abtn2" style="flex:1;padding:10px;">Guardar</button>' +
+        '<button onclick="var m=document.getElementById(\'cal-edit-modal\');if(m)m.remove();" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 14px;border-radius:7px;font-size:.82rem;cursor:pointer;">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+
+  document.getElementById('cal-real-save').addEventListener('click', function() {
+    var val = document.getElementById('cal-real-input').value.trim();
+    this.disabled = true; this.textContent = 'Guardando...';
+    sb.from('cal_overrides').upsert({
+      event_name: name,
+      event_date: isoDate,
+      actual_value: val,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'event_name,event_date' }).then(function(r) {
+      if (r.error) { tst('Error: ' + r.error.message, 1); return; }
+      tst('✓ Valor actualizado');
+      overlay.remove();
+      // Clear calendar cache and reload
+      window._calCache = null;
+      loadCalendar();
+    });
+  });
 }
 
 function toggleCalExplain(id) {

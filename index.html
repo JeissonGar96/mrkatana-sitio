@@ -4731,14 +4731,13 @@ function loadCalendar() {
           html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + (ev.forecast !== '—' ? ev.forecast : '—') + '</div></div>';
           // Previous
           html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + (ev.previous !== '—' ? ev.previous : '—') + '</div></div>';
-          html += '</div>';
-
-          // Admin edit button for Real value
+          // Admin edit button inside values row
           if (cProfile && cProfile.role === 'admin') {
             html += '<button onclick="event.stopPropagation();editCalReal(this.dataset.name,this.dataset.date,this.dataset.val)" ' +
               'data-name="' + ev.name.replace(/"/g,"'") + '" data-date="' + ev.isoDate + '" data-val="' + (ev.actual||'') + '" ' +
-              'style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:2px 8px;border-radius:4px;font-size:.65rem;cursor:pointer;margin-top:6px;display:block;">✎ Editar Real</button>';
+              'style="background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.18);color:var(--sl);padding:2px 8px;border-radius:4px;font-size:.62rem;cursor:pointer;align-self:center;">✎</button>';
           }
+          html += '</div>';
 
           // Explanation panel (hidden by default, shown on click)
           html += '<div class="cal-explain" id="' + uid + '">';

@@ -4518,14 +4518,6 @@ function tst(m, err) {
 function loadCalendar() {
   var c = document.getElementById('econ-cal');
   if (!c) return;
-  // Load manual overrides from Supabase
-  sb.from('cal_overrides').select('event_name,event_date,actual_value').then(function(ov) {
-    window._calOverrides = {};
-    if (ov.data) ov.data.forEach(function(o) {
-      window._calOverrides[o.event_date + '|' + o.event_name] = o.actual_value;
-    });
-  });
-
   // Auto-refresh every 2 minutes to catch Real values
   if (!window._calInterval) {
     window._calInterval = setInterval(function() {
@@ -4648,8 +4640,23 @@ function loadCalendar() {
   var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var todayDow = dayNames[new Date().getDay()];
 
-  fetch('/api/calendar')
-    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  // Load overrides quickly then render — if overrides arrive before calendar, great
+  // If not, calendar renders first and overrides patch it when ready
+  window._calOverrides = window._calOverrides || {};
+  sb.from('cal_overrides').select('event_name,event_date,actual_value').then(function(ov) {
+    window._calOverrides = {};
+    if (ov.data) ov.data.forEach(function(o) {
+      window._calOverrides[o.event_date + '|' + o.event_name] = o.actual_value;
+    });
+    // If calendar already rendered, patch the Real values in DOM
+    Object.keys(window._calOverrides).forEach(function(key) {
+      var val = window._calOverrides[key];
+      var els = document.querySelectorAll('[data-cal-key="' + key + '"]');
+      els.forEach(function(el) { el.textContent = val; el.className = 'cal-val-num cal-actual'; });
+    });
+  });
+
+  fetch('/api/calendar').then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data) {
       if (!data.ok || !data.events || !data.events.length) {
     // Keep previous data if available
@@ -4722,9 +4729,9 @@ function loadCalendar() {
           html += '<div class="cal-val">';
           html += '<div class="cal-val-label">Real</div>';
           if (hasAct) {
-            html += '<div class="cal-val-num ' + actualClass + '">' + ev.actual + '</div>';
+            html += '<div class="cal-val-num ' + actualClass + '" data-cal-key="' + ev.isoDate + '|' + ev.name + '">' + ev.actual + '</div>';
           } else {
-            html += '<div class="cal-val-num cal-pending">—</div>';
+            html += '<div class="cal-val-num cal-pending" data-cal-key="' + ev.isoDate + '|' + ev.name + '">—</div>';
           }
           html += '</div>';
           // Forecast

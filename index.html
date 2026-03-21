@@ -3229,17 +3229,105 @@ function showDiscordModal(discordUrl) {
 
 // ── REUNIONES ──
 function rReun() {
-  document.getElementById('amain').innerHTML = '<div class="atit">Mis Reuniones 1-1</div><div class="asub">Sesiones privadas con Jeisson</div><div id="ml"><span class="spin"></span></div>';
-  sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).order('scheduled_at').then(function(r) {
-    var c = document.getElementById('ml');
-    if (!c) return;
-    if (!r.data || !r.data.length) { c.innerHTML='<div style="padding:40px;text-align:center;color:#555;"><div style="font-size:1.4rem;margin-bottom:8px;">🎯</div>Sin reuniones 1-1 programadas aún.<br><span style="font-size:.76rem;">Tienes 1 sesión privada por mes incluida.</span></div>'; return; }
-    c.innerHTML = r.data.map(function(m) {
-      var d = new Date(m.scheduled_at);
-      return '<div class="mc"><div class="md"><div class="md-d">'+d.getDate()+'</div><div class="md-m">'+d.toLocaleDateString('es-ES',{month:'short'})+'</div></div><div style="flex:1;"><div style="font-size:.85rem;font-weight:600;">Sesión 1-1 con Jeisson</div><div style="font-size:.73rem;color:#555;margin-top:2px;">'+d.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div>'+(m.notes?'<div style="font-size:.71rem;color:#555;">'+m.notes+'</div>':'')+'</div><span style="font-size:.67rem;padding:2px 9px;border-radius:1px;background:rgba(91,127,166,.1);color:var(--sl);">'+(m.status==='completed'?'✓ Hecha':'1-1')+'</span></div>';
-    }).join('');
+  var m = document.getElementById('amain');
+  m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
+
+  var now = new Date();
+
+  // Load meetings and recordings in parallel
+  Promise.all([
+    sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).order('scheduled_at'),
+    sb.from('recordings_1on1').select('*').eq('student_id', cUser.id).order('recorded_at', {ascending: false})
+  ]).then(function(res) {
+    var meetings   = res[0].data || [];
+    var recordings = res[1].data || [];
+
+    var upcoming = meetings.filter(function(m){ return new Date(m.scheduled_at) >= now; });
+    var past     = meetings.filter(function(m){ return new Date(m.scheduled_at) < now; });
+
+    var html = '<div class="atit">Reuniones 1-1</div>';
+    html += '<div class="asub" style="margin-bottom:24px;">Sesiones privadas con Jeisson</div>';
+
+    // ── PRÓXIMA REUNIÓN ──
+    if (upcoming.length) {
+      var next = upcoming[0];
+      var d = new Date(next.scheduled_at);
+      var dateStr = d.toLocaleDateString("es-ES", {weekday:"long", day:"2-digit", month:"long", year:"numeric"});
+      var timeStr = d.toLocaleTimeString("es-ES", {hour:"2-digit", minute:"2-digit"});
+
+      // Countdown
+      var diff = d - now;
+      var days = Math.floor(diff / 86400000);
+      var hrs  = Math.floor((diff % 86400000) / 3600000);
+      var mins = Math.floor((diff % 3600000) / 60000);
+      var countdownStr = days > 0 ? days + 'd ' + hrs + 'h ' + mins + 'm' : hrs + 'h ' + mins + 'm';
+
+      html +=
+        '<div style="background:linear-gradient(135deg,rgba(91,127,166,.1),rgba(91,127,166,.04));border:1px solid rgba(91,127,166,.25);border-radius:14px;padding:22px;margin-bottom:24px;">' +
+          '<div style="font-size:.65rem;color:var(--sl);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:10px;">📅 Próxima sesión</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;margin-bottom:4px;">' + (next.title || 'Sesión 1-1') + '</div>' +
+          '<div style="font-size:.8rem;color:#9a9a9a;margin-bottom:4px;">' + dateStr + '</div>' +
+          '<div style="font-size:.8rem;color:#9a9a9a;margin-bottom:14px;">' + timeStr + ' · En ' + countdownStr + '</div>' +
+          (next.notes ? '<div style="font-size:.78rem;color:#666;margin-bottom:14px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;">' + next.notes + '</div>' : '') +
+          (next.meet_url
+            ? '<a href="' + next.meet_url + '" target="_blank" class="abtn2" style="display:block;text-align:center;padding:12px;text-decoration:none;">▶ Entrar a la sesión</a>'
+            : '<div style="text-align:center;padding:12px;background:rgba(255,255,255,.03);border-radius:8px;font-size:.78rem;color:#555;">Link de reunión pendiente</div>') +
+        '</div>';
+
+      // Other upcoming
+      if (upcoming.length > 1) {
+        html += '<div class="sec" style="margin-bottom:12px;">Próximas sesiones</div>';
+        upcoming.slice(1).forEach(function(mt) {
+          var dd = new Date(mt.scheduled_at);
+          html +=
+            '<div class="mc" style="margin-bottom:8px;">' +
+              '<div class="md"><div class="md-d">' + dd.getDate() + '</div><div class="md-m">' + dd.toLocaleDateString("es-ES",{month:"short"}) + '</div></div>' +
+              '<div style="flex:1;"><div style="font-size:.84rem;font-weight:600;">' + (mt.title||"Sesión 1-1") + '</div>' +
+              '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + dd.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}) + '</div></div>' +
+              (mt.meet_url ? '<a href="' + mt.meet_url + '" target="_blank" style="font-size:.7rem;color:var(--sl);padding:4px 10px;border:1px solid rgba(91,127,166,.25);border-radius:5px;text-decoration:none;">Entrar</a>' : '') +
+            '</div>';
+        });
+      }
+    } else {
+      html +=
+        '<div style="background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.08);border-radius:14px;padding:24px;text-align:center;margin-bottom:24px;">' +
+          '<div style="font-size:1.4rem;margin-bottom:8px;">📅</div>' +
+          '<div style="font-size:.84rem;color:#555;">Sin sesiones programadas próximamente</div>' +
+        '</div>';
+    }
+
+    // ── GRABACIONES PERSONALIZADAS ──
+    if (recordings.length) {
+      html += '<div class="sec" style="margin:4px 0 12px;">Grabaciones de tus sesiones</div>';
+      html += '<div style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:400px;padding:8px;">';
+      recordings.forEach(function(r) {
+        var rd = new Date(r.recorded_at);
+        var embedUrl = toEmbedUrl(r.video_url);
+        html +=
+          '<div onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" ' +
+               'data-title="' + (r.title||'').replace(/"/g,"'") + '" ' +
+               'data-date="' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"}) + '" ' +
+               'data-url="' + embedUrl + '" ' +
+               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);">' +
+            '<div style="width:36px;height:36px;border-radius:6px;background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+              '<svg width="12" height="12" viewBox="0 0 24 24" fill="var(--sl)"><polygon points="5,3 19,12 5,21"/></svg>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:.84rem;font-weight:600;color:#f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.title||'Grabación') + '</div>' +
+              (r.description ? '<div style="font-size:.71rem;color:#555;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.description + '</div>' : '') +
+              '<div style="font-size:.68rem;color:#444;margin-top:1px;">' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"}) + '</div>' +
+            '</div>' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+
+    m.innerHTML = html;
   });
 }
+
+
 
 // ── PERFIL ──
 function rPerfil() {
@@ -3549,83 +3637,181 @@ function deleteRoadmapWeek(weekNum) {
 }
 
 function schedule1on1(studentId) {
-  var inp = document.getElementById('sch-date-' + studentId);
+  var inp  = document.getElementById('sch-date-' + studentId);
+  var titl = document.getElementById('sch-title-' + studentId);
+  var url  = document.getElementById('sch-url-' + studentId);
   if (!inp || !inp.value) return tst('Selecciona una fecha y hora', 1);
   var dt = new Date(inp.value).toISOString();
-  sb.from('profiles').update({ next_1on1_meeting: dt }).eq('id', studentId).then(function(r) {
+  sb.from('meetings_1on1').insert({
+    student_id:   studentId,
+    scheduled_at: dt,
+    title:        titl ? titl.value.trim() || 'Sesión 1-1' : 'Sesión 1-1',
+    meet_url:     url  ? url.value.trim()  || null : null,
+    status:       'scheduled'
+  }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Sesión 1-1 agendada');
-    // Close modal and refresh
-    var ov = document.querySelector('div[style*="position:fixed"][style*="z-index:800"]');
-    if (ov) ov.remove();
+    tst('✓ Sesión programada');
+    inp.value = '';
+    if (titl) titl.value = '';
+    if (url)  url.value  = '';
     rAdmSt();
   });
 }
 
-function viewStudentProfile(id) {
-  sb.from('profiles').select('*').eq('id', id).single().then(function(r) {
-    if (r.error || !r.data) return tst('No se encontró el perfil', 1);
-    var p = r.data;
-    var end = p.membership_end ? new Date(p.membership_end) : null;
-    var active = end && end > new Date();
-    // Create modal overlay
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;';
-    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
-    var box = document.createElement('div');
-    box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:480px;overflow:hidden;';
-    box.innerHTML =
-      '<div style="padding:20px 24px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">' +
-        '<div style="font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Perfil del alumno</div>' +
-        '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
-      '</div>' +
-      '<div style="padding:24px;">' +
-        '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">' +
-          '<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
-            (p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (p.full_name ? p.full_name[0].toUpperCase() : '?')) +
-          '</div>' +
-          '<div>' +
-            '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">'+(p.full_name||'Sin nombre')+'</div>' +
-            '<div style="font-size:.78rem;color:#666;margin-top:2px;">'+(p.email||'')+'</div>' +
-            '<span style="font-size:.68rem;padding:2px 8px;border-radius:10px;background:'+(active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(active?'#4ade80':'#f87171')+';margin-top:4px;display:inline-block;">'+(active?'Activo':'Inactivo')+'</span>' +
-          '</div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Edad</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.age||'—')+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">País</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.country||'—')+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Experiencia</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.trading_experience||'—')+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Membresía vence</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(end ? end.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div>' +
-          '</div>' +
-        '</div>' +
-        '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;grid-column:1/-1;margin-top:12px;">' +
-          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Semana actual</div>' +
-          (function() { var s=p.membership_start?new Date(p.membership_start):null; var e=p.membership_end?new Date(p.membership_end):null; var t=new Date(); var wk=s?Math.max(1,Math.ceil((t-s)/(7*86400000))):1; var tw=24; var html2='<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;color:var(--sl);margin-bottom:6px;">Semana '+wk+' de '+tw+'</div><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;">'; for(var i=1;i<=tw;i++){var isCur=i===wk;var isPast=i<wk;html2+='<div onclick="openWeekModal('+i+',\''+p.id+'\')" style="height:8px;border-radius:2px;cursor:pointer;background:'+(isCur?'var(--sl)':isPast?'rgba(91,127,166,.35)':'rgba(255,255,255,.05)')+';"></div>';} html2+='</div>'; return html2; })() +
-        '</div>' +
-        (p.bio ? '<div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;"><div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Bio</div><div style="font-size:.82rem;color:#9a9a9a;line-height:1.6;">'+p.bio+'</div></div>' : '') +
-      '<div style="margin-top:16px;border-top:1px solid var(--br);padding-top:16px;">' +
-        '<div style="font-size:.74rem;font-weight:600;margin-bottom:10px;color:#9a9a9a;text-transform:uppercase;letter-spacing:.8px;">Agendar sesión 1-1</div>' +
-        '<div style="display:flex;gap:8px;align-items:center;">' +
-          '<input type="datetime-local" id="sch-date-'+p.id+'" style="flex:1;min-width:150px;background:rgba(255,255,255,.05);border:1px solid var(--br);color:#f0f0f0;padding:7px 10px;border-radius:6px;font-size:.78rem;">' +
-          '<button onclick="schedule1on1(\''+p.id+'\')" style="background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;white-space:nowrap;">📅 Agendar</button>' +
-        '</div>' +
-        (p.next_1on1_meeting ? '<div style="font-size:.71rem;color:#555;margin-top:6px;">Actual: '+new Date(p.next_1on1_meeting).toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+new Date(p.next_1on1_meeting).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div>' : '') +
-      '</div>' +
-      '</div>';
-    ov.appendChild(box);
-    document.body.appendChild(ov);
+function addRecording1on1(studentId) {
+  var titleEl = document.getElementById('rec1-title-' + studentId);
+  var urlEl   = document.getElementById('rec1-url-'   + studentId);
+  var descEl  = document.getElementById('rec1-desc-'  + studentId);
+  var dateEl  = document.getElementById('rec1-date-'  + studentId);
+  if (!titleEl || !titleEl.value.trim()) return tst('El título es requerido', 1);
+  if (!urlEl   || !urlEl.value.trim())   return tst('El link del video es requerido', 1);
+  sb.from('recordings_1on1').insert({
+    student_id:  studentId,
+    title:       titleEl.value.trim(),
+    video_url:   urlEl.value.trim(),
+    description: descEl ? descEl.value.trim() || null : null,
+    recorded_at: dateEl && dateEl.value ? new Date(dateEl.value).toISOString() : new Date().toISOString()
+  }).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Grabación agregada');
+    titleEl.value = '';
+    urlEl.value   = '';
+    if (descEl) descEl.value = '';
+    if (dateEl) dateEl.value = '';
+    rAdmSt();
   });
 }
+
+function deleteRecording1on1(id) {
+  if (!confirm('¿Eliminar esta grabación?')) return;
+  sb.from('recordings_1on1').delete().eq('id', id).then(function() {
+    tst('Grabación eliminada');
+    rAdmSt();
+  });
+}
+
+function deleteMeeting1on1(id) {
+  if (!confirm('¿Eliminar esta reunión?')) return;
+  sb.from('meetings_1on1').delete().eq('id', id).then(function() {
+    tst('Reunión eliminada');
+    rAdmSt();
+  });
+}
+
+
+
+function viewStudentProfile(id) {
+  sb.from('profiles').select('*').eq('id', id).single().then(function(pr) {
+    if (pr.error || !pr.data) return tst('No se encontró el perfil', 1);
+    var p = pr.data;
+
+    // Load meetings and recordings for this student
+    Promise.all([
+      sb.from('meetings_1on1').select('*').eq('student_id', id).order('scheduled_at'),
+      sb.from('recordings_1on1').select('*').eq('student_id', id).order('recorded_at', {ascending: false})
+    ]).then(function(res) {
+      var meetings   = res[0].data || [];
+      var recordings = res[1].data || [];
+      var now = new Date();
+      var upcoming = meetings.filter(function(m){ return new Date(m.scheduled_at) >= now; });
+      var past     = meetings.filter(function(m){ return new Date(m.scheduled_at) < now; });
+      var end = p.membership_end ? new Date(p.membership_end) : null;
+      var active = end && end > now;
+
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:800;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;backdrop-filter:blur(4px);';
+      ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+
+      var html =
+        '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.2);border-radius:16px;width:100%;max-width:560px;margin:auto;">' +
+          // Header
+          '<div style="padding:18px 22px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">' +
+            '<div style="font-size:.86rem;font-weight:700;color:#f0f0f0;">' + (p.full_name||'Alumno') + '</div>' +
+            '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+          '</div>' +
+          '<div style="padding:20px 22px;max-height:80vh;overflow-y:auto;">' +
+
+            // Status badge
+            '<div style="margin-bottom:16px;">' +
+              '<span style="font-size:.68rem;padding:3px 10px;border-radius:10px;background:' + (active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)') + ';color:' + (active?'#4ade80':'#f87171') + ';">' + (active?'Activo':'Inactivo') + '</span>' +
+              (end ? '<span style="font-size:.7rem;color:#555;margin-left:8px;">Vence: ' + end.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) + '</span>' : '') +
+            '</div>' +
+
+            // ── SCHEDULE NEW MEETING ──
+            '<div style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:16px;">' +
+              '<div style="font-size:.68rem;color:#9a9a9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600;">📅 Programar sesión 1-1</div>' +
+              '<div style="margin-bottom:8px;"><label class="al">Título</label><input id="sch-title-' + p.id + '" class="ai" placeholder="Sesión 1-1 · Semana 3"></div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+                '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-date-' + p.id + '" class="ai"></div>' +
+                '<div><label class="al">Link Google Meet</label><input id="sch-url-' + p.id + '" class="ai" placeholder="https://meet.google.com/..."></div>' +
+              '</div>' +
+              '<button onclick="schedule1on1(this.dataset.id)" data-id="' + p.id + '" class="abtn2" style="width:100%;padding:9px;">Programar</button>' +
+            '</div>' +
+
+            // ── UPCOMING MEETINGS ──
+            (upcoming.length
+              ? '<div style="margin-bottom:16px;"><div style="font-size:.68rem;color:#9a9a9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600;">Próximas sesiones</div>' +
+                upcoming.map(function(mt) {
+                  var d = new Date(mt.scheduled_at);
+                  return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(91,127,166,.06);border:1px solid rgba(91,127,166,.15);border-radius:8px;margin-bottom:6px;">' +
+                    '<div style="flex:1;">' +
+                      '<div style="font-size:.82rem;font-weight:600;">' + (mt.title||'Sesión 1-1') + '</div>' +
+                      '<div style="font-size:.7rem;color:#555;">' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
+                    '</div>' +
+                    '<button onclick="deleteMeeting1on1(this.dataset.id)" data-id="' + mt.id + '" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:4px 8px;border-radius:5px;font-size:.7rem;cursor:pointer;">✕</button>' +
+                  '</div>';
+                }).join('') + '</div>'
+              : '') +
+
+            // ── PAST MEETINGS ──
+            (past.length
+              ? '<div style="margin-bottom:16px;"><div style="font-size:.68rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600;">Sesiones pasadas</div>' +
+                past.slice(0,3).map(function(mt) {
+                  var d = new Date(mt.scheduled_at);
+                  return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--br);border-radius:8px;margin-bottom:4px;">' +
+                    '<div style="flex:1;font-size:.78rem;color:#666;">' + (mt.title||'Sesión 1-1') + ' · ' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) + '</div>' +
+                    '<button onclick="deleteMeeting1on1(this.dataset.id)" data-id="' + mt.id + '" style="background:none;border:none;color:#444;font-size:.7rem;cursor:pointer;">✕</button>' +
+                  '</div>';
+                }).join('') + '</div>'
+              : '') +
+
+            // ── ADD RECORDING ──
+            '<div style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:16px;">' +
+              '<div style="font-size:.68rem;color:#9a9a9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600;">🎥 Agregar grabación</div>' +
+              '<div style="margin-bottom:8px;"><label class="al">Título</label><input id="rec1-title-' + p.id + '" class="ai" placeholder="Sesión 1-1 · Análisis de cuenta"></div>' +
+              '<div style="margin-bottom:8px;"><label class="al">URL Video (Bunny)</label><input id="rec1-url-' + p.id + '" class="ai" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+                '<div><label class="al">Descripción (opcional)</label><input id="rec1-desc-' + p.id + '" class="ai" placeholder="Notas de la sesión"></div>' +
+                '<div><label class="al">Fecha grabación</label><input type="date" id="rec1-date-' + p.id + '" class="ai"></div>' +
+              '</div>' +
+              '<button onclick="addRecording1on1(this.dataset.id)" data-id="' + p.id + '" class="abtn2" style="width:100%;padding:9px;">Agregar grabación</button>' +
+            '</div>' +
+
+            // ── EXISTING RECORDINGS ──
+            (recordings.length
+              ? '<div><div style="font-size:.68rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600;">Grabaciones (' + recordings.length + ')</div>' +
+                recordings.map(function(r) {
+                  var rd = new Date(r.recorded_at);
+                  return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--br);border-radius:8px;margin-bottom:4px;">' +
+                    '<div style="flex:1;">' +
+                      '<div style="font-size:.8rem;font-weight:600;color:#f0f0f0;">' + r.title + '</div>' +
+                      '<div style="font-size:.68rem;color:#555;">' + rd.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) + '</div>' +
+                    '</div>' +
+                    '<button onclick="deleteRecording1on1(this.dataset.id)" data-id="' + r.id + '" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:4px 8px;border-radius:5px;font-size:.7rem;cursor:pointer;">✕</button>' +
+                  '</div>';
+                }).join('') + '</div>'
+              : '') +
+
+          '</div>' +
+        '</div>';
+
+      ov.innerHTML = html;
+      document.body.appendChild(ov);
+    });
+  });
+}
+
+
 function dStudent(id) {
   if (!confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
   sb.from('profiles').delete().eq('id', id).then(function(r) {

@@ -3552,8 +3552,41 @@ function rPerfil() {
         '</div>' +
         '<div style="margin-bottom:10px;">' +
           '<label class="al">Fecha de nacimiento</label>' +
-          '<div style="overflow:hidden;width:100%;max-width:100%;display:block;">' +
-            '<input id="pf-dob" type="date" class="ai" value="'+(p.date_of_birth ? p.date_of_birth.slice(0,10) : '')+'" max="'+new Date(Date.now()-16*365.25*86400000).toISOString().slice(0,10)+'" style="width:100%;max-width:100%;box-sizing:border-box;display:block;">' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:6px;">' +
+            // Day
+            (function(){
+              var days = '<select id="pf-dob-d" class="ai" style="box-sizing:border-box;">';
+              days += '<option value="">Día</option>';
+              for(var d=1;d<=31;d++){
+                var sel = '';
+                if(p.date_of_birth){ var dd=parseInt(p.date_of_birth.slice(8,10)); if(dd===d) sel=' selected'; }
+                days += '<option value="'+String(d).padStart(2,'0')+'"'+sel+'>'+d+'</option>';
+              }
+              return days + '</select>';
+            })() +
+            // Month
+            (function(){
+              var months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+              var sel = '<select id="pf-dob-m" class="ai" style="box-sizing:border-box;">';
+              sel += '<option value="">Mes</option>';
+              months.forEach(function(mn,i){
+                var mv = String(i+1).padStart(2,'0');
+                var isSel = p.date_of_birth && parseInt(p.date_of_birth.slice(5,7))===(i+1) ? ' selected' : '';
+                sel += '<option value="'+mv+'"'+isSel+'>'+mn+'</option>';
+              });
+              return sel + '</select>';
+            })() +
+            // Year
+            (function(){
+              var curY = new Date().getFullYear();
+              var sel = '<select id="pf-dob-y" class="ai" style="box-sizing:border-box;">';
+              sel += '<option value="">Año</option>';
+              for(var y=curY-16;y>=curY-100;y--){
+                var isSel = p.date_of_birth && parseInt(p.date_of_birth.slice(0,4))===y ? ' selected' : '';
+                sel += '<option value="'+y+'"'+isSel+'>'+y+'</option>';
+              }
+              return sel + '</select>';
+            })() +
           '</div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
@@ -3665,7 +3698,10 @@ function updatePhonePreview() {
 
 function savePerfil() {
   var name   = (document.getElementById('pf-name')         ||{}).value.trim();
-  var dob    = (document.getElementById('pf-dob')          ||{}).value || null;
+  var dobD  = (document.getElementById('pf-dob-d')||{}).value || '';
+  var dobM  = (document.getElementById('pf-dob-m')||{}).value || '';
+  var dobY  = (document.getElementById('pf-dob-y')||{}).value || '';
+  var dob   = (dobD && dobM && dobY) ? dobY+'-'+dobM+'-'+dobD : null;
   var country= (document.getElementById('pf-country')      ||{}).value.trim();
   var prefix = (document.getElementById('pf-phone-prefix') ||{}).value || '+593';
   var phone  = (document.getElementById('pf-phone')        ||{}).value.trim();

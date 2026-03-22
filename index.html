@@ -3218,6 +3218,7 @@ function rSes() {
     }
 
     m.innerHTML = html;
+    restoreSesView();
 
     // ── Bind join button ──
     var joinBtn = document.getElementById('btn-join-live');
@@ -3452,15 +3453,16 @@ function rReun() {
     }
 
     m.innerHTML = html;
+    restoreReuView();
   });
 }
 
 // ── TOGGLE VISTA GRABADAS ──
-function setSesView(v) {
-  var list = document.getElementById('ses-rec-list');
-  var grid = document.getElementById('ses-rec-grid');
-  var btnL = document.getElementById('ses-tog-list');
-  var btnG = document.getElementById('ses-tog-grid');
+function _applyRecView(prefix, v) {
+  var list = document.getElementById(prefix+'-rec-list');
+  var grid = document.getElementById(prefix+'-rec-grid');
+  var btnL = document.getElementById(prefix+'-tog-list');
+  var btnG = document.getElementById(prefix+'-tog-grid');
   if (!list || !grid) return;
   var isGrid = v === 'grid';
   list.style.display = isGrid ? 'none' : 'block';
@@ -3468,17 +3470,22 @@ function setSesView(v) {
   if (btnL) { btnL.style.background = isGrid ? 'transparent' : 'rgba(91,127,166,.15)'; btnL.style.borderColor = isGrid ? 'rgba(255,255,255,.08)' : 'rgba(91,127,166,.3)'; btnL.style.color = isGrid ? '#555' : 'var(--sl)'; }
   if (btnG) { btnG.style.background = isGrid ? 'rgba(91,127,166,.15)' : 'transparent'; btnG.style.borderColor = isGrid ? 'rgba(91,127,166,.3)' : 'rgba(255,255,255,.08)'; btnG.style.color = isGrid ? 'var(--sl)' : '#555'; }
 }
+function setSesView(v) {
+  try { localStorage.setItem('mrk_sesview', v); } catch(e){}
+  _applyRecView('ses', v);
+}
 function setReuView(v) {
-  var list = document.getElementById('reu-rec-list');
-  var grid = document.getElementById('reu-rec-grid');
-  var btnL = document.getElementById('reu-tog-list');
-  var btnG = document.getElementById('reu-tog-grid');
-  if (!list || !grid) return;
-  var isGrid = v === 'grid';
-  list.style.display = isGrid ? 'none' : 'block';
-  grid.style.display = isGrid ? 'grid' : 'none';
-  if (btnL) { btnL.style.background = isGrid ? 'transparent' : 'rgba(91,127,166,.15)'; btnL.style.borderColor = isGrid ? 'rgba(255,255,255,.08)' : 'rgba(91,127,166,.3)'; btnL.style.color = isGrid ? '#555' : 'var(--sl)'; }
-  if (btnG) { btnG.style.background = isGrid ? 'rgba(91,127,166,.15)' : 'transparent'; btnG.style.borderColor = isGrid ? 'rgba(91,127,166,.3)' : 'rgba(255,255,255,.08)'; btnG.style.color = isGrid ? 'var(--sl)' : '#555'; }
+  try { localStorage.setItem('mrk_reuview', v); } catch(e){}
+  _applyRecView('reu', v);
+}
+// Called after rSes / rReun render to restore saved preference
+function restoreSesView() {
+  var v = 'list'; try { v = localStorage.getItem('mrk_sesview') || 'list'; } catch(e){}
+  _applyRecView('ses', v);
+}
+function restoreReuView() {
+  var v = 'list'; try { v = localStorage.getItem('mrk_reuview') || 'list'; } catch(e){}
+  _applyRecView('reu', v);
 }
 
 
@@ -3811,22 +3818,45 @@ function deleteRoadmapWeek(weekNum) {
 
 function rAdm1on1() {
   var c = document.getElementById('a-1on1'); if (!c) return;
-  c.innerHTML = '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;color:#f0f0f0;">📅 Próximas reuniones 1-1 — todos los alumnos</div><div id="adm1on1-list" style="text-align:center;padding:20px 0;"><span class="spin"></span></div>';
+  c.innerHTML =
+    // Sub-tabs
+    '<div style="display:flex;gap:6px;margin-bottom:18px;">' +
+      '<button id="a1on1-tab-mtg" onclick="swA1on1(\'mtg\')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(91,127,166,.3);background:rgba(91,127,166,.15);color:var(--sl);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">📅 Reuniones próximas</button>' +
+      '<button id="a1on1-tab-rec" onclick="swA1on1(\'rec\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">🎥 Grabaciones</button>' +
+    '</div>' +
+    '<div id="a1on1-mtg"></div>' +
+    '<div id="a1on1-rec" style="display:none;"></div>';
 
+  _rAdm1on1Mtg();
+}
+
+function swA1on1(tab) {
+  var isMtg = tab === 'mtg';
+  var mEl = document.getElementById('a1on1-mtg');
+  var rEl = document.getElementById('a1on1-rec');
+  var tM  = document.getElementById('a1on1-tab-mtg');
+  var tR  = document.getElementById('a1on1-tab-rec');
+  if (mEl) mEl.style.display = isMtg ? 'block' : 'none';
+  if (rEl) rEl.style.display = isMtg ? 'none' : 'block';
+  if (tM) { tM.style.background = isMtg ? 'rgba(91,127,166,.15)' : 'transparent'; tM.style.borderColor = isMtg ? 'rgba(91,127,166,.3)' : 'var(--br)'; tM.style.color = isMtg ? 'var(--sl)' : '#555'; }
+  if (tR) { tR.style.background = isMtg ? 'transparent' : 'rgba(91,127,166,.15)'; tR.style.borderColor = isMtg ? 'var(--br)' : 'rgba(91,127,166,.3)'; tR.style.color = isMtg ? '#555' : 'var(--sl)'; }
+  if (!isMtg) _rAdm1on1Rec();
+}
+
+function _rAdm1on1Mtg() {
+  var el = document.getElementById('a1on1-mtg'); if (!el) return;
+  el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
   var now = new Date().toISOString();
   sb.from('meetings_1on1')
     .select('*, profiles(full_name, avatar_url)')
     .gte('scheduled_at', now)
     .order('scheduled_at')
     .then(function(r) {
-      var el = document.getElementById('adm1on1-list'); if (!el) return;
       var data = r.data || [];
       if (!data.length) {
         el.innerHTML = '<div style="background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(30,40,55,.95) 50%,rgba(91,127,166,.04) 100%);border:1px dashed rgba(91,127,166,.18);border-radius:10px;padding:30px;text-align:center;color:#444;font-size:.84rem;">No hay reuniones 1-1 próximas programadas.</div>';
         return;
       }
-
-      // Group by date
       var byDate = {};
       data.forEach(function(m) {
         var d = new Date(m.scheduled_at);
@@ -3834,7 +3864,6 @@ function rAdm1on1() {
         if (!byDate[key]) byDate[key] = [];
         byDate[key].push(m);
       });
-
       var html = '';
       Object.keys(byDate).forEach(function(dateLabel) {
         html += '<div style="margin-bottom:18px;">';
@@ -3850,31 +3879,163 @@ function rAdm1on1() {
           var countdown = dDays > 0 ? dDays + 'd ' + dHrs + 'h' : dHrs + 'h ' + dMins + 'm';
           var name = (m.profiles && m.profiles.full_name) ? m.profiles.full_name : 'Alumno';
           var initials = name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
-          var isFuture10 = diff < 600000 && diff > 0; // within 10 min
+          var isFuture10 = diff < 600000 && diff > 0;
           html +=
-            '<div style="background:linear-gradient(160deg,rgba(255,255,255,.05) 0%,rgba(91,127,166,.07) 30%,rgba(15,20,28,.92) 60%,rgba(91,127,166,.04) 100%);border:1px solid rgba(91,127,166,.2);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 4px 16px rgba(0,0,0,.35);border-radius:12px;padding:14px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;transition:border-color .2s,box-shadow .2s;" onmouseover="this.style.borderColor=\'rgba(91,127,166,.4)\';this.style.boxShadow=\'0 1px 0 rgba(255,255,255,.08) inset,0 6px 20px rgba(0,0,0,.4)\';" onmouseout="this.style.borderColor=\'rgba(91,127,166,.2)\';this.style.boxShadow=\'0 1px 0 rgba(255,255,255,.06) inset,0 4px 16px rgba(0,0,0,.35)\';">' +
+            '<div style="background:linear-gradient(160deg,rgba(255,255,255,.05) 0%,rgba(91,127,166,.07) 30%,rgba(15,20,28,.92) 60%,rgba(91,127,166,.04) 100%);border:1px solid rgba(91,127,166,.2);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 4px 16px rgba(0,0,0,.35);border-radius:12px;padding:14px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;" >' +
               '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
               '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:.88rem;font-weight:600;color:#f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name + '</div>' +
+                '<div style="font-size:.88rem;font-weight:600;color:#f0f0f0;">' + name + '</div>' +
                 '<div style="font-size:.75rem;color:#555;margin-top:2px;">' + (m.title || 'Sesión 1-1') + '</div>' +
               '</div>' +
               '<div style="text-align:right;flex-shrink:0;">' +
                 '<div style="font-size:.85rem;font-weight:600;color:var(--sl);">' + timeStr + '</div>' +
                 '<div style="font-size:.68rem;color:' + (isFuture10 ? '#f87171' : '#555') + ';margin-top:2px;">En ' + countdown + '</div>' +
               '</div>' +
-              (m.meet_url
-                ? '<a href="' + m.meet_url + '" target="_blank" rel="noopener" style="flex-shrink:0;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:600;text-decoration:none;white-space:nowrap;">Entrar</a>'
-                : '<span style="flex-shrink:0;font-size:.72rem;color:#333;padding:5px 10px;">Sin link</span>') +
+              (m.meet_url ? '<a href="' + m.meet_url + '" target="_blank" rel="noopener" style="flex-shrink:0;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:600;text-decoration:none;white-space:nowrap;">Entrar</a>' : '<span style="flex-shrink:0;font-size:.72rem;color:#333;padding:5px 10px;">Sin link</span>') +
               '<button onclick="delAdmMtg(\'' + m.id + '\')" style="flex-shrink:0;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);color:#f87171;padding:5px 9px;border-radius:6px;font-size:.72rem;cursor:pointer;margin-left:4px;" title="Eliminar">✕</button>' +
             '</div>';
         });
         html += '</div>';
       });
-
-      // Summary footer
       html += '<div style="font-size:.68rem;color:#333;padding-top:4px;text-align:right;">' + data.length + ' reunión' + (data.length !== 1 ? 'es' : '') + ' próxima' + (data.length !== 1 ? 's' : '') + '</div>';
       el.innerHTML = html;
     });
+}
+
+function _rAdm1on1Rec() {
+  var el = document.getElementById('a1on1-rec'); if (!el) return;
+  el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
+
+  // Load all students + their recordings
+  Promise.all([
+    sb.from('profiles').select('id, full_name, avatar_url').order('full_name'),
+    sb.from('recordings_1on1').select('*').order('recorded_at', { ascending: false })
+  ]).then(function(res) {
+    var students   = res[0].data || [];
+    var recordings = res[1].data || [];
+
+    // Index recordings by student
+    var byStudent = {};
+    recordings.forEach(function(r) {
+      if (!byStudent[r.student_id]) byStudent[r.student_id] = [];
+      byStudent[r.student_id].push(r);
+    });
+
+    // Only show students that have at least one recording OR all (admin decides)
+    var html = '';
+    students.forEach(function(s) {
+      var recs = byStudent[s.id] || [];
+      var initials = (s.full_name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+      var uid = 'rec-student-' + s.id;
+
+      html +=
+        '<div style="background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(91,127,166,.05) 40%,rgba(12,16,22,.95) 100%);border:1px solid rgba(91,127,166,.15);border-radius:12px;margin-bottom:10px;overflow:hidden;">' +
+          // Student header (always visible, collapsible)
+          '<div onclick="toggleRecStudent(\'' + uid + '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;">' +
+            '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:.88rem;font-weight:600;color:#f0f0f0;">' + (s.full_name || 'Sin nombre') + '</div>' +
+              '<div style="font-size:.72rem;color:#555;margin-top:1px;">' + recs.length + ' grabación' + (recs.length !== 1 ? 'es' : '') + '</div>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+              '<button onclick="event.stopPropagation();openRecordingModal(\'' + s.id + '\',\'' + encodeURIComponent(s.full_name||'Alumno') + '\')" style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:4px 10px;border-radius:5px;font-size:.7rem;font-weight:600;cursor:pointer;white-space:nowrap;">+ Agregar</button>' +
+              '<svg id="' + uid + '-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" style="transition:transform .2s;' + (recs.length ? '' : 'opacity:.3;') + '"><path d="M6 9l6 6 6-6"/></svg>' +
+            '</div>' +
+          '</div>' +
+          // Recordings list (collapsed by default if empty, open if has recordings)
+          '<div id="' + uid + '" style="display:' + (recs.length ? 'block' : 'none') + ';border-top:1px solid rgba(255,255,255,.05);padding:8px 12px 12px;">' +
+            (recs.length ? recs.map(function(rec) {
+              var rd = new Date(rec.recorded_at);
+              return '<div id="rec-row-' + rec.id + '" style="display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);">' +
+                '<div style="width:32px;height:32px;border-radius:6px;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                  '<svg width="10" height="10" viewBox="0 0 24 24" fill="var(--sl)"><polygon points="5,3 19,12 5,21"/></svg>' +
+                '</div>' +
+                '<div style="flex:1;min-width:0;">' +
+                  '<div id="rec-title-disp-' + rec.id + '" style="font-size:.83rem;font-weight:600;color:#f0f0f0;">' + (rec.title || 'Grabación') + '</div>' +
+                  '<div style="font-size:.69rem;color:#555;margin-top:1px;">' + rd.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) + (rec.description ? ' · ' + rec.description : '') + '</div>' +
+                '</div>' +
+                '<button onclick="admEditRec(\'' + rec.id + '\',\'' + encodeURIComponent(rec.title||'') + '\',\'' + encodeURIComponent(rec.video_url||'') + '\',\'' + encodeURIComponent(rec.description||'') + '\',\'' + rec.recorded_at.slice(0,10) + '\')" style="flex-shrink:0;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);color:#c9a84c;padding:4px 9px;border-radius:5px;font-size:.69rem;cursor:pointer;">✎ Editar</button>' +
+                '<button onclick="admDelRec(\'' + rec.id + '\',\'' + s.id + '\')" style="flex-shrink:0;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);color:#f87171;padding:4px 9px;border-radius:5px;font-size:.69rem;cursor:pointer;margin-left:4px;">✕</button>' +
+              '</div>';
+            }).join('') : '<div style="text-align:center;padding:14px;font-size:.78rem;color:#444;">Sin grabaciones aún</div>') +
+          '</div>' +
+        '</div>';
+    });
+
+    if (!students.length) html = '<div style="color:#444;font-size:.82rem;padding:20px;text-align:center;">No hay alumnos registrados.</div>';
+    el.innerHTML = html;
+  });
+}
+
+function toggleRecStudent(uid) {
+  var el = document.getElementById(uid);
+  var arrow = document.getElementById(uid + '-arrow');
+  if (!el) return;
+  var open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function admDelRec(id, studentId) {
+  if (!confirm('¿Eliminar esta grabación?')) return;
+  sb.from('recordings_1on1').delete().eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Grabación eliminada');
+    _rAdm1on1Rec();
+  });
+}
+
+function admEditRec(id, encTitle, encUrl, encDesc, dateStr) {
+  var existing = document.getElementById('adm-rec-edit-modal');
+  if (existing) existing.remove();
+
+  var title = decodeURIComponent(encTitle);
+  var url   = decodeURIComponent(encUrl);
+  var desc  = decodeURIComponent(encDesc);
+
+  var ov = document.createElement('div');
+  ov.id = 'adm-rec-edit-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  ov.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:440px;padding:24px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
+        '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">✎ Editar grabación</div>' +
+        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+      '</div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="aer-title" class="ai" value="' + title.replace(/"/g,"'") + '"></div>' +
+      '<div style="margin-bottom:10px;"><label class="al">URL Video</label><input id="aer-url" class="ai" value="' + url.replace(/"/g,"'") + '"></div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="aer-desc" class="ai" value="' + desc.replace(/"/g,"'") + '" placeholder="Notas de la sesión..."></div>' +
+      '<div style="margin-bottom:14px;"><label class="al">Fecha</label><input type="date" id="aer-date" class="ai" value="' + dateStr + '"></div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button id="aer-save" class="abtn2" onclick="admSaveRec(\'' + id + '\')" style="flex:1;padding:11px;">Guardar cambios</button>' +
+        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:11px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+}
+
+function admSaveRec(id) {
+  var title = (document.getElementById('aer-title')||{}).value || '';
+  var url   = (document.getElementById('aer-url')  ||{}).value || '';
+  var desc  = (document.getElementById('aer-desc') ||{}).value || '';
+  var date  = (document.getElementById('aer-date') ||{}).value || '';
+  if (!title.trim()) return tst('El título es requerido', 1);
+  if (!url.trim())   return tst('El link del video es requerido', 1);
+  var btn = document.getElementById('aer-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  sb.from('recordings_1on1').update({
+    title:       title.trim(),
+    video_url:   url.trim(),
+    description: desc.trim() || null,
+    recorded_at: date ? new Date(date).toISOString() : undefined
+  }).eq('id', id).then(function(r) {
+    if (r.error) { tst('Error: ' + r.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+    tst('✓ Grabación actualizada');
+    var m = document.getElementById('adm-rec-edit-modal');
+    if (m) m.remove();
+    _rAdm1on1Rec();
+  });
 }
 
 function delAdmMtg(id) {

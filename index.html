@@ -530,7 +530,8 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 @media(max-width:860px){
   .rec-view-toggle { display: none !important; }
-  .admtab { padding: 8px 18px !important; font-size: .82rem !important; min-height: 38px; }
+  .admtab { padding: 8px 18px !important; font-size: .82rem !important; min-height: 38px; touch-action: pan-x; }
+  .admtabs-wrap { top: 55px !important; }
 }
 .admtab{padding:7px 16px;border-radius:2px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.8rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
 .admtab.on{background:rgba(91,127,166,.11);border-color:var(--bs);color:var(--sl);}
@@ -3604,7 +3605,8 @@ function rAdmin() {
   var m = document.getElementById('amain');
   m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
   var tabs = document.createElement('div');
-  tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;padding-bottom:6px;padding-top:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;flex-wrap:nowrap;-ms-overflow-style:none;';
+  tabs.className = 'admtabs-wrap';
+  tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;overflow-y:hidden;padding:6px 18px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom;overscroll-behavior-x:contain;overscroll-behavior-y:none;flex-wrap:nowrap;-ms-overflow-style:none;position:sticky;top:61px;z-index:9;background:linear-gradient(180deg,#111418 92%,transparent);margin-left:-18px;margin-right:-18px;';
   [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['1on1','Reuniones 1-1'],['codes','Códigos'],['roadmap','Roadmap']].forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');

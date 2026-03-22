@@ -3535,7 +3535,7 @@ function rPerfil() {
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
           '<div><label class="al">Nombre completo</label><input id="pf-name" class="ai" value="'+(p.full_name||'')+'" placeholder="Tu nombre completo"></div>' +
-          '<div><label class="al">Fecha de nacimiento</label><input id="pf-dob" type="date" class="ai" value="'+(p.date_of_birth ? p.date_of_birth.slice(0,10) : '')+'" max="'+new Date(Date.now()-16*365.25*86400000).toISOString().slice(0,10)+'"></div>' +
+          '<div><label class="al">Fecha de nacimiento</label><input id="pf-dob" type="date" class="ai" value="'+(p.date_of_birth ? p.date_of_birth.slice(0,10) : '')+'" max="'+new Date(Date.now()-16*365.25*86400000).toISOString().slice(0,10)+'" style="width:100%;box-sizing:border-box;"></div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
           '<div><label class="al">País</label>' +
@@ -4485,7 +4485,7 @@ function viewStudentProfile(id) {
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
           '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
             '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Edad</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.age||'—')+'</div>' +
+            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.age || (p.date_of_birth ? (function(){ var b=new Date(p.date_of_birth),t=new Date(),a=t.getFullYear()-b.getFullYear(); if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--; return a; })() : '—'))+'</div>' +
           '</div>' +
           '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
             '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">País</div>' +
@@ -4500,6 +4500,17 @@ function viewStudentProfile(id) {
             '<div style="font-size:.88rem;color:#f0f0f0;">'+(endDate ? endDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div>' +
           '</div>' +
         '</div>' +
+
+        // Phone
+        ((p.phone) ?
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 10.5 19.79 19.79 0 01.88 1.87 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>' +
+            '<div>' +
+              '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Teléfono / WhatsApp</div>' +
+              '<a href="https://wa.me/'+(p.phone_prefix||'').replace('+','')+p.phone.replace(/\s/g,'')+'" target="_blank" style="font-size:.88rem;color:#4ade80;text-decoration:none;">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</a>' +
+            '</div>' +
+          '</div>'
+        : '') +
 
         // Week progress
         '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
@@ -4595,7 +4606,7 @@ function openRecordingModal(studentId, studentName) {
   ov.id = 'recording-modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;">' +
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;box-sizing:border-box;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
         '<div>' +
           '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">🎥 Subir grabación</div>' +
@@ -4603,12 +4614,10 @@ function openRecordingModal(studentId, studentName) {
         '</div>' +
         '<button onclick="document.getElementById(\'recording-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="rec-title" class="ai" placeholder="Análisis de cuenta · Semana 3"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">URL Video (Bunny)</label><input id="rec-url" class="ai" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">' +
-        '<div><label class="al">Descripción (opcional)</label><input id="rec-desc" class="ai" placeholder="Notas de la sesión"></div>' +
-        '<div><label class="al">Fecha</label><input type="date" id="rec-date" class="ai"></div>' +
-      '</div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="rec-title" class="ai" placeholder="Análisis de cuenta · Semana 3" style="box-sizing:border-box;"></div>' +
+      '<div style="margin-bottom:10px;"><label class="al">URL Video (Bunny)</label><input id="rec-url" class="ai" placeholder="https://player.mediadelivery.net/embed/..." style="box-sizing:border-box;"></div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="rec-desc" class="ai" placeholder="Notas de la sesión" style="box-sizing:border-box;"></div>' +
+      '<div style="margin-bottom:14px;"><label class="al">Fecha</label><input type="date" id="rec-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
       '<button id="rec-save-btn" onclick="saveRecording(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Guardar grabación</button>' +
     '</div>';
 
@@ -5410,17 +5419,24 @@ function toggleActMenu(btn) {
   var menu = btn.nextElementSibling;
   if (!menu) return;
   if (menu.style.display !== 'none') { menu.style.display = 'none'; return; }
+
+  // Show first to measure height
   menu.style.display = 'block';
-  // Position using fixed coords
-  var rect = btn.getBoundingClientRect();
-  var menuH = menu.offsetHeight || 80;
-  var spaceBelow = window.innerHeight - rect.bottom;
-  if (spaceBelow < menuH + 10) {
-    menu.style.top = (rect.top - menuH - 4) + 'px';
-  } else {
-    menu.style.top = (rect.bottom + 4) + 'px';
-  }
-  menu.style.left = Math.min(rect.right - 140, window.innerWidth - 150) + 'px';
+  menu.style.visibility = 'hidden';
+  var rect    = btn.getBoundingClientRect();
+  var menuH   = menu.offsetHeight || 90;
+  var menuW   = menu.offsetWidth  || 150;
+  // Account for mobile bottom nav (~58px)
+  var bottomSafe = window.innerHeight - (window.innerWidth <= 860 ? 64 : 10);
+  var spaceBelow = bottomSafe - rect.bottom;
+
+  var top  = spaceBelow >= menuH + 6 ? rect.bottom + 4 : rect.top - menuH - 4;
+  var left = Math.min(rect.right - menuW, window.innerWidth - menuW - 8);
+  left = Math.max(8, left);
+
+  menu.style.top  = top  + 'px';
+  menu.style.left = left + 'px';
+  menu.style.visibility = 'visible';
 }
 document.addEventListener('click', function(e) {
   if (!e.target.closest || (!e.target.closest('.act-menu') && !(e.target.getAttribute('onclick') && e.target.getAttribute('onclick').includes('toggleActMenu')))) {

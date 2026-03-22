@@ -528,6 +528,9 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   .lesson-title-big { font-size: 1.2rem; }
 }
 
+@media(max-width:860px){
+  .rec-view-toggle { display: none !important; }
+}
 .admtab{padding:7px 16px;border-radius:2px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.8rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
 .admtab.on{background:rgba(91,127,166,.11);border-color:var(--bs);color:var(--sl);}
 .aform{background:var(--bc);border:1px solid var(--br);border-radius:14px;padding:20px;margin-bottom:16px;}
@@ -2307,7 +2310,7 @@ function rDash() {
           '<button onclick="navWeek(-1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">‹</button>' +
           '<div style="text-align:center;flex:1;">' +
             '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;color:var(--sl);line-height:1;" id="wk-label">Semana ' + weekNum + '</div>' +
-            '<div style="font-size:.62rem;margin-top:3px;min-height:14px;" id="wk-status">' + (weekNum <= 1 ? '<span style=\"color:#c9a84c;\">&#9654; Est&aacute;s aqu&iacute;</span>' : '') + '</div>' +
+            '<div style="font-size:.62rem;margin-top:3px;min-height:14px;" id="wk-status"><span style="color:#c9a84c;">&#9654; Est&aacute;s aqu&iacute;</span></div>' +
           '</div>' +
           '<button onclick="navWeek(1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">›</button>' +
         '</div>' +
@@ -2397,16 +2400,16 @@ function rDash() {
     var dots = document.getElementById('week-dots');
     if (lbl) lbl.textContent = 'Semana ' + _viewWeek;
     if (status) {
-      if (_viewWeek === weekNum) { status.textContent = '▶ Estás aquí'; status.style.color = '#c9a84c'; }
-      else if (_viewWeek < weekNum) { status.textContent = '✓ Completada'; status.style.color = '#4ade80'; }
-      else { status.textContent = 'Por venir'; status.style.color = '#555'; }
+      if (_viewWeek === weekNum) { status.innerHTML = '<span style="color:#c9a84c;">&#9654; Est&aacute;s aqu&iacute;</span>'; }
+      else if (_viewWeek < weekNum) { status.innerHTML = '<span style="color:#4ade80;">&#10003; Completada</span>'; }
+      else { status.innerHTML = '<span style="color:#555;">Por venir</span>'; }
     }
     if (dots) {
       Array.from(dots.children).forEach(function(dot, i) {
         var w = i + 1;
         var isViewed = w === _viewWeek, isPast = w < weekNum, isNow = w === weekNum;
-        dot.style.background = isViewed ? '#c9a84c' : isNow ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)';
-        dot.style.boxShadow = isViewed ? '0 0 6px rgba(201,168,76,.6)' : isNow ? '0 0 6px rgba(125,160,200,.5)' : 'none';
+        dot.style.background = isViewed ? '#c9a84c' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)';
+        dot.style.boxShadow = isViewed ? '0 0 6px rgba(201,168,76,.6)' : 'none';
         dot.style.transform = isViewed ? 'scale(1.5)' : 'scale(1)';
         dot.style.transition = '.2s';
       });
@@ -2414,6 +2417,8 @@ function rDash() {
     // Load roadmap week info
     loadWeekInfo(_viewWeek);
   }
+  // Run immediately so dots + status are correct on first load
+  updateWeekDisplay();
   function loadWeekInfo(wk) {
     var c = document.getElementById('week-info');
     if (!c) return;
@@ -2575,7 +2580,14 @@ function loadUp() {
     if (!all.length) { c.innerHTML='<div style="background:var(--bc);border:1px dashed var(--br);border-radius:2px;padding:24px;text-align:center;color:#555;font-size:.82rem;">Sin actividades próximas</div>'; return; }
     c.innerHTML = all.map(function(x) {
       var d = new Date(x.scheduled_at);
-      return '<div class="mc"><div class="md"><div class="md-d">'+d.getDate()+'</div><div class="md-m">'+d.toLocaleDateString('es-ES',{month:'short'})+'</div></div><div style="flex:1;"><div style="font-size:.85rem;font-weight:600;">'+x.title+'</div><div style="font-size:.73rem;color:#555;margin-top:2px;">'+d.toLocaleDateString('es-ES',{weekday:'long'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div></div><span style="font-size:.68rem;padding:2px 9px;border-radius:1px;background:'+(x._t==='g'?'rgba(74,158,255,.1)':'rgba(91,127,166,.1)')+';color:'+(x._t==='g'?'#4a9eff':'var(--sl)')+';">'+(x._t==='g'?'Grupal':'1-1')+'</span></div>';
+      var dest = x._t === 'g' ? 'sesiones' : 'reuniones';
+      return '<div class="mc" style="cursor:pointer;" onclick="navigateTo(\'' + dest + '\')">' +
+        '<div class="md"><div class="md-d">'+d.getDate()+'</div><div class="md-m">'+d.toLocaleDateString('es-ES',{month:'short'})+'</div></div>' +
+        '<div style="flex:1;"><div style="font-size:.85rem;font-weight:600;">'+x.title+'</div>' +
+        '<div style="font-size:.73rem;color:#555;margin-top:2px;">'+d.toLocaleDateString('es-ES',{weekday:'long'})+' · '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'</div></div>' +
+        '<span style="font-size:.68rem;padding:2px 9px;border-radius:1px;background:'+(x._t==='g'?'rgba(74,158,255,.1)':'rgba(91,127,166,.1)')+';color:'+(x._t==='g'?'#4a9eff':'var(--sl)')+';">'+(x._t==='g'?'Grupal':'1-1')+'</span>' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" style="flex-shrink:0;margin-left:6px;"><path d="M9 18l6-6-6-6"/></svg>' +
+        '</div>';
     }).join('');
   });
 }
@@ -3147,8 +3159,20 @@ function rSes() {
 
     // ── SESIONES GRABADAS ──
     if (past.length) {
-      html += '<div class="sec" style="margin:20px 0 12px;">Sesiones grabadas</div>';
-      html += '<div style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:420px;padding:8px;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px;">' +
+        '<div class="sec" style="margin:0;">Sesiones grabadas</div>' +
+        '<div class="rec-view-toggle" style="display:flex;gap:4px;">' +
+          '<button id="ses-tog-list" onclick="setSesView(\'list\')" title="Vista lista" style="background:rgba(91,127,166,.15);border:1px solid rgba(91,127,166,.3);color:var(--sl);width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' +
+          '</button>' +
+          '<button id="ses-tog-grid" onclick="setSesView(\'grid\')" title="Vista cuadrícula" style="background:transparent;border:1px solid rgba(255,255,255,.08);color:#555;width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+
+      // List view (default)
+      html += '<div id="ses-rec-list" style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:420px;padding:8px;">';
       past.forEach(function(s) {
         var d = new Date(s.scheduled_at);
         var embedUrl = toEmbedUrl(s.recording_url||'');
@@ -3157,8 +3181,8 @@ function rSes() {
                'data-title="' + s.title.replace(/"/g,"'") + '" ' +
                'data-date="' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '" ' +
                'data-url="' + embedUrl + '" ' +
-               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);">' +
-'<div style="width:36px;height:36px;border-radius:6px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,.03)\'" onmouseout="this.style.background=\'transparent\'">' +
+            '<div style="width:36px;height:36px;border-radius:6px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="#4a9eff"><polygon points="5,3 19,12 5,21"/></svg>' +
             '</div>' +
             '<div style="flex:1;min-width:0;">' +
@@ -3166,6 +3190,28 @@ function rSes() {
               '<div style="font-size:.71rem;color:#555;margin-top:2px;">' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '</div>' +
             '</div>' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
+          '</div>';
+      });
+      html += '</div>';
+
+      // Grid view (hidden by default, only shown on desktop)
+      html += '<div id="ses-rec-grid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">';
+      past.forEach(function(s) {
+        var d = new Date(s.scheduled_at);
+        var embedUrl = toEmbedUrl(s.recording_url||'');
+        html +=
+          '<div onclick="openRecModal(this.dataset.title, this.dataset.date, this.dataset.url)" ' +
+               'data-title="' + s.title.replace(/"/g,"'") + '" ' +
+               'data-date="' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '" ' +
+               'data-url="' + embedUrl + '" ' +
+               'style="background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(15,20,28,.9));border:1px solid rgba(91,127,166,.18);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;" onmouseover="this.style.borderColor=\'rgba(91,127,166,.4)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'rgba(91,127,166,.18)\';this.style.transform=\'none\'">' +
+            '<div style="aspect-ratio:16/9;background:rgba(74,158,255,.07);border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="28" height="28" viewBox="0 0 24 24" fill="rgba(74,158,255,.6)"><polygon points="5,3 19,12 5,21"/></svg>' +
+            '</div>' +
+            '<div style="padding:10px 12px;">' +
+              '<div style="font-size:.82rem;font-weight:600;color:#f0f0f0;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + s.title + '</div>' +
+              '<div style="font-size:.68rem;color:#555;">' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) + '</div>' +
+            '</div>' +
           '</div>';
       });
       html += '</div>';
@@ -3346,8 +3392,20 @@ function rReun() {
 
     // ── GRABACIONES PERSONALIZADAS ──
     if (recordings.length) {
-      html += '<div class="sec" style="margin:4px 0 12px;">Grabaciones de tus sesiones</div>';
-      html += '<div style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:400px;padding:8px;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 12px;">' +
+        '<div class="sec" style="margin:0;">Grabaciones de tus sesiones</div>' +
+        '<div class="rec-view-toggle" style="display:flex;gap:4px;">' +
+          '<button id="reu-tog-list" onclick="setReuView(\'list\')" title="Vista lista" style="background:rgba(91,127,166,.15);border:1px solid rgba(91,127,166,.3);color:var(--sl);width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' +
+          '</button>' +
+          '<button id="reu-tog-grid" onclick="setReuView(\'grid\')" title="Vista cuadrícula" style="background:transparent;border:1px solid rgba(255,255,255,.08);color:#555;width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+
+      // List view (default)
+      html += '<div id="reu-rec-list" style="background:rgba(255,255,255,.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:400px;padding:8px;">';
       recordings.forEach(function(r) {
         var rd = new Date(r.recorded_at);
         var embedUrl = toEmbedUrl(r.video_url);
@@ -3356,7 +3414,7 @@ function rReun() {
                'data-title="' + (r.title||'').replace(/"/g,"'") + '" ' +
                'data-date="' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"}) + '" ' +
                'data-url="' + embedUrl + '" ' +
-               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);">' +
+               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s;" onmouseover="this.style.background=\'rgba(255,255,255,.03)\'" onmouseout="this.style.background=\'transparent\'">' +
             '<div style="width:36px;height:36px;border-radius:6px;background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="var(--sl)"><polygon points="5,3 19,12 5,21"/></svg>' +
             '</div>' +
@@ -3369,10 +3427,58 @@ function rReun() {
           '</div>';
       });
       html += '</div>';
+
+      // Grid view (hidden by default, only shown on desktop)
+      html += '<div id="reu-rec-grid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;">';
+      recordings.forEach(function(r) {
+        var rd = new Date(r.recorded_at);
+        var embedUrl = toEmbedUrl(r.video_url);
+        html +=
+          '<div onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" ' +
+               'data-title="' + (r.title||'').replace(/"/g,"'") + '" ' +
+               'data-date="' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"}) + '" ' +
+               'data-url="' + embedUrl + '" ' +
+               'style="background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(15,20,28,.9));border:1px solid rgba(91,127,166,.18);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;" onmouseover="this.style.borderColor=\'rgba(91,127,166,.4)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'rgba(91,127,166,.18)\';this.style.transform=\'none\'">' +
+            '<div style="aspect-ratio:16/9;background:rgba(91,127,166,.07);border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="28" height="28" viewBox="0 0 24 24" fill="rgba(125,160,200,.5)"><polygon points="5,3 19,12 5,21"/></svg>' +
+            '</div>' +
+            '<div style="padding:10px 12px;">' +
+              '<div style="font-size:.82rem;font-weight:600;color:#f0f0f0;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + (r.title||'Grabación') + '</div>' +
+              '<div style="font-size:.68rem;color:#555;">' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"}) + '</div>' +
+            '</div>' +
+          '</div>';
+      });
+      html += '</div>';
     }
 
     m.innerHTML = html;
   });
+}
+
+// ── TOGGLE VISTA GRABADAS ──
+function setSesView(v) {
+  var list = document.getElementById('ses-rec-list');
+  var grid = document.getElementById('ses-rec-grid');
+  var btnL = document.getElementById('ses-tog-list');
+  var btnG = document.getElementById('ses-tog-grid');
+  if (!list || !grid) return;
+  var isGrid = v === 'grid';
+  list.style.display = isGrid ? 'none' : 'block';
+  grid.style.display = isGrid ? 'grid' : 'none';
+  if (btnL) { btnL.style.background = isGrid ? 'transparent' : 'rgba(91,127,166,.15)'; btnL.style.borderColor = isGrid ? 'rgba(255,255,255,.08)' : 'rgba(91,127,166,.3)'; btnL.style.color = isGrid ? '#555' : 'var(--sl)'; }
+  if (btnG) { btnG.style.background = isGrid ? 'rgba(91,127,166,.15)' : 'transparent'; btnG.style.borderColor = isGrid ? 'rgba(91,127,166,.3)' : 'rgba(255,255,255,.08)'; btnG.style.color = isGrid ? 'var(--sl)' : '#555'; }
+}
+function setReuView(v) {
+  var list = document.getElementById('reu-rec-list');
+  var grid = document.getElementById('reu-rec-grid');
+  var btnL = document.getElementById('reu-tog-list');
+  var btnG = document.getElementById('reu-tog-grid');
+  if (!list || !grid) return;
+  var isGrid = v === 'grid';
+  list.style.display = isGrid ? 'none' : 'block';
+  grid.style.display = isGrid ? 'grid' : 'none';
+  if (btnL) { btnL.style.background = isGrid ? 'transparent' : 'rgba(91,127,166,.15)'; btnL.style.borderColor = isGrid ? 'rgba(255,255,255,.08)' : 'rgba(91,127,166,.3)'; btnL.style.color = isGrid ? '#555' : 'var(--sl)'; }
+  if (btnG) { btnG.style.background = isGrid ? 'rgba(91,127,166,.15)' : 'transparent'; btnG.style.borderColor = isGrid ? 'rgba(91,127,166,.3)' : 'rgba(255,255,255,.08)'; btnG.style.color = isGrid ? 'var(--sl)' : '#555'; }
 }
 
 
@@ -3716,7 +3822,7 @@ function rAdm1on1() {
       var el = document.getElementById('adm1on1-list'); if (!el) return;
       var data = r.data || [];
       if (!data.length) {
-        el.innerHTML = '<div style="background:var(--bc);border:1px dashed var(--br);border-radius:10px;padding:30px;text-align:center;color:#444;font-size:.84rem;">No hay reuniones 1-1 próximas programadas.</div>';
+        el.innerHTML = '<div style="background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(30,40,55,.95) 50%,rgba(91,127,166,.04) 100%);border:1px dashed rgba(91,127,166,.18);border-radius:10px;padding:30px;text-align:center;color:#444;font-size:.84rem;">No hay reuniones 1-1 próximas programadas.</div>';
         return;
       }
 
@@ -3746,7 +3852,7 @@ function rAdm1on1() {
           var initials = name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
           var isFuture10 = diff < 600000 && diff > 0; // within 10 min
           html +=
-            '<div style="background:var(--bc);border:1px solid var(--br);border-radius:12px;padding:14px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;transition:border-color .2s;" onmouseover="this.style.borderColor=\'rgba(91,127,166,.4)\'" onmouseout="this.style.borderColor=\'var(--br)\'">' +
+            '<div style="background:linear-gradient(160deg,rgba(255,255,255,.05) 0%,rgba(91,127,166,.07) 30%,rgba(15,20,28,.92) 60%,rgba(91,127,166,.04) 100%);border:1px solid rgba(91,127,166,.2);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 4px 16px rgba(0,0,0,.35);border-radius:12px;padding:14px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;transition:border-color .2s,box-shadow .2s;" onmouseover="this.style.borderColor=\'rgba(91,127,166,.4)\';this.style.boxShadow=\'0 1px 0 rgba(255,255,255,.08) inset,0 6px 20px rgba(0,0,0,.4)\';" onmouseout="this.style.borderColor=\'rgba(91,127,166,.2)\';this.style.boxShadow=\'0 1px 0 rgba(255,255,255,.06) inset,0 4px 16px rgba(0,0,0,.35)\';">' +
               '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
               '<div style="flex:1;min-width:0;">' +
                 '<div style="font-size:.88rem;font-weight:600;color:#f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name + '</div>' +

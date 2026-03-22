@@ -625,7 +625,9 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   #amain [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
   /* Fix date/datetime inputs overflowing on iOS */
   input[type="date"], input[type="datetime-local"] {
-    width:100% !important; box-sizing:border-box !important; min-width:0 !important;
+    width:100% !important; max-width:100% !important;
+    box-sizing:border-box !important; min-width:0 !important;
+    display:block !important;
   }
   /* Fix modals not going off screen */
   [style*="max-width:420px"], [style*="max-width:440px"], [style*="max-width:480px"] {
@@ -3544,9 +3546,15 @@ function rPerfil() {
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>' +
           'Información personal' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
-          '<div><label class="al">Nombre completo</label><input id="pf-name" class="ai" value="'+(p.full_name||'')+'" placeholder="Tu nombre completo"></div>' +
-          '<div><label class="al">Fecha de nacimiento</label><input id="pf-dob" type="date" class="ai" value="'+(p.date_of_birth ? p.date_of_birth.slice(0,10) : '')+'" max="'+new Date(Date.now()-16*365.25*86400000).toISOString().slice(0,10)+'" style="width:100%;box-sizing:border-box;"></div>' +
+        '<div style="margin-bottom:10px;">' +
+          '<label class="al">Nombre completo</label>' +
+          '<input id="pf-name" class="ai" value="'+(p.full_name||'')+'" placeholder="Tu nombre completo" style="box-sizing:border-box;">' +
+        '</div>' +
+        '<div style="margin-bottom:10px;">' +
+          '<label class="al">Fecha de nacimiento</label>' +
+          '<div style="overflow:hidden;width:100%;max-width:100%;display:block;">' +
+            '<input id="pf-dob" type="date" class="ai" value="'+(p.date_of_birth ? p.date_of_birth.slice(0,10) : '')+'" max="'+new Date(Date.now()-16*365.25*86400000).toISOString().slice(0,10)+'" style="width:100%;max-width:100%;box-sizing:border-box;display:block;">' +
+          '</div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
           '<div><label class="al">País</label>' +
@@ -3558,7 +3566,7 @@ function rPerfil() {
           '<div><label class="al">Teléfono / WhatsApp</label>' +
             '<div style="display:flex;gap:5px;">' +
               '<div style="position:relative;flex-shrink:0;">' +
-                '<select id="pf-phone-prefix" class="ai" style="width:auto;padding-right:24px;min-width:88px;" onchange="updatePhonePreview()">' +
+                '<select id="pf-phone-prefix" class="ai" style="width:auto;padding:9px 6px;min-width:0;font-size:.75rem;" onchange="updatePhonePreview()">' +
                   _phonePrefix(p.phone_prefix||'+593') +
                 '</select>' +
               '</div>' +

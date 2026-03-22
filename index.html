@@ -4119,11 +4119,12 @@ function openSchModal() {
           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Cambiar alumno' +
         '</button>' +
         '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:8px;margin-bottom:16px;"></div>' +
-        '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-m-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1"></div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
-          '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-m-date" class="ai"></div>' +
-          '<div><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..."></div>' +
+        '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-m-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1" style="box-sizing:border-box;"></div>' +
+        '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+          '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-m-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
+          '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-m-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
         '</div>' +
+        '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..." style="box-sizing:border-box;"></div>' +
         '<button id="sch-m-save" class="abtn2" onclick="saveSchModal()" style="width:100%;padding:11px;margin-top:4px;">Programar sesión</button>' +
       '</div>' +
     '</div>';
@@ -4196,13 +4197,14 @@ function saveSchModal() {
   if (!studentId) return tst('Selecciona un alumno', 1);
   var title = (document.getElementById('sch-m-title')||{}).value || 'Sesión 1-1';
   var date  = (document.getElementById('sch-m-date') ||{}).value || '';
+  var time  = (document.getElementById('sch-m-time') ||{}).value || '00:00';
   var url   = (document.getElementById('sch-m-url')  ||{}).value || '';
-  if (!date) return tst('Selecciona fecha y hora', 1);
+  if (!date) return tst('Selecciona una fecha', 1);
   var btn = document.getElementById('sch-m-save');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   sb.from('meetings_1on1').insert({
     student_id:   studentId,
-    scheduled_at: new Date(date).toISOString(),
+    scheduled_at: new Date(date + 'T' + time).toISOString(),
     title:        title.trim() || 'Sesión 1-1',
     meet_url:     url.trim() || null,
     status:       'scheduled'
@@ -4610,7 +4612,7 @@ function openScheduleModal(studentId, studentName) {
   ov.id = 'schedule-modal';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;">' +
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;box-sizing:border-box;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
         '<div>' +
           '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">📅 Programar sesión 1-1</div>' +
@@ -4618,11 +4620,12 @@ function openScheduleModal(studentId, studentName) {
         '</div>' +
         '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-title" class="ai" placeholder="Sesión 1-1 · Semana 3"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">' +
-        '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-date" class="ai"></div>' +
-        '<div><label class="al">Link Google Meet</label><input id="sch-url" class="ai" placeholder="https://meet.google.com/..."></div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-title" class="ai" placeholder="Sesión 1-1 · Semana 3" style="box-sizing:border-box;"></div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+        '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
+        '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
       '</div>' +
+      '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-url" class="ai" placeholder="https://meet.google.com/..." style="box-sizing:border-box;"></div>' +
       '<button id="sch-save-btn" onclick="saveSchedule(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Programar sesión</button>' +
     '</div>';
 
@@ -4633,13 +4636,14 @@ function openScheduleModal(studentId, studentName) {
 function saveSchedule(studentId) {
   var title = (document.getElementById('sch-title')||{}).value || 'Sesión 1-1';
   var date  = (document.getElementById('sch-date') ||{}).value || '';
+  var time  = (document.getElementById('sch-time') ||{}).value || '00:00';
   var url   = (document.getElementById('sch-url')  ||{}).value || '';
-  if (!date) return tst('Selecciona fecha y hora', 1);
+  if (!date) return tst('Selecciona una fecha', 1);
   var btn = document.getElementById('sch-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   sb.from('meetings_1on1').insert({
     student_id:   studentId,
-    scheduled_at: new Date(date).toISOString(),
+    scheduled_at: new Date(date + 'T' + time).toISOString(),
     title:        title.trim(),
     meet_url:     url.trim() || null,
     status:       'scheduled'
@@ -4671,7 +4675,27 @@ function openRecordingModal(studentId, studentName) {
       '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="rec-title" class="ai" placeholder="Análisis de cuenta · Semana 3" style="box-sizing:border-box;"></div>' +
       '<div style="margin-bottom:10px;"><label class="al">URL Video (Bunny)</label><input id="rec-url" class="ai" placeholder="https://player.mediadelivery.net/embed/..." style="box-sizing:border-box;"></div>' +
       '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="rec-desc" class="ai" placeholder="Notas de la sesión" style="box-sizing:border-box;"></div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Fecha</label><input type="date" id="rec-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
+      '<div style="margin-bottom:14px;">' +
+        '<label class="al">Fecha</label>' +
+        '<div style="display:flex;gap:6px;">' +
+          (function(){
+            var d='<select id="rec-date-d" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Día</option>';
+            for(var i=1;i<=31;i++) d+='<option value="'+String(i).padStart(2,'0')+'">'+i+'</option>';
+            return d+'</select>';
+          })() +
+          (function(){
+            var ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            var s='<select id="rec-date-m" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Mes</option>';
+            ms.forEach(function(m,i){ s+='<option value="'+String(i+1).padStart(2,'0')+'">'+m+'</option>'; });
+            return s+'</select>';
+          })() +
+          (function(){
+            var y=new Date().getFullYear(), s='<select id="rec-date-y" class="ai" style="flex:1.4;min-width:0;box-sizing:border-box;"><option value="">Año</option>';
+            for(var i=y;i>=y-10;i--) s+='<option value="'+i+'">'+i+'</option>';
+            return s+'</select>';
+          })() +
+        '</div>' +
+      '</div>' +
       '<button id="rec-save-btn" onclick="saveRecording(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Guardar grabación</button>' +
     '</div>';
 
@@ -4682,8 +4706,11 @@ function openRecordingModal(studentId, studentName) {
 function saveRecording(studentId) {
   var title = (document.getElementById('rec-title')||{}).value || '';
   var url   = (document.getElementById('rec-url')  ||{}).value || '';
-  var desc  = (document.getElementById('rec-desc') ||{}).value || '';
-  var date  = (document.getElementById('rec-date') ||{}).value || '';
+  var desc  = (document.getElementById('rec-desc')  ||{}).value || '';
+  var rd    = (document.getElementById('rec-date-d') ||{}).value || '';
+  var rm    = (document.getElementById('rec-date-m') ||{}).value || '';
+  var ry    = (document.getElementById('rec-date-y') ||{}).value || '';
+  var date  = (rd && rm && ry) ? ry+'-'+rm+'-'+rd : '';
   if (!title.trim()) return tst('El título es requerido', 1);
   if (!url.trim())   return tst('El link del video es requerido', 1);
   var btn = document.getElementById('rec-save-btn');

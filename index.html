@@ -3821,19 +3821,18 @@ function rAdm1on1() {
   c.innerHTML =
     '<div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;">' +
       '<button id="a1on1-tab-mtg" onclick="swA1on1(\'mtg\')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(91,127,166,.3);background:rgba(91,127,166,.15);color:var(--sl);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">📅 Reuniones próximas</button>' +
-      '<button id="a1on1-tab-sch" onclick="swA1on1(\'sch\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">➕ Programar reunión</button>' +
+      '<button onclick="openSchModal()" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(74,222,128,.25);background:rgba(74,222,128,.06);color:#4ade80;font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">➕ Programar reunión</button>' +
       '<button id="a1on1-tab-rec" onclick="swA1on1(\'rec\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">🎥 Grabaciones</button>' +
     '</div>' +
     '<div id="a1on1-mtg"></div>' +
-    '<div id="a1on1-sch" style="display:none;"></div>' +
     '<div id="a1on1-rec" style="display:none;"></div>';
 
   _rAdm1on1Mtg();
 }
 
 function swA1on1(tab) {
-  var tabs = { mtg: 'a1on1-tab-mtg', sch: 'a1on1-tab-sch', rec: 'a1on1-tab-rec' };
-  var panes = { mtg: 'a1on1-mtg', sch: 'a1on1-sch', rec: 'a1on1-rec' };
+  var tabs  = { mtg: 'a1on1-tab-mtg', rec: 'a1on1-tab-rec' };
+  var panes = { mtg: 'a1on1-mtg',     rec: 'a1on1-rec' };
   Object.keys(tabs).forEach(function(t) {
     var btn  = document.getElementById(tabs[t]);
     var pane = document.getElementById(panes[t]);
@@ -3842,7 +3841,6 @@ function swA1on1(tab) {
     if (pane) pane.style.display = active ? 'block' : 'none';
   });
   if (tab === 'rec') _rAdm1on1Rec();
-  if (tab === 'sch') _rAdm1on1Sch();
 }
 
 function _rAdm1on1Mtg() {
@@ -3894,7 +3892,8 @@ function _rAdm1on1Mtg() {
                 '<div style="font-size:.68rem;color:' + (isFuture10 ? '#f87171' : '#555') + ';margin-top:2px;">En ' + countdown + '</div>' +
               '</div>' +
               (m.meet_url ? '<a href="' + m.meet_url + '" target="_blank" rel="noopener" style="flex-shrink:0;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:600;text-decoration:none;white-space:nowrap;">Entrar</a>' : '<span style="flex-shrink:0;font-size:.72rem;color:#333;padding:5px 10px;">Sin link</span>') +
-              '<button onclick="delAdmMtg(\'' + m.id + '\')" style="flex-shrink:0;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);color:#f87171;padding:5px 9px;border-radius:6px;font-size:.72rem;cursor:pointer;margin-left:4px;" title="Eliminar">✕</button>' +
+              '<button onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title||'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url||'') + '\',\'' + m.scheduled_at + '\')" style="flex-shrink:0;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);color:#c9a84c;width:30px;height:30px;border-radius:6px;font-size:.8rem;cursor:pointer;margin-left:4px;display:flex;align-items:center;justify-content:center;" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+              '<button onclick="delAdmMtg(\'' + m.id + '\')" style="flex-shrink:0;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);color:#f87171;width:30px;height:30px;border-radius:6px;font-size:.82rem;cursor:pointer;margin-left:4px;display:flex;align-items:center;justify-content:center;" title="Eliminar">✕</button>' +
             '</div>';
         });
         html += '</div>';
@@ -3904,116 +3903,117 @@ function _rAdm1on1Mtg() {
     });
 }
 
-function _rAdm1on1Sch() {
-  var el = document.getElementById('a1on1-sch'); if (!el) return;
-  el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
+// ── MODAL PROGRAMAR REUNIÓN ──
+function openSchModal() {
+  var existing = document.getElementById('sch-modal');
+  if (existing) existing.remove();
 
-  sb.from('profiles').select('id, full_name, avatar_url, membership_end').order('full_name').then(function(r) {
-    var students = r.data || [];
-    window._schStudents = students;  // cache for filter
-
-    var html =
-      // Search bar
-      '<div style="margin-bottom:16px;">' +
-        '<input id="sch-stu-search" class="ai" placeholder="🔍 Buscar alumno por nombre..." oninput="filterSchStudents(this.value)" style="width:100%;box-sizing:border-box;">' +
+  var ov = document.createElement('div');
+  ov.id = 'sch-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  ov.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">' +
+      // Header
+      '<div style="padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">' +
+        '<div>' +
+          '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">📅 Programar reunión 1-1</div>' +
+          '<div style="font-size:.72rem;color:#555;margin-top:2px;" id="sch-modal-subtitle">Selecciona un alumno</div>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'sch-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;padding:2px 8px;">✕</button>' +
       '</div>' +
-      // Instruction
-      '<div style="font-size:.78rem;color:#555;margin-bottom:14px;">Selecciona un alumno para programarle una reunión 1-1.</div>' +
-      '<div id="sch-stu-list">';
-
-    students.forEach(function(s) {
-      var initials = (s.full_name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
-      var active = s.membership_end && new Date(s.membership_end) > new Date();
-      html +=
-        '<div class="sch-stu-row" data-name="' + (s.full_name||'').toLowerCase() + '" ' +
-            'onclick="selectSchStudent(\'' + s.id + '\',\'' + encodeURIComponent(s.full_name||'Alumno') + '\')" ' +
-            'style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;margin-bottom:7px;cursor:pointer;' +
-            'background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(15,20,28,.92));border:1px solid rgba(91,127,166,.15);transition:border-color .15s,background .15s;" ' +
-            'onmouseover="this.style.borderColor=\'rgba(91,127,166,.35)\';this.style.background=\'linear-gradient(160deg,rgba(255,255,255,.07),rgba(15,20,28,.88))\'" ' +
-            'onmouseout="this.style.borderColor=\'rgba(91,127,166,.15)\';this.style.background=\'linear-gradient(160deg,rgba(255,255,255,.04),rgba(15,20,28,.92))\'">' +
-          '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
-          '<div style="flex:1;min-width:0;">' +
-            '<div style="font-size:.86rem;font-weight:600;color:#f0f0f0;">' + (s.full_name||'Sin nombre') + '</div>' +
-            '<div style="font-size:.7rem;margin-top:2px;color:' + (active ? '#4ade80' : '#555') + ';">' + (active ? '● Activo' : '○ Inactivo') + '</div>' +
-          '</div>' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
-        '</div>';
-    });
-
-    html += '</div>';
-    if (!students.length) html = '<div style="color:#444;font-size:.82rem;padding:20px;text-align:center;">No hay alumnos registrados.</div>';
-    el.innerHTML = html;
-  });
-}
-
-function filterSchStudents(q) {
-  var term = (q||'').toLowerCase().trim();
-  document.querySelectorAll('.sch-stu-row').forEach(function(row) {
-    var name = row.getAttribute('data-name') || '';
-    row.style.display = (!term || name.indexOf(term) !== -1) ? 'flex' : 'none';
-  });
-}
-
-function selectSchStudent(studentId, encName) {
-  // Close any existing form
-  var existing = document.getElementById('sch-inline-form');
-  if (existing) {
-    // If clicking same student, just toggle off
-    if (existing.getAttribute('data-sid') === studentId) { existing.remove(); return; }
-    existing.remove();
-  }
-  var name = decodeURIComponent(encName);
-
-  // Find the clicked row and insert form below it
-  var rows = document.querySelectorAll('.sch-stu-row');
-  var targetRow = null;
-  rows.forEach(function(row) {
-    if (row.getAttribute('data-name') === name.toLowerCase()) targetRow = row;
-  });
-
-  var form = document.createElement('div');
-  form.id = 'sch-inline-form';
-  form.setAttribute('data-sid', studentId);
-  form.style.cssText = 'background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(91,127,166,.06),rgba(12,16,22,.97));border:1px solid rgba(91,127,166,.28);border-radius:12px;padding:18px 20px;margin-bottom:7px;';
-  form.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
-      '<div>' +
-        '<div style="font-size:.82rem;font-weight:700;color:#f0f0f0;">📅 Programar reunión</div>' +
-        '<div style="font-size:.7rem;color:#555;margin-top:2px;">' + name + '</div>' +
+      // Step 1: Student picker
+      '<div id="sch-step1" style="display:flex;flex-direction:column;overflow:hidden;flex:1;">' +
+        '<div style="padding:14px 22px 8px;flex-shrink:0;">' +
+          '<input id="sch-modal-search" class="ai" placeholder="🔍 Buscar alumno..." oninput="filterSchModal(this.value)" style="width:100%;box-sizing:border-box;">' +
+        '</div>' +
+        '<div id="sch-modal-list" style="overflow-y:auto;padding:0 22px 18px;flex:1;"></div>' +
       '</div>' +
-      '<button onclick="document.getElementById(\'sch-inline-form\').remove()" style="background:none;border:none;color:#555;font-size:1.1rem;cursor:pointer;padding:2px 6px;">✕</button>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
-      '<div><label class="al">Título</label><input id="sch-i-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1"></div>' +
-      '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-i-date" class="ai"></div>' +
-    '</div>' +
-    '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-i-url" class="ai" placeholder="https://meet.google.com/..."></div>' +
-    '<div style="display:flex;gap:8px;">' +
-      '<button id="sch-i-save" class="abtn2" onclick="saveSchInline(\'' + studentId + '\')" style="flex:1;padding:10px;">Programar sesión</button>' +
-      '<button onclick="document.getElementById(\'sch-inline-form\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+      // Step 2: Form (hidden until student selected)
+      '<div id="sch-step2" style="display:none;padding:18px 22px 22px;overflow-y:auto;">' +
+        '<button onclick="schBack()" style="display:flex;align-items:center;gap:5px;background:none;border:none;color:#555;font-size:.75rem;cursor:pointer;padding:0;margin-bottom:14px;">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Cambiar alumno' +
+        '</button>' +
+        '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:8px;margin-bottom:16px;"></div>' +
+        '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-m-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1"></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+          '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-m-date" class="ai"></div>' +
+          '<div><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..."></div>' +
+        '</div>' +
+        '<button id="sch-m-save" class="abtn2" onclick="saveSchModal()" style="width:100%;padding:11px;margin-top:4px;">Programar sesión</button>' +
+      '</div>' +
     '</div>';
 
-  if (targetRow && targetRow.parentNode) {
-    targetRow.parentNode.insertBefore(form, targetRow.nextSibling);
-  } else {
-    var list = document.getElementById('sch-stu-list');
-    if (list) list.prepend(form);
-  }
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
 
-  // Highlight selected row
-  document.querySelectorAll('.sch-stu-row').forEach(function(r){ r.style.borderColor = 'rgba(91,127,166,.15)'; });
-  if (targetRow) targetRow.style.borderColor = 'rgba(91,127,166,.45)';
-
-  // Focus date input
-  setTimeout(function(){ var d = document.getElementById('sch-i-date'); if(d) d.focus(); }, 50);
+  // Load students
+  var listEl = document.getElementById('sch-modal-list');
+  listEl.innerHTML = '<div style="padding:20px;text-align:center;"><span class="spin"></span></div>';
+  sb.from('profiles').select('id, full_name, membership_end').order('full_name').then(function(r) {
+    window._schModalStudents = r.data || [];
+    _renderSchModalList(window._schModalStudents);
+  });
 }
 
-function saveSchInline(studentId) {
-  var title = (document.getElementById('sch-i-title')||{}).value || 'Sesión 1-1';
-  var date  = (document.getElementById('sch-i-date') ||{}).value || '';
-  var url   = (document.getElementById('sch-i-url')  ||{}).value || '';
+function _renderSchModalList(students) {
+  var listEl = document.getElementById('sch-modal-list'); if (!listEl) return;
+  if (!students.length) { listEl.innerHTML = '<div style="padding:20px;text-align:center;color:#555;font-size:.8rem;">Sin resultados</div>'; return; }
+  listEl.innerHTML = students.map(function(s) {
+    var initials = (s.full_name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+    var active = s.membership_end && new Date(s.membership_end) > new Date();
+    return '<div onclick="schSelectStudent(\'' + s.id + '\',\'' + encodeURIComponent(s.full_name||'Alumno') + '\',' + active + ')" ' +
+      'style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:5px;cursor:pointer;border:1px solid transparent;transition:background .12s,border-color .12s;" ' +
+      'onmouseover="this.style.background=\'rgba(91,127,166,.08)\';this.style.borderColor=\'rgba(91,127,166,.2)\'" ' +
+      'onmouseout="this.style.background=\'transparent\';this.style.borderColor=\'transparent\'">' +
+      '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:.85rem;font-weight:600;color:#f0f0f0;">' + (s.full_name||'Sin nombre') + '</div>' +
+        '<div style="font-size:.68rem;margin-top:1px;color:' + (active?'#4ade80':'#555') + ';">' + (active?'● Activo':'○ Inactivo') + '</div>' +
+      '</div>' +
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
+    '</div>';
+  }).join('');
+}
+
+function filterSchModal(q) {
+  var term = (q||'').toLowerCase().trim();
+  var all = window._schModalStudents || [];
+  _renderSchModalList(term ? all.filter(function(s){ return (s.full_name||'').toLowerCase().indexOf(term) !== -1; }) : all);
+}
+
+function schSelectStudent(id, encName, active) {
+  window._schSelectedId = id;
+  var name = decodeURIComponent(encName);
+  var initials = name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+
+  var sel = document.getElementById('sch-selected-student');
+  if (sel) sel.innerHTML =
+    '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
+    '<div><div style="font-size:.85rem;font-weight:600;color:#f0f0f0;">' + name + '</div>' +
+    '<div style="font-size:.68rem;margin-top:1px;color:' + (active?'#4ade80':'#555') + ';">' + (active?'● Activo':'○ Inactivo') + '</div></div>';
+
+  document.getElementById('sch-step1').style.display = 'none';
+  document.getElementById('sch-step2').style.display = 'block';
+  var sub = document.getElementById('sch-modal-subtitle');
+  if (sub) sub.textContent = name;
+  setTimeout(function(){ var d = document.getElementById('sch-m-date'); if(d) d.focus(); }, 50);
+}
+
+function schBack() {
+  document.getElementById('sch-step2').style.display = 'none';
+  document.getElementById('sch-step1').style.display = 'flex';
+  var sub = document.getElementById('sch-modal-subtitle');
+  if (sub) sub.textContent = 'Selecciona un alumno';
+}
+
+function saveSchModal() {
+  var studentId = window._schSelectedId;
+  if (!studentId) return tst('Selecciona un alumno', 1);
+  var title = (document.getElementById('sch-m-title')||{}).value || 'Sesión 1-1';
+  var date  = (document.getElementById('sch-m-date') ||{}).value || '';
+  var url   = (document.getElementById('sch-m-url')  ||{}).value || '';
   if (!date) return tst('Selecciona fecha y hora', 1);
-  var btn = document.getElementById('sch-i-save');
+  var btn = document.getElementById('sch-m-save');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   sb.from('meetings_1on1').insert({
     student_id:   studentId,
@@ -4022,12 +4022,63 @@ function saveSchInline(studentId) {
     meet_url:     url.trim() || null,
     status:       'scheduled'
   }).then(function(r) {
-    if (r.error) { tst('Error: ' + r.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Programar sesión';} return; }
+    if (r.error) { tst('Error: '+r.error.message,1); if(btn){btn.disabled=false;btn.textContent='Programar sesión';} return; }
     tst('✓ Sesión programada');
-    var form = document.getElementById('sch-inline-form');
-    if (form) form.remove();
-    // Reset row highlight
-    document.querySelectorAll('.sch-stu-row').forEach(function(r){ r.style.borderColor='rgba(91,127,166,.15)'; });
+    var m = document.getElementById('sch-modal');
+    if (m) m.remove();
+    // Refresh meetings tab if visible
+    if (document.getElementById('a1on1-mtg') && document.getElementById('a1on1-mtg').style.display !== 'none') _rAdm1on1Mtg();
+  });
+}
+
+// ── MODAL EDITAR REUNIÓN ──
+function openEditMtgModal(id, encTitle, encUrl, isoDate) {
+  var existing = document.getElementById('edit-mtg-modal');
+  if (existing) existing.remove();
+  var title   = decodeURIComponent(encTitle);
+  var url     = decodeURIComponent(encUrl);
+  // Convert ISO to datetime-local format
+  var dtLocal = isoDate ? new Date(new Date(isoDate).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
+
+  var ov = document.createElement('div');
+  ov.id = 'edit-mtg-modal';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  ov.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
+        '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">✎ Editar reunión</div>' +
+        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+      '</div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="emtg-title" class="ai" value="' + title.replace(/"/g,"'") + '"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+        '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="ai" value="' + dtLocal + '"></div>' +
+        '<div><label class="al">Link Google Meet</label><input id="emtg-url" class="ai" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:4px;">' +
+        '<button id="emtg-save" class="abtn2" onclick="saveEditMtg(\'' + id + '\')" style="flex:1;padding:11px;">Guardar cambios</button>' +
+        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:11px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+}
+
+function saveEditMtg(id) {
+  var title = (document.getElementById('emtg-title')||{}).value || '';
+  var date  = (document.getElementById('emtg-date') ||{}).value || '';
+  var url   = (document.getElementById('emtg-url')  ||{}).value || '';
+  if (!date) return tst('Selecciona fecha y hora', 1);
+  var btn = document.getElementById('emtg-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  sb.from('meetings_1on1').update({
+    title:        title.trim() || 'Sesión 1-1',
+    scheduled_at: new Date(date).toISOString(),
+    meet_url:     url.trim() || null
+  }).eq('id', id).then(function(r) {
+    if (r.error) { tst('Error: '+r.error.message,1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
+    tst('✓ Reunión actualizada');
+    var m = document.getElementById('edit-mtg-modal'); if(m) m.remove();
+    _rAdm1on1Mtg();
   });
 }
 

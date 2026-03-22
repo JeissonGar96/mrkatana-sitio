@@ -4120,10 +4120,10 @@ function openSchModal() {
         '</button>' +
         '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:8px;margin-bottom:16px;"></div>' +
         '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-m-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1" style="box-sizing:border-box;"></div>' +
-        '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-          '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-m-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-          '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-m-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-        '</div>' +
+        '<div style="margin-bottom:10px;"><label class="al">Fecha</label>' +
+        '<div style="display:flex;gap:6px;"><select id="sch-m-date-d" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Día</option><option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option></select><select id="sch-m-date-m" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Mes</option><option value="01">Ene</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Abr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Ago</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option></select><select id="sch-m-date-y" class="ai" style="flex:1.2;min-width:0;box-sizing:border-box;"><option value="">Año</option><option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option></select></div></div>' +
+        '<div style="margin-bottom:10px;"><label class="al">Hora</label>' +
+        '<div style="display:flex;gap:6px;"><select id="sch-m-hh" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">HH</option><option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option></select><select id="sch-m-mm" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">MM</option><option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option></select></div></div>' +
         '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..." style="box-sizing:border-box;"></div>' +
         '<button id="sch-m-save" class="abtn2" onclick="saveSchModal()" style="width:100%;padding:11px;margin-top:4px;">Programar sesión</button>' +
       '</div>' +
@@ -4196,15 +4196,20 @@ function saveSchModal() {
   var studentId = window._schSelectedId;
   if (!studentId) return tst('Selecciona un alumno', 1);
   var title = (document.getElementById('sch-m-title')||{}).value || 'Sesión 1-1';
-  var date  = (document.getElementById('sch-m-date') ||{}).value || '';
-  var time  = (document.getElementById('sch-m-time') ||{}).value || '00:00';
-  var url   = (document.getElementById('sch-m-url')  ||{}).value || '';
-  if (!date) return tst('Selecciona una fecha', 1);
+  var date  = (document.getElementById('sch-m-date-d')||{}).value || '';
+  var mon   = (document.getElementById('sch-m-date-m')||{}).value || '';
+  var yr    = (document.getElementById('sch-m-date-y')||{}).value || '';
+  var hh    = (document.getElementById('sch-m-hh')    ||{}).value || '00';
+  var mm    = (document.getElementById('sch-m-mm')    ||{}).value || '00';
+  var url   = (document.getElementById('sch-m-url')   ||{}).value || '';
+  if (!date || !mon || !yr) return tst('Selecciona una fecha', 1);
+  var time  = hh + ':' + mm;
+  var isoDate = yr + '-' + mon + '-' + date;
   var btn = document.getElementById('sch-m-save');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   sb.from('meetings_1on1').insert({
     student_id:   studentId,
-    scheduled_at: new Date(date + 'T' + time).toISOString(),
+    scheduled_at: new Date(isoDate + 'T' + time).toISOString(),
     title:        title.trim() || 'Sesión 1-1',
     meet_url:     url.trim() || null,
     status:       'scheduled'
@@ -4621,10 +4626,10 @@ function openScheduleModal(studentId, studentName) {
         '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
       '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-title" class="ai" placeholder="Sesión 1-1 · Semana 3" style="box-sizing:border-box;"></div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-        '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-        '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-      '</div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Fecha</label>' +
+      '<div style="display:flex;gap:6px;"><select id="sch-date-d" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Día</option><option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option></select><select id="sch-date-m" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Mes</option><option value="01">Ene</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Abr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Ago</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option></select><select id="sch-date-y" class="ai" style="flex:1.2;min-width:0;box-sizing:border-box;"><option value="">Año</option><option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option></select></div></div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Hora</label>' +
+      '<div style="display:flex;gap:6px;"><select id="sch-hh" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">HH</option><option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option></select><select id="sch-mm" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">MM</option><option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option></select></div></div>' +
       '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-url" class="ai" placeholder="https://meet.google.com/..." style="box-sizing:border-box;"></div>' +
       '<button id="sch-save-btn" onclick="saveSchedule(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Programar sesión</button>' +
     '</div>';
@@ -4635,10 +4640,15 @@ function openScheduleModal(studentId, studentName) {
 
 function saveSchedule(studentId) {
   var title = (document.getElementById('sch-title')||{}).value || 'Sesión 1-1';
-  var date  = (document.getElementById('sch-date') ||{}).value || '';
-  var time  = (document.getElementById('sch-time') ||{}).value || '00:00';
-  var url   = (document.getElementById('sch-url')  ||{}).value || '';
-  if (!date) return tst('Selecciona una fecha', 1);
+  var schD  = (document.getElementById('sch-date-d') ||{}).value || '';
+  var schM  = (document.getElementById('sch-date-m') ||{}).value || '';
+  var schY  = (document.getElementById('sch-date-y') ||{}).value || '';
+  var schHH = (document.getElementById('sch-hh')     ||{}).value || '00';
+  var schMM = (document.getElementById('sch-mm')     ||{}).value || '00';
+  var url   = (document.getElementById('sch-url')    ||{}).value || '';
+  if (!schD || !schM || !schY) return tst('Selecciona una fecha', 1);
+  var date = schY + '-' + schM + '-' + schD;
+  var time = schHH + ':' + schMM;
   var btn = document.getElementById('sch-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   sb.from('meetings_1on1').insert({

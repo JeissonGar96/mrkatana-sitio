@@ -2260,10 +2260,10 @@ function rDash() {
   var totalWeeks = (start && end) ? Math.ceil((end - start) / (7*86400000)) : 24;
   weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
 
-  // Next 1-1
-  var next1on1 = p && p.next_1on1_meeting ? new Date(p.next_1on1_meeting) : null;
-  var days1on1 = next1on1 ? Math.max(0, Math.ceil((next1on1 - today)/86400000)) : null;
-  var date1on1S = next1on1 ? next1on1.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'}) : null;
+  // Next 1-1 loaded from meetings_1on1 (populated async, card updated after)
+  var next1on1 = null;
+  var days1on1 = null;
+  var date1on1S = null;
 
   // Next group
   var nextGroup = p && p.next_group_meeting ? new Date(p.next_group_meeting) : null;
@@ -2487,6 +2487,54 @@ function rDash() {
 
   chkLive(); loadUp(); loadCalendar();
 
+  // Load next 1-1 from meetings table and update card
+  sb.from('meetings_1on1').select('*')
+    .eq('student_id', cUser.id)
+    .gte('scheduled_at', new Date(Date.now() - 3600000).toISOString())
+    .order('scheduled_at')
+    .limit(1)
+    .then(function(mr) {
+      var card = document.getElementById('card-1on1');
+      if (!card) return;
+      if (!mr.data || !mr.data.length) {
+        card.innerHTML =
+          '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px 0;">' +
+            '<div style="font-size:1.5rem;margin-bottom:8px;">📅</div>' +
+            '<div style="font-size:.65rem;color:#555;text-transform:uppercase;letter-spacing:1px;">PRÓXIMA SESIÓN 1-1</div>' +
+            '<div style="font-size:.72rem;color:#444;margin-top:4px;">Sin sesión programada</div>' +
+          '</div>';
+        return;
+      }
+      var mt = mr.data[0];
+      var n1 = new Date(mt.scheduled_at);
+      var diff = n1 - new Date();
+      var days = Math.floor(diff / 86400000);
+      var hrs  = Math.floor((diff % 86400000) / 3600000);
+      var mins = Math.floor((diff % 3600000) / 60000);
+      var secs = Math.floor((diff % 60000) / 1000);
+      var dateS = n1.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'});
+      var timeS = n1.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+      var countId = 'cntd-1on1-' + Date.now();
+      card.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px 0;cursor:pointer;" onclick="navigateTo(\'reuniones\')">' +
+          '<div style="font-size:.62rem;color:#c9a84c;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;font-weight:700;">PRÓXIMA SESIÓN 1-1</div>' +
+          '<div style="font-family:var(--font-cond,sans-serif);font-size:2rem;font-weight:800;color:#c9a84c;line-height:1;" id="' + countId + '">' +
+            (days > 0 ? days+'d ' : '') + String(hrs).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0') +
+          '</div>' +
+          '<div style="font-size:.68rem;color:#555;margin-top:5px;">' + dateS + ' · ' + timeS + '</div>' +
+          (mt.title ? '<div style="font-size:.7rem;color:#9a9a9a;margin-top:2px;">' + mt.title + '</div>' : '') +
+          '<button style="margin-top:8px;font-size:.66rem;color:var(--sl);background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);padding:3px 10px;border-radius:4px;cursor:pointer;">Toca para ver reuniones</button>' +
+        '</div>';
+      var cntdInt = setInterval(function() {
+        var el = document.getElementById(countId);
+        if (!el) { clearInterval(cntdInt); return; }
+        var d2 = n1 - new Date();
+        if (d2 <= 0) { clearInterval(cntdInt); el.textContent = '¡Ahora!'; return; }
+        var d=Math.floor(d2/86400000), h=Math.floor((d2%86400000)/3600000), m=Math.floor((d2%3600000)/60000), s=Math.floor((d2%60000)/1000);
+        el.textContent = (d>0?d+'d ':'') + String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      }, 1000);
+    });
+
   // Countdown timer for 1-1 session
   if (next1on1) {
     var _cntdInterval = setInterval(function() {
@@ -2517,7 +2565,7 @@ function chkLive() {
 }
 function loadUp() {
   var p1 = sb.from('live_sessions').select('*').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(3);
-  var p2 = sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(2);
+  var p2 = sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).gte('scheduled_at', new Date(Date.now() - 3600000).toISOString()).order('scheduled_at').limit(2);
   Promise.all([p1, p2]).then(function(res) {
     var ss = (res[0].data || []).map(function(s){ return Object.assign({},s,{_t:'g'}); });
     var mm = (res[1].data || []).map(function(m){ return Object.assign({},m,{_t:'1'}); });
@@ -3443,7 +3491,7 @@ function rAdmin() {
   m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
   var tabs = document.createElement('div');
   tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;';
-  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['codes','Códigos'],['roadmap','Roadmap']].forEach(function(item, i) {
+  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['1on1','Reuniones 1-1'],['codes','Códigos'],['roadmap','Roadmap']].forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');
     btn.textContent = item[1];
@@ -3451,7 +3499,7 @@ function rAdmin() {
     tabs.appendChild(btn);
   });
   m.appendChild(tabs);
-  ['st','cl','se','codes','roadmap'].forEach(function(s, i) {
+  ['st','cl','se','1on1','codes','roadmap'].forEach(function(s, i) {
     var div = document.createElement('div');
     div.id = 'a-'+s;
     if (i > 0) div.style.display = 'none';
@@ -3462,18 +3510,29 @@ function rAdmin() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes','roadmap'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else rAdmSt();
+  ['st','cl','se','codes','roadmap','1on1'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
 }
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
-  c.innerHTML = '<div class="aform"><div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">➕ Crear alumno</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;"><div><label class="al">Nombre</label><input id="a-n" class="ai" placeholder="Nombre completo"></div><div><label class="al">Email</label><input id="a-e" class="ai" placeholder="email"></div><div><label class="al">Contraseña</label><input id="a-p" class="ai" placeholder="Min 6"></div></div><button onclick="cSt()" class="abtn2" style="margin-top:11px;">Crear alumno</button></div><div id="st-t"><span class="spin"></span></div>';
+  c.innerHTML = '<div class="aform"><div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">➕ Crear alumno</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;"><div><label class="al">Nombre</label><input id="a-n" class="ai" placeholder="Nombre completo"></div><div><label class="al">Email</label><input id="a-e" class="ai" placeholder="email"></div><div><label class="al">Contraseña</label><input id="a-p" class="ai" placeholder="Min 6"></div></div><button onclick="cSt()" class="abtn2" style="margin-top:11px;">Crear alumno</button></div>' +
+    '<div style="margin-bottom:12px;"><input id="st-search" class="ai" placeholder="🔍 Buscar alumno por nombre o email..." oninput="filterStudents(this.value)" style="width:100%;box-sizing:border-box;"></div>' +
+    '<div id="st-t"><span class="spin"></span></div>';
   sb.from('profiles').select('*').order('created_at',{ascending:false}).then(function(r) {
+    window._allStudents = r.data || [];
     var t = document.getElementById('st-t'); if(!t) return;
     if(!r.data||!r.data.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos.</p>';return;}
+    _renderStudents(window._allStudents);
+  });
+}
+
+function _renderStudents(data) {
+    var t = document.getElementById('st-t'); if(!t) return;
+    var q = (document.getElementById('st-search')||{}).value||'';
+    if(!data||!data.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">'+(q?'Sin resultados para "'+q+'"':'Sin alumnos.')+'</p>';return;}
     var today = new Date();
     t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Vence</th><th>Estado</th><th>Acción</th></tr></thead><tbody>'+
-      r.data.map(function(s){
+      data.map(function(s){
         var en=s.membership_end?new Date(s.membership_end):null, act=en&&en>today;
         return '<tr><td style="color:#f0f0f0;font-weight:500;">'+s.full_name+'</td><td>'+s.email+'</td>'+
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(s.role==='admin'?'rgba(91,127,166,.14)':'rgba(255,255,255,.05)')+';color:'+(s.role==='admin'?'var(--sl)':'#9a9a9a')+';">'+s.role+'</span></td>'+
@@ -3481,8 +3540,16 @@ function rAdmSt() {
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(act?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(act?'#4ade80':'#f87171')+';">'+(act?'Activo':'Inactivo')+'</span></td>'+
           '<td style="white-space:nowrap;">'+'<div style="display:flex;gap:5px;align-items:center;">'+'<button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;white-space:nowrap;">'+(act?'Desactivar':'Activar')+'</button>'+'<div style="position:relative;display:inline-block;">'+'<button onclick="toggleActMenu(this)" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#777;padding:3px 9px;border-radius:4px;font-size:.85rem;cursor:pointer;letter-spacing:1px;">···</button>'+'<div class="act-menu" data-sid="'+s.id+'" style="display:none;position:fixed;background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:8px;overflow:hidden;z-index:999;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.5);">'+'<button onclick="viewStudentProfile(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item">&#128100; Ver perfil</button>'+'<button onclick="dStudent(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item act-menu-danger">&#128465; Eliminar</button>'+'</div></div></div></td></tr>';
       }).join('')+'</tbody></table></div>';
-  });
 }
+
+function filterStudents(query) {
+  var q = (query||'').toLowerCase();
+  var filtered = (window._allStudents||[]).filter(function(s) {
+    return !q || (s.full_name||'').toLowerCase().indexOf(q) >= 0 || (s.email||'').toLowerCase().indexOf(q) >= 0;
+  });
+  _renderStudents(filtered);
+}
+
 function openWeekModal(weekNum, studentId) {
   var sid = studentId || (cUser ? cUser.id : null);
   sb.from('roadmap_weeks').select('*').eq('week_number', weekNum).single().then(function(r) {
@@ -3633,6 +3700,83 @@ function deleteRoadmapWeek(weekNum) {
     tst('✓ Semana eliminada');
     var ov = document.querySelector('div[style*="z-index:900"]'); if (ov) ov.remove();
     rAdmRoadmap();
+  });
+}
+
+function rAdm1on1() {
+  var c = document.getElementById('a-1on1'); if (!c) return;
+  c.innerHTML = '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;color:#f0f0f0;">📅 Próximas reuniones 1-1 — todos los alumnos</div><div id="adm1on1-list" style="text-align:center;padding:20px 0;"><span class="spin"></span></div>';
+
+  var now = new Date().toISOString();
+  sb.from('meetings_1on1')
+    .select('*, profiles(full_name, avatar_url)')
+    .gte('scheduled_at', now)
+    .order('scheduled_at')
+    .then(function(r) {
+      var el = document.getElementById('adm1on1-list'); if (!el) return;
+      var data = r.data || [];
+      if (!data.length) {
+        el.innerHTML = '<div style="background:var(--bc);border:1px dashed var(--br);border-radius:10px;padding:30px;text-align:center;color:#444;font-size:.84rem;">No hay reuniones 1-1 próximas programadas.</div>';
+        return;
+      }
+
+      // Group by date
+      var byDate = {};
+      data.forEach(function(m) {
+        var d = new Date(m.scheduled_at);
+        var key = d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+        if (!byDate[key]) byDate[key] = [];
+        byDate[key].push(m);
+      });
+
+      var html = '';
+      Object.keys(byDate).forEach(function(dateLabel) {
+        html += '<div style="margin-bottom:18px;">';
+        html += '<div style="font-size:.65rem;color:var(--sl);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(91,127,166,.12);">' + dateLabel + '</div>';
+        byDate[dateLabel].forEach(function(m) {
+          var d = new Date(m.scheduled_at);
+          var timeStr = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+          var now2 = new Date();
+          var diff = d - now2;
+          var dDays = Math.floor(diff / 86400000);
+          var dHrs  = Math.floor((diff % 86400000) / 3600000);
+          var dMins = Math.floor((diff % 3600000) / 60000);
+          var countdown = dDays > 0 ? dDays + 'd ' + dHrs + 'h' : dHrs + 'h ' + dMins + 'm';
+          var name = (m.profiles && m.profiles.full_name) ? m.profiles.full_name : 'Alumno';
+          var initials = name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+          var isFuture10 = diff < 600000 && diff > 0; // within 10 min
+          html +=
+            '<div style="background:var(--bc);border:1px solid var(--br);border-radius:12px;padding:14px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;transition:border-color .2s;" onmouseover="this.style.borderColor=\'rgba(91,127,166,.4)\'" onmouseout="this.style.borderColor=\'var(--br)\'">' +
+              '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:.88rem;font-weight:600;color:#f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name + '</div>' +
+                '<div style="font-size:.75rem;color:#555;margin-top:2px;">' + (m.title || 'Sesión 1-1') + '</div>' +
+              '</div>' +
+              '<div style="text-align:right;flex-shrink:0;">' +
+                '<div style="font-size:.85rem;font-weight:600;color:var(--sl);">' + timeStr + '</div>' +
+                '<div style="font-size:.68rem;color:' + (isFuture10 ? '#f87171' : '#555') + ';margin-top:2px;">En ' + countdown + '</div>' +
+              '</div>' +
+              (m.meet_url
+                ? '<a href="' + m.meet_url + '" target="_blank" rel="noopener" style="flex-shrink:0;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:600;text-decoration:none;white-space:nowrap;">Entrar</a>'
+                : '<span style="flex-shrink:0;font-size:.72rem;color:#333;padding:5px 10px;">Sin link</span>') +
+              '<button onclick="delAdmMtg(\'' + m.id + '\')" style="flex-shrink:0;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);color:#f87171;padding:5px 9px;border-radius:6px;font-size:.72rem;cursor:pointer;margin-left:4px;" title="Eliminar">✕</button>' +
+            '</div>';
+        });
+        html += '</div>';
+      });
+
+      // Summary footer
+      html += '<div style="font-size:.68rem;color:#333;padding-top:4px;text-align:right;">' + data.length + ' reunión' + (data.length !== 1 ? 'es' : '') + ' próxima' + (data.length !== 1 ? 's' : '') + '</div>';
+      el.innerHTML = html;
+    });
+}
+
+function delAdmMtg(id) {
+  if (!confirm('¿Eliminar esta reunión 1-1?')) return;
+  sb.from('meetings_1on1').delete().eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Reunión eliminada');
+    rAdm1on1();
   });
 }
 

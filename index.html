@@ -538,6 +538,8 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 .aform{background:var(--bc);border:1px solid var(--br);border-radius:14px;padding:20px;margin-bottom:16px;}
 .ai{width:100%;padding:9px 11px;background:rgba(255,255,255,.05);border:1px solid var(--br);border-radius:2px;color:#f0f0f0;font-family:sans-serif;font-size:.82rem;outline:none;}
 .ai:focus{border-color:var(--st);}
+.ai option, .fi option {background:#1a1e26;color:#f0f0f0;}
+.ai option:disabled, .fi option:disabled {color:#555;}
 .al{display:block;font-size:.65rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
 .abtn2{background:var(--st);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-family:sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;}
 .dtab-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
@@ -3533,12 +3535,26 @@ function rPerfil() {
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
           '<div><label class="al">Nombre completo</label><input id="pf-name" class="ai" value="'+(p.full_name||'')+'" placeholder="Tu nombre completo"></div>' +
-          '<div><label class="al">Edad</label><input id="pf-age" type="number" class="ai" value="'+(p.age||'')+'" placeholder="Ej: 24" min="16" max="80"></div>' +
+          '<div><label class="al">Fecha de nacimiento</label><input id="pf-dob" type="date" class="ai" value="'+(p.date_of_birth ? p.date_of_birth.slice(0,10) : '')+'" max="'+new Date(Date.now()-16*365.25*86400000).toISOString().slice(0,10)+'"></div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
-          '<div><label class="al">País</label><input id="pf-country" class="ai" value="'+(p.country||'')+'" placeholder="Ej: Ecuador"></div>' +
+          '<div><label class="al">País</label>' +
+            '<select id="pf-country" class="ai">' +
+              '<option value="">Selecciona tu país...</option>' +
+              ['Ecuador','Colombia','Venezuela','Perú','Argentina','Chile','México','Bolivia','Paraguay','Uruguay','Brasil','Guatemala','Honduras','El Salvador','Nicaragua','Costa Rica','Panamá','Cuba','República Dominicana','Puerto Rico','España','Estados Unidos','Canadá','Reino Unido','Alemania','Francia','Italia','Portugal','Países Bajos','Bélgica','Suiza','Australia','Nueva Zelanda','Otros'].map(function(c){ return '<option value="'+c+'"'+(p.country===c?' selected':'')+'>'+c+'</option>'; }).join('') +
+            '</select>' +
+          '</div>' +
           '<div><label class="al">Teléfono / WhatsApp</label>' +
-            '<input id="pf-phone" class="ai" value="'+(p.phone||'')+'" placeholder="+593 99 999 9999" type="tel"></div>' +
+            '<div style="display:flex;gap:5px;">' +
+              '<div style="position:relative;flex-shrink:0;">' +
+                '<select id="pf-phone-prefix" class="ai" style="width:auto;padding-right:24px;min-width:88px;" onchange="updatePhonePreview()">' +
+                  _phonePrefix(p.phone_prefix||'+593') +
+                '</select>' +
+              '</div>' +
+              '<input id="pf-phone" class="ai" value="'+(p.phone||'')+'" placeholder="999 999 999" type="tel" style="flex:1;" oninput="updatePhonePreview()">' +
+            '</div>' +
+            '<div id="pf-phone-preview" style="font-size:.65rem;color:#555;margin-top:3px;height:14px;">'+ ((p.phone_prefix||'+593') + ' ' + (p.phone||'')) +'</div>' +
+          '</div>' +
         '</div>' +
         '<div style="margin-bottom:10px;"><label class="al">Experiencia en trading</label>' +
           '<select id="pf-exp" class="ai">' +
@@ -3587,22 +3603,81 @@ function rPerfil() {
     '</div>';   // end grid
 }
 
+function _phonePrefix(selected) {
+  var prefixes = [
+    ['+593','🇪🇨 +593 EC'],
+    ['+57','🇨🇴 +57 CO'],
+    ['+58','🇻🇪 +58 VE'],
+    ['+51','🇵🇪 +51 PE'],
+    ['+54','🇦🇷 +54 AR'],
+    ['+56','🇨🇱 +56 CL'],
+    ['+52','🇲🇽 +52 MX'],
+    ['+591','🇧🇴 +591 BO'],
+    ['+595','🇵🇾 +595 PY'],
+    ['+598','🇺🇾 +598 UY'],
+    ['+55','🇧🇷 +55 BR'],
+    ['+502','🇬🇹 +502 GT'],
+    ['+504','🇭🇳 +504 HN'],
+    ['+503','🇸🇻 +503 SV'],
+    ['+505','🇳🇮 +505 NI'],
+    ['+506','🇨🇷 +506 CR'],
+    ['+507','🇵🇦 +507 PA'],
+    ['+53','🇨🇺 +53 CU'],
+    ['+1','🇺🇸 +1 US'],
+    ['+44','🇬🇧 +44 GB'],
+    ['+34','🇪🇸 +34 ES'],
+    ['+49','🇩🇪 +49 DE'],
+    ['+33','🇫🇷 +33 FR'],
+    ['+39','🇮🇹 +39 IT'],
+    ['+351','🇵🇹 +351 PT'],
+    ['+61','🇦🇺 +61 AU'],
+  ];
+  return prefixes.map(function(p){
+    return '<option value="'+p[0]+'"'+(p[0]===selected?' selected':'')+'>'+p[1]+'</option>';
+  }).join('');
+}
+
+function updatePhonePreview() {
+  var prefix = (document.getElementById('pf-phone-prefix')||{}).value || '';
+  var num    = (document.getElementById('pf-phone')        ||{}).value || '';
+  var prev   = document.getElementById('pf-phone-preview');
+  if (prev) prev.textContent = (prefix + ' ' + num).trim();
+}
+
 function savePerfil() {
+  var name   = (document.getElementById('pf-name')         ||{}).value.trim();
+  var dob    = (document.getElementById('pf-dob')          ||{}).value || null;
+  var country= (document.getElementById('pf-country')      ||{}).value.trim();
+  var prefix = (document.getElementById('pf-phone-prefix') ||{}).value || '+593';
+  var phone  = (document.getElementById('pf-phone')        ||{}).value.trim();
+  var exp    = (document.getElementById('pf-exp')          ||{}).value;
+  var bio    = (document.getElementById('pf-bio')          ||{}).value.trim();
+  if (!name) return tst('El nombre es requerido', 1);
+
+  // Calculate age from dob
+  var age = null;
+  if (dob) {
+    var today = new Date(), birth = new Date(dob);
+    age = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+  }
+
   var update = {
-    full_name:          (document.getElementById('pf-name')   ||{}).value.trim(),
-    age:                parseInt((document.getElementById('pf-age')||{}).value) || null,
-    country:            (document.getElementById('pf-country')||{}).value.trim(),
-    phone:              (document.getElementById('pf-phone')  ||{}).value.trim(),
-    trading_experience: (document.getElementById('pf-exp')    ||{}).value,
-    bio:                (document.getElementById('pf-bio')    ||{}).value.trim()
+    full_name:          name,
+    date_of_birth:      dob,
+    age:                age,
+    country:            country,
+    phone_prefix:       prefix,
+    phone:              phone,
+    trading_experience: exp,
+    bio:                bio
   };
-  if (!update.full_name) return tst('El nombre es requerido', 1);
   sb.from('profiles').update(update).eq('id', cUser.id).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     cProfile = Object.assign(cProfile || {}, update);
-    document.getElementById('uname').textContent = (update.full_name || '').split(' ')[0] || 'Alumno';
+    document.getElementById('uname').textContent = (name || '').split(' ')[0] || 'Alumno';
     tst('✓ Perfil actualizado');
-    rPerfil(); // refresh to show updated name in avatar area
+    rPerfil();
   });
 }
 

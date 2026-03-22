@@ -4120,10 +4120,7 @@ function openSchModal() {
         '</button>' +
         '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:8px;margin-bottom:16px;"></div>' +
         '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-m-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1" style="box-sizing:border-box;"></div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">' +
-          '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-m-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-          '<div><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..." style="box-sizing:border-box;"></div>' +
-        '</div>' +
+        '<div style="margin-bottom:10px;"><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-m-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
         '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..." style="box-sizing:border-box;"></div>' +
         '<button id="sch-m-save" class="abtn2" onclick="saveSchModal()" style="width:100%;padding:11px;margin-top:4px;">Programar sesión</button>' +
       '</div>' +
@@ -4621,10 +4618,7 @@ function openScheduleModal(studentId, studentName) {
         '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
       '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-title" class="ai" placeholder="Sesión 1-1 · Semana 3" style="box-sizing:border-box;"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">' +
-        '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-        '<div><label class="al">Link Google Meet</label><input id="sch-url" class="ai" placeholder="https://meet.google.com/..." style="box-sizing:border-box;"></div>' +
-      '</div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
       '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-url" class="ai" placeholder="https://meet.google.com/..." style="box-sizing:border-box;"></div>' +
       '<button id="sch-save-btn" onclick="saveSchedule(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Programar sesión</button>' +
     '</div>';

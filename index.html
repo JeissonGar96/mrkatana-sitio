@@ -621,7 +621,19 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   .amain{padding:18px;padding-bottom:80px;}
   .alay{flex-direction:column;}
   #dash-top{grid-template-columns:1fr !important;}
-  #amain [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
+  /* Fix all 2-col grids inside app panels AND modals on mobile */
+  #amain [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+  /* Fix date/datetime inputs overflowing on iOS */
+  input[type="date"], input[type="datetime-local"] {
+    width:100% !important; box-sizing:border-box !important; min-width:0 !important;
+  }
+  /* Fix modals not going off screen */
+  [style*="max-width:420px"], [style*="max-width:440px"], [style*="max-width:480px"] {
+    max-width:calc(100vw - 32px) !important; box-sizing:border-box !important;
+  }
+  /* Programar modal step2 padding */
+  #sch-step2 { padding:16px 16px 20px !important; }
 }
 
 /* ── SECTION GLOWS ── */
@@ -4503,12 +4515,9 @@ function viewStudentProfile(id) {
 
         // Phone
         ((p.phone) ?
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 10.5 19.79 19.79 0 01.88 1.87 2 2 0 012.86 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>' +
-            '<div>' +
-              '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Teléfono / WhatsApp</div>' +
-              '<a href="https://wa.me/'+(p.phone_prefix||'').replace('+','')+p.phone.replace(/\s/g,'')+'" target="_blank" style="font-size:.88rem;color:#4ade80;text-decoration:none;">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</a>' +
-            '</div>' +
+          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
+            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Teléfono / WhatsApp</div>' +
+            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</div>' +
           '</div>'
         : '') +
 
@@ -5420,22 +5429,20 @@ function toggleActMenu(btn) {
   if (!menu) return;
   if (menu.style.display !== 'none') { menu.style.display = 'none'; return; }
 
-  // Show first to measure height
-  menu.style.display = 'block';
-  menu.style.visibility = 'hidden';
-  var rect    = btn.getBoundingClientRect();
-  var menuH   = menu.offsetHeight || 90;
-  var menuW   = menu.offsetWidth  || 150;
-  // Account for mobile bottom nav (~58px)
-  var bottomSafe = window.innerHeight - (window.innerWidth <= 860 ? 64 : 10);
-  var spaceBelow = bottomSafe - rect.bottom;
+  // Render offscreen to measure
+  menu.style.cssText = menu.style.cssText + ';position:fixed;visibility:hidden;display:block;top:-9999px;left:-9999px;';
+  var menuH = menu.offsetHeight || 88;
+  var menuW = menu.offsetWidth  || 150;
 
-  var top  = spaceBelow >= menuH + 6 ? rect.bottom + 4 : rect.top - menuH - 4;
-  var left = Math.min(rect.right - menuW, window.innerWidth - menuW - 8);
-  left = Math.max(8, left);
+  var rect      = btn.getBoundingClientRect();
+  // Mobile nav bar is 58px; add 8px safety margin
+  var safeBottom = window.innerHeight - (window.innerWidth <= 860 ? 68 : 12);
+  var spaceBelow = safeBottom - rect.bottom;
+  var top  = spaceBelow >= menuH + 4 ? rect.bottom + 4 : rect.top - menuH - 4;
+  var left = Math.max(8, Math.min(rect.right - menuW, window.innerWidth - menuW - 8));
 
-  menu.style.top  = top  + 'px';
-  menu.style.left = left + 'px';
+  menu.style.top        = top  + 'px';
+  menu.style.left       = left + 'px';
   menu.style.visibility = 'visible';
 }
 document.addEventListener('click', function(e) {

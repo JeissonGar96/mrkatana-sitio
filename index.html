@@ -530,6 +530,7 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 
 @media(max-width:860px){
   .rec-view-toggle { display: none !important; }
+  .admtab { padding: 8px 18px !important; font-size: .82rem !important; min-height: 38px; }
 }
 .admtab{padding:7px 16px;border-radius:2px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.8rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
 .admtab.on{background:rgba(91,127,166,.11);border-color:var(--bs);color:var(--sl);}
@@ -3603,7 +3604,7 @@ function rAdmin() {
   var m = document.getElementById('amain');
   m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
   var tabs = document.createElement('div');
-  tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;';
+  tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;padding-bottom:6px;padding-top:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;flex-wrap:nowrap;-ms-overflow-style:none;';
   [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['1on1','Reuniones 1-1'],['codes','Códigos'],['roadmap','Roadmap']].forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');
@@ -3892,8 +3893,10 @@ function _rAdm1on1Mtg() {
                 '<div style="font-size:.68rem;color:' + (isFuture10 ? '#f87171' : '#555') + ';margin-top:2px;">En ' + countdown + '</div>' +
               '</div>' +
               (m.meet_url ? '<a href="' + m.meet_url + '" target="_blank" rel="noopener" style="flex-shrink:0;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:600;text-decoration:none;white-space:nowrap;">Entrar</a>' : '<span style="flex-shrink:0;font-size:.72rem;color:#333;padding:5px 10px;">Sin link</span>') +
-              '<button onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title||'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url||'') + '\',\'' + m.scheduled_at + '\')" style="flex-shrink:0;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);color:#c9a84c;width:30px;height:30px;border-radius:6px;font-size:.8rem;cursor:pointer;margin-left:4px;display:flex;align-items:center;justify-content:center;" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
-              '<button onclick="delAdmMtg(\'' + m.id + '\')" style="flex-shrink:0;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);color:#f87171;width:30px;height:30px;border-radius:6px;font-size:.82rem;cursor:pointer;margin-left:4px;display:flex;align-items:center;justify-content:center;" title="Eliminar">✕</button>' +
+              '<div style="display:flex;gap:4px;margin-left:6px;flex-shrink:0;">' +
+                '<button onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title||'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url||'') + '\',\'' + m.scheduled_at + '\')" style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);color:#c9a84c;width:28px;height:28px;border-radius:6px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+                '<button onclick="delAdmMtg(\'' + m.id + '\')" style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);color:#f87171;width:28px;height:28px;border-radius:6px;font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Eliminar">✕</button>' +
+              '</div>' +
             '</div>';
         });
         html += '</div>';
@@ -4050,10 +4053,8 @@ function openEditMtgModal(id, encTitle, encUrl, isoDate) {
         '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
       '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="emtg-title" class="ai" value="' + title.replace(/"/g,"'") + '"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
-        '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="ai" value="' + dtLocal + '"></div>' +
-        '<div><label class="al">Link Google Meet</label><input id="emtg-url" class="ai" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
-      '</div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="ai" value="' + dtLocal + '"></div>' +
+      '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="emtg-url" class="ai" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
       '<div style="display:flex;gap:8px;margin-top:4px;">' +
         '<button id="emtg-save" class="abtn2" onclick="saveEditMtg(\'' + id + '\')" style="flex:1;padding:11px;">Guardar cambios</button>' +
         '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:11px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +

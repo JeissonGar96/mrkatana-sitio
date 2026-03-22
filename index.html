@@ -3819,28 +3819,30 @@ function deleteRoadmapWeek(weekNum) {
 function rAdm1on1() {
   var c = document.getElementById('a-1on1'); if (!c) return;
   c.innerHTML =
-    // Sub-tabs
-    '<div style="display:flex;gap:6px;margin-bottom:18px;">' +
+    '<div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;">' +
       '<button id="a1on1-tab-mtg" onclick="swA1on1(\'mtg\')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(91,127,166,.3);background:rgba(91,127,166,.15);color:var(--sl);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">📅 Reuniones próximas</button>' +
+      '<button id="a1on1-tab-sch" onclick="swA1on1(\'sch\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">➕ Programar reunión</button>' +
       '<button id="a1on1-tab-rec" onclick="swA1on1(\'rec\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:#555;font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">🎥 Grabaciones</button>' +
     '</div>' +
     '<div id="a1on1-mtg"></div>' +
+    '<div id="a1on1-sch" style="display:none;"></div>' +
     '<div id="a1on1-rec" style="display:none;"></div>';
 
   _rAdm1on1Mtg();
 }
 
 function swA1on1(tab) {
-  var isMtg = tab === 'mtg';
-  var mEl = document.getElementById('a1on1-mtg');
-  var rEl = document.getElementById('a1on1-rec');
-  var tM  = document.getElementById('a1on1-tab-mtg');
-  var tR  = document.getElementById('a1on1-tab-rec');
-  if (mEl) mEl.style.display = isMtg ? 'block' : 'none';
-  if (rEl) rEl.style.display = isMtg ? 'none' : 'block';
-  if (tM) { tM.style.background = isMtg ? 'rgba(91,127,166,.15)' : 'transparent'; tM.style.borderColor = isMtg ? 'rgba(91,127,166,.3)' : 'var(--br)'; tM.style.color = isMtg ? 'var(--sl)' : '#555'; }
-  if (tR) { tR.style.background = isMtg ? 'transparent' : 'rgba(91,127,166,.15)'; tR.style.borderColor = isMtg ? 'var(--br)' : 'rgba(91,127,166,.3)'; tR.style.color = isMtg ? '#555' : 'var(--sl)'; }
-  if (!isMtg) _rAdm1on1Rec();
+  var tabs = { mtg: 'a1on1-tab-mtg', sch: 'a1on1-tab-sch', rec: 'a1on1-tab-rec' };
+  var panes = { mtg: 'a1on1-mtg', sch: 'a1on1-sch', rec: 'a1on1-rec' };
+  Object.keys(tabs).forEach(function(t) {
+    var btn  = document.getElementById(tabs[t]);
+    var pane = document.getElementById(panes[t]);
+    var active = t === tab;
+    if (btn)  { btn.style.background = active ? 'rgba(91,127,166,.15)' : 'transparent'; btn.style.borderColor = active ? 'rgba(91,127,166,.3)' : 'var(--br)'; btn.style.color = active ? 'var(--sl)' : '#555'; }
+    if (pane) pane.style.display = active ? 'block' : 'none';
+  });
+  if (tab === 'rec') _rAdm1on1Rec();
+  if (tab === 'sch') _rAdm1on1Sch();
 }
 
 function _rAdm1on1Mtg() {
@@ -3902,6 +3904,133 @@ function _rAdm1on1Mtg() {
     });
 }
 
+function _rAdm1on1Sch() {
+  var el = document.getElementById('a1on1-sch'); if (!el) return;
+  el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
+
+  sb.from('profiles').select('id, full_name, avatar_url, membership_end').order('full_name').then(function(r) {
+    var students = r.data || [];
+    window._schStudents = students;  // cache for filter
+
+    var html =
+      // Search bar
+      '<div style="margin-bottom:16px;">' +
+        '<input id="sch-stu-search" class="ai" placeholder="🔍 Buscar alumno por nombre..." oninput="filterSchStudents(this.value)" style="width:100%;box-sizing:border-box;">' +
+      '</div>' +
+      // Instruction
+      '<div style="font-size:.78rem;color:#555;margin-bottom:14px;">Selecciona un alumno para programarle una reunión 1-1.</div>' +
+      '<div id="sch-stu-list">';
+
+    students.forEach(function(s) {
+      var initials = (s.full_name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+      var active = s.membership_end && new Date(s.membership_end) > new Date();
+      html +=
+        '<div class="sch-stu-row" data-name="' + (s.full_name||'').toLowerCase() + '" ' +
+            'onclick="selectSchStudent(\'' + s.id + '\',\'' + encodeURIComponent(s.full_name||'Alumno') + '\')" ' +
+            'style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;margin-bottom:7px;cursor:pointer;' +
+            'background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(15,20,28,.92));border:1px solid rgba(91,127,166,.15);transition:border-color .15s,background .15s;" ' +
+            'onmouseover="this.style.borderColor=\'rgba(91,127,166,.35)\';this.style.background=\'linear-gradient(160deg,rgba(255,255,255,.07),rgba(15,20,28,.88))\'" ' +
+            'onmouseout="this.style.borderColor=\'rgba(91,127,166,.15)\';this.style.background=\'linear-gradient(160deg,rgba(255,255,255,.04),rgba(15,20,28,.92))\'">' +
+          '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:.86rem;font-weight:600;color:#f0f0f0;">' + (s.full_name||'Sin nombre') + '</div>' +
+            '<div style="font-size:.7rem;margin-top:2px;color:' + (active ? '#4ade80' : '#555') + ';">' + (active ? '● Activo' : '○ Inactivo') + '</div>' +
+          '</div>' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
+        '</div>';
+    });
+
+    html += '</div>';
+    if (!students.length) html = '<div style="color:#444;font-size:.82rem;padding:20px;text-align:center;">No hay alumnos registrados.</div>';
+    el.innerHTML = html;
+  });
+}
+
+function filterSchStudents(q) {
+  var term = (q||'').toLowerCase().trim();
+  document.querySelectorAll('.sch-stu-row').forEach(function(row) {
+    var name = row.getAttribute('data-name') || '';
+    row.style.display = (!term || name.indexOf(term) !== -1) ? 'flex' : 'none';
+  });
+}
+
+function selectSchStudent(studentId, encName) {
+  // Close any existing form
+  var existing = document.getElementById('sch-inline-form');
+  if (existing) {
+    // If clicking same student, just toggle off
+    if (existing.getAttribute('data-sid') === studentId) { existing.remove(); return; }
+    existing.remove();
+  }
+  var name = decodeURIComponent(encName);
+
+  // Find the clicked row and insert form below it
+  var rows = document.querySelectorAll('.sch-stu-row');
+  var targetRow = null;
+  rows.forEach(function(row) {
+    if (row.getAttribute('data-name') === name.toLowerCase()) targetRow = row;
+  });
+
+  var form = document.createElement('div');
+  form.id = 'sch-inline-form';
+  form.setAttribute('data-sid', studentId);
+  form.style.cssText = 'background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(91,127,166,.06),rgba(12,16,22,.97));border:1px solid rgba(91,127,166,.28);border-radius:12px;padding:18px 20px;margin-bottom:7px;';
+  form.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
+      '<div>' +
+        '<div style="font-size:.82rem;font-weight:700;color:#f0f0f0;">📅 Programar reunión</div>' +
+        '<div style="font-size:.7rem;color:#555;margin-top:2px;">' + name + '</div>' +
+      '</div>' +
+      '<button onclick="document.getElementById(\'sch-inline-form\').remove()" style="background:none;border:none;color:#555;font-size:1.1rem;cursor:pointer;padding:2px 6px;">✕</button>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+      '<div><label class="al">Título</label><input id="sch-i-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1"></div>' +
+      '<div><label class="al">Fecha y hora</label><input type="datetime-local" id="sch-i-date" class="ai"></div>' +
+    '</div>' +
+    '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-i-url" class="ai" placeholder="https://meet.google.com/..."></div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button id="sch-i-save" class="abtn2" onclick="saveSchInline(\'' + studentId + '\')" style="flex:1;padding:10px;">Programar sesión</button>' +
+      '<button onclick="document.getElementById(\'sch-inline-form\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+    '</div>';
+
+  if (targetRow && targetRow.parentNode) {
+    targetRow.parentNode.insertBefore(form, targetRow.nextSibling);
+  } else {
+    var list = document.getElementById('sch-stu-list');
+    if (list) list.prepend(form);
+  }
+
+  // Highlight selected row
+  document.querySelectorAll('.sch-stu-row').forEach(function(r){ r.style.borderColor = 'rgba(91,127,166,.15)'; });
+  if (targetRow) targetRow.style.borderColor = 'rgba(91,127,166,.45)';
+
+  // Focus date input
+  setTimeout(function(){ var d = document.getElementById('sch-i-date'); if(d) d.focus(); }, 50);
+}
+
+function saveSchInline(studentId) {
+  var title = (document.getElementById('sch-i-title')||{}).value || 'Sesión 1-1';
+  var date  = (document.getElementById('sch-i-date') ||{}).value || '';
+  var url   = (document.getElementById('sch-i-url')  ||{}).value || '';
+  if (!date) return tst('Selecciona fecha y hora', 1);
+  var btn = document.getElementById('sch-i-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+  sb.from('meetings_1on1').insert({
+    student_id:   studentId,
+    scheduled_at: new Date(date).toISOString(),
+    title:        title.trim() || 'Sesión 1-1',
+    meet_url:     url.trim() || null,
+    status:       'scheduled'
+  }).then(function(r) {
+    if (r.error) { tst('Error: ' + r.error.message, 1); if(btn){btn.disabled=false;btn.textContent='Programar sesión';} return; }
+    tst('✓ Sesión programada');
+    var form = document.getElementById('sch-inline-form');
+    if (form) form.remove();
+    // Reset row highlight
+    document.querySelectorAll('.sch-stu-row').forEach(function(r){ r.style.borderColor='rgba(91,127,166,.15)'; });
+  });
+}
+
 function _rAdm1on1Rec() {
   var el = document.getElementById('a1on1-rec'); if (!el) return;
   el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
@@ -3921,16 +4050,19 @@ function _rAdm1on1Rec() {
       byStudent[r.student_id].push(r);
     });
 
-    // Only show students that have at least one recording OR all (admin decides)
-    var html = '';
+    // Buscador + lista de alumnos
+    var html = '<div style="margin-bottom:14px;position:relative;">' +
+      '<input id="rec-stu-search" class="ai" placeholder="🔍 Buscar alumno..." oninput="filterRecStudents(this.value)" style="width:100%;box-sizing:border-box;padding-left:12px;">' +
+    '</div>' +
+    '<div id="rec-stu-list">';
+
     students.forEach(function(s) {
       var recs = byStudent[s.id] || [];
       var initials = (s.full_name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
       var uid = 'rec-student-' + s.id;
 
       html +=
-        '<div style="background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(91,127,166,.05) 40%,rgba(12,16,22,.95) 100%);border:1px solid rgba(91,127,166,.15);border-radius:12px;margin-bottom:10px;overflow:hidden;">' +
-          // Student header (always visible, collapsible)
+        '<div class="rec-stu-card" data-name="' + (s.full_name||'').toLowerCase() + '" style="background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(91,127,166,.05) 40%,rgba(12,16,22,.95) 100%);border:1px solid rgba(91,127,166,.15);border-radius:12px;margin-bottom:10px;overflow:hidden;">' +
           '<div onclick="toggleRecStudent(\'' + uid + '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;">' +
             '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
             '<div style="flex:1;">' +
@@ -3939,11 +4071,11 @@ function _rAdm1on1Rec() {
             '</div>' +
             '<div style="display:flex;align-items:center;gap:8px;">' +
               '<button onclick="event.stopPropagation();openRecordingModal(\'' + s.id + '\',\'' + encodeURIComponent(s.full_name||'Alumno') + '\')" style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:4px 10px;border-radius:5px;font-size:.7rem;font-weight:600;cursor:pointer;white-space:nowrap;">+ Agregar</button>' +
-              '<svg id="' + uid + '-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" style="transition:transform .2s;' + (recs.length ? '' : 'opacity:.3;') + '"><path d="M6 9l6 6 6-6"/></svg>' +
+              '<svg id="' + uid + '-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" style="transition:transform .2s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>' +
             '</div>' +
           '</div>' +
-          // Recordings list (collapsed by default if empty, open if has recordings)
-          '<div id="' + uid + '" style="display:' + (recs.length ? 'block' : 'none') + ';border-top:1px solid rgba(255,255,255,.05);padding:8px 12px 12px;">' +
+          // Siempre cerrado por defecto
+          '<div id="' + uid + '" style="display:none;border-top:1px solid rgba(255,255,255,.05);padding:8px 12px 12px;">' +
             (recs.length ? recs.map(function(rec) {
               var rd = new Date(rec.recorded_at);
               return '<div id="rec-row-' + rec.id + '" style="display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:8px;border-bottom:1px solid rgba(255,255,255,.04);">' +
@@ -3961,10 +4093,39 @@ function _rAdm1on1Rec() {
           '</div>' +
         '</div>';
     });
+    html += '</div>'; // close #rec-stu-list
 
     if (!students.length) html = '<div style="color:#444;font-size:.82rem;padding:20px;text-align:center;">No hay alumnos registrados.</div>';
     el.innerHTML = html;
   });
+}
+
+function filterRecStudents(q) {
+  var term = (q||'').toLowerCase().trim();
+  var cards = document.querySelectorAll('.rec-stu-card');
+  var any = false;
+  cards.forEach(function(card) {
+    var name = card.getAttribute('data-name') || '';
+    var show = !term || name.indexOf(term) !== -1;
+    card.style.display = show ? 'block' : 'none';
+    if (show) any = true;
+  });
+  // Show/hide empty state
+  var empty = document.getElementById('rec-stu-empty');
+  if (!empty && !any) {
+    var list = document.getElementById('rec-stu-list');
+    if (list) {
+      var d = document.createElement('div');
+      d.id = 'rec-stu-empty';
+      d.style.cssText = 'text-align:center;padding:20px;font-size:.8rem;color:#444;';
+      d.textContent = 'Sin resultados para "' + q + '"';
+      list.appendChild(d);
+    }
+  } else if (empty && any) {
+    empty.remove();
+  } else if (empty && !any) {
+    empty.textContent = 'Sin resultados para "' + q + '"';
+  }
 }
 
 function toggleRecStudent(uid) {

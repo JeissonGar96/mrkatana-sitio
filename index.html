@@ -621,9 +621,10 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   .amain{padding:18px;padding-bottom:80px;}
   .alay{flex-direction:column;}
   #dash-top{grid-template-columns:1fr !important;}
-  /* Fix 2-col grids inside app panels on mobile — but NOT inside fixed-position modals */
-  #amain [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
-  .dob-grid { grid-template-columns:1fr 1fr 1.4fr !important; }
+  /* Collapse only exact 2-col grids, not the 3-col DOB grid */
+  #amain [style*="grid-template-columns:1fr 1fr;"],
+  #amain [style*="grid-template-columns:1fr 1fr "] { grid-template-columns:1fr !important; }
+  .dob-grid { display:grid !important; grid-template-columns:1fr 1fr 1.4fr !important; }
   /* Fix date/datetime inputs overflowing on iOS */
   input[type="date"], input[type="datetime-local"] {
     width:100% !important; max-width:100% !important;

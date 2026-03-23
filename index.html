@@ -3762,20 +3762,63 @@ function saveEmail() {
   });
 }
 
-function uploadAvatar(input) {
+async function uploadAvatar(input) {
   if (!input.files || !input.files[0]) return;
   var file = input.files[0];
-  if (file.size > 2 * 1024 * 1024) return tst('Imagen máximo 2MB', 1);
+  if (file.size > 3 * 1024 * 1024) return tst('Imagen máximo 3MB', 1);
+
+  // Show uploading state
+  var wrap = document.getElementById('avatar-wrap');
+  if (wrap) wrap.style.opacity = '0.5';
+  tst('Subiendo foto...');
+
+  // Compress image before upload using canvas
+  var img = new Image();
   var reader = new FileReader();
   reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    // Save as data URL in profile (simple approach without storage bucket)
-    sb.from('profiles').update({ avatar_url: dataUrl }).eq('id', cUser.id).then(function(r) {
-      if (r.error) return tst('Error al subir imagen', 1);
-      cProfile.avatar_url = dataUrl;
-      tst('✓ Foto actualizada');
-      rPerfil(); // Refresh to show new avatar
-    });
+    img.onload = async function() {
+      // Resize to max 400x400
+      var canvas = document.createElement('canvas');
+      var MAX = 400;
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+      else        { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(async function(blob) {
+        var path = cUser.id + '/avatar.jpg';
+
+        // Upload to Storage
+        var up = await sb.storage.from('avatars').upload(path, blob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+        if (up.error) {
+          if (wrap) wrap.style.opacity = '1';
+          return tst('Error al subir: ' + up.error.message, 1);
+        }
+
+        // Get public URL
+        var publicUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+        // Add cache buster so browser doesn't show old photo
+        publicUrl = publicUrl + '?t=' + Date.now();
+
+        // Save URL to profile (tiny string, not base64)
+        var upd = await sb.from('profiles').update({ avatar_url: publicUrl }).eq('id', cUser.id);
+        if (upd.error) {
+          if (wrap) wrap.style.opacity = '1';
+          return tst('Error al guardar: ' + upd.error.message, 1);
+        }
+
+        cProfile.avatar_url = publicUrl;
+        if (wrap) wrap.style.opacity = '1';
+        tst('✓ Foto actualizada');
+        rPerfil();
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }

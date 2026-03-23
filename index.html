@@ -154,7 +154,7 @@ section{padding:100px 60px;}
 
 /* PRECIOS */
 #precios{background:#111;text-align:center;}
-.pbox{max-width:540px;margin:48px auto 0;background:var(--bc);border:1px solid var(--bs);border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+.pbox{max-width:420px;margin:48px auto 0;background:var(--bc);border:1px solid var(--bs);border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6);}
 .ptop{height:3px;background:linear-gradient(90deg,var(--st),var(--sl));}
 .phed{padding:48px 38px 26px;border-bottom:1px solid var(--br);position:relative;}
 .pbadge{position:absolute;top:0;right:0;background:linear-gradient(135deg,#c9a84c,#e2c47a);color:#111;font-size:.7rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:7px 18px;border-radius:0 16px 0 10px;box-shadow:0 4px 16px rgba(201,168,76,.35);}
@@ -613,7 +613,21 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   .icard .iico{margin:0 auto;}
   .res-stats{flex-direction:column;}
   .about-pillars{grid-template-columns:1fr;}
-  .pbox{margin-top:28px;}
+  .live-banner-side { display: none !important; }
+  .live-banner-mobile { display: block !important; }
+  .pricing-wrap { position: static !important; overflow: visible !important; }
+  .live-banner-mobile .pbox { max-width:100% !important; margin-top:0 !important; }
+  /* Pricing mobile */
+  .pricing-live-pc { display: none !important; }
+  .pricing-live-mobile { display: block !important; }
+  .pricing-live-mobile .pbox { max-width: 100% !important; margin-top: 0 !important; }
+  /* New clean pricing */
+  .pricing-row { flex-direction: column !important; align-items: center !important; }
+  .pricing-live-card { width: 100% !important; order: 2; }
+  .pricing-main-card { width: 100% !important; order: 1; }
+  .pricing-placeholder-card { display: none !important; }
+  .pricing-live-card .pbox,
+  .pricing-main-card .pbox { max-width: 100% !important; margin-top: 0 !important; }
   .phed{padding:48px 20px 24px !important;}
   .pbody{padding:24px 20px !important;}
   .price-header,.price-body{padding:24px 20px !important;}
@@ -685,6 +699,13 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 }
 #resultados .wrap { position: relative; z-index: 1; }
 
+.live-banner-side { display: block !important; }
+.live-banner-mobile { display: none !important; }
+.pricing-live-pc { display: block !important; }
+.pricing-live-mobile { display: none !important; }
+.pricing-wrap { position: relative; }
+/* On PC: $100 card on left, slightly smaller */
+.pricing-live-card { opacity: .72; filter: blur(.3px); pointer-events: none; }
 #precios { position: relative; overflow: hidden; }
 #precios::before {
   content: '';
@@ -1433,28 +1454,90 @@ nav{
       <div class="slbl" style="justify-content:center">Inversión</div>
       <h2 class="stit">Una inversión.<br><span class="blue">Seis meses de precisión.</span></h2>
     </div>
-    <div class="pbox reveal">
-      <div class="ptop"></div>
-      <div class="phed">
-        <div class="pbadge">Precio Fundador</div>
-        <div class="pplan">Formación Completa Mr. Katana</div>
-        <div class="pamt"><span class="pcur">$</span><span class="pnum">600</span><span class="pper">USD · pago único</span></div>
-        <div style="margin-top:10px;font-size:.76rem;color:#555;">Precio futuro: <s style="color:rgba(255,255,255,.2)">$1,500</s> — <span style="color:var(--sl)">Asegura el precio fundador ahora</span></div>
+
+    <!-- Flex row on PC (live left, main center, placeholder right), column on mobile -->
+    <div class="pricing-row reveal" style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:48px;">
+
+      <!-- $100 Live Sessions — left -->
+      <div class="pricing-live-card" style="flex-shrink:0;width:340px;opacity:.72;filter:blur(.3px);pointer-events:none;">
+        <div class="pbox" style="margin-top:0;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;z-index:2;display:flex;justify-content:center;padding-top:14px;">
+            <div style="background:rgba(17,17,17,.8);backdrop-filter:blur(3px);border:1px solid rgba(74,158,255,.35);border-radius:20px;padding:4px 12px;display:flex;align-items:center;gap:5px;">
+              <div style="width:5px;height:5px;border-radius:50%;background:#4a9eff;animation:blink 1.5s infinite;flex-shrink:0;"></div>
+              <span style="font-size:.6rem;color:#4a9eff;text-transform:uppercase;letter-spacing:2px;font-weight:700;">Próximamente</span>
+            </div>
+          </div>
+          <div class="ptop" style="background:linear-gradient(90deg,#4a9eff,#7dc4ff);"></div>
+          <div class="phed">
+            <div class="pbadge" style="background:linear-gradient(135deg,#4a9eff,#7dc4ff);color:#fff;">Nuevo Plan</div>
+            <div class="pplan" style="color:#4a9eff;">Live Sessions Mr. Katana</div>
+            <div class="pamt"><span class="pcur" style="color:#4a9eff;">$</span><span class="pnum" style="color:#4a9eff;">100</span><span class="pper">USD · mensual</span></div>
+            <div style="margin-top:10px;font-size:.76rem;color:#555;">También disponible en planes de 3 y 6 meses</div>
+          </div>
+          <div class="pbody">
+            <ul class="plist">
+              <li><span class="pchk" style="color:#4a9eff;">▸</span> 3 sesiones en vivo por semana</li>
+              <li><span class="pchk" style="color:#4a9eff;">▸</span> Análisis de mercado en tiempo real</li>
+              <li><span class="pchk" style="color:#4a9eff;">▸</span> Acceso a la comunidad privada</li>
+              <li><span class="pchk" style="color:#4a9eff;">▸</span> Dashboard de seguimiento</li>
+              <li><span class="pchk" style="color:#4a9eff;">▸</span> Grabaciones de cada sesión</li>
+            </ul>
+            <div style="display:block;text-align:center;width:100%;padding:16px;background:linear-gradient(135deg,#4a9eff,#2979cc);border-radius:8px;color:#fff;font-weight:600;font-size:.9rem;box-sizing:border-box;">Próximamente — $100/mes</div>
+            <div class="pnote" style="border-color:rgba(74,158,255,.2);"><strong style="color:#4a9eff;">¿Interesado?</strong> Contáctanos para ser de los primeros en acceder cuando esté disponible.</div>
+          </div>
+        </div>
       </div>
-      <div class="pbody">
-        <ul class="plist">
-          <li><span class="pchk">▸</span> 6 meses de formación completa</li>
-          <li><span class="pchk">▸</span> Sesiones en vivo de análisis</li>
-          <li><span class="pchk">▸</span> Reuniones semanales grupales</li>
-          <li><span class="pchk">▸</span> 1 sesión 1-1 privada por mes</li>
-          <li><span class="pchk">▸</span> Todas las clases grabadas</li>
-          <li><span class="pchk">▸</span> Método institucional completo</li>
-          <li><span class="pchk">▸</span> Plan de fondeo 45 días</li>
-          <li><span class="pchk">▸</span> Comunidad privada</li>
-        </ul>
-        <a href="https://wa.me/593995014247?text=Hola%20Jeisson%2C%20quiero%20unirme" class="bp" style="display:block;text-align:center;width:100%;padding:16px;">Quiero unirme — $600 USD</a>
-        <div class="pnote"><strong style="color:var(--sl)">¿Cómo pagar?</strong> Al hacer clic te contactas por WhatsApp. Te indico el método y tienes acceso en menos de 24h.</div>
+
+      <!-- $600 Main -->
+      <div class="pricing-main-card" style="flex-shrink:0;">
+        <div class="pbox" style="margin-top:0;">
+          <div class="ptop"></div>
+          <div class="phed">
+            <div class="pbadge">Precio Fundador</div>
+            <div class="pplan">Formación Completa Mr. Katana</div>
+            <div class="pamt"><span class="pcur">$</span><span class="pnum">600</span><span class="pper">USD · pago único</span></div>
+            <div style="margin-top:10px;font-size:.76rem;color:#555;">Precio futuro: <s style="color:rgba(255,255,255,.2)">$1,500</s> — <span style="color:var(--sl)">Asegura el precio fundador ahora</span></div>
+          </div>
+          <div class="pbody">
+            <ul class="plist">
+              <li><span class="pchk">▸</span> 6 meses de formación completa</li>
+              <li><span class="pchk">▸</span> Sesiones en vivo de análisis</li>
+              <li><span class="pchk">▸</span> Reuniones semanales grupales</li>
+              <li><span class="pchk">▸</span> 1 sesión 1-1 privada por mes</li>
+              <li><span class="pchk">▸</span> Todas las clases grabadas</li>
+              <li><span class="pchk">▸</span> Método institucional completo</li>
+              <li><span class="pchk">▸</span> Plan de fondeo 45 días</li>
+              <li><span class="pchk">▸</span> Comunidad privada</li>
+            </ul>
+            <a href="https://wa.me/593995014247?text=Hola%20Jeisson%2C%20quiero%20unirme" class="bp" style="display:block;text-align:center;width:100%;padding:16px;">Quiero unirme — $600 USD</a>
+            <div class="pnote"><strong style="color:var(--sl)">¿Cómo pagar?</strong> Al hacer clic te contactas por WhatsApp. Te indico el método y tienes acceso en menos de 24h.</div>
+          </div>
+        </div>
       </div>
+
+      <!-- Placeholder derecha — invisible, equilibra el centro en PC -->
+      <!-- Editar cuando llegue la nueva formación o servicio -->
+      <div class="pricing-placeholder-card" style="flex-shrink:0;width:340px;visibility:hidden;pointer-events:none;">
+        <div class="pbox" style="margin-top:0;opacity:0;">
+          <div class="ptop"></div>
+          <div class="phed">
+            <div class="pplan">Próximo plan</div>
+            <div class="pamt"><span class="pcur">$</span><span class="pnum">000</span></div>
+          </div>
+          <div class="pbody">
+            <ul class="plist">
+              <li><span class="pchk">▸</span> —</li>
+              <li><span class="pchk">▸</span> —</li>
+              <li><span class="pchk">▸</span> —</li>
+              <li><span class="pchk">▸</span> —</li>
+              <li><span class="pchk">▸</span> —</li>
+            </ul>
+            <div class="bp" style="display:block;width:100%;padding:16px;text-align:center;">—</div>
+            <div class="pnote">—</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>

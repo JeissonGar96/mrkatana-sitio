@@ -1665,55 +1665,21 @@ nav{
         <p style="text-align:center;font-size:.71rem;color:#555;margin-top:12px">¿Sin acceso? <a href="#precios" id="lnk-precio" style="color:var(--sl);text-decoration:none">Ver formación →</a></p>
       </div>
       <div id="f-reg" style="display:none">
-        <!-- STEP 1: Account info -->
-        <div id="reg-step1">
-          <div class="fg"><label class="fl">Nombre completo</label><input type="text" id="rg-n" class="fi" placeholder="Tu nombre"></div>
-          <div class="fg"><label class="fl">Email</label><input type="email" id="rg-e" class="fi" placeholder="tu@email.com"></div>
-          <div class="fg"><label class="fl">Contraseña</label><input type="password" id="rg-p" class="fi" placeholder="Mínimo 6 caracteres"></div>
-          <button class="mbtnn" id="btn-step1">Continuar al pago →</button>
+        <!-- Google OAuth -->
+        <button id="btn-google" onclick="loginGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;background:#fff;border:1px solid #ddd;border-radius:8px;font-size:.88rem;font-weight:600;color:#333;cursor:pointer;margin-bottom:6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuar con Google
+        </button>
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0;">
+          <div style="flex:1;height:1px;background:#1e1e1e;"></div>
+          <span style="font-size:.72rem;color:#444;">o con email</span>
+          <div style="flex:1;height:1px;background:#1e1e1e;"></div>
         </div>
-        <!-- STEP 2: Payment -->
-        <div id="reg-step2" style="display:none">
-          <div style="background:rgba(91,127,166,.06);border:1px solid rgba(91,127,166,.15);border-radius:10px;padding:16px;margin-bottom:16px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div style="font-size:.82rem;color:#9a9a9a;">Formación completa Mr. Katana</div>
-              <div id="price-display" style="font-family:var(--font-cond,sans-serif);font-size:1.4rem;font-weight:800;color:#f0f0f0;">$600 USD</div>
-            </div>
-            <div style="font-size:.72rem;color:#555;">6 meses · Acceso completo · Sesiones 1-1</div>
-          </div>
-          <!-- Code discount -->
-          <div class="fg" style="margin-bottom:8px;">
-            <label class="fl">¿Tienes un código de acceso?</label>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="rg-code" class="fi" placeholder="KATANA-XXXXXX" style="text-transform:uppercase;letter-spacing:1px;flex:1;">
-              <button id="btn-apply-code" style="background:rgba(91,127,166,.15);border:1px solid var(--bs);color:var(--sl);padding:0 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;">Aplicar</button>
-            </div>
-            <div id="code-msg" style="font-size:.72rem;margin-top:5px;"></div>
-          </div>
-          <!-- Payment options -->
-          <div id="pay-options">
-            <div id="pay-card-btn" style="display:none;">
-              <!-- Stripe button will go here -->
-              <button class="mbtnn" style="background:linear-gradient(135deg,#635bff,#4f46e5);" onclick="tst('Stripe próximamente — usa un código por ahora',1)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Pagar $600 USD con tarjeta
-              </button>
-            </div>
-            <div id="pay-code-btn" style="display:none;">
-              <button class="mbtnn" id="btn-reg" style="background:linear-gradient(135deg,#4ade80,#22c55e);color:#111;">
-                ✓ Crear cuenta gratis con código
-              </button>
-            </div>
-            <div id="pay-default">
-              <button class="mbtnn" id="btn-reg-card" style="background:linear-gradient(135deg,#635bff,#4f46e5);" onclick="tst('Stripe próximamente — usa un código por ahora',1)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Pagar $600 USD con tarjeta
-              </button>
-              <div style="text-align:center;margin:10px 0;font-size:.72rem;color:#444;">— o ingresa un código de acceso arriba —</div>
-            </div>
-          </div>
-          <button onclick="document.getElementById('reg-step1').style.display='block';document.getElementById('reg-step2').style.display='none';" style="background:none;border:none;color:#555;font-size:.72rem;cursor:pointer;margin-top:8px;">← Volver</button>
-        </div>
+        <div class="fg"><label class="fl">Nombre completo</label><input type="text" id="rg-n" class="fi" placeholder="Tu nombre completo"></div>
+        <div class="fg"><label class="fl">Email</label><input type="email" id="rg-e" class="fi" placeholder="tu@email.com"></div>
+        <div class="fg"><label class="fl">Contraseña</label><input type="password" id="rg-p" class="fi" placeholder="Mínimo 6 caracteres"></div>
+        <button class="mbtnn" id="btn-reg-continue">Continuar al pago →</button>
+        <p style="text-align:center;font-size:.69rem;color:#444;margin-top:10px;">Al continuar aceptas nuestros <a href="/terminos" style="color:var(--sl);">Términos</a> y <a href="/privacidad" style="color:var(--sl);">Privacidad</a></p>
       </div>
     </div>
   </div>
@@ -2050,7 +2016,7 @@ window.onload = function() {
 
   // Auth
   document.getElementById('btn-in').onclick = doLogin;
-  document.getElementById('btn-reg').onclick = doReg;
+  document.getElementById('btn-reg-continue').onclick = doRegContinue;
 
   // Keyboard
   document.addEventListener('keydown', function(e) {
@@ -2132,12 +2098,6 @@ function switchTab(t) {
   document.getElementById('f-in').style.display = t==='in' ? 'block' : 'none';
   document.getElementById('f-reg').style.display = t==='reg' ? 'block' : 'none';
   hideMsg();
-  if (t === 'reg') {
-    // Reset to step 1
-    document.getElementById('reg-step1').style.display = 'block';
-    document.getElementById('reg-step2').style.display = 'none';
-    initCheckout();
-  }
 }
 function showMsg(txt, isErr) {
   var m = document.getElementById('msg');
@@ -2190,103 +2150,36 @@ function doLogin() {
   if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
 });
 // ── CHECKOUT FLOW ──
-var checkoutData = { name:'', email:'', password:'', codeData: null };
+var _regPendingName = '', _regPendingEmail = '', _regPendingPass = '';
 
-function initCheckout() {
-  // Step 1: Continue button
-  var btn1 = document.getElementById('btn-step1');
-  if (btn1) btn1.addEventListener('click', function() {
-    var n = document.getElementById('rg-n').value.trim();
-    var e = document.getElementById('rg-e').value.trim();
-    var p = document.getElementById('rg-p').value;
-    if (!n || !e || !p) return showMsg('Completa todos los campos.', true);
-    if (p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
-    checkoutData.name = n; checkoutData.email = e; checkoutData.password = p;
-    checkoutData.codeData = null;
-    document.getElementById('reg-step1').style.display = 'none';
-    document.getElementById('reg-step2').style.display = 'block';
-    document.getElementById('code-msg').textContent = '';
-    document.getElementById('rg-code').value = '';
-    document.getElementById('price-display').textContent = '$600 USD';
-    document.getElementById('pay-default').style.display = 'block';
-    document.getElementById('pay-code-btn').style.display = 'none';
-    showMsg('', false);
-  });
-  // Apply code button
-  var btnCode = document.getElementById('btn-apply-code');
-  if (btnCode) btnCode.addEventListener('click', applyCode);
-  // Enter on code field
-  var codeField = document.getElementById('rg-code');
-  if (codeField) codeField.addEventListener('keydown', function(e) { if (e.key === 'Enter') applyCode(); });
-  // Register with code button
-  var btnReg = document.getElementById('btn-reg');
-  if (btnReg) btnReg.addEventListener('click', doRegWithCode);
-}
-
-function applyCode() {
-  var code = document.getElementById('rg-code').value.trim().toUpperCase();
-  var msg = document.getElementById('code-msg');
-  if (!code) { msg.style.color='#f87171'; msg.textContent = 'Ingresa un código.'; return; }
-  var btn = document.getElementById('btn-apply-code');
-  btn.disabled = true; btn.textContent = 'Verificando...';
-  sb.from('access_codes').select('*').eq('code', code).eq('is_used', false).single().then(function(r) {
-    btn.disabled = false; btn.textContent = 'Aplicar';
-    if (r.error || !r.data) {
-      msg.style.color = '#f87171';
-      msg.textContent = '✗ Código inválido o ya utilizado.';
-      checkoutData.codeData = null;
-      document.getElementById('price-display').textContent = '$600 USD';
-      document.getElementById('pay-default').style.display = 'block';
-      document.getElementById('pay-code-btn').style.display = 'none';
-    } else {
-      checkoutData.codeData = r.data;
-      msg.style.color = '#4ade80';
-      msg.textContent = '✓ Código válido — acceso por ' + (r.data.months || 6) + ' meses';
-      document.getElementById('price-display').innerHTML = '<span style="text-decoration:line-through;color:#555;font-size:1rem;">$600</span> <span style="color:#4ade80;">$0</span>';
-      document.getElementById('pay-default').style.display = 'none';
-      document.getElementById('pay-code-btn').style.display = 'block';
-    }
+// Google OAuth
+function loginGoogle() {
+  sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/checkout' }
   });
 }
 
-function doRegWithCode() {
-  if (!checkoutData.codeData) return tst('Aplica un código primero', 1);
-  var btn = document.getElementById('btn-reg');
-  btn.disabled = true; btn.textContent = 'Creando cuenta...';
-  var codeValue = checkoutData.codeData.code;
-
-  // Step 1: Create the account
-  sb.auth.signUp({
-    email: checkoutData.email,
-    password: checkoutData.password,
-    options: { data: { full_name: checkoutData.name } }
-  }).then(function(reg) {
-    if (reg.error) {
-      showMsg(fmtE(reg.error.message), true);
-      btn.disabled = false; btn.textContent = '✓ Crear cuenta gratis con código';
-      return;
-    }
-    var userId = reg.data && reg.data.user ? reg.data.user.id : null;
-
-    // Step 2: Use RPC to mark code and activate membership atomically
-    if (userId) {
-      sb.rpc('use_access_code', { p_code: codeValue, p_user_id: userId }).then(function(r) {
-        if (r.error || r.data === false) {
-          // Code may have been used by someone else simultaneously
-          tst('Advertencia: verifica tu acceso al ingresar', 1);
-        }
-      });
-    }
-    showMsg('✓ ¡Cuenta creada! Confirma tu email y luego inicia sesión.', false);
-    btn.disabled = false;
-    setTimeout(function() {
-      switchTab('in');
-      document.getElementById('li-e').value = checkoutData.email;
-    }, 2000);
-  });
+// "Continuar al pago" button — email/password path
+function doRegContinue() {
+  var n = (document.getElementById('rg-n')||{}).value.trim();
+  var e = (document.getElementById('rg-e')||{}).value.trim();
+  var p = (document.getElementById('rg-p')||{}).value;
+  if (!n) return showMsg('Ingresa tu nombre completo.', true);
+  if (!e || !e.includes('@')) return showMsg('Ingresa un email válido.', true);
+  if (!p || p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
+  // Store temporarily and redirect to checkout
+  try { sessionStorage.setItem('_rn', n); sessionStorage.setItem('_re', e); sessionStorage.setItem('_rp', p); } catch(ex){}
+  window.location.href = '/checkout?name=' + encodeURIComponent(n) + '&email=' + encodeURIComponent(e);
 }
 
-function doReg() {} // legacy — replaced by checkout flow
+function fmtE(m) {
+  if (m.indexOf('Invalid login') >= 0) return 'Email o contraseña incorrectos.';
+  if (m.indexOf('not confirmed') >= 0) return 'Confirma tu email primero.';
+  if (m.indexOf('already registered') >= 0) return 'Email ya registrado.';
+  return m;
+}
+
 function fmtE(m) {
   if (m.indexOf('Invalid login') >= 0) return 'Email o contraseña incorrectos.';
   if (m.indexOf('not confirmed') >= 0) return 'Confirma tu email primero.';

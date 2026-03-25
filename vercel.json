@@ -1,6 +1,10 @@
 {
   "rewrites": [
-    { "source": "/checkout", "destination": "/checkout.html" },
     { "source": "/app/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/calendar.js": {
+      "maxDuration": 10
+    }
+  }
 }

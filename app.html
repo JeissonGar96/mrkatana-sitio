@@ -1715,15 +1715,10 @@ window.onload = function() {
 };
 
 // ── MODAL ──
-function closeModal() {
-  // No modal in app.html - login is handled by login.html
-}
+function closeModal() {}
 function switchTab(t) {
-  // No tabs in app.html
-  document.getElementById('t-reg').classList.toggle('on', t==='reg');
-  document.getElementById('f-in').style.display = t==='in' ? 'block' : 'none';
-  document.getElementById('f-reg').style.display = t==='reg' ? 'block' : 'none';
-  hideMsg();
+  // app.html no tiene tabs de login — redirigir directamente
+  window.location.href = '/login';
 }
 function showMsg(txt, isErr) {
   var m = document.getElementById('msg');

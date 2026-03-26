@@ -1332,7 +1332,6 @@ nav{
 </head>
 
 <body>
-<!-- APP DASHBOARD -->
 <div id="appdash">
   <!-- Pull-to-refresh indicator -->
   <div id="ptr-indicator"><div id="ptr-inner"><div id="ptr-spinner"></div><span id="ptr-label">Suelta para recargar</span></div></div>
@@ -1643,19 +1642,9 @@ window.onload = function() {
 
   // reveal disabled - all sections visible
 
-  // btncliente lives in index.html — not needed here
-
-  // Tabs
-  document.getElementById('t-in').onclick = function() { switchTab('in'); };
-  document.getElementById('t-reg').onclick = function() { switchTab('reg'); };
-
-  // Auth
-  document.getElementById('btn-in').onclick = doLogin;
-  document.getElementById('btn-reg-continue').onclick = doRegContinue;
-
   // Keyboard
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') { /* no modal in app */ }
   });
 
   // Logout
@@ -1687,9 +1676,13 @@ window.onload = function() {
     b.onclick = function() { navigateTo(this.getAttribute('data-v')); };
   });
 
-  // Check session
+  // Check session — redirect to login if not authenticated
   sb.auth.getSession().then(function(r) {
-    if (r.data && r.data.session) loadApp(r.data.session.user);
+    if (r.data && r.data.session) {
+      loadApp(r.data.session.user);
+    } else {
+      window.location.href = '/login';
+    }
   });
 
   // Counter animation (all screens)
@@ -1723,12 +1716,10 @@ window.onload = function() {
 
 // ── MODAL ──
 function closeModal() {
-  document.getElementById('overlay').classList.remove('open');
-  if (window.innerWidth > 860) document.body.style.overflow = '';
-  hideMsg();
+  // No modal in app.html - login is handled by login.html
 }
 function switchTab(t) {
-  document.getElementById('t-in').classList.toggle('on', t==='in');
+  // No tabs in app.html
   document.getElementById('t-reg').classList.toggle('on', t==='reg');
   document.getElementById('f-in').style.display = t==='in' ? 'block' : 'none';
   document.getElementById('f-reg').style.display = t==='reg' ? 'block' : 'none';
@@ -3441,7 +3432,7 @@ function rAdmin() {
   var tabs = document.createElement('div');
   tabs.className = 'admtabs-wrap';
   tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;overflow-y:hidden;padding:6px 18px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom;overscroll-behavior-x:contain;overscroll-behavior-y:none;flex-wrap:nowrap;-ms-overflow-style:none;position:sticky;top:61px;z-index:9;background:linear-gradient(180deg,#111418 92%,transparent);margin-left:-18px;margin-right:-18px;';
-  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['1on1','Reuniones 1-1'],['codes','Códigos'],['plans','Planes'],['roadmap','Roadmap']].forEach(function(item, i) {
+  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['1on1','Reuniones 1-1'],['codes','Códigos'],['roadmap','Roadmap']].forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');
     btn.textContent = item[1];
@@ -3449,7 +3440,7 @@ function rAdmin() {
     tabs.appendChild(btn);
   });
   m.appendChild(tabs);
-  ['st','cl','se','1on1','codes','plans','roadmap'].forEach(function(s, i) {
+  ['st','cl','se','1on1','codes','roadmap'].forEach(function(s, i) {
     var div = document.createElement('div');
     div.id = 'a-'+s;
     if (i > 0) div.style.display = 'none';
@@ -3460,8 +3451,8 @@ function rAdmin() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes','plans','roadmap','1on1'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='plans') rAdmPlans(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+  ['st','cl','se','codes','roadmap','1on1'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
 }
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
@@ -4891,39 +4882,6 @@ function loadCodes() {
     tbl.appendChild(tb);
     c.innerHTML = '';
     var w = document.createElement('div'); w.className = 'dtab-wrap'; w.appendChild(tbl); c.appendChild(w);
-  });
-}
-
-function rAdmPlans() {
-  var c = document.getElementById('a-plans'); if (!c) return;
-  c.innerHTML = '<div class="aform"><div style="font-size:.86rem;font-weight:600;margin-bottom:4px;">📦 Planes del checkout</div><div style="font-size:.75rem;color:#666;margin-bottom:16px;">Activa o desactiva qué planes son visibles en el checkout.</div></div><div id="plans-list"><span class="spin"></span></div>';
-  sb.from('checkout_plans').select('*').order('sort_order').then(function(r) {
-    var el = document.getElementById('plans-list'); if (!el) return;
-    if (!r.data || !r.data.length) { el.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin planes configurados.</p>'; return; }
-    el.innerHTML = r.data.map(function(p) {
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;margin-bottom:10px;">' +
-        '<div>' +
-          '<div style="font-size:.88rem;font-weight:600;color:#f0f0f0;margin-bottom:3px;">' + p.name + '</div>' +
-          '<div style="font-size:.74rem;color:#666;margin-bottom:3px;">' + (p.description || '') + '</div>' +
-          '<div style="font-size:.76rem;color:#9a9a9a;">$' + p.price + ' / ' + (p.period || '') + '</div>' +
-        '</div>' +
-        '<label style="display:flex;align-items:center;gap:9px;cursor:pointer;">' +
-          '<span style="font-size:.72rem;color:' + (p.active ? '#4ade80' : '#f87171') + ';">' + (p.active ? 'Visible' : 'Oculto') + '</span>' +
-          '<div onclick="togglePlan(\'' + p.id + '\',' + p.active + ',this)" style="position:relative;width:40px;height:22px;border-radius:11px;background:' + (p.active ? '#4ade80' : 'rgba(255,255,255,.1)') + ';border:1px solid ' + (p.active ? '#4ade80' : 'var(--br)') + ';cursor:pointer;transition:all .2s;" data-id="' + p.id + '" data-active="' + p.active + '">' +
-            '<div style="position:absolute;top:2px;left:' + (p.active ? '20px' : '2px') + ';width:16px;height:16px;border-radius:50%;background:#fff;transition:all .2s;"></div>' +
-          '</div>' +
-        '</label>' +
-      '</div>';
-    }).join('');
-  });
-}
-
-function togglePlan(id, currentActive, el) {
-  var newActive = !currentActive;
-  sb.from('checkout_plans').update({ active: newActive }).eq('id', id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst(newActive ? '✓ Plan activado' : '✓ Plan ocultado');
-    rAdmPlans();
   });
 }
 

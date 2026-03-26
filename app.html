@@ -2686,9 +2686,12 @@ function rAdmSt() {
     '<div style="margin-bottom:12px;"><input id="st-search" class="ai" placeholder="🔍 Buscar alumno por nombre o email..." oninput="filterStudents(this.value)" style="width:100%;box-sizing:border-box;"></div>' +
     '<div id="st-t"><span class="spin"></span></div>';
   sb.from('profiles').select('id, full_name, email, role, membership_start, membership_end, created_at').order('created_at',{ascending:false}).then(function(r) {
-    window._allStudents = r.data || [];
+    var today = new Date();
+    window._allStudents = (r.data || []).filter(function(s) {
+      return s.membership_end && new Date(s.membership_end) > today;
+    });
     var t = document.getElementById('st-t'); if(!t) return;
-    if(!r.data||!r.data.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos.</p>';return;}
+    if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos con membresía activa.</p>';return;}
     _renderStudents(window._allStudents);
   });
 }

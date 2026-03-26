@@ -1427,7 +1427,7 @@ function doLogin() {
       }
       btn.disabled = false; btn.textContent = 'Entrar al portal';
     } else if (r.data && r.data.user) {
-      loadApp(r.data.user);
+      window.location.href = '/app/dash';
     }
   });
 }

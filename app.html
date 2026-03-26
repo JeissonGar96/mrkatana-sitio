@@ -1643,19 +1643,7 @@ window.onload = function() {
 
   // reveal disabled - all sections visible
 
-  // Open modal button
-  document.getElementById('btncliente').onclick = function(e) {
-    e.preventDefault();
-    document.getElementById('overlay').classList.add('open');
-    if (window.innerWidth > 860) document.body.style.overflow = 'hidden';
-  };
-
-  // Close modal
-  document.getElementById('mcls').onclick = closeModal;
-  document.getElementById('overlay').onclick = function(e) {
-    if (e.target === this) closeModal();
-  };
-  document.getElementById('lnk-precio').onclick = function() { closeModal(); };
+  // btncliente lives in index.html — not needed here
 
   // Tabs
   document.getElementById('t-in').onclick = function() { switchTab('in'); };

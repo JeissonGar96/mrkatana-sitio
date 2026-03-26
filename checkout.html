@@ -760,8 +760,35 @@ function setLiveVariant(el) {
   });
 
   // Btn next-2
-  document.getElementById('btn-next-2').addEventListener('click', function() {
+  document.getElementById('btn-next-2').addEventListener('click', async function() {
     if (!validatePage2()) return;
+    var btn = this;
+    btn.disabled = true; btn.textContent = 'Verificando...';
+
+    // Verificar si el email ya existe
+    var email = document.getElementById('ck-email').value.trim();
+    var existing = await sb.from('profiles').select('id').eq('email', email).maybeSingle();
+
+    if (existing.data) {
+      // Email ya registrado — intentar login con la contrasena ingresada
+      var pass = document.getElementById('ck-pass').value;
+      if (!pass || pass.length < 6) {
+        btn.disabled = false; btn.textContent = 'Continuar →';
+        toast('Este email ya está registrado. Ingresa tu contraseña para continuar.', true);
+        return;
+      }
+      var login = await sb.auth.signInWithPassword({ email: email, password: pass });
+      if (login.error) {
+        btn.disabled = false; btn.textContent = 'Continuar →';
+        toast('Email ya registrado. Contraseña incorrecta.', true);
+        return;
+      }
+      state.existingUserId = login.data.user.id;
+    } else {
+      state.existingUserId = null;
+    }
+
+    btn.disabled = false; btn.textContent = 'Continuar →';
     goPage(3);
     document.getElementById('pay-btn-amount').textContent = '$' + state.plan.price.toLocaleString() + ' USD';
   });
@@ -901,6 +928,9 @@ async function createAccount() {
 
   if (state.googleUser) {
     userId = state.googleUser.id;
+  } else if (state.existingUserId) {
+    // Email ya existia, ya hicimos login en el paso anterior
+    userId = state.existingUserId;
   } else {
     var reg = await sb.auth.signUp({
       email: email,

@@ -1372,25 +1372,25 @@ var SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4eWV6Ynl2d3F3aWhnZ2VjaHNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzA3NDEsImV4cCI6MjA4ODk0Njc0MX0.1JSsDMb08NiHwrRtzgp46UZ5pqTuUTGTkpKIOmm9WRc';
 var sb = supabase.createClient(SB_URL, SB_KEY);
 
-{
+function showMsg(txt, isErr) {
   var m = document.getElementById('msg');
   m.textContent = txt;
   m.className = 'msg ' + (isErr ? 'err' : 'ok');
   m.style.display = 'block';
 }
 
-{
+function hideMsg() {
   var m = document.getElementById('msg');
   m.style.display = 'none';
 }
 
-{
+function closeModal() {
   document.getElementById('overlay').classList.remove('open');
   if (window.innerWidth > 860) document.body.style.overflow = '';
   hideMsg();
 }
 
-{
+function switchTab(t) {
   document.getElementById('t-in').classList.toggle('on', t==='in');
   document.getElementById('t-reg').classList.toggle('on', t==='reg');
   document.getElementById('f-in').style.display = t==='in' ? 'block' : 'none';
@@ -1398,7 +1398,7 @@ var sb = supabase.createClient(SB_URL, SB_KEY);
   hideMsg();
 }
 
-{
+function doLogin() {
   var e = document.getElementById('li-e').value.trim();
   var p = document.getElementById('li-p').value;
   if (!e || !p) return showMsg('Completa todos los campos.', true);
@@ -1432,7 +1432,7 @@ var sb = supabase.createClient(SB_URL, SB_KEY);
   });
 }
 
-{
+function doRegContinue() {
   var n = (document.getElementById('rg-n')||{}).value.trim();
   var e = (document.getElementById('rg-e')||{}).value.trim();
   var p = (document.getElementById('rg-p')||{}).value;
@@ -1444,7 +1444,7 @@ var sb = supabase.createClient(SB_URL, SB_KEY);
   window.location.href = '/checkout?name=' + encodeURIComponent(n) + '&email=' + encodeURIComponent(e);
 }
 
-{
+function loginGoogle() {
   sb.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin + '/checkout' }

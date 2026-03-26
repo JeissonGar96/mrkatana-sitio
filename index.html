@@ -1646,5 +1646,52 @@ nav{
 </footer>
 
 
+<script>
+(function() {
+  // ── Menú hamburguesa ──────────────────────────────────────────────
+  var hbtn = document.getElementById('hbtn');
+  var navlinks = document.getElementById('navlinks');
+
+  if (hbtn && navlinks) {
+    hbtn.addEventListener('click', function() {
+      navlinks.classList.toggle('open');
+    });
+
+    // Cierra el menú al hacer clic en cualquier enlace
+    navlinks.querySelectorAll('a').forEach(function(a) {
+      a.addEventListener('click', function() {
+        navlinks.classList.remove('open');
+      });
+    });
+  }
+
+  // ── Botón "Área de Alumno" → /login ────────────────────────────────
+  var btncliente = document.getElementById('btncliente');
+  if (btncliente) {
+    btncliente.addEventListener('click', function(e) {
+      e.preventDefault();
+
+      // Verificar sesión activa con Supabase
+      var SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
+      var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4eWV6Ynl2d3F3aWhnZ2VjaHNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzA3NDEsImV4cCI6MjA4ODk0Njc0MX0.1JSsDMb08NiHwrRtzgp46UZ5pqTuUTGTkpKIOmm9WRc';
+
+      if (typeof supabase !== 'undefined') {
+        var sb = supabase.createClient(SB_URL, SB_KEY);
+        sb.auth.getSession().then(function(r) {
+          if (r.data && r.data.session) {
+            window.location.href = '/app/dash';
+          } else {
+            window.location.href = '/login';
+          }
+        }).catch(function() {
+          window.location.href = '/login';
+        });
+      } else {
+        window.location.href = '/login';
+      }
+    });
+  }
+})();
+</script>
 </body>
 </html>

@@ -4784,10 +4784,40 @@ function checkSessionTimes() {
   });
 }
 
+// ── INACTIVITY + MEMBERSHIP CHECKER ──
+var INACTIVITY_LIMIT = 2 * 60 * 60 * 1000; // 2 horas en ms
+var _lastActivity = Date.now();
+
+function _resetActivity() { _lastActivity = Date.now(); }
+
+['mousemove','keydown','click','scroll','touchstart'].forEach(function(ev) {
+  document.addEventListener(ev, _resetActivity, { passive: true });
+});
+
+function _checkInactivityAndMembership() {
+  // 1. Inactividad
+  if (Date.now() - _lastActivity > INACTIVITY_LIMIT) {
+    sb.auth.signOut().then(function() {
+      window.location.href = '/login';
+    });
+    return;
+  }
+  // 2. Membresía vencida
+  if (cProfile && cProfile.role !== 'admin') {
+    var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
+    if (end && end < new Date()) {
+      sb.auth.signOut().then(function() {
+        window.location.href = '/login';
+      });
+    }
+  }
+}
+
 // Start checker when user is logged in
 function startSessionChecker() {
   checkSessionTimes(); // run immediately
-  setInterval(checkSessionTimes, 30000); // then every 30 seconds
+  setInterval(checkSessionTimes, 30000); // live sessions every 30s
+  setInterval(_checkInactivityAndMembership, 60000); // inactivity + membership every 60s
 }
 
 function editCalReal(name, isoDate, currentVal) {

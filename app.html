@@ -939,10 +939,18 @@ function _renderSection(state) {
     if (isLive) rDash(true); else rDash();
   }
   else if (state.section === 'clases') {
-    if (state.lessonId)       _restoreLesson(state);
-    else if (state.moduleId)  _restoreModule(state);
-    else if (state.levelId)   _restoreLevel(state);
-    else                      rClases();
+    var planC = cProfile && cProfile.plan ? cProfile.plan : '';
+    var isLiveC = planC === 'live' || planC === 'live-mensual' || planC === 'live-trimestral' || planC === 'live-semestral';
+    if (isLiveC) {
+      // Redirigir al dashboard si intenta acceder a clases por URL directa
+      history.replaceState({ section: 'dash' }, '', '/app/dash');
+      rDash(true);
+    } else {
+      if (state.lessonId)       _restoreLesson(state);
+      else if (state.moduleId)  _restoreModule(state);
+      else if (state.levelId)   _restoreLevel(state);
+      else                      rClases();
+    }
   }
   else if (state.section === 'sesiones')  rSes();
   else if (state.section === 'reuniones') rReun();

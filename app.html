@@ -1057,10 +1057,8 @@ window.onload = function() {
 function loadApp(user) {
   cUser = user;
   var appdashEl = document.getElementById('appdash');
-  appdashEl.style.display = 'block';
-  appdashEl.scrollTop = 0;
-  document.body.style.overflow = 'hidden';
-  document.body.style.height = '100%';
+  // NO mostrar el dashboard hasta verificar acceso
+  appdashEl.style.display = 'none';
 
   sb.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
     cProfile = r.data;
@@ -1112,7 +1110,8 @@ function loadApp(user) {
     function _checkMembershipFallback() {
       var now = new Date();
       var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
-      if (!end || end < now) {
+      // Sin membership_end o vencido → sin acceso
+      if (!end || end <= now) {
         showPending();
         return;
       }
@@ -1120,6 +1119,12 @@ function loadApp(user) {
     }
 
     function _grantAccess() {
+      // Mostrar dashboard solo cuando el acceso está verificado
+      var appdashEl = document.getElementById('appdash');
+      appdashEl.style.display = 'block';
+      appdashEl.scrollTop = 0;
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100%';
       // Start auto session checker
       startSessionChecker();
       // Restore route from URL or start at dash
@@ -1133,6 +1138,12 @@ function loadApp(user) {
 
 
 function showPending() {
+  // Mostrar el dashboard pero con pantalla de acceso pendiente
+  var appdashEl = document.getElementById('appdash');
+  appdashEl.style.display = 'block';
+  appdashEl.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  document.body.style.height = '100%';
   document.getElementById('amain').innerHTML =
     '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px;">' +
       '<div style="width:64px;height:64px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">' +

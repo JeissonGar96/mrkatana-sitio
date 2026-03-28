@@ -947,6 +947,13 @@ function _renderSection(state) {
 }
 
 function navigateTo(v) {
+  // Usuarios live no pueden acceder a clases
+  var plan = cProfile && cProfile.plan ? cProfile.plan : '';
+  var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
+  if (isLive && v === 'clases') {
+    toast('Tu plan no incluye acceso a las clases grabadas.', true);
+    return;
+  }
   var state = { section: v };
   pushRoute(state);
   _renderSection(state);
@@ -1120,6 +1127,15 @@ function loadApp(user) {
     }
 
     function _grantAccess() {
+      // Ocultar "Curso" en sidebar para usuarios live
+      var plan = cProfile && cProfile.plan ? cProfile.plan : '';
+      var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
+      if (isLive) {
+        var claseBtn = document.querySelector('.snav[data-v="clases"]');
+        if (claseBtn) claseBtn.style.display = 'none';
+        var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
+        if (mobClaseBtn) mobClaseBtn.style.display = 'none';
+      }
       // Start auto session checker
       startSessionChecker();
       // Restore route from URL or start at dash

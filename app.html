@@ -933,7 +933,11 @@ function _renderSection(state) {
   if (appdash) appdash.scrollTop = 0;
   // Always restore amain when navigating away from lesson layout
   if (state.section !== 'clases') _restoreAmain();
-  if (state.section === 'dash')           rDash();
+  if (state.section === 'dash') {
+    var plan = cProfile && cProfile.plan ? cProfile.plan : '';
+    var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
+    if (isLive) rDash(true); else rDash();
+  }
   else if (state.section === 'clases') {
     if (state.lessonId)       _restoreLesson(state);
     else if (state.moduleId)  _restoreModule(state);

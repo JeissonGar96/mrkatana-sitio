@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>⚔️</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=AYqmenNbm9toSrKHvVt5BxHZglY06A2a5Fgi_ffQrKbPoeLxtXlNc4wseA89j24Cv8iJjLoLYV08A0vu&currency=USD&intent=capture"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
   :root{
@@ -523,13 +524,9 @@
           </div>
 
           <div id="pay-card" style="">
-            <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;">
-              <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px;">Pago seguro próximamente</div>
-              <div style="font-size:.76rem;color:var(--faint);">Integración PayPal / Tarjeta en proceso</div>
-            </div>
-            <button class="ck-cta" disabled style="opacity:.35;">
-              Pagar <span id="pay-btn-amount"></span>
-            </button>
+            <div style="font-size:.75rem;color:var(--muted);text-align:center;margin-bottom:10px;letter-spacing:.5px;">PAGO SEGURO · <span id="pay-btn-amount"></span></div>
+            <div id="paypal-button-container" style="border-radius:10px;overflow:hidden;"></div>
+            <div id="pay-processing" style="display:none;text-align:center;padding:20px;font-size:.82rem;color:var(--muted);">Procesando pago...</div>
             <div style="text-align:center;margin-top:10px;font-size:.71rem;color:var(--faint);">
               — o ingresa un código de acceso arriba —
             </div>
@@ -776,6 +773,7 @@ function setLiveVariant(el) {
     btn.disabled = false; btn.textContent = 'Continuar →';
     goPage(3);
     document.getElementById('pay-btn-amount').textContent = '$' + state.plan.price.toLocaleString() + ' USD';
+    renderPayPal();
   });
 
   // Code field enter
@@ -970,6 +968,130 @@ async function createAccount() {
     '<div style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.3);border-radius:12px;padding:22px;text-align:center;">' +
     '<div style="font-size:2rem;margin-bottom:10px;">✓</div>' +
     '<div style="font-family:var(--font-cond);font-weight:700;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;color:var(--sl);margin-bottom:6px;">Cuenta creada</div>' +
+    '<div style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">Revisa tu email para confirmar tu cuenta y luego inicia sesión.</div>' +
+    '<a href="/" style="display:inline-block;padding:10px 24px;background:var(--st);color:#fff;font-family:var(--font-cond);font-weight:700;font-size:.88rem;letter-spacing:1px;text-transform:uppercase;border-radius:8px;text-decoration:none;">Ir al inicio →</a>' +
+    '</div>';
+}
+
+// ── PAYPAL ──
+var paypalRendered = false;
+
+function renderPayPal() {
+  if (paypalRendered) return;
+  if (!window.paypal) { setTimeout(renderPayPal, 500); return; }
+  paypalRendered = true;
+
+  paypal.Buttons({
+    style: { layout:'vertical', color:'blue', shape:'rect', label:'pay' },
+    createOrder: function(data, actions) {
+      var amount = state.plan ? state.plan.price : 0;
+      return actions.order.create({
+        purchase_units: [{
+          description: state.plan ? state.plan.label : 'Mr Katana FX',
+          amount: { currency_code:'USD', value: amount.toFixed(2) }
+        }]
+      });
+    },
+    onApprove: function(data, actions) {
+      document.getElementById('paypal-button-container').style.display = 'none';
+      document.getElementById('pay-processing').style.display = '';
+      return actions.order.capture().then(function(details) {
+        createAccountAfterPayment(details);
+      });
+    },
+    onError: function(err) {
+      toast('Error en el pago. Intenta de nuevo.', true);
+      console.error('PayPal error:', err);
+    },
+    onCancel: function() {
+      toast('Pago cancelado.', true);
+    }
+  }).render('#paypal-button-container');
+}
+
+async function createAccountAfterPayment(paypalDetails) {
+  var name    = document.getElementById('ck-name').value.trim();
+  var email   = document.getElementById('ck-email').value.trim();
+  var pass    = document.getElementById('ck-pass').value;
+  var dobD    = document.getElementById('ck-dob-d').value;
+  var dobM    = document.getElementById('ck-dob-m').value;
+  var dobY    = document.getElementById('ck-dob-y').value;
+  var country = document.getElementById('ck-country').value;
+  var prefix  = document.getElementById('ck-prefix').value;
+  var phone   = document.getElementById('ck-phone').value.trim();
+  var exp     = document.getElementById('ck-exp').value;
+
+  var userId = null;
+
+  if (state.existingUserId) {
+    userId = state.existingUserId;
+  } else {
+    var reg = await sb.auth.signUp({
+      email: email, password: pass,
+      options: { data: { full_name: name } }
+    });
+    if (reg.error) {
+      document.getElementById('pay-processing').style.display = 'none';
+      document.getElementById('paypal-button-container').style.display = '';
+      toast(fmtE(reg.error.message), true); return;
+    }
+    userId = reg.data && reg.data.user ? reg.data.user.id : null;
+  }
+
+  // Upload avatar
+  var avatarUrl = null;
+  if (userId && state.avatarBlob) {
+    var path = userId + '/avatar.jpg';
+    var up = await sb.storage.from('avatars').upload(path, state.avatarBlob, { contentType:'image/jpeg', upsert:true });
+    if (!up.error) {
+      avatarUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
+    }
+  }
+
+  // Membership end según plan
+  var monthsMap = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6 };
+  var planId = state.plan ? state.plan.id : 'formacion';
+  var months = monthsMap[planId] || 12;
+  var membershipEnd = new Date();
+  membershipEnd.setMonth(membershipEnd.getMonth() + months);
+
+  if (userId) {
+    var profile = {
+      full_name: name, country: country, phone_prefix: prefix,
+      phone: phone, trading_experience: exp,
+      plan: planId, membership_end: membershipEnd.toISOString()
+    };
+    if (dobD && dobM && dobY) {
+      profile.date_of_birth = dobY + '-' + dobM + '-' + dobD;
+      var bday = new Date(profile.date_of_birth);
+      var today = new Date();
+      var age = today.getFullYear() - bday.getFullYear();
+      if (today < new Date(today.getFullYear(), bday.getMonth(), bday.getDate())) age--;
+      profile.age = age;
+    }
+    if (avatarUrl) profile.avatar_url = avatarUrl;
+    await sb.from('profiles').update(profile).eq('id', userId);
+
+    // Registrar en purchases
+    await sb.from('purchases').insert({
+      user_id:             userId,
+      plan_id:             planId,
+      amount:              state.plan ? state.plan.price : 0,
+      currency:            'USD',
+      payment_method:      'paypal',
+      paypal_order_id:     paypalDetails.id,
+      paypal_payer_email:  paypalDetails.payer ? paypalDetails.payer.email_address : null,
+      status:              'completed',
+      starts_at:           new Date().toISOString(),
+      expires_at:          membershipEnd.toISOString()
+    });
+  }
+
+  document.getElementById('pay-processing').style.display = 'none';
+  document.getElementById('pay-card').innerHTML =
+    '<div style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.3);border-radius:12px;padding:22px;text-align:center;">' +
+    '<div style="font-size:2rem;margin-bottom:10px;">✓</div>' +
+    '<div style="font-family:var(--font-cond);font-weight:700;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;color:var(--sl);margin-bottom:6px;">¡Pago completado!</div>' +
     '<div style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">Revisa tu email para confirmar tu cuenta y luego inicia sesión.</div>' +
     '<a href="/" style="display:inline-block;padding:10px 24px;background:var(--st);color:#fff;font-family:var(--font-cond);font-weight:700;font-size:.88rem;letter-spacing:1px;text-transform:uppercase;border-radius:8px;text-decoration:none;">Ir al inicio →</a>' +
     '</div>';

@@ -1164,7 +1164,41 @@ function showPending() {
 }
 
 // ── DASHBOARD ──
-function rDash() {
+function rDashLive() {
+  var p = cProfile;
+  var name = p && p.full_name ? p.full_name.split(' ')[0] : 'Alumno';
+  document.getElementById('amain').innerHTML =
+    '<div class="atit">Mi Dashboard</div>' +
+    '<div class="asub">Sesiones en Vivo · Bienvenido, ' + name + '</div>' +
+
+    // Live banner
+    '<div id="lbanner" style="display:none;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);border-radius:8px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
+      '<div style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;animation:pulse 1.5s infinite;"></div>' +
+      '<div style="flex:1;"><div id="ltit" style="font-weight:600;font-size:.86rem;"></div><div style="font-size:.73rem;color:#555;">Sesión en curso</div></div>' +
+      '<a id="llnk" href="#" target="_blank" style="background:#4ade80;color:#111;padding:7px 13px;border-radius:6px;font-weight:700;font-size:.76rem;text-decoration:none;">Unirme →</a>' +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">' +
+      '<div class="acard" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;cursor:pointer;" onclick="navigateTo("sesiones")">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px;"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>' +
+        '<div style="font-size:.72rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Sesiones en Vivo</div>' +
+        '<div style="font-size:.75rem;color:var(--sl);margin-top:6px;font-weight:600;">Ver calendario →</div>' +
+      '</div>' +
+      '<div class="acard" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;cursor:pointer;" onclick="navigateTo("perfil")">' +
+        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>' +
+        '<div style="font-size:.72rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Mi Perfil</div>' +
+        '<div style="font-size:.75rem;color:var(--sl);margin-top:6px;font-weight:600;">Ver perfil →</div>' +
+      '</div>' +
+    '</div>';
+
+  // Check live session active
+  chkLive();
+}
+
+function rDash(liveOnly) {
+  var plan = cProfile && cProfile.plan ? cProfile.plan : '';
+  var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
+  if (isLive) { rDashLive(); return; }
   var p = cProfile;
   var today = new Date(); today.setHours(0,0,0,0);
   var end = p && p.membership_end ? new Date(p.membership_end) : null;
@@ -1198,7 +1232,7 @@ function rDash() {
     '</div>' +
 
     // Top row: circular progress + week calendar + 1-1 countdown
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;" id="dash-top">' +
+    '<div id="dash-top" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;' + (liveOnly ? 'display:none;' : '') + '">' +
 
       // 1. Circular course progress
       '<div class="acard" id="card-progress" style="display:flex;flex-direction:column;align-items:center;padding:20px 14px;cursor:pointer;" onclick="goToLastLesson()">' +
@@ -1264,7 +1298,7 @@ function rDash() {
     '</div>' +
 
     // Week timeline bar
-    '<div style="margin-bottom:20px;">' +
+    '<div style="margin-bottom:20px;' + (liveOnly ? 'display:none;' : '') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
         '<div style="font-size:.7rem;color:#555;text-transform:uppercase;letter-spacing:.8px;">Línea de tiempo</div>' +
         '<div style="font-size:.7rem;color:#555;">' + (start ? start.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '') + ' → ' + endS + '</div>' +
@@ -1290,8 +1324,8 @@ function rDash() {
       '</div>'
     : '') +
 
-    '<div class="sec">Semana en detalle</div>' +
-    '<div id="week-info" style="margin-bottom:20px;"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
+    '<div class="sec" style="' + (liveOnly ? 'display:none;' : '') + '">Semana en detalle</div>' +
+    '<div id="week-info" style="margin-bottom:20px;' + (liveOnly ? 'display:none;' : '') + '"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
 
     '<div class="sec">Próximas actividades</div>' +
     '<div id="upcoming"><div style="color:#555;font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +

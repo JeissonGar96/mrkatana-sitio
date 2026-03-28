@@ -1167,9 +1167,6 @@ function showPending() {
 function rDashLive() { rDash(true); }
 
 function rDash(liveOnly) {
-  var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-  var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-  if (isLive) { rDashLive(); return; }
   var p = cProfile;
   var today = new Date(); today.setHours(0,0,0,0);
   var end = p && p.membership_end ? new Date(p.membership_end) : null;
@@ -1193,7 +1190,7 @@ function rDash(liveOnly) {
 
   document.getElementById('amain').innerHTML =
     '<div class="atit">Mi Dashboard</div>' +
-    '<div class="asub">Semana ' + weekNum + ' de ' + totalWeeks + ' · ' + (dL !== '—' && dL > 0 ? dL+' días restantes' : 'Bienvenido') + '</div>' +
+    '<div class="asub">' + (liveOnly ? 'Sesiones en Vivo · Bienvenido' : 'Semana ' + weekNum + ' de ' + totalWeeks + ' · ' + (dL !== '—' && dL > 0 ? dL+' días restantes' : 'Bienvenido')) + '</div>' +
 
     // Live banner
     '<div id="lbanner" style="display:none;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);border-radius:8px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +

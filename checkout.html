@@ -602,7 +602,6 @@ var state = {
   liveVariant: null, // { id, price, label } — solo para el plan 'live'
   codeData: null,
   avatarBlob: null,
-  googleUser: null
 };
 
 // ── PLANES DISPONIBLES (estructura base) ──
@@ -737,20 +736,6 @@ function setLiveVariant(el) {
     if (sp) document.getElementById('ck-pass').value = sp;
   } catch(ex){}
 
-  // Check Google OAuth user
-  sb.auth.getSession().then(function(r) {
-    if (r.data && r.data.session && r.data.session.user) {
-      state.googleUser = r.data.session.user;
-      var u = state.googleUser;
-      if (u.user_metadata && u.user_metadata.full_name) {
-        document.getElementById('ck-name').value = u.user_metadata.full_name;
-      }
-      if (u.email) document.getElementById('ck-email').value = u.email;
-      var pf = document.getElementById('ck-pass');
-      if (pf) { pf.closest('.ck-fg') ? pf.closest('.ck-fg').style.display='none' : pf.style.display='none'; }
-    }
-  });
-
   loadPlans();
 
   // Btn next-1
@@ -869,7 +854,7 @@ function validatePage2() {
 
   if (!n)  { toast('Ingresa tu nombre completo', true); return false; }
   if (!e || !e.includes('@')) { toast('Ingresa un email válido', true); return false; }
-  if (!state.googleUser && (!p || p.length < 6)) { toast('Contraseña mínimo 6 caracteres', true); return false; }
+  if (!p || p.length < 6) { toast('Contraseña mínimo 6 caracteres', true); return false; }
   if (!dobD||!dobM||!dobY) { toast('Ingresa tu fecha de nacimiento', true); return false; }
   if (!cty) { toast('Selecciona tu país', true); return false; }
   if (!ph)  { toast('Ingresa tu teléfono', true); return false; }
@@ -926,9 +911,7 @@ async function createAccount() {
 
   var userId = null;
 
-  if (state.googleUser) {
-    userId = state.googleUser.id;
-  } else if (state.existingUserId) {
+  if (state.existingUserId) {
     // Email ya existia, ya hicimos login en el paso anterior
     userId = state.existingUserId;
   } else {

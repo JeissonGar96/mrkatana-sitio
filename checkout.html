@@ -722,8 +722,8 @@ function setLiveVariant(el) {
   if (params.get('email')) {
     var el2 = document.getElementById('ck-email');
     if (el2) el2.value = decodeURIComponent(params.get('email'));
-    // Es renovación — modo simplificado en paso 2
-    state.isRenewal = true;
+    // Es renovación solo si viene con parámetro renew=1
+    if (params.get('renew') === '1') state.isRenewal = true;
   }
   // Restore from sessionStorage
   try {

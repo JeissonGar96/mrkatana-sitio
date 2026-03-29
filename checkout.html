@@ -976,6 +976,7 @@ async function createAccount() {
         membership_start: new Date().toISOString(),
         membership_end: membershipEnd2.toISOString()
       }).eq('id', userId);
+      console.log('codeVal:', codeVal, 'userId:', userId, 'codeData:', state.codeData);
       if (codeVal) await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
     }
     btn.disabled = false;

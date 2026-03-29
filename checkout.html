@@ -978,8 +978,8 @@ async function createAccount() {
     userId = reg.data && reg.data.user ? reg.data.user.id : null;
   }
 
-  if (state.isRenewal) {
-    // Renovación — solo actualizar membresía, no tocar el perfil
+  if (state.isRenewal || state.existingUserId) {
+    // Renovación o usuario existente — solo actualizar membresía, no tocar el perfil
     if (userId) {
       var planId = state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo');
       var monthsMap2 = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6 };
@@ -1032,6 +1032,8 @@ async function createAccount() {
       profile.age = age;
     }
     if (avatarUrl) profile.avatar_url = avatarUrl;
+    // Esperar que Supabase cree el perfil via trigger
+    await new Promise(function(r){ setTimeout(r, 1500); });
     await sb.from('profiles').update(profile).eq('id', userId);
     if (codeVal) await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
   }

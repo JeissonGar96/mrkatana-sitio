@@ -3591,15 +3591,63 @@ function dStudent(id) {
   });
 }
 function activateMember(id, isActive) {
-  var msg = isActive ? '¿Desactivar membresía de este alumno?' : '¿Activar membresía por 6 meses?';
-  if (!confirm(msg)) return;
-  var update = isActive
-    ? { membership_end: new Date(Date.now() - 1000).toISOString() }
-    : { membership_start: new Date().toISOString(), membership_end: new Date(Date.now() + 180*86400000).toISOString() };
-  sb.from('profiles').update(update).eq('id', id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst(isActive ? 'Membresía desactivada' : '✓ Membresía activada — 6 meses');
-    rAdmSt();
+  if (isActive) {
+    if (!confirm('¿Desactivar membresía de este alumno?')) return;
+    sb.from('profiles').update({ membership_end: new Date(Date.now() - 1000).toISOString() }).eq('id', id).then(function(r) {
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('Membresía desactivada');
+      rAdmSt();
+    });
+    return;
+  }
+
+  // Mostrar modal para elegir plan
+  var existing = document.getElementById('activate-modal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'activate-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:380px;padding:24px;">' +
+      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Activar membresía</div>' +
+      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Selecciona el plan a activar manualmente</div>' +
+      '<label style="display:block;font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Plan</label>' +
+      '<select id="act-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
+        '<option value="formacion|1200">Formación RAIN Completa (vitalicio)</option>' +
+        '<option value="mentoria|1200">Mentoría Premium (vitalicio)</option>' +
+        '<option value="live-mensual|1">Live Mensual (1 mes)</option>' +
+        '<option value="live-trimestral|3">Live Trimestral (3 meses)</option>' +
+        '<option value="live-semestral|6">Live Semestral (6 meses)</option>' +
+      '</select>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button id="act-plan-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Activar</button>' +
+        '<button onclick="document.getElementById('activate-modal').remove();" style="padding:10px 16px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  document.getElementById('act-plan-btn').addEventListener('click', function() {
+    var val = document.getElementById('act-plan-sel').value.split('|');
+    var planId = val[0];
+    var months = parseInt(val[1]);
+    var now = new Date();
+    var end = new Date();
+    end.setMonth(end.getMonth() + months);
+    var btn = this;
+    btn.disabled = true; btn.textContent = 'Activando...';
+    sb.from('profiles').update({
+      plan: planId,
+      membership_start: now.toISOString(),
+      membership_end: end.toISOString()
+    }).eq('id', id).then(function(r) {
+      modal.remove();
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Membresía activada — ' + planId);
+      rAdmSt();
+    });
   });
 }
 function cSt() {

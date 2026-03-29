@@ -978,7 +978,7 @@ async function createAccount() {
     userId = reg.data && reg.data.user ? reg.data.user.id : null;
   }
 
-  if (state.isRenewal || state.existingUserId) {
+  if (state.isRenewal) {
     // Renovación — solo actualizar membresía, no tocar el perfil
     if (userId) {
       var planId = state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo');
@@ -1137,7 +1137,7 @@ async function createAccountAfterPayment(paypalDetails) {
   membershipEnd.setMonth(membershipEnd.getMonth() + months);
 
   if (userId) {
-    if (state.isRenewal || state.existingUserId) {
+    if (state.isRenewal) {
       // Renovación — solo actualizar membresía
       await sb.from('profiles').update({
         plan: planId,

@@ -914,17 +914,23 @@ async function createAccount() {
   var btn = document.getElementById('btn-create-free');
   btn.disabled = true; btn.textContent = 'Creando cuenta...';
 
-  var name    = document.getElementById('ck-name').value.trim();
-  var email   = document.getElementById('ck-email').value.trim();
-  var pass    = document.getElementById('ck-pass').value;
-  var dobD    = document.getElementById('ck-dob-d').value;
-  var dobM    = document.getElementById('ck-dob-m').value;
-  var dobY    = document.getElementById('ck-dob-y').value;
-  var country = document.getElementById('ck-country').value;
-  var prefix  = document.getElementById('ck-prefix').value;
-  var phone   = document.getElementById('ck-phone').value.trim();
-  var exp     = document.getElementById('ck-exp').value;
+  var _val = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
+  var name    = _val('ck-name').trim();
+  var email   = _val('ck-email').trim();
+  var pass    = _val('ck-pass');
+  var dobD    = _val('ck-dob-d');
+  var dobM    = _val('ck-dob-m');
+  var dobY    = _val('ck-dob-y');
+  var country = _val('ck-country');
+  var prefix  = _val('ck-prefix');
+  var phone   = _val('ck-phone').trim();
+  var exp     = _val('ck-exp');
   var codeVal = state.codeData ? state.codeData.code : null;
+
+  // En modo renovación, tomar email de URL si no está en el campo
+  if (state.isRenewal && !email) {
+    email = decodeURIComponent(new URLSearchParams(location.search).get('email') || '');
+  }
 
   var userId = null;
 
@@ -1029,16 +1035,22 @@ function renderPayPal() {
 }
 
 async function createAccountAfterPayment(paypalDetails) {
-  var name    = document.getElementById('ck-name').value.trim();
-  var email   = document.getElementById('ck-email').value.trim();
-  var pass    = document.getElementById('ck-pass').value;
-  var dobD    = document.getElementById('ck-dob-d').value;
-  var dobM    = document.getElementById('ck-dob-m').value;
-  var dobY    = document.getElementById('ck-dob-y').value;
-  var country = document.getElementById('ck-country').value;
-  var prefix  = document.getElementById('ck-prefix').value;
-  var phone   = document.getElementById('ck-phone').value.trim();
-  var exp     = document.getElementById('ck-exp').value;
+  var _val = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
+  var name    = _val('ck-name').trim();
+  var email   = _val('ck-email').trim();
+  var pass    = _val('ck-pass');
+  var dobD    = _val('ck-dob-d');
+  var dobM    = _val('ck-dob-m');
+  var dobY    = _val('ck-dob-y');
+  var country = _val('ck-country');
+  var prefix  = _val('ck-prefix');
+  var phone   = _val('ck-phone').trim();
+  var exp     = _val('ck-exp');
+
+  // En modo renovación, tomar email de URL si no está en el campo
+  if (state.isRenewal && !email) {
+    email = decodeURIComponent(new URLSearchParams(location.search).get('email') || '');
+  }
 
   var userId = null;
 

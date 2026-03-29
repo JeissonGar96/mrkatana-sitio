@@ -1050,8 +1050,21 @@ async function createAccount() {
     if (avatarUrl) profile.avatar_url = avatarUrl;
     // Esperar que Supabase cree el perfil via trigger
     await new Promise(function(r){ setTimeout(r, 1500); });
-    await sb.from('profiles').update(profile).eq('id', userId);
-    if (codeVal) await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
+    if (codeVal) {
+      // Usar RPC que bypasea RLS y actualiza perfil + membresía
+      await sb.rpc('use_access_code', {
+        p_code: codeVal,
+        p_user_id: userId,
+        p_name: name,
+        p_country: country,
+        p_phone: phone,
+        p_phone_prefix: prefix,
+        p_exp: exp,
+        p_dob: (dobD && dobM && dobY) ? dobY + '-' + dobM + '-' + dobD : null
+      });
+    } else {
+      await sb.from('profiles').update(profile).eq('id', userId);
+    }
   }
 
   try { sessionStorage.removeItem('_rn'); sessionStorage.removeItem('_re'); sessionStorage.removeItem('_rp'); } catch(ex){}

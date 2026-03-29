@@ -842,8 +842,6 @@ function validatePage2() {
   var dobY= document.getElementById('ck-dob-y').value;
   var cty = document.getElementById('ck-country').value;
   var ph  = document.getElementById('ck-phone').value.trim();
-  var exp = document.getElementById('ck-exp').value;
-
   if (!n)  { toast('Ingresa tu nombre completo', true); return false; }
   if (!e || !e.includes('@')) { toast('Ingresa un email válido', true); return false; }
   if (!p || p.length < 6) { toast('Contraseña mínimo 6 caracteres', true); return false; }

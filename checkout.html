@@ -752,7 +752,30 @@ function setLiveVariant(el) {
     var existing = await sb.from('profiles').select('id').eq('email', email).maybeSingle();
 
     if (existing.data) {
-      // Email ya registrado — intentar login con la contrasena ingresada
+      // Email ya registrado — verificar si ya tiene compra activa
+      var purchaseCheck = await sb.from('purchases')
+        .select('id, plan_id')
+        .eq('user_id', existing.data.id)
+        .in('status', ['paid', 'active', 'completed'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!purchaseCheck.error && purchaseCheck.data && purchaseCheck.data.length > 0) {
+        var currentPlan = purchaseCheck.data[0].plan_id || '';
+        var newPlan = state.plan ? state.plan.id : '';
+        var isLivePlan = function(p) { return p === 'live' || p.startsWith('live-'); };
+
+        // Bloquear solo si es exactamente el mismo plan
+        if (currentPlan === newPlan) {
+          btn.disabled = false; btn.textContent = 'Continuar →';
+          toast('Este email ya tiene una membresía activa. Inicia sesión en el portal.', true);
+          setTimeout(function() { window.location.href = '/login'; }, 3000);
+          return;
+        }
+        // Es un upgrade — dejar continuar
+      }
+
+      // Existe pero sin compra activa — verificar contraseña para continuar
       var pass = document.getElementById('ck-pass').value;
       if (!pass || pass.length < 6) {
         btn.disabled = false; btn.textContent = 'Continuar →';

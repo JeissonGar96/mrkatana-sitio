@@ -722,6 +722,8 @@ function setLiveVariant(el) {
   if (params.get('email')) {
     var el2 = document.getElementById('ck-email');
     if (el2) el2.value = decodeURIComponent(params.get('email'));
+    // Es renovación — modo simplificado en paso 2
+    state.isRenewal = true;
   }
   // Restore from sessionStorage
   try {
@@ -743,12 +745,32 @@ function setLiveVariant(el) {
 
   // Btn next-2
   document.getElementById('btn-next-2').addEventListener('click', async function() {
-    if (!validatePage2()) return;
     var btn = this;
     btn.disabled = true; btn.textContent = 'Verificando...';
 
-    state.existingUserId = null;
+    if (state.isRenewal) {
+      // Modo renovación — solo verificar contraseña
+      var email = decodeURIComponent(new URLSearchParams(location.search).get('email') || '');
+      var pass = document.getElementById('ck-pass') ? document.getElementById('ck-pass').value : '';
+      if (!pass || pass.length < 6) {
+        btn.disabled = false; btn.textContent = 'Continuar →';
+        toast('Ingresa tu contraseña para continuar.', true); return;
+      }
+      var login = await sb.auth.signInWithPassword({ email: email, password: pass });
+      if (login.error) {
+        btn.disabled = false; btn.textContent = 'Continuar →';
+        toast('Contraseña incorrecta. Inténtalo de nuevo.', true); return;
+      }
+      state.existingUserId = login.data.user.id;
+      btn.disabled = false; btn.textContent = 'Continuar →';
+      goPage(3);
+      document.getElementById('pay-btn-amount').textContent = '$' + state.plan.price.toLocaleString() + ' USD';
+      renderPayPal();
+      return;
+    }
 
+    if (!validatePage2()) { btn.disabled = false; btn.textContent = 'Continuar →'; return; }
+    state.existingUserId = null;
     btn.disabled = false; btn.textContent = 'Continuar →';
     goPage(3);
     document.getElementById('pay-btn-amount').textContent = '$' + state.plan.price.toLocaleString() + ' USD';
@@ -772,6 +794,24 @@ function goPage(n) {
   });
   state.page = n;
   window.scrollTo({top:0, behavior:'smooth'});
+
+  // Modo renovación: en paso 2 ocultar todo excepto contraseña
+  if (n === 2 && state.isRenewal) {
+    var form = document.getElementById('page-2').querySelector('.ck-form');
+    if (form && !document.getElementById('renewal-mode')) {
+      // Guardar contenido original y reemplazar con solo contraseña
+      form.dataset.originalHtml = form.innerHTML;
+      form.innerHTML =
+        '<div style="background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:8px;padding:14px 16px;margin-bottom:16px;">' +
+          '<div style="font-size:.75rem;color:var(--sl);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Renovando membresía</div>' +
+          '<div style="font-size:.84rem;color:#f0f0f0;">' + decodeURIComponent(new URLSearchParams(location.search).get('email') || '') + '</div>' +
+        '</div>' +
+        '<div class="ck-fg" id="renewal-mode">' +
+          '<label class="ck-fl">Contraseña de tu cuenta *</label>' +
+          '<input type="password" id="ck-pass" class="ck-fi" placeholder="Tu contraseña actual">' +
+        '</div>';
+    }
+  }
 }
 
 // ── SUMMARY ──

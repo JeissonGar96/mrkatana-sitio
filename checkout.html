@@ -458,32 +458,7 @@
                 <input type="tel" id="ck-phone" class="ck-fi" placeholder="999 999 999" style="flex:1;min-width:0;">
               </div>
             </div>
-            <div class="ck-fg">
-              <label class="ck-fl">Experiencia en trading *</label>
-              <select id="ck-exp" class="ck-fi">
-                <option value="">Selecciona...</option>
-                <option value="sin_experiencia">Sin experiencia</option>
-                <option value="principiante">Principiante (menos de 1 año)</option>
-                <option value="intermedio">Intermedio (1-3 años)</option>
-                <option value="avanzado">Avanzado (más de 3 años)</option>
-              </select>
-            </div>
-            <div class="ck-fg">
-              <label class="ck-fl">Foto de perfil *</label>
-              <div class="ck-avatar-wrap">
-                <div class="ck-avatar-preview" id="ck-avatar-preview" onclick="document.getElementById('ck-avatar-input').click()">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(91,127,166,.6)" stroke-width="1.5">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                </div>
-                <div>
-                  <button type="button" class="ck-avatar-btn" onclick="document.getElementById('ck-avatar-input').click()">Subir foto</button>
-                  <div style="font-size:.68rem;color:var(--faint);margin-top:4px;">JPG, PNG · max 3MB</div>
-                </div>
-                <input type="file" id="ck-avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)">
-              </div>
-            </div>
+
           </div>
           <div class="ck-nav">
             <button class="ck-back-btn" onclick="goPage(1)">← Volver</button>
@@ -875,8 +850,6 @@ function validatePage2() {
   if (!dobD||!dobM||!dobY) { toast('Ingresa tu fecha de nacimiento', true); return false; }
   if (!cty) { toast('Selecciona tu país', true); return false; }
   if (!ph)  { toast('Ingresa tu teléfono', true); return false; }
-  if (!exp) { toast('Selecciona tu experiencia en trading', true); return false; }
-  if (!state.avatarBlob) { toast('Sube una foto de perfil', true); return false; }
   return true;
 }
 

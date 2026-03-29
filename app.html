@@ -1161,6 +1161,11 @@ function loadApp(user) {
         var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
         if (mobClaseBtn) mobClaseBtn.style.display = 'none';
       }
+      // Si no tiene foto, mostrar pantalla para completar perfil
+      if (!cProfile.avatar_url && cProfile.role !== 'admin') {
+        _showCompleteProfile();
+        return;
+      }
       // Start auto session checker
       startSessionChecker();
       // Restore route from URL or start at dash
@@ -1169,9 +1174,104 @@ function loadApp(user) {
       pushRoute(routeState, true);
       _renderSection(routeState);
     }
+
+    function _showCompleteProfile() {
+      // Ocultar sidebar y nav mobile
+      var aside = document.querySelector('.aside');
+      if (aside) aside.style.display = 'none';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.style.display = 'none';
+
+      var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
+      document.getElementById('amain').innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:40px 20px;">' +
+          '<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;text-transform:uppercase;color:#f0f0f0;margin-bottom:6px;">¡Bienvenido, ' + name + '!</div>' +
+          '<p style="font-size:.84rem;color:#666;max-width:340px;margin:0 auto 28px;">Completa tu perfil para acceder al dashboard.</p>' +
+          '<div style="width:100px;height:100px;border-radius:50%;background:rgba(91,127,166,.1);border:2px dashed rgba(91,127,166,.4);display:flex;align-items:center;justify-content:center;margin-bottom:16px;cursor:pointer;" id="avatar-upload-circle" onclick="document.getElementById('avatar-input-complete').click()">' +
+            '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>' +
+          '</div>' +
+          '<input type="file" id="avatar-input-complete" accept="image/*" style="display:none" onchange="handleCompleteAvatar(this)">' +
+          '<p style="font-size:.76rem;color:#555;margin-bottom:24px;">Foto de perfil (obligatoria)</p>' +
+          '<div style="width:100%;max-width:340px;margin-bottom:16px;text-align:left;">' +
+            '<label style="display:block;font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">Experiencia en trading</label>' +
+            '<select id="exp-complete" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.05);border:1px solid var(--br);border-radius:2px;color:#f0f0f0;font-size:.86rem;">' +
+              '<option value="">Selecciona...</option>' +
+              '<option value="sin_experiencia">Sin experiencia</option>' +
+              '<option value="principiante">Principiante (menos de 1 año)</option>' +
+              '<option value="intermedio">Intermedio (1-3 años)</option>' +
+              '<option value="avanzado">Avanzado (más de 3 años)</option>' +
+            '</select>' +
+          '</div>' +
+          '<button onclick="submitCompleteProfile()" style="background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;padding:12px 28px;border-radius:8px;border:none;font-weight:600;font-size:.86rem;cursor:pointer;width:100%;max-width:340px;">Guardar y continuar →</button>' +
+          '<div id="avatar-complete-msg" style="font-size:.78rem;color:#555;margin-top:12px;"></div>' +
+        '</div>';
+    }
   });
 }
 
+
+var _completeAvatarBlob = null;
+
+function handleCompleteAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 3*1024*1024) { document.getElementById('avatar-complete-msg').textContent = 'Imagen máximo 3MB'; return; }
+  var msg = document.getElementById('avatar-complete-msg');
+  var img = new Image();
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var MAX = 400, w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h*MAX/w; w = MAX; } }
+      else        { if (h > MAX) { w = w*MAX/h; h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(function(blob) {
+        _completeAvatarBlob = blob;
+        var circle = document.getElementById('avatar-upload-circle');
+        if (circle) circle.innerHTML = '<img src="' + canvas.toDataURL('image/jpeg', .85) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        msg.textContent = '✓ Foto lista';
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitCompleteProfile() {
+  var msg = document.getElementById('avatar-complete-msg');
+  var exp = document.getElementById('exp-complete') ? document.getElementById('exp-complete').value : '';
+
+  if (!_completeAvatarBlob) { msg.textContent = 'Por favor sube una foto de perfil.'; return; }
+  if (!exp) { msg.textContent = 'Por favor selecciona tu experiencia en trading.'; return; }
+
+  msg.textContent = 'Guardando...';
+
+  // Subir avatar
+  var path = cUser.id + '/avatar.jpg';
+  var up = await sb.storage.from('avatars').upload(path, _completeAvatarBlob, { contentType:'image/jpeg', upsert:true });
+  if (up.error) { msg.textContent = 'Error al subir la foto. Intenta de nuevo.'; return; }
+  var publicUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
+
+  // Guardar perfil
+  await sb.from('profiles').update({ avatar_url: publicUrl, trading_experience: exp }).eq('id', cUser.id);
+  cProfile.avatar_url = publicUrl;
+  cProfile.trading_experience = exp;
+
+  msg.textContent = '✓ Perfil completado';
+
+  setTimeout(function() {
+    var aside = document.querySelector('.aside');
+    if (aside) aside.style.display = '';
+    var mobNav = document.getElementById('mob-nav');
+    if (mobNav) mobNav.classList.add('visible');
+    startSessionChecker();
+    var routeState = { section: 'dash' };
+    pushRoute(routeState, true);
+    _renderSection(routeState);
+  }, 800);
+}
 
 function showPending() {
   var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;

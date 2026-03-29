@@ -1470,19 +1470,28 @@ async function doRegContinue() {
   if (!/[A-Z]/.test(p)) return showMsg('La contraseña debe tener al menos una mayúscula.', true);
   if (!/[0-9]/.test(p)) return showMsg('La contraseña debe tener al menos un número.', true);
 
-  // Verificar si el email ya existe en profiles
+  // Verificar si el email ya existe intentando signUp
   var btn = document.getElementById('btn-reg-continue');
   btn.disabled = true; btn.textContent = 'Verificando...';
 
-  var check = await sb.from('profiles').select('id').eq('email', e).maybeSingle();
-  if (check.data) {
-    btn.disabled = false; btn.textContent = 'Continuar al pago →';
-    showMsg('Este email ya está registrado. Inicia sesión con tu cuenta.', true);
-    return;
+  var checkReg = await sb.auth.signUp({ email: e, password: p, options: { data: { full_name: n } } });
+
+  if (checkReg.error) {
+    var errMsg = checkReg.error.message || '';
+    if (errMsg.indexOf('already registered') >= 0 || errMsg.indexOf('already exists') >= 0 || errMsg.indexOf('User already registered') >= 0) {
+      btn.disabled = false; btn.textContent = 'Continuar al pago →';
+      showMsg('Este email ya está registrado. Inicia sesión con tu cuenta.', true);
+      return;
+    }
+    // Otro error inesperado — dejar pasar al checkout
+  } else if (checkReg.data && checkReg.data.user) {
+    // Se creó usuario en Auth — cerrar sesión y continuar al checkout
+    // El checkout completará el registro con todos los datos
+    await sb.auth.signOut();
   }
 
   btn.disabled = false; btn.textContent = 'Continuar al pago →';
-  // Email no existe — continuar al checkout
+  // Continuar al checkout
   try { sessionStorage.setItem('_rn', n); sessionStorage.setItem('_re', e); sessionStorage.setItem('_rp', p); } catch(ex){}
   window.location.href = '/checkout?name=' + encodeURIComponent(n) + '&email=' + encodeURIComponent(e);
 }

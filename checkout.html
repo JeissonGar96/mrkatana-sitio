@@ -1019,14 +1019,15 @@ async function createAccount() {
   }
 
   // Usuario nuevo — proceso completo
-  console.log("userId:", userId, "name:", name, "email:", email);
   var avatarUrl = null;
   if (userId && state.avatarBlob) {
-    var path = userId + '/avatar.jpg';
-    var up = await sb.storage.from('avatars').upload(path, state.avatarBlob, { contentType:'image/jpeg', upsert:true });
-    if (!up.error) {
-      avatarUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
-    }
+    try {
+      var path = userId + '/avatar.jpg';
+      var up = await sb.storage.from('avatars').upload(path, state.avatarBlob, { contentType:'image/jpeg', upsert:true });
+      if (!up.error) {
+        avatarUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
+      }
+    } catch(e) { /* avatar upload failed, continue without it */ }
   }
 
   if (userId) {

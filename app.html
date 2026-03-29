@@ -1132,10 +1132,23 @@ function loadApp(user) {
       var now = new Date();
       var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
       if (!end || end < now) {
-        showPending();
+        _showPendingLocked();
         return;
       }
       _grantAccess();
+    }
+
+    function _showPendingLocked() {
+      // Ocultar sidebar y nav mobile completamente
+      var aside = document.querySelector('.aside');
+      if (aside) aside.style.display = 'none';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.style.display = 'none';
+      // Bloquear toda navegacion
+      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+        b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
+      });
+      showPending();
     }
 
     function _grantAccess() {
@@ -2716,11 +2729,9 @@ function rAdmSt() {
     '<div id="st-t"><span class="spin"></span></div>';
   sb.from('profiles').select('id, full_name, email, role, plan, membership_start, membership_end, created_at').order('created_at',{ascending:false}).then(function(r) {
     var today = new Date();
-    window._allStudents = (r.data || []).filter(function(s) {
-      return s.membership_end && new Date(s.membership_end) > today;
-    });
+    window._allStudents = r.data || [];
     var t = document.getElementById('st-t'); if(!t) return;
-    if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos con membresía activa.</p>';return;}
+    if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos registrados.</p>';return;}
     _renderStudents(window._allStudents);
   });
 }
@@ -4810,13 +4821,18 @@ function _checkInactivityAndMembership() {
     });
     return;
   }
-  // 2. Membresía vencida
+  // 2. Membresía vencida — mostrar pantalla bloqueada sin cerrar sesión
   if (cProfile && cProfile.role !== 'admin') {
     var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
     if (end && end < new Date()) {
-      sb.auth.signOut().then(function() {
-        window.location.href = '/login';
+      var aside = document.querySelector('.aside');
+      if (aside) aside.style.display = 'none';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.style.display = 'none';
+      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+        b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
       });
+      showPending();
     }
   }
 }

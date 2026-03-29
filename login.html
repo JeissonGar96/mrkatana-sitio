@@ -1470,13 +1470,11 @@ async function doRegContinue() {
   if (!/[A-Z]/.test(p)) return showMsg('La contraseña debe tener al menos una mayúscula.', true);
   if (!/[0-9]/.test(p)) return showMsg('La contraseña debe tener al menos un número.', true);
 
-  // Verificar si el email ya existe en profiles (sin crear cuenta)
   var btn = document.getElementById('btn-reg-continue');
   btn.disabled = true; btn.textContent = 'Verificando...';
 
-  // Usar función RPC pública para verificar email sin autenticación
+  // Verificar email via RPC sin crear cuenta
   var checkEmail = await sb.rpc('check_email_exists', { p_email: e });
-  
   if (!checkEmail.error && checkEmail.data === true) {
     btn.disabled = false; btn.textContent = 'Continuar al pago →';
     showMsg('Este email ya está registrado. Inicia sesión con tu cuenta.', true);
@@ -1484,7 +1482,6 @@ async function doRegContinue() {
   }
 
   btn.disabled = false; btn.textContent = 'Continuar al pago →';
-  // Email nuevo — continuar al checkout
   try { sessionStorage.setItem('_rn', n); sessionStorage.setItem('_re', e); sessionStorage.setItem('_rp', p); } catch(ex){}
   window.location.href = '/checkout?name=' + encodeURIComponent(n) + '&email=' + encodeURIComponent(e);
 }

@@ -971,11 +971,25 @@ async function createAccount() {
       password: pass,
       options: { data: { full_name: name } }
     });
-    if (reg.error) {
+    if (reg.error && reg.error.message.indexOf('already registered') >= 0) {
+      // Email existe — hacer login para obtener userId
+      var loginR = await sb.auth.signInWithPassword({ email: email, password: pass });
+      if (loginR.error) {
+        btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+        toast('Email ya registrado. Contraseña incorrecta.', true); return;
+      }
+      userId = loginR.data.user.id;
+    } else if (reg.error) {
       btn.disabled = false; btn.textContent = 'Crear mi cuenta';
       toast(fmtE(reg.error.message), true); return;
+    } else {
+      userId = reg.data && reg.data.user ? reg.data.user.id : null;
+      // Si identities vacío, el email ya existía — hacer login
+      if (!userId || (reg.data.user.identities && reg.data.user.identities.length === 0)) {
+        var loginR2 = await sb.auth.signInWithPassword({ email: email, password: pass });
+        if (!loginR2.error) userId = loginR2.data.user.id;
+      }
     }
-    userId = reg.data && reg.data.user ? reg.data.user.id : null;
   }
 
   if (state.isRenewal || state.existingUserId) {

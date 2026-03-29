@@ -1340,7 +1340,15 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
       <div id="msg" class="msg"></div>
       <div id="f-in">
         <div class="fg"><label class="fl">Email</label><input type="email" id="li-e" class="fi" placeholder="tu@email.com"></div>
-        <div class="fg"><label class="fl">Contraseña</label><input type="password" id="li-p" class="fi" placeholder="••••••••"></div>
+        <div class="fg">
+          <label class="fl">Contraseña</label>
+          <div style="position:relative;">
+            <input type="password" id="li-p" class="fi" placeholder="••••••••" style="padding-right:38px;width:100%;box-sizing:border-box;">
+            <button type="button" onclick="togglePassVis('li-p',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#555;padding:0;display:flex;align-items:center;">
+              <svg id="eye-li-p" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
         <button class="mbtnn" id="btn-in">Entrar al portal</button>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
           <p style="font-size:.71rem;color:#555;margin:0">¿Sin acceso? <a href="#precios" id="lnk-precio" style="color:var(--sl);text-decoration:none">Ver formación →</a></p>

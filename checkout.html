@@ -747,51 +747,7 @@ function setLiveVariant(el) {
     var btn = this;
     btn.disabled = true; btn.textContent = 'Verificando...';
 
-    // Verificar si el email ya existe
-    var email = document.getElementById('ck-email').value.trim();
-    var existing = await sb.from('profiles').select('id').eq('email', email).maybeSingle();
-
-    if (existing.data) {
-      // Email ya registrado — verificar si ya tiene compra activa
-      var purchaseCheck = await sb.from('purchases')
-        .select('id, plan_id')
-        .eq('user_id', existing.data.id)
-        .in('status', ['paid', 'active', 'completed'])
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (!purchaseCheck.error && purchaseCheck.data && purchaseCheck.data.length > 0) {
-        var currentPlan = purchaseCheck.data[0].plan_id || '';
-        var newPlan = state.plan ? state.plan.id : '';
-        var isLivePlan = function(p) { return p === 'live' || p.startsWith('live-'); };
-
-        // Bloquear solo si es exactamente el mismo plan
-        if (currentPlan === newPlan) {
-          btn.disabled = false; btn.textContent = 'Continuar →';
-          toast('Este email ya tiene una membresía activa. Inicia sesión en el portal.', true);
-          setTimeout(function() { window.location.href = '/login'; }, 3000);
-          return;
-        }
-        // Es un upgrade — dejar continuar
-      }
-
-      // Existe pero sin compra activa — verificar contraseña para continuar
-      var pass = document.getElementById('ck-pass').value;
-      if (!pass || pass.length < 6) {
-        btn.disabled = false; btn.textContent = 'Continuar →';
-        toast('Este email ya está registrado. Ingresa tu contraseña para continuar.', true);
-        return;
-      }
-      var login = await sb.auth.signInWithPassword({ email: email, password: pass });
-      if (login.error) {
-        btn.disabled = false; btn.textContent = 'Continuar →';
-        toast('Email ya registrado. Contraseña incorrecta.', true);
-        return;
-      }
-      state.existingUserId = login.data.user.id;
-    } else {
-      state.existingUserId = null;
-    }
+    state.existingUserId = null;
 
     btn.disabled = false; btn.textContent = 'Continuar →';
     goPage(3);
@@ -1053,12 +1009,22 @@ async function createAccountAfterPayment(paypalDetails) {
       email: email, password: pass,
       options: { data: { full_name: name } }
     });
-    if (reg.error) {
+    if (reg.error && reg.error.message.indexOf('already registered') >= 0) {
+      // Email ya existe en Auth — hacer login para obtener userId
+      var login = await sb.auth.signInWithPassword({ email: email, password: pass });
+      if (login.error) {
+        document.getElementById('pay-processing').style.display = 'none';
+        document.getElementById('paypal-button-container').style.display = '';
+        toast('Email ya registrado. Contraseña incorrecta.', true); return;
+      }
+      userId = login.data.user.id;
+    } else if (reg.error) {
       document.getElementById('pay-processing').style.display = 'none';
       document.getElementById('paypal-button-container').style.display = '';
       toast(fmtE(reg.error.message), true); return;
+    } else {
+      userId = reg.data && reg.data.user ? reg.data.user.id : null;
     }
-    userId = reg.data && reg.data.user ? reg.data.user.id : null;
   }
 
   // Upload avatar

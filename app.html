@@ -4166,7 +4166,7 @@ function loadCodes() {
         '<td><span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (cd.is_used ? 'rgba(248,113,113,.1)' : 'rgba(74,222,128,.1)') + ';color:' + (cd.is_used ? '#f87171' : '#4ade80') + ';">' + (cd.is_used ? 'Usado' : 'Disponible') + '</span></td>' +
         '<td style="font-size:.74rem;color:#555;">' + usedDate + '</td>' +
         '<td></td>';
-      if (!cd.is_used) {
+      {
         var delBtn = document.createElement('button');
         delBtn.textContent = '✕';
         delBtn.style.cssText = 'background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:#f87171;padding:3px 9px;border-radius:2px;font-size:.71rem;cursor:pointer;';

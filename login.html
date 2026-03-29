@@ -1470,20 +1470,19 @@ async function doRegContinue() {
   if (!/[A-Z]/.test(p)) return showMsg('La contraseña debe tener al menos una mayúscula.', true);
   if (!/[0-9]/.test(p)) return showMsg('La contraseña debe tener al menos un número.', true);
 
-  // Verificar si el email ya existe en Auth
+  // Verificar si el email ya existe en profiles
   var btn = document.getElementById('btn-reg-continue');
   btn.disabled = true; btn.textContent = 'Verificando...';
 
-  var tryLogin = await sb.auth.signInWithPassword({ email: e, password: 'check_only_x9z' });
-  if (!tryLogin.error || tryLogin.error.message.indexOf('Invalid login') >= 0 || tryLogin.error.message.indexOf('invalid_credentials') >= 0) {
-    // Email ya existe en Auth
+  var check = await sb.from('profiles').select('id').eq('email', e).maybeSingle();
+  if (check.data) {
     btn.disabled = false; btn.textContent = 'Continuar al pago →';
     showMsg('Este email ya está registrado. Inicia sesión con tu cuenta.', true);
     return;
   }
 
   btn.disabled = false; btn.textContent = 'Continuar al pago →';
-  // Email nuevo — continuar al checkout
+  // Email no existe — continuar al checkout
   try { sessionStorage.setItem('_rn', n); sessionStorage.setItem('_re', e); sessionStorage.setItem('_rp', p); } catch(ex){}
   window.location.href = '/checkout?name=' + encodeURIComponent(n) + '&email=' + encodeURIComponent(e);
 }

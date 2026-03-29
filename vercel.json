@@ -3,6 +3,7 @@
     { "source": "/checkout", "destination": "/checkout.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/app", "destination": "/app.html" },
-    { "source": "/app/(.*)", "destination": "/app.html" }
+    { "source": "/app/(.*)", "destination": "/app.html" },
+    { "source": "/legal", "destination": "/legal.html" }
   ]
 }

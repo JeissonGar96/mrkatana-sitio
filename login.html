@@ -1351,7 +1351,16 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 
         <div class="fg"><label class="fl">Nombre completo</label><input type="text" id="rg-n" class="fi" placeholder="Tu nombre completo"></div>
         <div class="fg"><label class="fl">Email</label><input type="email" id="rg-e" class="fi" placeholder="tu@email.com"></div>
-        <div class="fg"><label class="fl">Contraseña</label><input type="password" id="rg-p" class="fi" placeholder="Mínimo 6 caracteres"></div>
+        <div class="fg">
+          <label class="fl">Contraseña</label>
+          <div style="position:relative;">
+            <input type="password" id="rg-p" class="fi" placeholder="Mín. 6 caracteres, 1 mayúscula, 1 número" style="padding-right:38px;width:100%;box-sizing:border-box;">
+            <button type="button" onclick="togglePassVis('rg-p',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#555;padding:0;display:flex;align-items:center;">
+              <svg id="eye-rg-p" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div id="pass-hint" style="font-size:.62rem;color:#555;margin-top:4px;">Mínimo 6 caracteres, una mayúscula y un número</div>
+        </div>
         <button class="mbtnn" id="btn-reg-continue">Continuar al pago →</button>
         <p style="text-align:center;font-size:.69rem;color:#444;margin-top:10px;">Al continuar aceptas nuestros <a href="/terminos" style="color:var(--sl);">Términos</a> y <a href="/privacidad" style="color:var(--sl);">Privacidad</a></p>
       </div>
@@ -1431,6 +1440,18 @@ function doLogin() {
   });
 }
 
+function togglePassVis(fieldId, btn) {
+  var input = document.getElementById(fieldId);
+  var eye = document.getElementById('eye-' + fieldId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    input.type = 'password';
+    eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
 async function doRegContinue() {
   var n = (document.getElementById('rg-n')||{}).value.trim();
   var e = (document.getElementById('rg-e')||{}).value.trim();
@@ -1438,6 +1459,8 @@ async function doRegContinue() {
   if (!n) return showMsg('Ingresa tu nombre completo.', true);
   if (!e || !e.includes('@')) return showMsg('Ingresa un email válido.', true);
   if (!p || p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
+  if (!/[A-Z]/.test(p)) return showMsg('La contraseña debe tener al menos una mayúscula.', true);
+  if (!/[0-9]/.test(p)) return showMsg('La contraseña debe tener al menos un número.', true);
 
   // Verificar si el email ya existe en Auth
   var btn = document.getElementById('btn-reg-continue');

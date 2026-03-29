@@ -950,7 +950,33 @@ async function createAccount() {
     userId = reg.data && reg.data.user ? reg.data.user.id : null;
   }
 
-  // Upload avatar
+  if (state.isRenewal || state.existingUserId) {
+    // Renovación — solo actualizar membresía, no tocar el perfil
+    if (userId) {
+      var planId = state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo');
+      var monthsMap2 = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6 };
+      var months2 = state.codeData ? (state.codeData.months || 6) : (monthsMap2[planId] || 12);
+      var membershipEnd2 = new Date();
+      membershipEnd2.setMonth(membershipEnd2.getMonth() + months2);
+      await sb.from('profiles').update({
+        plan: planId,
+        membership_start: new Date().toISOString(),
+        membership_end: membershipEnd2.toISOString()
+      }).eq('id', userId);
+      if (codeVal) await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
+    }
+    btn.disabled = false;
+    document.getElementById('pay-free').innerHTML =
+      '<div style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.3);border-radius:12px;padding:22px;text-align:center;">' +
+      '<div style="font-size:2rem;margin-bottom:10px;">✓</div>' +
+      '<div style="font-family:var(--font-cond);font-weight:700;font-size:1.1rem;letter-spacing:1px;text-transform:uppercase;color:var(--sl);margin-bottom:6px;">¡Acceso renovado!</div>' +
+      '<div style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">Tu membresía ha sido activada. Inicia sesión para continuar.</div>' +
+      '<a href="/login" style="display:inline-block;padding:10px 24px;background:var(--st);color:#fff;font-family:var(--font-cond);font-weight:700;font-size:.88rem;letter-spacing:1px;text-transform:uppercase;border-radius:8px;text-decoration:none;">Iniciar sesión →</a>' +
+      '</div>';
+    return;
+  }
+
+  // Usuario nuevo — proceso completo
   var avatarUrl = null;
   if (userId && state.avatarBlob) {
     var path = userId + '/avatar.jpg';
@@ -960,7 +986,6 @@ async function createAccount() {
     }
   }
 
-  // Update profile
   if (userId) {
     var profile = {
       full_name:          name,
@@ -980,10 +1005,7 @@ async function createAccount() {
     }
     if (avatarUrl) profile.avatar_url = avatarUrl;
     await sb.from('profiles').update(profile).eq('id', userId);
-
-    if (codeVal) {
-      await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
-    }
+    if (codeVal) await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
   }
 
   try { sessionStorage.removeItem('_rn'); sessionStorage.removeItem('_re'); sessionStorage.removeItem('_rp'); } catch(ex){}
@@ -1079,16 +1101,6 @@ async function createAccountAfterPayment(paypalDetails) {
     }
   }
 
-  // Upload avatar
-  var avatarUrl = null;
-  if (userId && state.avatarBlob) {
-    var path = userId + '/avatar.jpg';
-    var up = await sb.storage.from('avatars').upload(path, state.avatarBlob, { contentType:'image/jpeg', upsert:true });
-    if (!up.error) {
-      avatarUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
-    }
-  }
-
   // Membership end según plan
   var monthsMap = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6 };
   var planId = state.plan ? state.plan.id : 'formacion';
@@ -1097,21 +1109,37 @@ async function createAccountAfterPayment(paypalDetails) {
   membershipEnd.setMonth(membershipEnd.getMonth() + months);
 
   if (userId) {
-    var profile = {
-      full_name: name, country: country, phone_prefix: prefix,
-      phone: phone, trading_experience: exp,
-      plan: planId, membership_end: membershipEnd.toISOString()
-    };
-    if (dobD && dobM && dobY) {
-      profile.date_of_birth = dobY + '-' + dobM + '-' + dobD;
-      var bday = new Date(profile.date_of_birth);
-      var today = new Date();
-      var age = today.getFullYear() - bday.getFullYear();
-      if (today < new Date(today.getFullYear(), bday.getMonth(), bday.getDate())) age--;
-      profile.age = age;
+    if (state.isRenewal || state.existingUserId) {
+      // Renovación — solo actualizar membresía
+      await sb.from('profiles').update({
+        plan: planId,
+        membership_start: new Date().toISOString(),
+        membership_end: membershipEnd.toISOString()
+      }).eq('id', userId);
+    } else {
+      // Usuario nuevo — actualizar perfil completo
+      var avatarUrl = null;
+      if (state.avatarBlob) {
+        var path = userId + '/avatar.jpg';
+        var up = await sb.storage.from('avatars').upload(path, state.avatarBlob, { contentType:'image/jpeg', upsert:true });
+        if (!up.error) avatarUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
+      }
+      var profile = {
+        full_name: name, country: country, phone_prefix: prefix,
+        phone: phone, trading_experience: exp,
+        plan: planId, membership_end: membershipEnd.toISOString()
+      };
+      if (dobD && dobM && dobY) {
+        profile.date_of_birth = dobY + '-' + dobM + '-' + dobD;
+        var bday = new Date(profile.date_of_birth);
+        var today = new Date();
+        var age = today.getFullYear() - bday.getFullYear();
+        if (today < new Date(today.getFullYear(), bday.getMonth(), bday.getDate())) age--;
+        profile.age = age;
+      }
+      if (avatarUrl) profile.avatar_url = avatarUrl;
+      await sb.from('profiles').update(profile).eq('id', userId);
     }
-    if (avatarUrl) profile.avatar_url = avatarUrl;
-    await sb.from('profiles').update(profile).eq('id', userId);
 
     // Registrar en purchases
     await sb.from('purchases').insert({

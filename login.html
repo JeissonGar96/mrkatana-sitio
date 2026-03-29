@@ -1431,14 +1431,28 @@ function doLogin() {
   });
 }
 
-function doRegContinue() {
+async function doRegContinue() {
   var n = (document.getElementById('rg-n')||{}).value.trim();
   var e = (document.getElementById('rg-e')||{}).value.trim();
   var p = (document.getElementById('rg-p')||{}).value;
   if (!n) return showMsg('Ingresa tu nombre completo.', true);
   if (!e || !e.includes('@')) return showMsg('Ingresa un email válido.', true);
   if (!p || p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
-  // Store temporarily and redirect to checkout
+
+  // Verificar si el email ya existe en Auth
+  var btn = document.getElementById('btn-reg-continue');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+
+  var tryLogin = await sb.auth.signInWithPassword({ email: e, password: 'check_only_x9z' });
+  if (!tryLogin.error || tryLogin.error.message.indexOf('Invalid login') >= 0 || tryLogin.error.message.indexOf('invalid_credentials') >= 0) {
+    // Email ya existe en Auth
+    btn.disabled = false; btn.textContent = 'Continuar al pago →';
+    showMsg('Este email ya está registrado. Inicia sesión con tu cuenta.', true);
+    return;
+  }
+
+  btn.disabled = false; btn.textContent = 'Continuar al pago →';
+  // Email nuevo — continuar al checkout
   try { sessionStorage.setItem('_rn', n); sessionStorage.setItem('_re', e); sessionStorage.setItem('_rp', p); } catch(ex){}
   window.location.href = '/checkout?name=' + encodeURIComponent(n) + '&email=' + encodeURIComponent(e);
 }

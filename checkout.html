@@ -897,6 +897,34 @@ function applyCode() {
       document.getElementById('pay-card').style.display = '';
       updateSummary();
     } else {
+      // Verificar que el código corresponde al plan seleccionado
+      var codePlan = r.data.plan || 'completo';
+      var selectedPlan = state.plan ? state.plan.id : '';
+      var planMatch = false;
+
+      // 'completo' aplica a cualquier plan
+      if (codePlan === 'completo') {
+        planMatch = true;
+      }
+      // live aplica a cualquier variante de live
+      else if (codePlan === 'live' && selectedPlan.startsWith('live')) {
+        planMatch = true;
+      }
+      // coincidencia exacta
+      else if (codePlan === selectedPlan) {
+        planMatch = true;
+      }
+
+      if (!planMatch) {
+        msg.className = 'ck-code-msg err';
+        msg.textContent = '✗ Este código no es válido para el plan seleccionado.';
+        state.codeData = null;
+        document.getElementById('pay-free').style.display = 'none';
+        document.getElementById('pay-card').style.display = '';
+        updateSummary();
+        return;
+      }
+
       state.codeData = r.data;
       msg.className = 'ck-code-msg ok';
       msg.textContent = '✓ Código válido';

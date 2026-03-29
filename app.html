@@ -1185,9 +1185,9 @@ function loadApp(user) {
       var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
       document.getElementById('amain').innerHTML =
         '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:40px 20px;">' +
-          '<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;text-transform:uppercase;color:#f0f0f0;margin-bottom:6px;">¡Bienvenido, ' + name + '!</div>' +
+          '<div style="font-family:sans-serif;font-size:1.5rem;font-weight:800;text-transform:uppercase;color:#f0f0f0;margin-bottom:6px;">¡Bienvenido, ' + name + '!</div>' +
           '<p style="font-size:.84rem;color:#666;max-width:340px;margin:0 auto 28px;">Completa tu perfil para acceder al dashboard.</p>' +
-          '<div style="width:100px;height:100px;border-radius:50%;background:rgba(91,127,166,.1);border:2px dashed rgba(91,127,166,.4);display:flex;align-items:center;justify-content:center;margin-bottom:16px;cursor:pointer;" id="avatar-upload-circle" onclick="document.getElementById('avatar-input-complete').click()">' +
+          '<div style="width:100px;height:100px;border-radius:50%;background:rgba(91,127,166,.1);border:2px dashed rgba(91,127,166,.4);display:flex;align-items:center;justify-content:center;margin-bottom:16px;cursor:pointer;" id="avatar-upload-circle" onclick="document.getElementById(\'avatar-input-complete\').click()">' +
             '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>' +
           '</div>' +
           '<input type="file" id="avatar-input-complete" accept="image/*" style="display:none" onchange="handleCompleteAvatar(this)">' +

@@ -1176,11 +1176,14 @@ function loadApp(user) {
     }
 
     function _showCompleteProfile() {
-      // Ocultar sidebar y nav mobile
+      // Ocultar sidebar y nav mobile y bloquear navegación
       var aside = document.querySelector('.aside');
       if (aside) aside.style.display = 'none';
       var mobNav = document.getElementById('mob-nav');
       if (mobNav) mobNav.style.display = 'none';
+      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+        b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
+      });
 
       var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
       document.getElementById('amain').innerHTML =

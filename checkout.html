@@ -1022,10 +1022,28 @@ async function createAccount() {
     // Esperar que Supabase cree el perfil via trigger
     await new Promise(function(r){ setTimeout(r, 1500); });
     if (codeVal) {
-      await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
+      // RPC bypasea RLS y guarda todo
+      var age = null;
+      if (dobD && dobM && dobY) {
+        var bday = new Date(dobY + '-' + dobM + '-' + dobD);
+        var today2 = new Date();
+        age = today2.getFullYear() - bday.getFullYear();
+        if (today2 < new Date(today2.getFullYear(), bday.getMonth(), bday.getDate())) age--;
+      }
+      await sb.rpc('use_access_code', {
+        p_code: codeVal,
+        p_user_id: userId,
+        p_name: name || null,
+        p_country: country || null,
+        p_phone: phone || null,
+        p_phone_prefix: prefix || null,
+        p_dob: (dobD && dobM && dobY) ? dobY + '-' + dobM + '-' + dobD : null,
+        p_age: age
+      });
+    } else {
+      // Sin código — guardar perfil directamente
+      await sb.from('profiles').update(profile).eq('id', userId);
     }
-    // Guardar perfil completo
-    await sb.from('profiles').update(profile).eq('id', userId);
   }
 
   try { sessionStorage.removeItem('_rn'); sessionStorage.removeItem('_re'); sessionStorage.removeItem('_rp'); } catch(ex){}

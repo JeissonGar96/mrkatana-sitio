@@ -3052,7 +3052,7 @@ function swA1on1(tab) {
 function _rAdm1on1Mtg() {
   var el = document.getElementById('a1on1-mtg'); if (!el) return;
   el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
-  var now = new Date().toISOString();
+  var now = new Date(Date.now() - 1800000).toISOString(); // 30 min de gracia
   sb.from('meetings_1on1')
     .select('*, profiles(full_name, avatar_url)')
     .gte('scheduled_at', now)

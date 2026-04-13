@@ -1315,6 +1315,8 @@ function rDash(liveOnly) {
   sb.from('roadmap_weeks').select('week_number').order('week_number', {ascending:false}).limit(1).then(function(rw) {
     if (rw.data && rw.data.length) {
       var roadmapMax = rw.data[0].week_number;
+      // Update _totalWeeks used by navWeek
+      if (typeof _totalWeeks !== 'undefined') window._totalWeeks = roadmapMax;
       // Update counter
       var wtEl = document.getElementById('wk-total');
       if (wtEl) wtEl.textContent = 'de ' + roadmapMax + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando');
@@ -1450,9 +1452,10 @@ function rDash(liveOnly) {
     // Week navigator state
   var _viewWeek = weekNum;
   var _totalWeeks = totalWeeks;
+  window._totalWeeks = _totalWeeks; // expose for async update
   window.navWeekTo = function(w) { _viewWeek = w; updateWeekDisplay(); };
   window.navWeek = function(dir) {
-    _viewWeek = Math.max(1, Math.min(_totalWeeks, _viewWeek + dir));
+    _viewWeek = Math.max(1, Math.min(window._totalWeeks || _totalWeeks, _viewWeek + dir));
     updateWeekDisplay();
   };
   function updateWeekDisplay() {

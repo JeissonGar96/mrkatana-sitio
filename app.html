@@ -2948,11 +2948,12 @@ function rAdmRoadmap() {
   c.innerHTML = '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">📋 Roadmap semanal — haz clic en una semana para editarla</div><div id="roadmap-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;"><span class="spin"></span></div>';
   sb.from('roadmap_weeks').select('*').order('week_number').then(function(r) {
     var existing = {};
-    if (r.data) r.data.forEach(function(w) { existing[w.week_number] = w; });
+    var maxWeek = 0;
+    if (r.data) r.data.forEach(function(w) { existing[w.week_number] = w; if (w.week_number > maxWeek) maxWeek = w.week_number; });
     var grid = document.getElementById('roadmap-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    for (var i = 1; i <= 24; i++) {
+    for (var i = 1; i <= maxWeek; i++) {
       var w = existing[i];
       var cell = document.createElement('div');
       cell.style.cssText = 'background:'+(w?'rgba(91,127,166,.12)':'rgba(255,255,255,.03)')+';border:1px solid '+(w?'rgba(91,127,166,.25)':'var(--br)')+';border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;transition:.15s;';
@@ -2965,6 +2966,14 @@ function rAdmRoadmap() {
       (function(week, wData){ cell.addEventListener('click', function(){ editRoadmapWeek(week, wData); }); })(i, w);
       grid.appendChild(cell);
     }
+    // Botón + para agregar siguiente semana
+    var addCell = document.createElement('div');
+    addCell.style.cssText = 'background:rgba(74,222,128,.05);border:1px dashed rgba(74,222,128,.25);border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;transition:.15s;';
+    addCell.innerHTML = '<div style="font-size:1.4rem;color:rgba(74,222,128,.6);">+</div><div style="font-size:.6rem;color:#555;margin-top:2px;">Semana '+(maxWeek+1)+'</div>';
+    addCell.onmouseover = function(){ this.style.borderColor='rgba(74,222,128,.6)'; };
+    addCell.onmouseout = function(){ this.style.borderColor='rgba(74,222,128,.25)'; };
+    (function(nextWeek){ addCell.addEventListener('click', function(){ editRoadmapWeek(nextWeek, null); }); })(maxWeek+1);
+    grid.appendChild(addCell);
   });
 }
 

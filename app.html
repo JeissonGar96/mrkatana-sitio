@@ -1307,10 +1307,35 @@ function rDash(liveOnly) {
   var dL = end ? Math.max(0, Math.ceil((end-today)/86400000)) : '—';
   var endS = end ? end.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin fecha';
 
-  // Week calculation
+  // Week calculation — totalWeeks capped to roadmap weeks in Supabase
   var weekNum = start ? Math.ceil((today - start) / (7*86400000)) : 0;
   var totalWeeks = (start && end) ? Math.ceil((end - start) / (7*86400000)) : 24;
   weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
+  // Override totalWeeks with actual roadmap weeks from Supabase (async update)
+  sb.from('roadmap_weeks').select('week_number').order('week_number', {ascending:false}).limit(1).then(function(rw) {
+    if (rw.data && rw.data.length) {
+      var roadmapMax = rw.data[0].week_number;
+      // Update counter
+      var wtEl = document.getElementById('wk-total');
+      if (wtEl) wtEl.textContent = 'de ' + roadmapMax + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando');
+      // Update subtitle
+      var subEl = document.querySelector('.asub');
+      if (subEl && !liveOnly) subEl.textContent = 'Semana ' + weekNum + ' de ' + roadmapMax + ' · ' + (dL !== '—' && dL > 0 ? dL+' días restantes' : 'Bienvenido');
+      // Render dots
+      var dotsEl = document.getElementById('week-dots');
+      if (dotsEl) {
+        var dots = '';
+        for (var i = 1; i <= roadmapMax; i++) {
+          var isCur = i === weekNum, isPast = i < weekNum;
+          dots += '<div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:' +
+            (isCur ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)') +
+            ';box-shadow:' + (isCur ? '0 0 6px rgba(125,160,200,.6)' : 'none') +
+            ';cursor:pointer;transition:.2s;" onclick="navWeekTo(' + i + ')" title="Semana ' + i + '"></div>';
+        }
+        dotsEl.innerHTML = dots;
+      }
+    }
+  });
 
   // Next 1-1 loaded from meetings_1on1 (populated async, card updated after)
   var next1on1 = null;
@@ -1363,19 +1388,7 @@ function rDash(liveOnly) {
           '</div>' +
           '<button onclick="navWeek(1)" class="wk-arrow" style="background:none;border:none;color:#333;width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">›</button>' +
         '</div>' +
-        '<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;" id="week-dots">' +
-          (function() {
-            var dots = '';
-            for (var i = 1; i <= Math.min(totalWeeks, 24); i++) {
-              var isCur = i === weekNum, isPast = i < weekNum;
-              dots += '<div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:' +
-                (isCur ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)') +
-                ';box-shadow:' + (isCur ? '0 0 6px rgba(125,160,200,.6)' : 'none') +
-                ';cursor:pointer;transition:.2s;" onclick="navWeekTo(' + i + ')" title="Semana ' + i + '"></div>';
-            }
-            return dots;
-          })() +
-        '</div>' +
+        '<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;" id="week-dots"></div>' +
         '<div style="font-size:.67rem;color:#444;text-align:center;" id="wk-total">de ' + totalWeeks + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando') + '</div>' +
       '</div>' +
 

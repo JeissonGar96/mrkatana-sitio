@@ -623,11 +623,12 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
   .pricing-live-mobile .pbox { max-width: 100% !important; margin-top: 0 !important; }
   /* New clean pricing */
   .pricing-row { flex-direction: column !important; align-items: center !important; }
-  .pricing-live-card { width: 100% !important; order: 2; }
-  .pricing-main-card { width: 100% !important; order: 1; }
-  .pricing-placeholder-card { display: none !important; }
+  .pricing-live-card { width: 100% !important; order: 3; }
+  .pricing-main-card { width: 100% !important; order: 1; max-width: 100% !important; }
+  .pricing-placeholder-card { display: block !important; width: 100% !important; order: 2; }
   .pricing-live-card .pbox,
-  .pricing-main-card .pbox { max-width: 100% !important; margin-top: 0 !important; }
+  .pricing-main-card .pbox,
+  .pricing-placeholder-card .pbox { max-width: 100% !important; margin-top: 0 !important; }
   .phed{padding:48px 20px 24px !important;}
   .pbody{padding:24px 20px !important;}
   .price-header,.price-body{padding:24px 20px !important;}
@@ -705,7 +706,7 @@ footer{background:linear-gradient(90deg,rgba(13,17,23,.98),rgba(15,20,28,.98));b
 .pricing-live-mobile { display: none !important; }
 .pricing-wrap { position: relative; }
 /* On PC: $100 card on left, slightly smaller */
-.pricing-live-card { opacity: .72; filter: blur(.3px); pointer-events: none; }
+.pricing-live-card { opacity: 1; }
 #precios { position: relative; overflow: hidden; }
 #precios::before {
   content: '';
@@ -1365,7 +1366,7 @@ nav{
         <div><div class="nv" data-target="6" data-prefix="" data-suffix="">6</div><div class="nl">Meses formación</div></div>
       </div>
       <div class="btns">
-        <a href="#precios" class="bp">Unirme — $600 USD</a>
+        <a href="#precios" class="bp">Ver planes</a>
         <a href="#incluye" class="bs">Ver contenido</a>
       </div>
     </div>
@@ -1410,7 +1411,7 @@ nav{
   <div class="wrap">
     <div class="reveal">
       <div class="slbl">Formación Completa</div>
-      <h2 class="stit">Todo lo que incluye<br><span class="blue">tu inversión de $600</span></h2>
+      <h2 class="stit">Todo lo que incluye<br><span class="blue">tu inversión</span></h2>
     </div>
     <div class="igrid">
       <div class="icard reveal"><div style="width:52px;height:52px;background:rgba(91,127,166,.12);border:1px solid rgba(91,127,166,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#7da0c8;margin-bottom:20px;flex-shrink:0;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 12h3M9 7v10M15 9v8M21 12h-3"/><rect x="6" y="9" width="6" height="6" rx="1"/><rect x="12" y="7" width="6" height="10" rx="1"/></svg></div><div class="it">Sesiones en Vivo</div><div class="id">Análisis de mercado en tiempo real. Order flow y setups de alta probabilidad mientras ocurren.</div></div>
@@ -1455,85 +1456,78 @@ nav{
       <h2 class="stit">Una inversión.<br><span class="blue">Seis meses de precisión.</span></h2>
     </div>
 
-    <!-- Flex row on PC (live left, main center, placeholder right), column on mobile -->
+    <!-- Flex row: Live (left), Mentoría $1500 (center), Formación $600 (right) -->
     <div class="pricing-row reveal" style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:48px;">
 
-      <!-- $100 Live Sessions — left -->
-      <div class="pricing-live-card" style="flex-shrink:0;width:340px;opacity:.72;filter:blur(.3px);pointer-events:none;">
+      <!-- Live Sessions — left (pequeño) -->
+      <div class="pricing-live-card" style="flex-shrink:0;width:340px;opacity:.85;">
         <div class="pbox" style="margin-top:0;position:relative;overflow:hidden;">
-          <div style="position:absolute;top:0;left:0;right:0;z-index:2;display:flex;justify-content:center;padding-top:14px;">
-            <div style="background:rgba(17,17,17,.8);backdrop-filter:blur(3px);border:1px solid rgba(74,158,255,.35);border-radius:20px;padding:4px 12px;display:flex;align-items:center;gap:5px;">
-              <div style="width:5px;height:5px;border-radius:50%;background:#4a9eff;animation:blink 1.5s infinite;flex-shrink:0;"></div>
-              <span style="font-size:.6rem;color:#4a9eff;text-transform:uppercase;letter-spacing:2px;font-weight:700;">Próximamente</span>
-            </div>
-          </div>
           <div class="ptop" style="background:linear-gradient(90deg,#4a9eff,#7dc4ff);"></div>
           <div class="phed">
-            <div class="pbadge" style="background:linear-gradient(135deg,#4a9eff,#7dc4ff);color:#fff;">Nuevo Plan</div>
+            <div class="pbadge" style="background:linear-gradient(135deg,#4a9eff,#7dc4ff);color:#fff;">Sesiones en Vivo</div>
             <div class="pplan" style="color:#4a9eff;">Live Sessions Mr. Katana</div>
-            <div class="pamt"><span class="pcur" style="color:#4a9eff;">$</span><span class="pnum" style="color:#4a9eff;">100</span><span class="pper">USD · mensual</span></div>
+            <div class="pamt"><span class="pcur" style="color:#4a9eff;">$</span><span class="pnum" style="color:#4a9eff;font-size:3rem;">100</span><span class="pper">USD · mensual</span></div>
             <div style="margin-top:10px;font-size:.76rem;color:#555;">También disponible en planes de 3 y 6 meses</div>
           </div>
           <div class="pbody">
             <ul class="plist">
-              <li><span class="pchk" style="color:#4a9eff;">▸</span> 3 sesiones en vivo por semana</li>
+              <li><span class="pchk" style="color:#4a9eff;">▸</span> Sesiones en vivo semanales</li>
               <li><span class="pchk" style="color:#4a9eff;">▸</span> Análisis de mercado en tiempo real</li>
-              <li><span class="pchk" style="color:#4a9eff;">▸</span> Acceso a la comunidad privada</li>
+              <li><span class="pchk" style="color:#4a9eff;">▸</span> Q&A grupal mensual</li>
               <li><span class="pchk" style="color:#4a9eff;">▸</span> Dashboard de seguimiento</li>
               <li><span class="pchk" style="color:#4a9eff;">▸</span> Grabaciones de cada sesión</li>
             </ul>
-            <div style="display:block;text-align:center;width:100%;padding:16px;background:linear-gradient(135deg,#4a9eff,#2979cc);border-radius:8px;color:#fff;font-weight:600;font-size:.9rem;box-sizing:border-box;">Próximamente — $100/mes</div>
-            <div class="pnote" style="border-color:rgba(74,158,255,.2);"><strong style="color:#4a9eff;">¿Interesado?</strong> Contáctanos para ser de los primeros en acceder cuando esté disponible.</div>
+            <a href="https://wa.me/593995014247?text=Hola%20Jeisson%2C%20quiero%20unirme%20a%20las%20Live%20Sessions" class="bp" style="display:block;text-align:center;width:100%;padding:16px;background:linear-gradient(135deg,#4a9eff,#2979cc);box-sizing:border-box;">Unirme — $100/mes</a>
+            <div class="pnote" style="border-color:rgba(74,158,255,.2);"><strong style="color:#4a9eff;">Acceso inmediato</strong> al confirmar tu pago.</div>
           </div>
         </div>
       </div>
 
-      <!-- $600 Main -->
-      <div class="pricing-main-card" style="flex-shrink:0;">
+      <!-- Mentoría $1500 — center (destacado, grande) -->
+      <div class="pricing-main-card" style="flex-shrink:0;max-width:400px;">
+        <div class="pbox" style="margin-top:0;border-color:rgba(201,168,76,.3);">
+          <div class="ptop" style="background:linear-gradient(90deg,#c9a84c,#e8c97a);"></div>
+          <div class="phed">
+            <div class="pbadge" style="background:linear-gradient(135deg,#c9a84c,#e8c97a);color:#111;">Premium</div>
+            <div class="pplan" style="color:#c9a84c;">Mentoría RAIN Mr. Katana</div>
+            <div class="pamt"><span class="pcur" style="color:#c9a84c;">$</span><span class="pnum" style="color:#c9a84c;text-shadow:0 0 20px rgba(201,168,76,.6),0 0 40px rgba(201,168,76,.3);font-size:4rem;">1,500</span><span class="pper">USD · pago único</span></div>
+            <div style="margin-top:10px;font-size:.76rem;color:#555;">Todo lo del plan Formación + acompañamiento personalizado</div>
+          </div>
+          <div class="pbody">
+            <ul class="plist">
+              <li><span class="pchk" style="color:#c9a84c;">▸</span> Todo lo incluido en Formación</li>
+              <li><span class="pchk" style="color:#c9a84c;">▸</span> Reunión 1-1 semanal con Jeisson</li>
+              <li><span class="pchk" style="color:#c9a84c;">▸</span> Revisión personalizada de trades</li>
+              <li><span class="pchk" style="color:#c9a84c;">▸</span> Plan de fondeo personalizado</li>
+              <li><span class="pchk" style="color:#c9a84c;">▸</span> Seguimiento directo por WhatsApp</li>
+              <li><span class="pchk" style="color:#c9a84c;">▸</span> Acceso por 6 meses</li>
+            </ul>
+            <a href="https://wa.me/593995014247?text=Hola%20Jeisson%2C%20quiero%20unirme%20a%20la%20Mentor%C3%ADa%20RAIN" class="bp" style="display:block;text-align:center;width:100%;padding:16px;background:linear-gradient(135deg,#c9a84c,#e8c97a);color:#111;box-sizing:border-box;">Unirme — $1,500 USD</a>
+            <div class="pnote" style="border-color:rgba(201,168,76,.2);"><strong style="color:#c9a84c;">Cupos limitados</strong> — máximo 4 estudiantes por mes.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formación $600 — right (pequeño) -->
+      <div class="pricing-placeholder-card" style="flex-shrink:0;width:340px;opacity:.85;">
         <div class="pbox" style="margin-top:0;">
           <div class="ptop"></div>
           <div class="phed">
-            <div class="pbadge">Precio Fundador</div>
-            <div class="pplan">Formación Completa Mr. Katana</div>
-            <div class="pamt"><span class="pcur">$</span><span class="pnum">600</span><span class="pper">USD · pago único</span></div>
-            <div style="margin-top:10px;font-size:.76rem;color:#555;">Precio futuro: <s style="color:rgba(255,255,255,.2)">$1,500</s> — <span style="color:var(--sl)">Asegura el precio fundador ahora</span></div>
+            <div class="pbadge">Formación</div>
+            <div class="pplan">Formación RAIN Mr. Katana</div>
+            <div class="pamt"><span class="pcur">$</span><span class="pnum" style="font-size:3rem;">600</span><span class="pper">USD · pago único</span></div>
+            <div style="margin-top:10px;font-size:.76rem;color:#555;">Acceso completo al contenido con desbloqueo semanal</div>
           </div>
           <div class="pbody">
             <ul class="plist">
-              <li><span class="pchk">▸</span> 6 meses de formación completa</li>
-              <li><span class="pchk">▸</span> Sesiones en vivo de análisis</li>
-              <li><span class="pchk">▸</span> Reuniones semanales grupales</li>
-              <li><span class="pchk">▸</span> 1 sesión 1-1 privada por mes</li>
-              <li><span class="pchk">▸</span> Todas las clases grabadas</li>
-              <li><span class="pchk">▸</span> Método institucional completo</li>
-              <li><span class="pchk">▸</span> Plan de fondeo 45 días</li>
-              <li><span class="pchk">▸</span> Comunidad privada</li>
+              <li><span class="pchk">▸</span> 9 clases pregrabadas RAIN</li>
+              <li><span class="pchk">▸</span> Desbloqueo semanal de contenido</li>
+              <li><span class="pchk">▸</span> Sesiones grupales + Q&A mensual</li>
+              <li><span class="pchk">▸</span> Dashboard de progreso semanal</li>
+              <li><span class="pchk">▸</span> Acceso por 6 meses</li>
             </ul>
-            <a href="https://wa.me/593995014247?text=Hola%20Jeisson%2C%20quiero%20unirme" class="bp" style="display:block;text-align:center;width:100%;padding:16px;">Quiero unirme — $600 USD</a>
-            <div class="pnote"><strong style="color:var(--sl)">¿Cómo pagar?</strong> Al hacer clic te contactas por WhatsApp. Te indico el método y tienes acceso en menos de 24h.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Placeholder derecha — invisible, equilibra el centro en PC -->
-      <!-- Editar cuando llegue la nueva formación o servicio -->
-      <div class="pricing-placeholder-card" style="flex-shrink:0;width:340px;visibility:hidden;pointer-events:none;">
-        <div class="pbox" style="margin-top:0;opacity:0;">
-          <div class="ptop"></div>
-          <div class="phed">
-            <div class="pplan">Próximo plan</div>
-            <div class="pamt"><span class="pcur">$</span><span class="pnum">000</span></div>
-          </div>
-          <div class="pbody">
-            <ul class="plist">
-              <li><span class="pchk">▸</span> —</li>
-              <li><span class="pchk">▸</span> —</li>
-              <li><span class="pchk">▸</span> —</li>
-              <li><span class="pchk">▸</span> —</li>
-              <li><span class="pchk">▸</span> —</li>
-            </ul>
-            <div class="bp" style="display:block;width:100%;padding:16px;text-align:center;">—</div>
-            <div class="pnote">—</div>
+            <a href="https://wa.me/593995014247?text=Hola%20Jeisson%2C%20quiero%20unirme%20a%20la%20Formaci%C3%B3n%20RAIN" class="bp" style="display:block;text-align:center;width:100%;padding:16px;">Unirme — $600 USD</a>
+            <div class="pnote"><strong style="color:var(--sl)">Acceso inmediato</strong> al confirmar tu pago.</div>
           </div>
         </div>
       </div>

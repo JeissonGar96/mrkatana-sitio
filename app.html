@@ -935,10 +935,9 @@ function _renderSection(state) {
   if (state.section !== 'clases') _restoreAmain();
   if (state.section === 'dash') {
     var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-    var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-    // También verificar live_end para formacion/formacion-basico
-    var hasLiveAccess = isLive || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
-    if (hasLiveAccess) rDash(true); else rDash();
+    var isLivePuro = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
+    // liveOnly solo si es plan live puro, no si tiene formacion/mentoria + live
+    if (isLivePuro) rDash(true); else rDash();
   }
   else if (state.section === 'clases') {
     var planC = cProfile && cProfile.plan ? cProfile.plan : '';

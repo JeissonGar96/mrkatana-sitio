@@ -1156,30 +1156,32 @@ function loadApp(user) {
 
     function _grantAccess() {
       var plan = cProfile && cProfile.plan ? cProfile.plan : '';
+      var isAdmin = cProfile && cProfile.role === 'admin';
       var isLivePuro = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-      var isFormacion = plan === 'formacion' || plan === 'formacion-basico';
       var hasLiveAccess = isLivePuro || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
 
-      // Live puro → ocultar Clases y Roadmap
-      if (isLivePuro) {
-        var claseBtn = document.querySelector('.snav[data-v="clases"]');
-        if (claseBtn) claseBtn.style.display = 'none';
-        var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
-        if (mobClaseBtn) mobClaseBtn.style.display = 'none';
-      }
-      // Sin live activo → ocultar En vivo
-      if (!hasLiveAccess) {
-        var liveBtn = document.querySelector('.snav[data-v="sesiones"]');
-        if (liveBtn) liveBtn.style.display = 'none';
-        var mobLiveBtn = document.querySelector('.mob-nav-btn[data-v="sesiones"]');
-        if (mobLiveBtn) mobLiveBtn.style.display = 'none';
-      }
-      // Solo formacion ($1500) ve Reuniones 1-1
-      if (plan !== 'formacion') {
-        var r1on1Btn = document.querySelector('.snav[data-v="reuniones"]');
-        if (r1on1Btn) r1on1Btn.style.display = 'none';
-        var mobR1on1Btn = document.querySelector('.mob-nav-btn[data-v="reuniones"]');
-        if (mobR1on1Btn) mobR1on1Btn.style.display = 'none';
+      if (!isAdmin) {
+        // Live puro → ocultar Clases y Roadmap
+        if (isLivePuro) {
+          var claseBtn = document.querySelector('.snav[data-v="clases"]');
+          if (claseBtn) claseBtn.style.display = 'none';
+          var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
+          if (mobClaseBtn) mobClaseBtn.style.display = 'none';
+        }
+        // Sin live activo → ocultar En vivo
+        if (!hasLiveAccess) {
+          var liveBtn = document.querySelector('.snav[data-v="sesiones"]');
+          if (liveBtn) liveBtn.style.display = 'none';
+          var mobLiveBtn = document.querySelector('.mob-nav-btn[data-v="sesiones"]');
+          if (mobLiveBtn) mobLiveBtn.style.display = 'none';
+        }
+        // Solo formacion ($1500) ve Reuniones 1-1
+        if (plan !== 'formacion') {
+          var r1on1Btn = document.querySelector('.snav[data-v="reuniones"]');
+          if (r1on1Btn) r1on1Btn.style.display = 'none';
+          var mobR1on1Btn = document.querySelector('.mob-nav-btn[data-v="reuniones"]');
+          if (mobR1on1Btn) mobR1on1Btn.style.display = 'none';
+        }
       }
       // Si no tiene foto, mostrar pantalla para completar perfil
       if (!cProfile.avatar_url && cProfile.role !== 'admin') {

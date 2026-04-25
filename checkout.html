@@ -1140,20 +1140,34 @@ async function createAccountAfterPayment(paypalDetails) {
   }
 
   // Membership end según plan
-  var monthsMap = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6 };
+  var monthsMap = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6, 'formacion-basico':1200 };
   var planId = state.plan ? state.plan.id : 'formacion';
   var months = monthsMap[planId] || 12;
   var membershipEnd = new Date();
   membershipEnd.setMonth(membershipEnd.getMonth() + months);
 
+  // Live end — 6 meses para formacion y formacion-basico
+  var liveEnd = null;
+  var livePlan = null;
+  if (planId === 'formacion' || planId === 'formacion-basico') {
+    liveEnd = new Date();
+    liveEnd.setMonth(liveEnd.getMonth() + 6);
+    livePlan = 'live-semestral';
+  } else if (planId === 'live-mensual' || planId === 'live-trimestral' || planId === 'live-semestral') {
+    liveEnd = membershipEnd;
+    livePlan = planId;
+  }
+
   if (userId) {
     if (state.isRenewal) {
       // Renovación — solo actualizar membresía
-      await sb.from('profiles').update({
+      var renewData = {
         plan: planId,
         membership_start: new Date().toISOString(),
         membership_end: membershipEnd.toISOString()
-      }).eq('id', userId);
+      };
+      if (livePlan) { renewData.live_plan = livePlan; renewData.live_end = liveEnd.toISOString(); }
+      await sb.from('profiles').update(renewData).eq('id', userId);
     } else {
       // Usuario nuevo — actualizar perfil completo
       var avatarUrl = null;
@@ -1167,6 +1181,7 @@ async function createAccountAfterPayment(paypalDetails) {
         phone: phone, trading_experience: exp,
         plan: planId, membership_end: membershipEnd.toISOString()
       };
+      if (livePlan) { profile.live_plan = livePlan; profile.live_end = liveEnd.toISOString(); }
       if (dobD && dobM && dobY) {
         profile.date_of_birth = dobY + '-' + dobM + '-' + dobD;
         var bday = new Date(profile.date_of_birth);

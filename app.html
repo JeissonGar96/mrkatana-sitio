@@ -1156,24 +1156,26 @@ function loadApp(user) {
     }
 
     function _grantAccess() {
-      // Ocultar "Curso" en sidebar para usuarios live puro
       var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-      var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-      var hasLiveAccess = isLive || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
-      if (isLive) {
+      var isLivePuro = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
+      var isFormacion = plan === 'formacion' || plan === 'formacion-basico';
+      var hasLiveAccess = isLivePuro || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
+
+      // Live puro → ocultar Clases y Roadmap
+      if (isLivePuro) {
         var claseBtn = document.querySelector('.snav[data-v="clases"]');
         if (claseBtn) claseBtn.style.display = 'none';
         var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
         if (mobClaseBtn) mobClaseBtn.style.display = 'none';
       }
-      // Ocultar "En vivo" si no tiene live_end activo
+      // Sin live activo → ocultar En vivo
       if (!hasLiveAccess) {
         var liveBtn = document.querySelector('.snav[data-v="sesiones"]');
         if (liveBtn) liveBtn.style.display = 'none';
         var mobLiveBtn = document.querySelector('.mob-nav-btn[data-v="sesiones"]');
         if (mobLiveBtn) mobLiveBtn.style.display = 'none';
       }
-      // Ocultar reuniones 1-1 para todos excepto mentoría
+      // Solo formacion ($1500) ve Reuniones 1-1
       if (plan !== 'formacion') {
         var r1on1Btn = document.querySelector('.snav[data-v="reuniones"]');
         if (r1on1Btn) r1on1Btn.style.display = 'none';
@@ -2885,13 +2887,14 @@ function _renderStudents(data) {
     var q = (document.getElementById('st-search')||{}).value||'';
     if(!data||!data.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">'+(q?'Sin resultados para "'+q+'"':'Sin alumnos.')+'</p>';return;}
     var today = new Date();
-    t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th>Nombre</th><th>Email</th><th>Plan</th><th>Live</th><th>Vence</th><th>Estado</th><th>Acción</th></tr></thead><tbody>'+
+    t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th>Nombre</th><th>Email</th><th>Etiquetas</th><th>Vence</th><th>Estado</th><th>Acción</th></tr></thead><tbody>'+
       data.map(function(s){
         var en=s.membership_end?new Date(s.membership_end):null, act=en&&en>today;
         var liveEn=s.live_end?new Date(s.live_end):null, liveAct=liveEn&&liveEn>today;
+        var planLabel = s.role==='admin'?'admin':s.plan||'—';
+        var liveTag = liveAct ? '<span onclick="renewLive(\''+s.id+'\')" title="Live vence '+liveEn.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})+'" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(74,222,128,.1);color:#4ade80;border-radius:4px;cursor:pointer;margin-left:4px;">live ✓</span>' : '<span onclick="renewLive(\''+s.id+'\')" title="Sin live activo" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(255,255,255,.04);color:#444;border-radius:4px;cursor:pointer;margin-left:4px;">+ live</span>';
         return '<tr><td style="color:#f0f0f0;font-weight:500;">'+s.full_name+'</td><td>'+s.email+'</td>'+
-          '<td><select onchange="changePlan(\''+s.id+'\',this.value)" style="background:'+(s.role==='admin'?'rgba(91,127,166,.14)':(s.plan&&s.plan.startsWith('live')?'rgba(74,222,128,.1)':'rgba(255,255,255,.05)'))+';color:'+(s.role==='admin'?'var(--sl)':(s.plan&&s.plan.startsWith('live')?'#4ade80':'#9a9a9a'))+';border:none;border-radius:4px;padding:2px 6px;font-size:.68rem;font-weight:600;cursor:pointer;">'+(s.role==='admin'?'<option>admin</option>':'<option value="formacion-basico"'+(s.plan==='formacion-basico'?' selected':'')+'>formacion</option><option value="formacion"'+(s.plan==='formacion'?' selected':'')+'>mentoria</option><option value="live-mensual"'+(s.plan==='live-mensual'?' selected':'')+'>live 1m</option><option value="live-trimestral"'+(s.plan==='live-trimestral'?' selected':'')+'>live 3m</option><option value="live-semestral"'+(s.plan==='live-semestral'?' selected':'')+'>live 6m</option>')+'</select></td>'+
-          '<td style="font-size:.74rem;"><span style="padding:2px 6px;border-radius:4px;font-size:.66rem;font-weight:600;background:'+(liveAct?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(liveAct?'#4ade80':'#f87171')+';cursor:pointer;" onclick="renewLive(\''+s.id+'\')" title="'+(liveEn?liveEn.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}):'Sin live')+'">'+(liveAct?'✓ Live':'✗ Live')+'</span></td>'+
+          '<td style="white-space:nowrap;">'+(s.role==='admin' ? '<span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:rgba(91,127,166,.14);color:var(--sl);border-radius:4px;">admin</span>' : '<select onchange="changePlan(\''+s.id+'\',this.value)" style="background:rgba(255,255,255,.05);color:#9a9a9a;border:none;border-radius:4px;padding:2px 6px;font-size:.68rem;font-weight:600;cursor:pointer;"><option value="formacion-basico"'+(s.plan==='formacion-basico'?' selected':'')+'>formacion</option><option value="formacion"'+(s.plan==='formacion'?' selected':'')+'>mentoria</option><option value="live-mensual"'+(s.plan==='live-mensual'?' selected':'')+'>live 1m</option><option value="live-trimestral"'+(s.plan==='live-trimestral'?' selected':'')+'>live 3m</option><option value="live-semestral"'+(s.plan==='live-semestral'?' selected':'')+'>live 6m</option></select>'+liveTag)+'</td>'+
           '<td style="font-size:.74rem;">'+(en?en.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}):'—')+'</td>'+
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(act?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(act?'#4ade80':'#f87171')+';">'+(act?'Activo':'Inactivo')+'</span></td>'+
           '<td style="white-space:nowrap;">'+'<div style="display:flex;gap:5px;align-items:center;">'+'<button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;white-space:nowrap;">'+(act?'Desactivar':'Activar')+'</button>'+'<div style="position:relative;display:inline-block;">'+'<button onclick="toggleActMenu(this)" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#777;padding:3px 9px;border-radius:4px;font-size:.85rem;cursor:pointer;letter-spacing:1px;">···</button>'+'<div class="act-menu" data-sid="'+s.id+'" style="display:none;position:fixed;background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:8px;overflow:hidden;z-index:999;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.5);">'+'<button onclick="viewStudentProfile(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item">&#128100; Ver perfil</button>'+'<button onclick="dStudent(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item act-menu-danger">&#128465; Eliminar</button>'+'</div></div></div></td></tr>';
@@ -2906,16 +2909,17 @@ function renewLive(id) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML =
     '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Renovar Live</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Selecciona el plan live a activar</div>' +
+      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Live</div>' +
+      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Activa o desactiva el acceso a sesiones en vivo</div>' +
       '<select id="live-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
         '<option value="live-mensual|1">Live Mensual (1 mes)</option>' +
         '<option value="live-trimestral|3">Live Trimestral (3 meses)</option>' +
         '<option value="live-semestral|6">Live Semestral (6 meses)</option>' +
       '</select>' +
       '<div style="display:flex;gap:8px;">' +
-        '<button id="live-plan-btn" style="flex:1;padding:10px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);color:#4ade80;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Activar Live</button>' +
-        '<button onclick="document.getElementById(\'live-modal\').remove();" style="padding:10px 16px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+        '<button id="live-plan-btn" style="flex:1;padding:10px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);color:#4ade80;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Activar</button>' +
+        '<button id="live-deact-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Desactivar</button>' +
+        '<button onclick="document.getElementById(\'live-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
       '</div>' +
     '</div>';
   document.body.appendChild(modal);
@@ -2932,6 +2936,15 @@ function renewLive(id) {
       modal.remove();
       if (r.error) return tst('Error: ' + r.error.message, 1);
       tst('✓ Live activado — ' + livePlan);
+      rAdmSt();
+    });
+  });
+  document.getElementById('live-deact-btn').addEventListener('click', function() {
+    if (!confirm('¿Desactivar acceso live de este alumno?')) return;
+    sb.from('profiles').update({ live_plan: null, live_end: null }).eq('id', id).then(function(r) {
+      modal.remove();
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Live desactivado');
       rAdmSt();
     });
   });

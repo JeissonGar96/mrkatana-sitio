@@ -3574,11 +3574,13 @@ function delAdmMtg(id) {
 
 
 function viewStudentProfile(id) {
-  sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url').eq('id', id).single().then(function(pr) {
+  sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end').eq('id', id).single().then(function(pr) {
     if (pr.error || !pr.data) return tst('No se encontró el perfil', 1);
     var p = pr.data;
     var endDate = p.membership_end ? new Date(p.membership_end) : null;
     var active  = endDate && endDate > new Date();
+    var liveEndDate = p.live_end ? new Date(p.live_end) : null;
+    var liveActive = liveEndDate && liveEndDate > new Date();
 
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
@@ -3622,6 +3624,10 @@ function viewStudentProfile(id) {
           '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
             '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Membresía vence</div>' +
             '<div style="font-size:.88rem;color:#f0f0f0;">'+(endDate ? endDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div>' +
+          '</div>' +
+          '<div style="background:'+(liveActive?'rgba(74,222,128,.06)':'rgba(255,255,255,.03)')+';border:1px solid '+(liveActive?'rgba(74,222,128,.2)':'var(--br)')+';border-radius:8px;padding:12px;">' +
+            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Live vence</div>' +
+            '<div style="font-size:.88rem;color:'+(liveActive?'#4ade80':'#f87171')+'">'+(liveEndDate ? liveEndDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin live')+'</div>' +
           '</div>' +
         '</div>' +
 

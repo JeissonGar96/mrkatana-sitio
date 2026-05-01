@@ -1340,11 +1340,64 @@ function rDash(liveOnly) {
     sb.from('roadmap_progress').select('week_number').eq('user_id', cUser.id).eq('completed', true).order('week_number', {ascending:false}).limit(1).then(function(rp) {
       var manualWeek = (rp.data && rp.data.length) ? rp.data[0].week_number + 1 : 1;
       weekNum = manualWeek;
-      // Update display
       var lbl = document.querySelector('.week-label');
       if (lbl) lbl.textContent = 'Semana ' + weekNum;
       var subEl = document.querySelector('.asub');
       if (subEl) subEl.textContent = 'Semana ' + weekNum + ' de ' + totalWeeks + ' · En progreso';
+    });
+  }
+
+  // For formacion-basico: week based on module completion progress
+  if (cProfile && cProfile.plan === 'formacion-basico') {
+    // Get all modules from controlled level sorted by unlock_week
+    sb.from('course_levels').select('id').eq('is_controlled', true).limit(1).then(function(lv) {
+      if (!lv.data || !lv.data.length) return;
+      var lvId = lv.data[0].id;
+      sb.from('course_modules').select('id, unlock_week, course_lessons(id)').eq('level_id', lvId).order('sort_order').then(function(mr) {
+        if (!mr.data || !mr.data.length) return;
+        var allIds = [];
+        mr.data.forEach(function(m){ (m.course_lessons||[]).forEach(function(l){ allIds.push(l.id); }); });
+        if (!allIds.length) return;
+        sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', allIds).then(function(pr) {
+          var done = {};
+          if (pr.data) pr.data.forEach(function(p){ done[p.lesson_id] = true; });
+          // Find the current week: last module where all lessons are done + 1
+          var currentModuleWeek = 1;
+          for (var i = 0; i < mr.data.length; i++) {
+            var mod = mr.data[i];
+            var lessons = mod.course_lessons || [];
+            var allDone = lessons.length > 0 && lessons.every(function(l){ return done[l.id]; });
+            if (allDone && mod.unlock_week) {
+              currentModuleWeek = mod.unlock_week + 1;
+            } else {
+              break;
+            }
+          }
+          weekNum = currentModuleWeek;
+          // Update dashboard display
+          var lbl = document.querySelector('.week-label');
+          if (lbl) lbl.textContent = 'Semana ' + weekNum;
+          var wtEl = document.getElementById('wk-total');
+          if (wtEl) wtEl.textContent = 'de ' + (window._totalWeeks || totalWeeks) + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando');
+          var subEl = document.querySelector('.asub');
+          if (subEl) subEl.textContent = 'Semana ' + weekNum + ' de ' + (window._totalWeeks || totalWeeks) + ' · En progreso';
+          // Update dots
+          var dotsEl = document.getElementById('week-dots');
+          if (dotsEl) {
+            var roadmapMax = window._totalWeeks || totalWeeks;
+            var dots = '';
+            for (var j = 1; j <= roadmapMax; j++) {
+              var isCur = j === weekNum, isPast = j < weekNum;
+              dots += '<div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:' +
+                (isCur ? 'var(--sl)' : isPast ? 'rgba(91,127,166,.4)' : 'rgba(255,255,255,.07)') +
+                ';box-shadow:' + (isCur ? '0 0 6px rgba(125,160,200,.6)' : 'none') +
+                ';cursor:pointer;transition:.2s;" onclick="navWeekTo(' + j + ')" title="Semana ' + j + '"></div>';
+            }
+            dotsEl.innerHTML = dots;
+          }
+          if (typeof _viewWeek !== 'undefined') _viewWeek = weekNum;
+        });
+      });
     });
   }
   // Override totalWeeks with actual roadmap weeks from Supabase (async update)
@@ -1908,7 +1961,11 @@ function showLessons(mod, level, progress) {
         var lessonsDiv = document.createElement('div');
         lessonsDiv.className = 'ls-lessons-wrap';
         lessonsDiv.id = 'ls-lessons-' + module.id;
-        lessonsDiv.style.display = (isCurrentMod || isMobile) ? 'block' : 'none';
+        lessonsDiv.style.display = isLocked ? 'none' : ((isCurrentMod || isMobile) ? 'block' : 'none');
+
+        if (isLocked) {
+          lessonsDiv.innerHTML = '';
+        } else {
 
         modHeader.addEventListener('click', function() {
           if (isLocked) { tst('🔒 Este módulo se desbloquea en la semana ' + unlockWeek, 1); return; }
@@ -1950,6 +2007,7 @@ function showLessons(mod, level, progress) {
 
           lessonsDiv.appendChild(item);
         });
+        } // end else (not locked)
 
         modSection.appendChild(modHeader);
         modSection.appendChild(lessonsDiv);

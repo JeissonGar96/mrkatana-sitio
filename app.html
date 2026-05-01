@@ -2905,7 +2905,7 @@ function _renderStudents(data, showAll) {
         return '<tr><td style="color:#f0f0f0;font-weight:500;">'+s.full_name+'</td><td>'+s.email+'</td>'+
           '<td style="white-space:nowrap;">'+planBadge(s)+liveTag+'</td>'+
           '<td><span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+(act?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(act?'#4ade80':'#f87171')+';">'+(act?'Activo':'Inactivo')+'</span></td>'+
-          '<td style="white-space:nowrap;"><div style="display:flex;gap:5px;align-items:center;"><button onclick="activateMember(\''+s.id+'\','+act+')" style="background:'+(act?'rgba(248,113,113,.08)':'rgba(74,222,128,.08)')+';border:1px solid '+(act?'rgba(248,113,113,.3)':'rgba(74,222,128,.3)')+';color:'+(act?'#f87171':'#4ade80')+';padding:3px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;white-space:nowrap;">'+(act?'Desactivar':'Activar')+'</button><div style="position:relative;display:inline-block;"><button onclick="toggleActMenu(this)" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#777;padding:3px 9px;border-radius:4px;font-size:.85rem;cursor:pointer;letter-spacing:1px;">···</button><div class="act-menu" data-sid="'+s.id+'" style="display:none;position:fixed;background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:8px;overflow:hidden;z-index:999;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.5);"><button onclick="viewStudentProfile(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item">&#128100; Ver perfil</button><button onclick="dStudent(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item act-menu-danger">&#128465; Eliminar</button></div></div></div></td></tr>';
+          '<td style="white-space:nowrap;"><div style="display:flex;gap:5px;align-items:center;"><div style="position:relative;display:inline-block;"><button onclick="toggleActMenu(this)" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#777;padding:3px 9px;border-radius:4px;font-size:.85rem;cursor:pointer;letter-spacing:1px;">···</button><div class="act-menu" data-sid="'+s.id+'" style="display:none;position:fixed;background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:8px;overflow:hidden;z-index:999;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.5);"><button onclick="viewStudentProfile(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item">&#128100; Ver perfil</button><button onclick="dStudent(this.closest(\'.act-menu\').dataset.sid)" class="act-menu-item act-menu-danger">&#128465; Eliminar</button></div></div></div></td></tr>';
       }).join('')+'</tbody></table></div>'+
       (!q && data.length > 5 && !showAll ? '<div style="text-align:center;margin-top:12px;"><button onclick="_renderStudents(window._allStudents, true)" style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:7px 20px;border-radius:6px;font-size:.78rem;cursor:pointer;">Ver todos ('+data.length+')</button></div>' : '');
 }
@@ -2967,26 +2967,49 @@ function changePlanModal(id, currentPlan) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML =
     '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Cambiar Plan</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Las fechas de membresía no se modifican</div>' +
-      '<select id="plan-modal-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
+      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Plan</div>' +
+      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Plan actual: <strong style="color:#f0f0f0;">'+(currentPlan||'—')+'</strong></div>' +
+      '<select id="plan-modal-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:12px;">' +
         '<option value="formacion-basico"'+(currentPlan==='formacion-basico'?' selected':'')+'>Formación ($600)</option>' +
         '<option value="formacion"'+(currentPlan==='formacion'?' selected':'')+'>Mentoría ($1,500)</option>' +
       '</select>' +
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">' +
+        '<input type="checkbox" id="plan-keep-dates" checked style="width:14px;height:14px;accent-color:var(--sl);">' +
+        '<span style="font-size:.78rem;color:#9a9a9a;">Mantener fechas actuales</span>' +
+      '</label>' +
       '<div style="display:flex;gap:8px;">' +
         '<button id="plan-modal-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Cambiar</button>' +
-        '<button onclick="document.getElementById(\'plan-modal\').remove();" style="padding:10px 16px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+        '<button id="plan-delete-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Eliminar</button>' +
+        '<button onclick="document.getElementById(\'plan-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
       '</div>' +
     '</div>';
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
   document.getElementById('plan-modal-btn').addEventListener('click', function() {
     var plan = document.getElementById('plan-modal-sel').value;
+    var keepDates = document.getElementById('plan-keep-dates').checked;
     var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
-    sb.from('profiles').update({ plan: plan }).eq('id', id).then(function(r) {
+    var upd = { plan: plan };
+    if (!keepDates) {
+      var months = 180;
+      var now = new Date(), end = new Date();
+      end.setMonth(end.getMonth() + months);
+      upd.membership_start = now.toISOString();
+      upd.membership_end = end.toISOString();
+    }
+    sb.from('profiles').update(upd).eq('id', id).then(function(r) {
       modal.remove();
       if (r.error) return tst('Error: ' + r.error.message, 1);
       tst('✓ Plan actualizado');
+      rAdmSt();
+    });
+  });
+  document.getElementById('plan-delete-btn').addEventListener('click', function() {
+    if (!confirm('¿Eliminar la etiqueta de este alumno? Quedará sin plan activo.')) return;
+    sb.from('profiles').update({ plan: null, membership_start: null, membership_end: null }).eq('id', id).then(function(r) {
+      modal.remove();
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Etiqueta eliminada');
       rAdmSt();
     });
   });

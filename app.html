@@ -1334,6 +1334,19 @@ function rDash(liveOnly) {
   var weekNum = start ? Math.ceil((today - start) / (7*86400000)) : 0;
   var totalWeeks = (start && end) ? Math.ceil((end - start) / (7*86400000)) : 24;
   weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
+
+  // For mentoria (formacion): override weekNum with manual progress
+  if (cProfile && cProfile.plan === 'formacion') {
+    sb.from('roadmap_progress').select('week_number').eq('user_id', cUser.id).eq('completed', true).order('week_number', {ascending:false}).limit(1).then(function(rp) {
+      var manualWeek = (rp.data && rp.data.length) ? rp.data[0].week_number + 1 : 1;
+      weekNum = manualWeek;
+      // Update display
+      var lbl = document.querySelector('.week-label');
+      if (lbl) lbl.textContent = 'Semana ' + weekNum;
+      var subEl = document.querySelector('.asub');
+      if (subEl) subEl.textContent = 'Semana ' + weekNum + ' de ' + totalWeeks + ' · En progreso';
+    });
+  }
   // Override totalWeeks with actual roadmap weeks from Supabase (async update)
   sb.from('roadmap_weeks').select('week_number').order('week_number', {ascending:false}).limit(1).then(function(rw) {
     if (rw.data && rw.data.length) {
@@ -1842,12 +1855,34 @@ function showLessons(mod, level, progress) {
       return '';
     }
 
-    function buildSidebar(prog) {
+    function buildSidebar(prog, currentWeek) {
       list.innerHTML = '';
       var allLessonsFlat = [];
       mr.data.forEach(function(module) {
         var lessons = (module.course_lessons||[]).sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
         lessons.forEach(function(l){ allLessonsFlat.push(l); });
+
+        // Check if module is locked
+        var isControlledLevel = level.is_controlled;
+        var unlockWeek = module.unlock_week;
+        var isLocked = false;
+        var isFormacionBasico = cProfile && cProfile.plan === 'formacion-basico';
+
+        if (isControlledLevel && unlockWeek && isFormacionBasico) {
+          // Lock if: current week < unlock_week
+          if ((currentWeek || 1) < unlockWeek) {
+            isLocked = true;
+          } else {
+            // Also check: all lessons of previous module must be completed
+            var modIndex = mr.data.findIndex(function(m){ return m.id === module.id; });
+            if (modIndex > 0) {
+              var prevMod = mr.data[modIndex - 1];
+              var prevLessons = (prevMod.course_lessons||[]);
+              var allPrevDone = prevLessons.length > 0 && prevLessons.every(function(l){ return prog[l.id]; });
+              if (!allPrevDone) isLocked = true;
+            }
+          }
+        }
 
         var isCurrentMod = mod && module.id === mod.id;
         var doneCount = lessons.filter(function(l){ return prog[l.id]; }).length;
@@ -1856,13 +1891,17 @@ function showLessons(mod, level, progress) {
         modSection.className = 'ls-module-section';
 
         var modHeader = document.createElement('div');
-        modHeader.className = 'ls-module-header' + (isCurrentMod ? ' active' : '');
+        modHeader.className = 'ls-module-header' + (isCurrentMod ? ' active' : '') + (isLocked ? ' locked' : '');
+        modHeader.style.opacity = isLocked ? '0.45' : '1';
+        modHeader.style.cursor = isLocked ? 'not-allowed' : 'pointer';
         modHeader.innerHTML =
           '<div class="ls-mod-arrow" id="ls-arr-' + module.id + '">' +
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:.2s;' + (isCurrentMod || isMobile ? 'transform:rotate(90deg)' : '') + '"><path d="M9 18l6-6-6-6"/></svg>' +
+            (isLocked
+              ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+              : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:.2s;' + (isCurrentMod || isMobile ? 'transform:rotate(90deg)' : '') + '"><path d="M9 18l6-6-6-6"/></svg>') +
           '</div>' +
           '<div class="ls-mod-info">' +
-            '<div class="ls-mod-title">' + module.title + '</div>' +
+            '<div class="ls-mod-title">' + module.title + (isLocked ? ' <span style="font-size:.65rem;color:#555;font-weight:400;">· Disponible semana ' + unlockWeek + '</span>' : '') + '</div>' +
             '<div class="ls-mod-meta">' + lessons.length + ' clase' + (lessons.length!==1?'s':'') + (doneCount ? ' · ' + doneCount + ' ✓' : '') + '</div>' +
           '</div>';
 
@@ -1872,6 +1911,7 @@ function showLessons(mod, level, progress) {
         lessonsDiv.style.display = (isCurrentMod || isMobile) ? 'block' : 'none';
 
         modHeader.addEventListener('click', function() {
+          if (isLocked) { tst('🔒 Este módulo se desbloquea en la semana ' + unlockWeek, 1); return; }
           var open = lessonsDiv.style.display !== 'none';
           lessonsDiv.style.display = open ? 'none' : 'block';
           var arr = document.getElementById('ls-arr-' + module.id);
@@ -1932,13 +1972,18 @@ function showLessons(mod, level, progress) {
     }
 
     if (allIds.length && cUser && cUser.id !== 'preview') {
+      // Get current week for unlock logic
+      var currentWeekForUnlock = 1;
+      if (cProfile && cProfile.plan === 'formacion-basico' && cProfile.membership_start) {
+        currentWeekForUnlock = Math.max(1, Math.ceil((new Date() - new Date(cProfile.membership_start)) / (7*86400000)));
+      }
       sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', allIds).then(function(pr) {
         var prog = {};
         if (pr.data) pr.data.forEach(function(p){ prog[p.lesson_id] = true; });
-        buildSidebar(prog);
+        buildSidebar(prog, currentWeekForUnlock);
       });
     } else {
-      buildSidebar(progress || {});
+      buildSidebar(progress || {}, 1);
     }
   });
 }
@@ -3711,22 +3756,9 @@ function viewStudentProfile(id) {
         : '') +
 
         // Week progress
-        '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
-          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Semana actual</div>' +
-          (function() {
-            var s = p.membership_start ? new Date(p.membership_start) : null;
-            var t = new Date();
-            var wk = s ? Math.max(1, Math.ceil((t-s)/(7*86400000))) : 1;
-            var tw = 27;
-            var h = '<div style="font-family:var(--font-cond,sans-serif);font-size:1.4rem;font-weight:800;color:var(--sl);margin-bottom:6px;">Semana '+wk+' de '+tw+'</div>';
-            h += '<div style="display:grid;grid-template-columns:repeat(14,1fr);gap:2px;">';
-            for (var i=1;i<=tw;i++) {
-              var isCur=i===wk, isPast=i<wk;
-              h += '<div onclick="openWeekModal('+i+',\''+p.id+'\')" style="height:8px;border-radius:2px;cursor:pointer;background:'+(isCur?'var(--sl)':isPast?'rgba(91,127,166,.35)':'rgba(255,255,255,.05)')+';" title="Semana '+i+'"></div>';
-            }
-            h += '</div>';
-            return h;
-          })() +
+        '<div id="stud-roadmap-'+p.id+'" style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
+          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Progreso del Roadmap</div>' +
+          '<div style="color:#555;font-size:.78rem;">Cargando...</div>' +
         '</div>' +
 
         // Bio
@@ -3745,6 +3777,95 @@ function viewStudentProfile(id) {
 
     ov.appendChild(box);
     document.body.appendChild(ov);
+
+    // Load roadmap progress async
+    loadStudentRoadmap(p.id, p.plan, p.membership_start);
+  });
+}
+
+function loadStudentRoadmap(studentId, plan, membershipStart) {
+  var container = document.getElementById('stud-roadmap-' + studentId);
+  if (!container) return;
+
+  var isMentoria = plan === 'formacion';
+
+  // Load roadmap weeks and progress together
+  Promise.all([
+    sb.from('roadmap_weeks').select('week_number, title').order('week_number'),
+    sb.from('roadmap_progress').select('week_number, completed').eq('user_id', studentId)
+  ]).then(function(results) {
+    var weeks = results[0].data || [];
+    var progress = results[1].data || [];
+    var completedWeeks = {};
+    progress.forEach(function(r) { if (r.completed) completedWeeks[r.week_number] = true; });
+
+    // Calculate current week by time (for formacion-basico)
+    var start = membershipStart ? new Date(membershipStart) : null;
+    var timeWeek = start ? Math.max(1, Math.ceil((new Date() - start) / (7*86400000))) : 1;
+
+    // For mentoria: current week = last completed week + 1
+    var lastCompleted = 0;
+    weeks.forEach(function(w) { if (completedWeeks[w.week_number]) lastCompleted = w.week_number; });
+    var currentWeek = isMentoria ? (lastCompleted + 1) : timeWeek;
+
+    var html = '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Progreso del Roadmap ' + (isMentoria ? '· <span style="color:#c9a84c;">Avance manual</span>' : '· <span style="color:var(--sl);">Automático</span>') + '</div>';
+
+    html += '<div style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;">';
+    weeks.forEach(function(w) {
+      var isCompleted = completedWeeks[w.week_number];
+      var isCurrent = w.week_number === currentWeek;
+      var isLocked = w.week_number > currentWeek;
+
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:' +
+        (isCompleted ? 'rgba(74,222,128,.06)' : isCurrent ? 'rgba(91,127,166,.1)' : 'rgba(255,255,255,.02)') +
+        ';border:1px solid ' +
+        (isCompleted ? 'rgba(74,222,128,.2)' : isCurrent ? 'rgba(91,127,166,.25)' : 'rgba(255,255,255,.04)') + ';">';
+
+      if (isMentoria) {
+        // Checkbox for mentoria
+        html += '<input type="checkbox" ' + (isCompleted ? 'checked' : '') +
+          ' onchange="toggleWeekComplete(\'' + studentId + '\',' + w.week_number + ',this.checked)" ' +
+          'style="width:15px;height:15px;accent-color:#4ade80;cursor:pointer;flex-shrink:0;">';
+      } else {
+        // Status dot for formacion
+        html += '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' +
+          (isCompleted ? '#4ade80' : isCurrent ? 'var(--sl)' : 'rgba(255,255,255,.1)') + ';"></div>';
+      }
+
+      html += '<div style="flex:1;min-width:0;">' +
+        '<span style="font-size:.72rem;font-weight:600;color:' +
+        (isCompleted ? '#4ade80' : isCurrent ? '#f0f0f0' : '#555') + ';">Sem ' + w.week_number + '</span>' +
+        '<span style="font-size:.7rem;color:#555;margin-left:6px;">' + (w.title || '') + '</span>' +
+        '</div>';
+
+      if (isCurrent && !isCompleted) {
+        html += '<span style="font-size:.6rem;color:#c9a84c;font-weight:600;">▶ AQUÍ</span>';
+      }
+
+      html += '</div>';
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+  });
+}
+
+function toggleWeekComplete(studentId, weekNum, completed) {
+  sb.from('roadmap_progress').upsert({
+    user_id: studentId,
+    week_number: weekNum,
+    completed: completed,
+    completed_at: completed ? new Date().toISOString() : null,
+    completed_by: cUser.id
+  }, { onConflict: 'user_id,week_number' }).then(function(r) {
+    if (r.error) { tst('Error: ' + r.error.message, 1); return; }
+    tst(completed ? '✓ Semana ' + weekNum + ' completada' : 'Semana ' + weekNum + ' desmarcada');
+    // Reload roadmap in card
+    var container = document.getElementById('stud-roadmap-' + studentId);
+    if (container) {
+      var plan = container.closest('[id]') ? 'formacion' : '';
+      loadStudentRoadmap(studentId, 'formacion', null);
+    }
   });
 }
 
@@ -4155,16 +4276,20 @@ function openEditModal(type, data, parentLvId, parentModId) {
         '</div>' +
         '<div id="em-img-preview" style="margin-top:8px;display:none;"><img id="em-img-prev" style="height:60px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:80px 1fr;gap:10px;margin-bottom:12px;">' +
+      '<div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:10px;margin-bottom:12px;">' +
         '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
         '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-pub"'+(data&&data.is_published?' checked':' checked')+'> Publicado</label></div>' +
+        '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#c9a84c;cursor:pointer;" title="Los módulos de este nivel se desbloquean semana a semana"><input type="checkbox" id="em-controlled"'+(data&&data.is_controlled?' checked':'')+'> 🔒 Controlado por semana</label></div>' +
       '</div>';
 
   } else if (type === 'module') {
     html +=
       '<div style="margin-bottom:12px;"><label class="al">Título del módulo</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: Fundamentos de Precio"></div>' +
       '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
-      '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'" style="width:80px;"></div>';
+      '<div style="display:grid;grid-template-columns:80px 1fr;gap:10px;margin-bottom:12px;">' +
+        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'" style="width:80px;"></div>' +
+        '<div><label class="al" title="Semana del roadmap en que se desbloquea (solo para niveles controlados)">Desbloquear en semana <span style="color:#c9a84c;">🔒</span></label><input id="em-unlock" type="number" class="ai" value="'+(data&&data.unlock_week?data.unlock_week:'')+'" placeholder="Ej: 3 (vacío = siempre visible)" min="1"></div>' +
+      '</div>';
 
   } else if (type === 'lesson') {
     html +=
@@ -4256,6 +4381,7 @@ async function saveEditModal(type, data, parentLvId, parentModId) {
       thumbnail_url: thumbnailUrl,
       sort_order: parseInt((document.getElementById('em-ord')||{}).value) || 1,
       is_published: (document.getElementById('em-pub')||{}).checked !== false,
+      is_controlled: (document.getElementById('em-controlled')||{}).checked || false,
     };
     var q = data ? sb.from('course_levels').update(payload).eq('id', data.id) : sb.from('course_levels').insert(payload);
     q.then(function(r) {
@@ -4267,11 +4393,13 @@ async function saveEditModal(type, data, parentLvId, parentModId) {
   } else if (type === 'module') {
     var lvId = data ? data.level_id : parentLvId;
     if (!lvId) { tst('Sin nivel asignado', 1); return; }
+    var unlockWeekVal = (document.getElementById('em-unlock')||{}).value;
     var payload2 = {
       title: title.trim(),
       description: (document.getElementById('em-desc')||{}).value || '',
       sort_order: parseInt((document.getElementById('em-ord')||{}).value) || 1,
       level_id: lvId,
+      unlock_week: unlockWeekVal ? parseInt(unlockWeekVal) : null,
     };
     var q2 = data ? sb.from('course_modules').update(payload2).eq('id', data.id) : sb.from('course_modules').insert(payload2);
     q2.then(function(r) {

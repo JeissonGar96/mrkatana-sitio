@@ -2907,7 +2907,7 @@ function _renderStudents(data, showAll) {
           ? '<img src="'+s.avatar_url+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;">'
           : '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;">'+((s.full_name||'?')[0].toUpperCase())+'</div>';
         return '<tr style="cursor:pointer;" onclick="viewStudentProfile(\''+s.id+'\')">'+
-          '<td style="width:32px;min-width:32px;max-width:32px;padding:9px 8px 9px 6px;" onclick="viewStudentProfile(\''+s.id+'\')">'+avatarHtml+'</td>'+
+          '<td style="width:44px;min-width:44px;max-width:44px;padding:9px 12px 9px 6px;" onclick="viewStudentProfile(\''+s.id+'\')">'+avatarHtml+'</td>'+
           '<td style="color:#f0f0f0;font-weight:500;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.full_name+'</td>'+
           '<td style="color:#666;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.email+'</td>'+
           '<td style="white-space:nowrap;" onclick="event.stopPropagation()">'+planBadge(s)+liveTag+'</td>'+

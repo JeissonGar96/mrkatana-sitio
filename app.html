@@ -1344,6 +1344,8 @@ function rDash(liveOnly) {
       if (lbl) lbl.textContent = 'Semana ' + weekNum;
       var subEl = document.querySelector('.asub');
       if (subEl) subEl.textContent = 'Semana ' + weekNum + ' de ' + totalWeeks + ' · En progreso';
+      // Update viewWeek and reload week detail
+      if (typeof window.navWeekTo === 'function') window.navWeekTo(weekNum);
     });
   }
 
@@ -1375,8 +1377,7 @@ function rDash(liveOnly) {
           }
           weekNum = currentModuleWeek;
           // Update dashboard display
-          var lbl = document.querySelector('.week-label');
-          if (lbl) lbl.textContent = 'Semana ' + weekNum;
+          if (typeof window.navWeekTo === 'function') window.navWeekTo(weekNum);
           var wtEl = document.getElementById('wk-total');
           if (wtEl) wtEl.textContent = 'de ' + (window._totalWeeks || totalWeeks) + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando');
           var subEl = document.querySelector('.asub');
@@ -3919,11 +3920,7 @@ function toggleWeekComplete(studentId, weekNum, completed) {
     if (r.error) { tst('Error: ' + r.error.message, 1); return; }
     tst(completed ? '✓ Semana ' + weekNum + ' completada' : 'Semana ' + weekNum + ' desmarcada');
     // Reload roadmap in card
-    var container = document.getElementById('stud-roadmap-' + studentId);
-    if (container) {
-      var plan = container.closest('[id]') ? 'formacion' : '';
-      loadStudentRoadmap(studentId, 'formacion', null);
-    }
+    loadStudentRoadmap(studentId, 'formacion', null);
   });
 }
 

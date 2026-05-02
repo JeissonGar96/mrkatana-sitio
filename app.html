@@ -1363,13 +1363,15 @@ function rDash(liveOnly) {
         sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', allIds).then(function(pr) {
           var done = {};
           if (pr.data) pr.data.forEach(function(p){ done[p.lesson_id] = true; });
-          // Find the current week: last module where all lessons are done + 1
+          // Find the current week: last module where BOTH conditions met
           var currentModuleWeek = 1;
+          var timeWeekBasico = cProfile.membership_start ? Math.max(1, Math.ceil((new Date() - new Date(cProfile.membership_start)) / (7*86400000))) : 1;
           for (var i = 0; i < mr.data.length; i++) {
             var mod = mr.data[i];
             var lessons = mod.course_lessons || [];
             var allDone = lessons.length > 0 && lessons.every(function(l){ return done[l.id]; });
-            if (allDone && mod.unlock_week) {
+            var weekPassed = !mod.unlock_week || timeWeekBasico >= mod.unlock_week;
+            if (allDone && weekPassed && mod.unlock_week) {
               currentModuleWeek = mod.unlock_week + 1;
             } else {
               break;

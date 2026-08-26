@@ -1,7 +1,7 @@
 // api/discord-callback.js
 // Handles Discord OAuth2 callback — exchanges code for token, gets user info,
-// adds user to server and assigns the active roles (managed from the admin
-// panel, tabla discord_roles), then saves to Supabase profiles
+// adds user to server and assigns the roles configured for the person's PLAN
+// (checkout_plans.discord_role_ids), then saves to Supabase profiles
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -58,20 +58,30 @@ module.exports = async function handler(req, res) {
       return res.redirect('/?discord_error=user_failed');
     }
 
-    // 3. Determine which roles to assign — los que estén activos en discord_roles
-    //    (gestionados desde el panel admin). Si esa tabla aún no existe o está
-    //    vacía, se usa el rol fijo de respaldo para no romper el flujo.
+    // 3. Determine which roles to assign — los que el PLAN de esta persona tenga
+    //    configurados (checkout_plans.discord_role_ids). Si no tiene plan o no
+    //    tiene roles configurados, se usa el rol fijo de respaldo.
     let roleIds = [DISCORD_ROLE_ID];
     try {
-      const { data: activeRoles } = await sb
-        .from('discord_roles')
-        .select('discord_role_id')
-        .eq('active', true);
-      if (activeRoles && activeRoles.length) {
-        roleIds = activeRoles.map(function (r) { return r.discord_role_id; });
+      if (state) {
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('plan')
+          .eq('id', state)
+          .single();
+        if (profile && profile.plan) {
+          const { data: planRow } = await sb
+            .from('checkout_plans')
+            .select('discord_role_ids')
+            .eq('id', profile.plan)
+            .single();
+          if (planRow && planRow.discord_role_ids && planRow.discord_role_ids.length) {
+            roleIds = planRow.discord_role_ids;
+          }
+        }
       }
     } catch (e) {
-      console.error('No se pudo leer discord_roles, usando rol de respaldo:', e);
+      console.error('No se pudo leer el plan / sus roles, usando rol de respaldo:', e);
     }
 
     // 4. Add user to server with those roles (if not already a member)

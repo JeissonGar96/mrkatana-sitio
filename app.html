@@ -3037,7 +3037,7 @@ function _renderStudents(data, showAll) {
       visible.map(function(s){
         var en=s.membership_end?new Date(s.membership_end):null, act=en&&en>today;
         var liveEn=s.live_end?new Date(s.live_end):null, liveAct=liveEn&&liveEn>today;
-        var liveTag = liveAct ? '<span onclick="renewLive(\''+s.id+'\')" title="Live vence '+liveEn.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})+'" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(74,222,128,.1);color:#4ade80;border-radius:4px;cursor:pointer;margin-left:4px;">live ✓</span>' : '<span onclick="renewLive(\''+s.id+'\')" title="Sin live activo" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(255,255,255,.04);color:#444;border-radius:4px;cursor:pointer;margin-left:4px;">+ live</span>';
+        var liveTag = liveAct ? '<span title="Live vence '+liveEn.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})+' — administrar desde la ficha del alumno" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(74,222,128,.1);color:#4ade80;border-radius:4px;margin-left:4px;">live ✓</span>' : '';
         var avatarHtml = s.avatar_url
           ? '<img src="'+s.avatar_url+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;">'
           : '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;">'+((s.full_name||'?')[0].toUpperCase())+'</div>';
@@ -3050,75 +3050,6 @@ function _renderStudents(data, showAll) {
         '</tr>';
       }).join('')+'</tbody></table></div>'+
       (!q && data.length > 5 && !showAll ? '<div style="text-align:center;margin-top:12px;"><button onclick="_renderStudents(window._allStudents, true)" style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:7px 20px;border-radius:6px;font-size:.78rem;cursor:pointer;">Ver todos ('+data.length+')</button></div>' : '');
-}
-
-function renewLive(id) {
-  var existing = document.getElementById('live-modal');
-  if (existing) existing.remove();
-
-  // Construir opciones a partir de planes/variantes con duración de live configurada
-  var opts = [];
-  (window._allPlans || []).forEach(function(p) {
-    if (p.duration_live_months) {
-      opts.push({ value: p.id + '|' + p.duration_live_months, label: (p.label || p.name) + ' (' + p.duration_live_months + ' meses)' });
-    }
-    (p.variants || []).forEach(function(v) {
-      if (v.duration_live_months) {
-        opts.push({ value: p.id + '|' + v.duration_live_months, label: (p.label || p.name) + ' — ' + v.name + ' (' + v.duration_live_months + ' meses)' });
-      }
-    });
-  });
-  if (!opts.length) {
-    opts.push({ value: 'live|6', label: 'Live (6 meses) — configura duración en Gestión de Planes' });
-  }
-
-  var modal = document.createElement('div');
-  modal.id = 'live-modal';
-  _injectWhopStyles();
-  modal.className = 'wp-overlay';
-  modal.innerHTML =
-    '<div class="wp-modal" style="max-width:400px;">' +
-      '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📡</div>' +
-        '<div class="wp-title" style="font-size:1rem;">Gestionar Live</div>' +
-      '</div>' +
-      '<div class="wp-body" style="padding:16px 24px 24px;">' +
-        '<div class="wp-field"><label class="wp-label">Duración a activar</label><select id="live-plan-sel" class="wp-input">' +
-          opts.map(function(o) { return '<option value="' + o.value + '">' + o.label + '</option>'; }).join('') +
-        '</select></div>' +
-        '<div class="wp-footer">' +
-          '<button id="live-plan-btn" class="wp-btn-primary">Activar</button>' +
-          '<button id="live-deact-btn" class="wp-btn-danger">Desactivar</button>' +
-          '<button class="wp-btn-ghost" onclick="document.getElementById(\'live-modal\').remove();">Cancelar</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(modal);
-  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
-  document.getElementById('live-plan-btn').addEventListener('click', function() {
-    var val = document.getElementById('live-plan-sel').value.split('|');
-    var livePlan = val[0];
-    var months = parseInt(val[1]);
-    var liveEnd = new Date();
-    liveEnd.setMonth(liveEnd.getMonth() + months);
-    var btn = this;
-    btn.disabled = true; btn.textContent = 'Activando...';
-    sb.from('profiles').update({ live_plan: livePlan, live_end: liveEnd.toISOString() }).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Live activado');
-      rAdmSt();
-    });
-  });
-  document.getElementById('live-deact-btn').addEventListener('click', function() {
-    if (!confirm('¿Desactivar acceso live de este alumno?')) return;
-    sb.from('profiles').update({ live_plan: null, live_end: null }).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Live desactivado');
-      rAdmSt();
-    });
-  });
 }
 
 function changePlanModal(id, currentPlan) {

@@ -957,9 +957,11 @@ function _renderSection(state) {
 }
 
 function _hasClasesAccess() {
+  if (cProfile && cProfile.role === 'admin') return true;
   return !!(cProfile && cProfile.membership_end && new Date(cProfile.membership_end) > new Date());
 }
 function _hasLiveAccess() {
+  if (cProfile && cProfile.role === 'admin') return true;
   return !!(cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
 }
 

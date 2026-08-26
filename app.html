@@ -935,16 +935,11 @@ function _renderSection(state) {
   // Always restore amain when navigating away from lesson layout
   if (state.section !== 'clases') _restoreAmain();
   if (state.section === 'dash') {
-    var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-    var isLivePuro = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-    // liveOnly solo si es plan live puro, no si tiene formacion/mentoria + live
-    if (isLivePuro) rDash(true); else rDash();
+    // liveOnly = no tiene acceso a clases (sin importar el nombre del plan)
+    if (!_hasClasesAccess()) rDash(true); else rDash();
   }
   else if (state.section === 'clases') {
-    var planC = cProfile && cProfile.plan ? cProfile.plan : '';
-    var isLiveC = planC === 'live' || planC === 'live-mensual' || planC === 'live-trimestral' || planC === 'live-semestral';
-    var hasLiveOnlyAccess = isLiveC && planC !== 'formacion' && planC !== 'formacion-basico';
-    if (hasLiveOnlyAccess) {
+    if (!_hasClasesAccess()) {
       // Redirigir al dashboard si intenta acceder a clases por URL directa
       history.replaceState({ section: 'dash' }, '', '/app/dash');
       rDash(true);
@@ -961,12 +956,16 @@ function _renderSection(state) {
   else if (state.section === 'admin')     rAdmin();
 }
 
+function _hasClasesAccess() {
+  return !!(cProfile && cProfile.membership_end && new Date(cProfile.membership_end) > new Date());
+}
+function _hasLiveAccess() {
+  return !!(cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
+}
+
 function navigateTo(v) {
-  // Usuarios live no pueden acceder a clases
-  var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-  var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-  var hasLiveAccess = isLive || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
-  if (hasLiveAccess && v === 'clases' && isLive) {
+  // Usuarios sin acceso a clases no pueden entrar a esa sección
+  if (v === 'clases' && !_hasClasesAccess()) {
     toast('Tu plan no incluye acceso a las clases grabadas.', true);
     return;
   }
@@ -1156,14 +1155,13 @@ function loadApp(user) {
     }
 
     function _grantAccess() {
-      var plan = cProfile && cProfile.plan ? cProfile.plan : '';
       var isAdmin = cProfile && cProfile.role === 'admin';
-      var isLivePuro = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-      var hasLiveAccess = isLivePuro || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
+      var hasClasesAccess = _hasClasesAccess();
+      var hasLiveAccess = _hasLiveAccess();
 
       if (!isAdmin) {
-        // Live puro → ocultar Clases y Roadmap
-        if (isLivePuro) {
+        // Sin acceso a clases → ocultar Clases y Roadmap
+        if (!hasClasesAccess) {
           var claseBtn = document.querySelector('.snav[data-v="clases"]');
           if (claseBtn) claseBtn.style.display = 'none';
           var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
@@ -1176,8 +1174,8 @@ function loadApp(user) {
           var mobLiveBtn = document.querySelector('.mob-nav-btn[data-v="sesiones"]');
           if (mobLiveBtn) mobLiveBtn.style.display = 'none';
         }
-        // Solo formacion ($1500) ve Reuniones 1-1
-        if (plan !== 'formacion') {
+        // Solo si el plan incluye 1-a-1
+        if (!cProfile.access_1on1) {
           var r1on1Btn = document.querySelector('.snav[data-v="reuniones"]');
           if (r1on1Btn) r1on1Btn.style.display = 'none';
           var mobR1on1Btn = document.querySelector('.mob-nav-btn[data-v="reuniones"]');
@@ -1383,8 +1381,8 @@ function rDash(liveOnly) {
   var totalWeeks = (start && end) ? Math.ceil((end - start) / (7*86400000)) : 24;
   weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
 
-  // For mentoria (formacion): override weekNum with manual progress
-  if (cProfile && cProfile.plan === 'formacion') {
+  // Roadmap manual: override weekNum with manual progress
+  if (cProfile && cProfile.roadmap_mode === 'manual') {
     sb.from('roadmap_progress').select('week_number').eq('user_id', cUser.id).eq('completed', true).order('week_number', {ascending:false}).limit(1).then(function(rp) {
       var manualWeek = (rp.data && rp.data.length) ? rp.data[0].week_number + 1 : 1;
       weekNum = manualWeek;
@@ -1397,8 +1395,8 @@ function rDash(liveOnly) {
     });
   }
 
-  // For formacion-basico: week based on module completion progress
-  if (cProfile && cProfile.plan === 'formacion-basico') {
+  // Roadmap automático: week based on module completion progress
+  if (cProfile && cProfile.roadmap_mode === 'automatico') {
     // Get all modules from controlled level sorted by unlock_week
     sb.from('course_levels').select('id').eq('is_controlled', true).limit(1).then(function(lv) {
       if (!lv.data || !lv.data.length) return;
@@ -1970,7 +1968,7 @@ function showLessons(mod, level, progress) {
         var isControlledLevel = level.is_controlled;
         var unlockWeek = module.unlock_week;
         var isLocked = false;
-        var isFormacionBasico = cProfile && cProfile.plan === 'formacion-basico';
+        var isFormacionBasico = cProfile && cProfile.roadmap_mode === 'automatico';
 
         if (isControlledLevel && unlockWeek && isFormacionBasico) {
           // Lock if: current week < unlock_week
@@ -2083,7 +2081,7 @@ function showLessons(mod, level, progress) {
     if (allIds.length && cUser && cUser.id !== 'preview') {
       // Get current week for unlock logic
       var currentWeekForUnlock = 1;
-      if (cProfile && cProfile.plan === 'formacion-basico' && cProfile.membership_start) {
+      if (cProfile && cProfile.roadmap_mode === 'automatico' && cProfile.membership_start) {
         currentWeekForUnlock = Math.max(1, Math.ceil((new Date() - new Date(cProfile.membership_start)) / (7*86400000)));
       }
       sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', allIds).then(function(pr) {
@@ -2969,17 +2967,38 @@ function swA(btn, sec) {
   ['st','cl','se','codes','roadmap','1on1'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
   if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
 }
+// ── PLANES: caché compartida (planes + sus variantes) ──
+function _loadPlansCache(cb) {
+  Promise.all([
+    sb.from('checkout_plans').select('*').order('sort_order'),
+    sb.from('checkout_plan_variants').select('*').order('sort_order')
+  ]).then(function(results) {
+    var plans = results[0].data || [];
+    var variants = results[1].data || [];
+    plans.forEach(function(p) {
+      p.variants = variants.filter(function(v) { return v.plan_id === p.id; });
+    });
+    window._allPlans = plans;
+    if (cb) cb(plans);
+  });
+}
+function _planById(id) {
+  return (window._allPlans || []).find(function(p) { return p.id === id; });
+}
+
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
   c.innerHTML =
     '<div style="margin-bottom:12px;"><input id="st-search" class="ai" placeholder="🔍 Buscar alumno por nombre o email..." oninput="filterStudents(this.value)" style="width:100%;box-sizing:border-box;"></div>' +
     '<div id="st-t"><span class="spin"></span></div>';
-  sb.from('profiles').select('id, full_name, email, role, plan, live_plan, live_end, membership_start, membership_end, avatar_url, created_at').order('created_at',{ascending:false}).then(function(r) {
-    var today = new Date();
-    window._allStudents = r.data || [];
-    var t = document.getElementById('st-t'); if(!t) return;
-    if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos registrados.</p>';return;}
-    _renderStudents(window._allStudents);
+  _loadPlansCache(function() {
+    sb.from('profiles').select('id, full_name, email, role, plan, live_plan, live_end, membership_start, membership_end, avatar_url, created_at').order('created_at',{ascending:false}).then(function(r) {
+      var today = new Date();
+      window._allStudents = r.data || [];
+      var t = document.getElementById('st-t'); if(!t) return;
+      if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos registrados.</p>';return;}
+      _renderStudents(window._allStudents);
+    });
   });
 }
 
@@ -2992,9 +3011,10 @@ function _renderStudents(data, showAll) {
     var planBadge = function(s) {
       if (s.role === 'admin') return '<span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:rgba(91,127,166,.14);color:var(--sl);border-radius:4px;">admin</span>';
       var plan = s.plan || '';
-      var label = plan === 'formacion' ? 'mentoria' : plan === 'formacion-basico' ? 'formacion' : plan.startsWith('live') ? plan : '—';
-      var color = plan === 'formacion' ? '#c9a84c' : plan === 'formacion-basico' ? 'var(--sl)' : '#9a9a9a';
-      var bg = plan === 'formacion' ? 'rgba(201,168,76,.1)' : plan === 'formacion-basico' ? 'rgba(91,127,166,.14)' : 'rgba(255,255,255,.05)';
+      var planDef = _planById(plan);
+      var label = planDef ? (planDef.label || planDef.name) : (plan || '—');
+      var color = planDef && planDef.color ? planDef.color : '#9a9a9a';
+      var bg = planDef && planDef.color ? planDef.color + '1a' : 'rgba(255,255,255,.05)'; // color + alpha aprox
       return '<span onclick="changePlanModal(\''+s.id+'\',\''+plan+'\')" style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+bg+';color:'+color+';border-radius:4px;cursor:pointer;" title="Clic para cambiar plan">'+label+'</span>';
     };
     t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th></th><th>Nombre</th><th>Email</th><th>Etiquetas</th><th>Estado</th></tr></thead><tbody>'+
@@ -3019,6 +3039,23 @@ function _renderStudents(data, showAll) {
 function renewLive(id) {
   var existing = document.getElementById('live-modal');
   if (existing) existing.remove();
+
+  // Construir opciones a partir de planes/variantes con duración de live configurada
+  var opts = [];
+  (window._allPlans || []).forEach(function(p) {
+    if (p.duration_live_months) {
+      opts.push({ value: p.id + '|' + p.duration_live_months, label: (p.label || p.name) + ' (' + p.duration_live_months + ' meses)' });
+    }
+    (p.variants || []).forEach(function(v) {
+      if (v.duration_live_months) {
+        opts.push({ value: p.id + '|' + v.duration_live_months, label: (p.label || p.name) + ' — ' + v.name + ' (' + v.duration_live_months + ' meses)' });
+      }
+    });
+  });
+  if (!opts.length) {
+    opts.push({ value: 'live|6', label: 'Live (6 meses) — configura duración en Gestión de Planes' });
+  }
+
   var modal = document.createElement('div');
   modal.id = 'live-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -3027,9 +3064,7 @@ function renewLive(id) {
       '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Live</div>' +
       '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Activa o desactiva el acceso a sesiones en vivo</div>' +
       '<select id="live-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
-        '<option value="live-mensual|1">Live Mensual (1 mes)</option>' +
-        '<option value="live-trimestral|3">Live Trimestral (3 meses)</option>' +
-        '<option value="live-semestral|6">Live Semestral (6 meses)</option>' +
+        opts.map(function(o) { return '<option value="' + o.value + '">' + o.label + '</option>'; }).join('') +
       '</select>' +
       '<div style="display:flex;gap:8px;">' +
         '<button id="live-plan-btn" style="flex:1;padding:10px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);color:#4ade80;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Activar</button>' +
@@ -3050,7 +3085,7 @@ function renewLive(id) {
     sb.from('profiles').update({ live_plan: livePlan, live_end: liveEnd.toISOString() }).eq('id', id).then(function(r) {
       modal.remove();
       if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Live activado — ' + livePlan);
+      tst('✓ Live activado');
       rAdmSt();
     });
   });
@@ -3068,6 +3103,7 @@ function renewLive(id) {
 function changePlanModal(id, currentPlan) {
   var existing = document.getElementById('plan-modal');
   if (existing) existing.remove();
+  var plans = (window._allPlans || []).filter(function(p) { return p.active; });
   var modal = document.createElement('div');
   modal.id = 'plan-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -3076,9 +3112,11 @@ function changePlanModal(id, currentPlan) {
       '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Plan</div>' +
       '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Plan actual: <strong style="color:#f0f0f0;">'+(currentPlan||'—')+'</strong></div>' +
       '<select id="plan-modal-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:12px;">' +
-        '<option value="formacion-basico"'+(currentPlan==='formacion-basico'?' selected':'')+'>Formación ($600)</option>' +
-        '<option value="formacion"'+(currentPlan==='formacion'?' selected':'')+'>Mentoría ($1,500)</option>' +
+        plans.map(function(p) { return '<option value="'+p.id+'"'+(currentPlan===p.id?' selected':'')+'>'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') +
       '</select>' +
+      '<div id="plan-modal-variant-wrap" style="margin-bottom:12px;display:none;">' +
+        '<select id="plan-modal-variant-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;"></select>' +
+      '</div>' +
       '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">' +
         '<input type="checkbox" id="plan-keep-dates" checked style="width:14px;height:14px;accent-color:var(--sl);">' +
         '<span style="font-size:.78rem;color:#9a9a9a;">Mantener fechas actuales</span>' +
@@ -3091,17 +3129,51 @@ function changePlanModal(id, currentPlan) {
     '</div>';
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  function refreshVariantSel() {
+    var planId = document.getElementById('plan-modal-sel').value;
+    var planDef = _planById(planId);
+    var wrap = document.getElementById('plan-modal-variant-wrap');
+    var sel = document.getElementById('plan-modal-variant-sel');
+    if (planDef && planDef.variants && planDef.variants.length) {
+      wrap.style.display = 'block';
+      sel.innerHTML = planDef.variants.map(function(v) { return '<option value="'+v.id+'">'+v.name+' ($'+Number(v.price).toLocaleString()+')</option>'; }).join('');
+    } else {
+      wrap.style.display = 'none';
+      sel.innerHTML = '';
+    }
+  }
+  document.getElementById('plan-modal-sel').addEventListener('change', refreshVariantSel);
+  refreshVariantSel();
+
   document.getElementById('plan-modal-btn').addEventListener('click', function() {
-    var plan = document.getElementById('plan-modal-sel').value;
+    var planId = document.getElementById('plan-modal-sel').value;
+    var planDef = _planById(planId);
+    var variantId = document.getElementById('plan-modal-variant-sel').value;
+    var variantDef = planDef && planDef.variants ? planDef.variants.find(function(v){ return v.id === variantId; }) : null;
     var keepDates = document.getElementById('plan-keep-dates').checked;
     var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
-    var upd = { plan: plan };
+
+    var upd = {
+      plan: planId,
+      access_1on1: planDef ? !!planDef.access_1on1 : false,
+      roadmap_mode: planDef ? planDef.roadmap_mode : null
+    };
     if (!keepDates) {
-      var months = 180;
-      var now = new Date(), end = new Date();
-      end.setMonth(end.getMonth() + months);
+      var durClases = variantDef ? variantDef.duration_clases_months : (planDef ? planDef.duration_clases_months : null);
+      var durLive = variantDef ? variantDef.duration_live_months : (planDef ? planDef.duration_live_months : null);
+      var now = new Date();
       upd.membership_start = now.toISOString();
-      upd.membership_end = end.toISOString();
+      if (durClases) {
+        var end = new Date(); end.setMonth(end.getMonth() + durClases);
+        upd.membership_end = end.toISOString();
+      } else {
+        upd.membership_end = null; // ilimitado
+      }
+      if (durLive) {
+        var liveEnd = new Date(); liveEnd.setMonth(liveEnd.getMonth() + durLive);
+        upd.live_plan = planId; upd.live_end = liveEnd.toISOString();
+      }
     }
     sb.from('profiles').update(upd).eq('id', id).then(function(r) {
       modal.remove();
@@ -3112,7 +3184,7 @@ function changePlanModal(id, currentPlan) {
   });
   document.getElementById('plan-delete-btn').addEventListener('click', function() {
     if (!confirm('¿Eliminar la etiqueta de este alumno? Quedará sin plan activo.')) return;
-    sb.from('profiles').update({ plan: null, membership_start: null, membership_end: null }).eq('id', id).then(function(r) {
+    sb.from('profiles').update({ plan: null, membership_start: null, membership_end: null, access_1on1: false, roadmap_mode: null }).eq('id', id).then(function(r) {
       modal.remove();
       if (r.error) return tst('Error: ' + r.error.message, 1);
       tst('✓ Etiqueta eliminada');
@@ -3744,7 +3816,7 @@ function delAdmMtg(id) {
 
 
 function viewStudentProfile(id) {
-  sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end').eq('id', id).single().then(function(pr) {
+  sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end, roadmap_mode, access_1on1').eq('id', id).single().then(function(pr) {
     if (pr.error || !pr.data) return tst('No se encontró el perfil', 1);
     var p = pr.data;
     var endDate = p.membership_end ? new Date(p.membership_end) : null;
@@ -3833,15 +3905,15 @@ function viewStudentProfile(id) {
     document.body.appendChild(ov);
 
     // Load roadmap progress async
-    loadStudentRoadmap(p.id, p.plan, p.membership_start);
+    loadStudentRoadmap(p.id, p.roadmap_mode, p.membership_start);
   });
 }
 
-function loadStudentRoadmap(studentId, plan, membershipStart) {
+function loadStudentRoadmap(studentId, roadmapMode, membershipStart) {
   var container = document.getElementById('stud-roadmap-' + studentId);
   if (!container) return;
 
-  var isMentoria = plan === 'formacion';
+  var isMentoria = roadmapMode === 'manual';
 
   // Load roadmap weeks and progress together
   Promise.all([
@@ -3915,7 +3987,7 @@ function toggleWeekComplete(studentId, weekNum, completed) {
     if (r.error) { tst('Error: ' + r.error.message, 1); return; }
     tst(completed ? '✓ Semana ' + weekNum + ' completada' : 'Semana ' + weekNum + ' desmarcada');
     // Reload roadmap in card
-    loadStudentRoadmap(studentId, 'formacion', null);
+    loadStudentRoadmap(studentId, 'manual', null);
   });
 }
 
@@ -4068,8 +4140,24 @@ function activateMember(id, isActive) {
   }
 
   // Mostrar modal para elegir plan
+  if (!window._allPlans) { _loadPlansCache(function(){ activateMember(id, isActive); }); return; }
   var existing = document.getElementById('activate-modal');
   if (existing) existing.remove();
+
+  var opts = [];
+  (window._allPlans || []).filter(function(p){ return p.active; }).forEach(function(p) {
+    if (p.variants && p.variants.length) {
+      p.variants.forEach(function(v) {
+        opts.push({
+          value: p.id + '|' + v.id,
+          label: (p.label || p.name) + ' — ' + v.name + ' ($' + Number(v.price).toLocaleString() + ')'
+        });
+      });
+    } else {
+      opts.push({ value: p.id + '|', label: p.name + ' ($' + Number(p.price).toLocaleString() + ')' });
+    }
+  });
+  if (!opts.length) opts.push({ value: '|', label: 'Sin planes configurados — ve a Gestión de Planes' });
 
   var modal = document.createElement('div');
   modal.id = 'activate-modal';
@@ -4080,11 +4168,7 @@ function activateMember(id, isActive) {
       '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Selecciona el plan a activar manualmente</div>' +
       '<label style="display:block;font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Plan</label>' +
       '<select id="act-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
-        '<option value="formacion-basico|180">Formación $600 (6 meses)</option>' +
-        '<option value="formacion|180">Mentoría $1,500 (6 meses)</option>' +
-        '<option value="live-mensual|1">Live Mensual (1 mes)</option>' +
-        '<option value="live-trimestral|3">Live Trimestral (3 meses)</option>' +
-        '<option value="live-semestral|6">Live Semestral (6 meses)</option>' +
+        opts.map(function(o){ return '<option value="'+o.value+'">'+o.label+'</option>'; }).join('') +
       '</select>' +
       '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;">' +
         '<input type="checkbox" id="act-keep-dates" style="width:14px;height:14px;accent-color:var(--sl);">' +
@@ -4102,22 +4186,38 @@ function activateMember(id, isActive) {
   document.getElementById('act-plan-btn').addEventListener('click', function() {
     var val = document.getElementById('act-plan-sel').value.split('|');
     var planId = val[0];
-    var months = parseInt(val[1]);
+    var variantId = val[1] || null;
+    var planDef = _planById(planId);
+    var variantDef = (variantId && planDef && planDef.variants) ? planDef.variants.find(function(v){ return v.id === variantId; }) : null;
     var keepDates = document.getElementById('act-keep-dates').checked;
     var btn = this;
     btn.disabled = true; btn.textContent = 'Aplicando...';
-    var updateData = { plan: planId };
+
+    var updateData = {
+      plan: planId,
+      access_1on1: planDef ? !!planDef.access_1on1 : false,
+      roadmap_mode: planDef ? planDef.roadmap_mode : null
+    };
     if (!keepDates) {
+      var durClases = variantDef ? variantDef.duration_clases_months : (planDef ? planDef.duration_clases_months : null);
+      var durLive = variantDef ? variantDef.duration_live_months : (planDef ? planDef.duration_live_months : null);
       var now = new Date();
-      var end = new Date();
-      end.setMonth(end.getMonth() + months);
       updateData.membership_start = now.toISOString();
-      updateData.membership_end = end.toISOString();
+      if (durClases) {
+        var end = new Date(); end.setMonth(end.getMonth() + durClases);
+        updateData.membership_end = end.toISOString();
+      } else {
+        updateData.membership_end = null;
+      }
+      if (durLive) {
+        var liveEnd = new Date(); liveEnd.setMonth(liveEnd.getMonth() + durLive);
+        updateData.live_plan = planId; updateData.live_end = liveEnd.toISOString();
+      }
     }
     sb.from('profiles').update(updateData).eq('id', id).then(function(r) {
       modal.remove();
       if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Plan actualizado — ' + planId);
+      tst('✓ Plan actualizado');
       rAdmSt();
     });
   });
@@ -4533,8 +4633,11 @@ function rAdmCodes() {
 
     // ── SECCIÓN 1: PLANES ──
     '<div class="aform" style="margin-bottom:22px;">' +
-      '<div style="font-size:.86rem;font-weight:600;margin-bottom:4px;">🛒 Gestión de Planes</div>' +
-      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Activa o desactiva qué planes aparecen en el checkout público.</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+        '<div style="font-size:.86rem;font-weight:600;">🛒 Gestión de Planes</div>' +
+        '<button onclick="openPlanModal(null)" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#4ade80;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">+ Crear plan</button>' +
+      '</div>' +
+      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Crea, edita o elimina planes — precio, duración, accesos y roles de Discord. Se refleja automáticamente en el checkout y en toda la plataforma.</div>' +
       '<div id="plans-admin-list"><span class="spin"></span></div>' +
     '</div>' +
 
@@ -4559,7 +4662,7 @@ function rAdmCodes() {
       '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">🔑 Generar código de acceso</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:9px;">' +
         '<div><label class="al">Nota (para quién es)</label><input id="code-note" class="ai" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
-        '<div><label class="al">Plan que activa</label><select id="code-plan" class="ai"><option value="formacion-basico">Formación $600</option><option value="formacion">Mentoría $1,500</option><option value="live">Live Sessions</option></select></div>' +
+        '<div><label class="al">Plan que activa</label><select id="code-plan" class="ai"><option value="">Cargando...</option></select></div>' +
         '<div><label class="al">Meses</label><input id="code-months" type="number" class="ai" value="6" min="1" max="24"></div>' +
       '</div>' +
       '<button class="abtn2" id="btn-gen-code" style="margin-top:11px;">Generar código</button>' +
@@ -4636,23 +4739,31 @@ async function syncDiscordRoles() {
 
 function loadPlansAdmin() {
   var c = document.getElementById('plans-admin-list'); if (!c) return;
-  sb.from('checkout_plans').select('*').order('sort_order').then(function(r) {
-    if (r.error || !r.data || !r.data.length) {
-      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin planes en base de datos.</p>';
+  _loadPlansCache(function(plans) {
+    // Llenar también el select de "plan que activa" del generador de códigos
+    var codeSel = document.getElementById('code-plan');
+    if (codeSel) {
+      codeSel.innerHTML = plans.map(function(p) { return '<option value="'+p.id+'">'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') || '<option value="">Sin planes creados</option>';
+    }
+
+    if (!plans.length) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin planes en base de datos. Crea el primero con "+ Crear plan".</p>';
       return;
     }
     c.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">' +
-      r.data.map(function(p) {
+      plans.map(function(p) {
+        var variantTxt = p.variants && p.variants.length ? (' · ' + p.variants.length + ' variante' + (p.variants.length>1?'s':'')) : '';
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(91,127,166,.12);border-radius:8px;">' +
-          '<div>' +
+          '<div style="cursor:pointer;" onclick="openPlanModal(\''+p.id+'\')">' +
             '<div style="font-size:.84rem;font-weight:600;color:#f0f0f0;">' + p.name + '</div>' +
-            '<div style="font-size:.72rem;color:#555;margin-top:2px;">$' + Number(p.price).toLocaleString() + ' · ' + p.period + '</div>' +
+            '<div style="font-size:.72rem;color:#555;margin-top:2px;">$' + Number(p.price).toLocaleString() + ' · ' + (p.period||'—') + variantTxt + '</div>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
             '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (p.active ? 'rgba(74,222,128,.1)' : 'rgba(255,255,255,.05)') + ';color:' + (p.active ? '#4ade80' : '#555') + ';">' + (p.active ? 'Visible' : 'Oculto') + '</span>' +
-            '<button onclick="togglePlan(\'' + p.id + '\',' + p.active + ')" style="background:' + (p.active ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)') + ';border:1px solid ' + (p.active ? 'rgba(248,113,113,.25)' : 'rgba(74,222,128,.25)') + ';color:' + (p.active ? '#f87171' : '#4ade80') + ';padding:4px 12px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
+            '<button onclick="togglePlan(\'' + p.id + '\',' + p.active + ')" style="background:' + (p.active ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)') + ';border:1px solid ' + (p.active ? 'rgba(248,113,113,.25)' : 'rgba(74,222,128,.25)') + ';color:' + (p.active ? '#f87171' : '#4ade80') + ';padding:4px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
               (p.active ? 'Ocultar' : 'Publicar') +
             '</button>' +
+            '<button onclick="openPlanModal(\''+p.id+'\')" style="background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:4px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">Editar</button>' +
           '</div>' +
         '</div>';
       }).join('') +
@@ -4665,6 +4776,207 @@ function togglePlan(planId, currentActive) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Plan ' + (!currentActive ? 'publicado' : 'ocultado'));
     loadPlansAdmin();
+  });
+}
+
+// ── MODAL: crear/editar plan ──
+function openPlanModal(planId) {
+  var existing = document.getElementById('plan-edit-modal');
+  if (existing) existing.remove();
+
+  var isNew = !planId;
+  var p = isNew ? {} : (_planById(planId) || {});
+
+  var modal = document.createElement('div');
+  modal.id = 'plan-edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  modal.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:480px;padding:24px;max-height:90vh;overflow-y:auto;">' +
+      '<div style="font-family:var(--font-cond);font-size:1.2rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:18px;">' + (isNew ? 'Crear plan' : 'Editar plan') + '</div>' +
+
+      (isNew ?
+        '<div style="margin-bottom:12px;"><label class="al">ID del plan (único, sin espacios — ej: mentoria-vip)</label><input id="pm-id" class="ai" placeholder="mentoria-vip"></div>'
+        : '<div style="margin-bottom:12px;"><label class="al">ID</label><input class="ai" value="'+p.id+'" disabled style="opacity:.5;"></div>'
+      ) +
+      '<div style="margin-bottom:12px;"><label class="al">Nombre</label><input id="pm-name" class="ai" value="'+(p.name||'')+'" placeholder="Ej: Mentoría Premium"></div>' +
+      '<div style="margin-bottom:12px;"><label class="al">Descripción (se ve en el checkout)</label><input id="pm-desc" class="ai" value="'+(p.description||'')+'" placeholder="Ej: Clases grabadas · Sesiones 1-1"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;">' +
+        '<div><label class="al">Precio (USD)</label><input id="pm-price" type="number" class="ai" value="'+(p.price||'')+'"></div>' +
+        '<div><label class="al">Periodo (texto libre)</label><input id="pm-period" class="ai" value="'+(p.period||'')+'" placeholder="pago único / mes"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;">' +
+        '<div><label class="al">Etiqueta corta (lista de alumnos)</label><input id="pm-label" class="ai" value="'+(p.label||'')+'" placeholder="Ej: mentoria"></div>' +
+        '<div><label class="al">Color</label><input id="pm-color" type="color" class="ai" value="'+(p.color||'#5b7fa6')+'" style="height:38px;padding:4px;"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;">' +
+        '<div><label class="al">Duración Clases (meses, vacío = ilimitado)</label><input id="pm-dur-clases" type="number" class="ai" value="'+(p.duration_clases_months||'')+'"></div>' +
+        '<div><label class="al">Duración Live (meses, vacío = no incluido)</label><input id="pm-dur-live" type="number" class="ai" value="'+(p.duration_live_months||'')+'"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;">' +
+        '<div><label class="al">Modo Roadmap</label><select id="pm-roadmap" class="ai">' +
+          '<option value="ninguno"'+(p.roadmap_mode==='ninguno'||!p.roadmap_mode?' selected':'')+'>Ninguno</option>' +
+          '<option value="manual"'+(p.roadmap_mode==='manual'?' selected':'')+'>Manual</option>' +
+          '<option value="automatico"'+(p.roadmap_mode==='automatico'?' selected':'')+'>Automático</option>' +
+        '</select></div>' +
+        '<div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px;">' +
+          '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;"><input type="checkbox" id="pm-1on1" '+(p.access_1on1?'checked':'')+' style="width:14px;height:14px;accent-color:var(--sl);"><span style="font-size:.78rem;color:#9a9a9a;">Incluye 1-a-1</span></label>' +
+          '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;"><input type="checkbox" id="pm-popular" '+(p.popular?'checked':'')+' style="width:14px;height:14px;accent-color:var(--sl);"><span style="font-size:.78rem;color:#9a9a9a;">Marcar "Popular" en checkout</span></label>' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-bottom:14px;"><label class="al">Roles de Discord que asigna</label><div id="pm-discord-roles" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"><span class="spin"></span></div></div>' +
+
+      // Variantes
+      '<div style="border-top:1px solid rgba(91,127,166,.12);padding-top:14px;margin-bottom:14px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+          '<label class="al" style="margin:0;">Variantes (sub-opciones, ej. duraciones de Live)</label>' +
+          (isNew ? '<span style="font-size:.68rem;color:#555;">Guarda el plan primero</span>' : '<button onclick="openVariantModal(\''+p.id+'\',null)" style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);color:#4ade80;padding:3px 9px;border-radius:4px;font-size:.68rem;cursor:pointer;">+ Agregar</button>') +
+        '</div>' +
+        '<div id="pm-variants-list">' +
+          (isNew ? '' : (p.variants && p.variants.length ? p.variants.map(function(v) {
+            return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:6px;margin-top:6px;">' +
+              '<span style="font-size:.76rem;color:#f0f0f0;">'+v.name+' — $'+Number(v.price).toLocaleString()+'</span>' +
+              '<span><button onclick="openVariantModal(\''+p.id+'\',\''+v.id+'\')" style="background:none;border:none;color:var(--sl);font-size:.7rem;cursor:pointer;margin-right:8px;">Editar</button><button onclick="deleteVariant(\''+v.id+'\',\''+p.id+'\')" style="background:none;border:none;color:#f87171;font-size:.7rem;cursor:pointer;">Eliminar</button></span>' +
+            '</div>';
+          }).join('') : '<div style="font-size:.74rem;color:#555;margin-top:6px;">Sin variantes.</div>')) +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:flex;gap:8px;">' +
+        '<button id="pm-save-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">'+(isNew?'Crear plan':'Guardar cambios')+'</button>' +
+        (isNew ? '' : '<button id="pm-delete-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Eliminar</button>') +
+        '<button onclick="document.getElementById(\'plan-edit-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  // Cargar roles de Discord disponibles como checkboxes
+  var selectedRoles = (p.discord_role_ids || []);
+  sb.from('discord_roles').select('*').order('sort_order').then(function(r) {
+    var wrap = document.getElementById('pm-discord-roles');
+    if (!wrap) return;
+    var roles = r.data || [];
+    if (!roles.length) { wrap.innerHTML = '<span style="font-size:.74rem;color:#555;">Sin roles sincronizados — ve a la sección de arriba.</span>'; return; }
+    wrap.innerHTML = roles.map(function(role) {
+      var checked = selectedRoles.indexOf(role.discord_role_id) >= 0;
+      return '<label style="display:flex;align-items:center;gap:5px;padding:4px 9px;background:rgba(255,255,255,.03);border:1px solid rgba(91,127,166,.15);border-radius:5px;cursor:pointer;font-size:.74rem;color:#f0f0f0;">' +
+        '<input type="checkbox" class="pm-role-cb" value="'+role.discord_role_id+'" '+(checked?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);">' + role.name +
+      '</label>';
+    }).join('');
+  });
+
+  document.getElementById('pm-save-btn').addEventListener('click', function() {
+    var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
+    var id = isNew ? document.getElementById('pm-id').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-') : p.id;
+    if (!id) { tst('El ID del plan es obligatorio', 1); btn.disabled = false; btn.textContent = 'Crear plan'; return; }
+    var roleIds = Array.prototype.slice.call(document.querySelectorAll('.pm-role-cb:checked')).map(function(el){ return el.value; });
+    var data = {
+      id: id,
+      name: document.getElementById('pm-name').value.trim(),
+      description: document.getElementById('pm-desc').value.trim(),
+      price: parseFloat(document.getElementById('pm-price').value) || 0,
+      period: document.getElementById('pm-period').value.trim(),
+      label: document.getElementById('pm-label').value.trim(),
+      color: document.getElementById('pm-color').value,
+      duration_clases_months: document.getElementById('pm-dur-clases').value ? parseInt(document.getElementById('pm-dur-clases').value) : null,
+      duration_live_months: document.getElementById('pm-dur-live').value ? parseInt(document.getElementById('pm-dur-live').value) : null,
+      roadmap_mode: document.getElementById('pm-roadmap').value,
+      access_1on1: document.getElementById('pm-1on1').checked,
+      popular: document.getElementById('pm-popular').checked,
+      discord_role_ids: roleIds
+    };
+    if (isNew) { data.active = false; data.sort_order = (window._allPlans || []).length; }
+
+    var op = isNew ? sb.from('checkout_plans').insert(data) : sb.from('checkout_plans').update(data).eq('id', id);
+    op.then(function(r) {
+      if (r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = isNew ? 'Crear plan' : 'Guardar cambios'; return; }
+      tst(isNew ? '✓ Plan creado (queda oculto — actívalo cuando esté listo)' : '✓ Plan actualizado');
+      modal.remove();
+      loadPlansAdmin();
+    });
+  });
+
+  if (!isNew) {
+    document.getElementById('pm-delete-btn').addEventListener('click', function() {
+      if (!confirm('¿Eliminar el plan "'+p.name+'"? Esto no afecta a los alumnos que ya lo tienen asignado, solo deja de estar disponible para nuevos.')) return;
+      sb.from('checkout_plans').delete().eq('id', p.id).then(function(r) {
+        if (r.error) return tst('Error: ' + r.error.message, 1);
+        tst('✓ Plan eliminado');
+        modal.remove();
+        loadPlansAdmin();
+      });
+    });
+  }
+}
+
+// ── MODAL: crear/editar variante ──
+function openVariantModal(planId, variantId) {
+  var planEditModal = document.getElementById('plan-edit-modal');
+  var existing = document.getElementById('variant-edit-modal');
+  if (existing) existing.remove();
+
+  var planDef = _planById(planId);
+  var isNew = !variantId;
+  var v = isNew ? {} : (planDef && planDef.variants ? planDef.variants.find(function(x){ return x.id === variantId; }) : {}) || {};
+
+  var modal = document.createElement('div');
+  modal.id = 'variant-edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML =
+    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:380px;padding:22px;">' +
+      '<div style="font-family:var(--font-cond);font-size:1.05rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:14px;">'+(isNew?'Agregar variante':'Editar variante')+'</div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Nombre (ej: Trimestral)</label><input id="vm-name" class="ai" value="'+(v.name||'')+'"></div>' +
+      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="vm-desc" class="ai" value="'+(v.description||'')+'" placeholder="Ej: Ahorra $50 vs mensual"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
+        '<div><label class="al">Precio</label><input id="vm-price" type="number" class="ai" value="'+(v.price||'')+'"></div>' +
+        '<div><label class="al">Periodo</label><input id="vm-period" class="ai" value="'+(v.period||'')+'" placeholder="/3 meses"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;">' +
+        '<div><label class="al">Duración Clases (meses)</label><input id="vm-dur-clases" type="number" class="ai" value="'+(v.duration_clases_months||'')+'"></div>' +
+        '<div><label class="al">Duración Live (meses)</label><input id="vm-dur-live" type="number" class="ai" value="'+(v.duration_live_months||'')+'"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button id="vm-save-btn" style="flex:1;padding:9px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;">Guardar</button>' +
+        '<button onclick="document.getElementById(\'variant-edit-modal\').remove();" style="padding:9px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.82rem;cursor:pointer;">Cancelar</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  document.getElementById('vm-save-btn').addEventListener('click', function() {
+    var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
+    var data = {
+      plan_id: planId,
+      name: document.getElementById('vm-name').value.trim(),
+      description: document.getElementById('vm-desc').value.trim(),
+      price: parseFloat(document.getElementById('vm-price').value) || 0,
+      period: document.getElementById('vm-period').value.trim(),
+      duration_clases_months: document.getElementById('vm-dur-clases').value ? parseInt(document.getElementById('vm-dur-clases').value) : null,
+      duration_live_months: document.getElementById('vm-dur-live').value ? parseInt(document.getElementById('vm-dur-live').value) : null
+    };
+    var op = isNew ? sb.from('checkout_plan_variants').insert(data) : sb.from('checkout_plan_variants').update(data).eq('id', v.id);
+    op.then(function(r) {
+      if (r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = 'Guardar'; return; }
+      tst('✓ Variante guardada');
+      modal.remove();
+      _loadPlansCache(function() {
+        if (planEditModal) { planEditModal.remove(); openPlanModal(planId); }
+        else loadPlansAdmin();
+      });
+    });
+  });
+}
+
+function deleteVariant(variantId, planId) {
+  if (!confirm('¿Eliminar esta variante?')) return;
+  sb.from('checkout_plan_variants').delete().eq('id', variantId).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Variante eliminada');
+    _loadPlansCache(function() {
+      var m = document.getElementById('plan-edit-modal');
+      if (m) { m.remove(); openPlanModal(planId); }
+    });
   });
 }
 

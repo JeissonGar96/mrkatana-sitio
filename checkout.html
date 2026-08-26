@@ -570,27 +570,20 @@ var sb = supabase.createClient(SB_URL, SB_KEY);
 
 var state = {
   page: 1,
-  plan: null,       // { id, price, label }
-  liveVariant: null, // { id, price, label } — solo para el plan 'live'
+  plan: null,       // { id, price, label, durationClases, durationLive }
   codeData: null,
   avatarBlob: null,
 };
 
 // ── PLANES DISPONIBLES (estructura base) ──
-// La visibilidad de cada plan se controla desde Supabase → tabla 'checkout_plans'
-// Columnas: id (text PK), name, description, price, period, popular, active, sort_order
-// Si la tabla no existe, se usan los planes hardcoded de respaldo.
-
-var LIVE_VARIANTS = [
-  { id: 'live-mensual',    price: 100,  label: 'Sesiones en Vivo — Mensual',    period: '/mes',      desc: 'Renueva cada mes' },
-  { id: 'live-trimestral', price: 250,  label: 'Sesiones en Vivo — Trimestral', period: '/3 meses',  desc: 'Ahorra $50 vs mensual' },
-  { id: 'live-semestral',  price: 500,  label: 'Sesiones en Vivo — Semestral',  period: '/6 meses',  desc: 'Ahorra $100 vs mensual' },
-];
+// La visibilidad y configuración de cada plan se controla desde Supabase →
+// tabla 'checkout_plans' (+ 'checkout_plan_variants' para sub-opciones como duraciones).
+// Si la tabla no existe, se usan los planes hardcoded de respaldo (sin variantes).
 
 var FALLBACK_PLANS = [
-  { id: 'formacion', name: 'Formacion RAIN Completa', description: 'Clases grabadas · Acceso de por vida · Soporte', price: 600,  period: 'pago único', popular: true,  active: true,  sort_order: 1 },
-  { id: 'live',      name: 'Sesiones en Vivo',        description: 'Dashboard · Lives diarios · Comunidad',           price: 100,  period: '/mes',       popular: false, active: false, sort_order: 2 },
-  { id: 'mentoria',  name: 'Mentoria Premium',         description: 'Todo incluido · Sesiones 1-1 por 1 año · Acceso vitalicio', price: 2500, period: 'pago único', popular: false, active: false, sort_order: 3 },
+  { id: 'formacion', name: 'Formacion RAIN Completa', description: 'Clases grabadas · Acceso de por vida · Soporte', price: 600,  period: 'pago único', popular: true,  active: true,  sort_order: 1, duration_clases_months: null, duration_live_months: null, variants: [] },
+  { id: 'live',      name: 'Sesiones en Vivo',        description: 'Dashboard · Lives diarios · Comunidad',           price: 100,  period: '/mes',       popular: false, active: false, sort_order: 2, duration_clases_months: null, duration_live_months: 1, variants: [] },
+  { id: 'mentoria',  name: 'Mentoria Premium',         description: 'Todo incluido · Sesiones 1-1 por 1 año · Acceso vitalicio', price: 2500, period: 'pago único', popular: false, active: false, sort_order: 3, duration_clases_months: null, duration_live_months: null, variants: [] },
 ];
 
 // ── LOAD PLANS ──
@@ -602,6 +595,9 @@ async function loadPlans() {
     var r = await sb.from('checkout_plans').select('*').order('sort_order');
     if (!r.error && r.data && r.data.length) {
       plans = r.data;
+      var rv = await sb.from('checkout_plan_variants').select('*').order('sort_order');
+      var variants = (rv && rv.data) || [];
+      plans.forEach(function(p) { p.variants = variants.filter(function(v) { return v.plan_id === p.id; }); });
     }
   } catch(e) { /* usa fallback */ }
 
@@ -614,27 +610,26 @@ async function loadPlans() {
 
   var html = '';
   activePlans.forEach(function(p) {
-    var isLive = p.id === 'live';
+    var hasVariants = p.variants && p.variants.length > 0;
     var popularClass = p.popular ? ' popular' : '';
-    html += '<div class="plan-item' + popularClass + '" data-plan="' + p.id + '" data-price="' + p.price + '" data-label="' + p.name + '">';
+    html += '<div class="plan-item' + popularClass + '" data-plan="' + p.id + '" data-price="' + p.price + '" data-label="' + p.name + '" data-dur-clases="' + (p.duration_clases_months||'') + '" data-dur-live="' + (p.duration_live_months||'') + '" data-access1on1="' + (p.access_1on1?'1':'') + '" data-roadmap="' + (p.roadmap_mode||'') + '">';
     html += '<div class="plan-inner">';
     html += '<div class="plan-radio-wrap"></div>';
     html += '<div class="plan-info"><div class="plan-name">' + p.name + '</div>';
-    html += '<div class="plan-desc">' + p.description + '</div></div>';
+    html += '<div class="plan-desc">' + (p.description||'') + '</div></div>';
     html += '<div class="plan-price"><div class="plan-price-main">$' + Number(p.price).toLocaleString() + '</div>';
-    html += '<div class="plan-price-period">' + p.period + '</div></div>';
+    html += '<div class="plan-price-period">' + (p.period||'') + '</div></div>';
     html += '</div>'; // .plan-inner
 
-    // Sub-selector Sesiones en Vivo
-    if (isLive) {
-      html += '<div class="live-options" id="live-options">';
+    // Sub-selector de variantes (ej. duraciones), genérico para cualquier plan que las tenga
+    if (hasVariants) {
+      html += '<div class="live-options" id="variant-options-' + p.id + '" data-parent-plan="' + p.id + '">';
       html += '<div class="live-opts-label">Elige tu duración</div>';
-      LIVE_VARIANTS.forEach(function(v, i) {
-        var dur = v.label.replace('Sesiones en Vivo — ','');
-        html += '<div class="live-opt' + (i===0?' selected':'') + '" data-variant="' + v.id + '" data-price="' + v.price + '" data-label="' + v.label + '">';
+      p.variants.forEach(function(v, i) {
+        html += '<div class="live-opt' + (i===0?' selected':'') + '" data-variant="' + v.id + '" data-price="' + v.price + '" data-label="' + p.name + ' — ' + v.name + '" data-dur-clases="' + (v.duration_clases_months||'') + '" data-dur-live="' + (v.duration_live_months||'') + '">';
         html += '<div class="live-opt-radio"></div>';
-        html += '<div class="live-opt-label">' + dur + (v.desc !== 'Renueva cada mes' ? '<span class="live-opt-save">— ' + v.desc + '</span>' : '') + '</div>';
-        html += '<div class="live-opt-price">$' + v.price + '<span class="live-opt-period">' + v.period + '</span></div>';
+        html += '<div class="live-opt-label">' + v.name + (v.description ? '<span class="live-opt-save">— ' + v.description + '</span>' : '') + '</div>';
+        html += '<div class="live-opt-price">$' + Number(v.price).toLocaleString() + '<span class="live-opt-period">' + (v.period||'') + '</span></div>';
         html += '</div>';
       });
       html += '</div>'; // .live-options
@@ -651,17 +646,22 @@ async function loadPlans() {
       if (e.target.closest('.live-opt')) return; // handled below
       grid.querySelectorAll('.plan-item').forEach(function(x){ x.classList.remove('selected'); });
       el.classList.add('selected');
-      var isLive = el.dataset.plan === 'live';
-      var liveOpts = document.getElementById('live-options');
-      if (liveOpts) liveOpts.classList.toggle('visible', isLive);
-      if (isLive) {
-        var sel = el.querySelector('.live-opt.selected');
-        if (!sel) sel = el.querySelector('.live-opt');
-        if (sel) setLiveVariant(sel);
-      } else {
-        state.liveVariant = null;
-        state.plan = { id: el.dataset.plan, price: parseInt(el.dataset.price), label: el.dataset.label };
+      grid.querySelectorAll('.live-options').forEach(function(lo){ lo.classList.remove('visible'); });
+      var variantWrap = document.getElementById('variant-options-' + el.dataset.plan);
+      if (variantWrap) {
+        variantWrap.classList.add('visible');
+        var sel = variantWrap.querySelector('.live-opt.selected') || variantWrap.querySelector('.live-opt');
+        if (sel) { setVariant(sel); updateSummary(); return; }
       }
+      state.plan = {
+        id: el.dataset.plan,
+        price: parseInt(el.dataset.price),
+        label: el.dataset.label,
+        durationClases: el.dataset.durClases ? parseInt(el.dataset.durClases) : null,
+        durationLive: el.dataset.durLive ? parseInt(el.dataset.durLive) : null,
+        access1on1: !!el.dataset.access1on1,
+        roadmapMode: el.dataset.roadmap || null
+      };
       updateSummary();
     });
   });
@@ -669,7 +669,7 @@ async function loadPlans() {
   grid.querySelectorAll('.live-opt').forEach(function(el) {
     el.addEventListener('click', function(e) {
       e.stopPropagation();
-      setLiveVariant(el);
+      setVariant(el);
       updateSummary();
     });
   });
@@ -679,11 +679,21 @@ async function loadPlans() {
   if (first) first.click();
 }
 
-function setLiveVariant(el) {
-  document.querySelectorAll('.live-opt').forEach(function(x){ x.classList.remove('selected'); });
+function setVariant(el) {
+  var wrap = el.closest('.live-options');
+  if (wrap) wrap.querySelectorAll('.live-opt').forEach(function(x){ x.classList.remove('selected'); });
   el.classList.add('selected');
-  state.liveVariant = { id: el.dataset.variant, price: parseInt(el.dataset.price), label: el.dataset.label };
-  state.plan = { id: 'live', price: parseInt(el.dataset.price), label: el.dataset.label };
+  var planId = wrap ? wrap.dataset.parentPlan : el.dataset.variant;
+  var parentEl = document.querySelector('.plan-item[data-plan="' + planId + '"]');
+  state.plan = {
+    id: planId,
+    price: parseInt(el.dataset.price),
+    label: el.dataset.label,
+    durationClases: el.dataset.durClases ? parseInt(el.dataset.durClases) : null,
+    durationLive: el.dataset.durLive ? parseInt(el.dataset.durLive) : null,
+    access1on1: !!(parentEl && parentEl.dataset.access1on1),
+    roadmapMode: (parentEl && parentEl.dataset.roadmap) || null
+  };
 }
 
 // ── INIT ──
@@ -967,15 +977,23 @@ async function createAccount() {
     // Renovación o usuario existente — solo actualizar membresía, no tocar el perfil
     if (userId) {
       var planId = state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo');
-      var monthsMap2 = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6 };
-      var months2 = state.codeData ? (state.codeData.months || 6) : (monthsMap2[planId] || 12);
+      // Los códigos ya traen su propia duración (independiente del plan); si no hay código,
+      // se usa la duración configurada en el plan elegido (null = ilimitado → 180 meses de respaldo)
+      var months2 = state.codeData ? (state.codeData.months || 6) : ((state.plan && state.plan.durationClases) || 180);
       var membershipEnd2 = new Date();
       membershipEnd2.setMonth(membershipEnd2.getMonth() + months2);
-      await sb.from('profiles').update({
+      var renewUpd2 = {
         plan: planId,
+        access_1on1: state.plan ? !!state.plan.access1on1 : false,
+        roadmap_mode: state.plan ? (state.plan.roadmapMode || null) : null,
         membership_start: new Date().toISOString(),
         membership_end: membershipEnd2.toISOString()
-      }).eq('id', userId);
+      };
+      if (!state.codeData && state.plan && state.plan.durationLive) {
+        var liveEnd2 = new Date(); liveEnd2.setMonth(liveEnd2.getMonth() + state.plan.durationLive);
+        renewUpd2.live_plan = planId; renewUpd2.live_end = liveEnd2.toISOString();
+      }
+      await sb.from('profiles').update(renewUpd2).eq('id', userId);
       if (codeVal) await sb.rpc('use_access_code', { p_code: codeVal, p_user_id: userId });
     }
     btn.disabled = false;
@@ -1008,8 +1026,22 @@ async function createAccount() {
       phone_prefix:       prefix,
       phone:              phone,
       trading_experience: exp,
-      plan:               state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo')
+      plan:               state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo'),
+      access_1on1:        state.codeData ? false : (state.plan ? !!state.plan.access1on1 : false),
+      roadmap_mode:       state.codeData ? null : (state.plan ? (state.plan.roadmapMode || null) : null)
     };
+    if (!state.codeData && state.plan) {
+      var freeStart = new Date();
+      profile.membership_start = freeStart.toISOString();
+      if (state.plan.durationClases) {
+        var freeEnd = new Date(); freeEnd.setMonth(freeEnd.getMonth() + state.plan.durationClases);
+        profile.membership_end = freeEnd.toISOString();
+      }
+      if (state.plan.durationLive) {
+        var freeLiveEnd = new Date(); freeLiveEnd.setMonth(freeLiveEnd.getMonth() + state.plan.durationLive);
+        profile.live_plan = state.plan.id; profile.live_end = freeLiveEnd.toISOString();
+      }
+    }
     if (dobD && dobM && dobY) {
       profile.date_of_birth = dobY + '-' + dobM + '-' + dobD;
       var bday = new Date(profile.date_of_birth);
@@ -1139,22 +1171,18 @@ async function createAccountAfterPayment(paypalDetails) {
     }
   }
 
-  // Membership end según plan
-  var monthsMap = { 'formacion':1200, 'mentoria':1200, 'live-mensual':1, 'live-trimestral':3, 'live-semestral':6, 'formacion-basico':1200 };
+  // Membership end según el plan/variante elegido (null = ilimitado → 180 meses de respaldo)
   var planId = state.plan ? state.plan.id : 'formacion';
-  var months = monthsMap[planId] || 12;
+  var months = (state.plan && state.plan.durationClases) || 180;
   var membershipEnd = new Date();
   membershipEnd.setMonth(membershipEnd.getMonth() + months);
 
-  // Live end — 6 meses para formacion y formacion-basico
+  // Live end — según lo que el plan tenga configurado (sin reglas fijas por nombre de plan)
   var liveEnd = null;
   var livePlan = null;
-  if (planId === 'formacion' || planId === 'formacion-basico') {
+  if (state.plan && state.plan.durationLive) {
     liveEnd = new Date();
-    liveEnd.setMonth(liveEnd.getMonth() + 6);
-    livePlan = 'live-semestral';
-  } else if (planId === 'live-mensual' || planId === 'live-trimestral' || planId === 'live-semestral') {
-    liveEnd = membershipEnd;
+    liveEnd.setMonth(liveEnd.getMonth() + state.plan.durationLive);
     livePlan = planId;
   }
 
@@ -1163,6 +1191,8 @@ async function createAccountAfterPayment(paypalDetails) {
       // Renovación — solo actualizar membresía
       var renewData = {
         plan: planId,
+        access_1on1: state.plan ? !!state.plan.access1on1 : false,
+        roadmap_mode: state.plan ? (state.plan.roadmapMode || null) : null,
         membership_start: new Date().toISOString(),
         membership_end: membershipEnd.toISOString()
       };
@@ -1179,7 +1209,9 @@ async function createAccountAfterPayment(paypalDetails) {
       var profile = {
         full_name: name, country: country, phone_prefix: prefix,
         phone: phone, trading_experience: exp,
-        plan: planId, membership_end: membershipEnd.toISOString()
+        plan: planId, membership_end: membershipEnd.toISOString(),
+        access_1on1: state.plan ? !!state.plan.access1on1 : false,
+        roadmap_mode: state.plan ? (state.plan.roadmapMode || null) : null
       };
       if (livePlan) { profile.live_plan = livePlan; profile.live_end = liveEnd.toISOString(); }
       if (dobD && dobM && dobY) {

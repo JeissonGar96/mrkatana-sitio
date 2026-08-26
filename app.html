@@ -1266,7 +1266,7 @@ function loadApp(user) {
       document.getElementById('btn-mandatory-discord-connect').addEventListener('click', function() {
         var params = new URLSearchParams({
           client_id:     '1482794976118046851',
-          redirect_uri:  'https://www.mrkatanafx.com/api/discord-callback',
+          redirect_uri:  window.location.origin + '/api/discord-callback',
           response_type: 'code',
           scope:         'identify guilds.join',
           state:         cUser ? cUser.id : '',

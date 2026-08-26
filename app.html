@@ -3060,18 +3060,23 @@ function renewLive(id) {
 
   var modal = document.createElement('div');
   modal.id = 'live-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  _injectWhopStyles();
+  modal.className = 'wp-overlay';
   modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Live</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Activa o desactiva el acceso a sesiones en vivo</div>' +
-      '<select id="live-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
-        opts.map(function(o) { return '<option value="' + o.value + '">' + o.label + '</option>'; }).join('') +
-      '</select>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="live-plan-btn" style="flex:1;padding:10px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);color:#4ade80;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Activar</button>' +
-        '<button id="live-deact-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Desactivar</button>' +
-        '<button onclick="document.getElementById(\'live-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+    '<div class="wp-modal" style="max-width:400px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📡</div>' +
+        '<div class="wp-title" style="font-size:1rem;">Gestionar Live</div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Duración a activar</label><select id="live-plan-sel" class="wp-input">' +
+          opts.map(function(o) { return '<option value="' + o.value + '">' + o.label + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="wp-footer">' +
+          '<button id="live-plan-btn" class="wp-btn-primary">Activar</button>' +
+          '<button id="live-deact-btn" class="wp-btn-danger">Desactivar</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'live-modal\').remove();">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(modal);
@@ -3108,25 +3113,28 @@ function changePlanModal(id, currentPlan) {
   var plans = (window._allPlans || []).filter(function(p) { return p.active; });
   var modal = document.createElement('div');
   modal.id = 'plan-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  _injectWhopStyles();
+  modal.className = 'wp-overlay';
   modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Plan</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Plan actual: <strong style="color:#f0f0f0;">'+(currentPlan||'—')+'</strong></div>' +
-      '<select id="plan-modal-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:12px;">' +
-        plans.map(function(p) { return '<option value="'+p.id+'"'+(currentPlan===p.id?' selected':'')+'>'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') +
-      '</select>' +
-      '<div id="plan-modal-variant-wrap" style="margin-bottom:12px;display:none;">' +
-        '<select id="plan-modal-variant-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;"></select>' +
+    '<div class="wp-modal" style="max-width:400px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🔄</div>' +
+        '<div><div class="wp-title" style="font-size:1rem;">Gestionar Plan</div><div class="wp-subtitle">Actual: '+(currentPlan||'—')+'</div></div>' +
       '</div>' +
-      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">' +
-        '<input type="checkbox" id="plan-keep-dates" checked style="width:14px;height:14px;accent-color:var(--sl);">' +
-        '<span style="font-size:.78rem;color:#9a9a9a;">Mantener fechas actuales</span>' +
-      '</label>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="plan-modal-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Cambiar</button>' +
-        '<button id="plan-delete-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Eliminar</button>' +
-        '<button onclick="document.getElementById(\'plan-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Nuevo plan</label><select id="plan-modal-sel" class="wp-input">' +
+          plans.map(function(p) { return '<option value="'+p.id+'"'+(currentPlan===p.id?' selected':'')+'>'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') +
+        '</select></div>' +
+        '<div id="plan-modal-variant-wrap" class="wp-field" style="display:none;"><select id="plan-modal-variant-sel" class="wp-input"></select></div>' +
+        '<div class="wp-toggle-row">' +
+          '<span class="wp-toggle-text">Mantener fechas actuales</span>' +
+          '<label class="wp-toggle"><input type="checkbox" id="plan-keep-dates" checked><span class="wp-toggle-track"></span></label>' +
+        '</div>' +
+        '<div class="wp-footer">' +
+          '<button id="plan-modal-btn" class="wp-btn-primary">Cambiar</button>' +
+          '<button id="plan-delete-btn" class="wp-btn-danger">Eliminar</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'plan-modal\').remove();">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(modal);
@@ -4017,23 +4025,24 @@ function openScheduleModal(studentId, studentName) {
 
   var ov = document.createElement('div');
   ov.id = 'schedule-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;box-sizing:border-box;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div>' +
-          '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">📅 Programar sesión 1-1</div>' +
-          '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + name + '</div>' +
+    '<div class="wp-modal" style="max-width:440px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar sesión 1-1</div><div class="wp-subtitle">' + name + '</div></div>' +
+        '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="sch-title" class="wp-input" placeholder="Sesión 1-1 · Semana 3"></div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Fecha</label><input type="date" id="sch-date" class="wp-input"></div>' +
+          '<div><label class="wp-label">Hora</label><input type="time" id="sch-time" class="wp-input"></div>' +
         '</div>' +
-        '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="sch-url" class="wp-input" placeholder="https://meet.google.com/..."></div>' +
+        '<button id="sch-save-btn" onclick="saveSchedule(\''+studentId+'\')" class="wp-btn-primary" style="width:100%;">Programar sesión</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-title" class="ai" placeholder="Sesión 1-1 · Semana 3" style="box-sizing:border-box;"></div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-        '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-        '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-      '</div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-url" class="ai" placeholder="https://meet.google.com/..." style="box-sizing:border-box;"></div>' +
-      '<button id="sch-save-btn" onclick="saveSchedule(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Programar sesión</button>' +
     '</div>';
 
   document.body.appendChild(ov);
@@ -4069,41 +4078,42 @@ function openRecordingModal(studentId, studentName) {
 
   var ov = document.createElement('div');
   ov.id = 'recording-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;box-sizing:border-box;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div>' +
-          '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">🎥 Subir grabación</div>' +
-          '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + name + '</div>' +
-        '</div>' +
-        '<button onclick="document.getElementById(\'recording-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-modal" style="max-width:440px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🎥</div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Subir grabación</div><div class="wp-subtitle">' + name + '</div></div>' +
+        '<button onclick="document.getElementById(\'recording-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="rec-title" class="ai" placeholder="Análisis de cuenta · Semana 3" style="box-sizing:border-box;"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">URL Video (Bunny)</label><input id="rec-url" class="ai" placeholder="https://player.mediadelivery.net/embed/..." style="box-sizing:border-box;"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="rec-desc" class="ai" placeholder="Notas de la sesión" style="box-sizing:border-box;"></div>' +
-      '<div style="margin-bottom:14px;">' +
-        '<label class="al">Fecha</label>' +
-        '<div style="display:flex;gap:6px;">' +
-          (function(){
-            var d='<select id="rec-date-d" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Día</option>';
-            for(var i=1;i<=31;i++) d+='<option value="'+String(i).padStart(2,'0')+'">'+i+'</option>';
-            return d+'</select>';
-          })() +
-          (function(){
-            var ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-            var s='<select id="rec-date-m" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Mes</option>';
-            ms.forEach(function(m,i){ s+='<option value="'+String(i+1).padStart(2,'0')+'">'+m+'</option>'; });
-            return s+'</select>';
-          })() +
-          (function(){
-            var y=new Date().getFullYear(), s='<select id="rec-date-y" class="ai" style="flex:1.4;min-width:0;box-sizing:border-box;"><option value="">Año</option>';
-            for(var i=y;i>=y-10;i--) s+='<option value="'+i+'">'+i+'</option>';
-            return s+'</select>';
-          })() +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="rec-title" class="wp-input" placeholder="Análisis de cuenta · Semana 3"></div>' +
+        '<div class="wp-field"><label class="wp-label">URL Video (Bunny)</label><input id="rec-url" class="wp-input" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
+        '<div class="wp-field"><label class="wp-label">Descripción (opcional)</label><input id="rec-desc" class="wp-input" placeholder="Notas de la sesión"></div>' +
+        '<div class="wp-field">' +
+          '<label class="wp-label">Fecha</label>' +
+          '<div style="display:flex;gap:6px;">' +
+            (function(){
+              var d='<select id="rec-date-d" class="wp-input" style="flex:1;min-width:0;"><option value="">Día</option>';
+              for(var i=1;i<=31;i++) d+='<option value="'+String(i).padStart(2,'0')+'">'+i+'</option>';
+              return d+'</select>';
+            })() +
+            (function(){
+              var ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+              var s='<select id="rec-date-m" class="wp-input" style="flex:1;min-width:0;"><option value="">Mes</option>';
+              ms.forEach(function(m,i){ s+='<option value="'+String(i+1).padStart(2,'0')+'">'+m+'</option>'; });
+              return s+'</select>';
+            })() +
+            (function(){
+              var y=new Date().getFullYear(), s='<select id="rec-date-y" class="wp-input" style="flex:1.4;min-width:0;"><option value="">Año</option>';
+              for(var i=y;i>=y-10;i--) s+='<option value="'+i+'">'+i+'</option>';
+              return s+'</select>';
+            })() +
+          '</div>' +
         '</div>' +
+        '<button id="rec-save-btn" onclick="saveRecording(\''+studentId+'\')" class="wp-btn-primary" style="width:100%;">Guardar grabación</button>' +
       '</div>' +
-      '<button id="rec-save-btn" onclick="saveRecording(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Guardar grabación</button>' +
     '</div>';
 
   document.body.appendChild(ov);
@@ -4180,22 +4190,26 @@ function activateMember(id, isActive) {
 
   var modal = document.createElement('div');
   modal.id = 'activate-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  _injectWhopStyles();
+  modal.className = 'wp-overlay';
   modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:380px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Activar / Cambiar plan</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Selecciona el plan a activar manualmente</div>' +
-      '<label style="display:block;font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Plan</label>' +
-      '<select id="act-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
-        opts.map(function(o){ return '<option value="'+o.value+'">'+o.label+'</option>'; }).join('') +
-      '</select>' +
-      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;">' +
-        '<input type="checkbox" id="act-keep-dates" style="width:14px;height:14px;accent-color:var(--sl);">' +
-        '<span style="font-size:.78rem;color:#9a9a9a;">Mantener fechas actuales (solo cambiar plan)</span>' +
-      '</label>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="act-plan-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Aplicar</button>' +
-        '<button onclick="document.getElementById(\'activate-modal\').remove();" style="padding:10px 16px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+    '<div class="wp-modal" style="max-width:420px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🎫</div>' +
+        '<div><div class="wp-title" style="font-size:1rem;">Activar / Cambiar plan</div><div class="wp-subtitle">Asignación manual</div></div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Plan</label><select id="act-plan-sel" class="wp-input">' +
+          opts.map(function(o){ return '<option value="'+o.value+'">'+o.label+'</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="wp-toggle-row">' +
+          '<span class="wp-toggle-text">Mantener fechas actuales</span>' +
+          '<label class="wp-toggle"><input type="checkbox" id="act-keep-dates"><span class="wp-toggle-track"></span></label>' +
+        '</div>' +
+        '<div class="wp-footer">' +
+          '<button id="act-plan-btn" class="wp-btn-primary">Aplicar</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'activate-modal\').remove();">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
 

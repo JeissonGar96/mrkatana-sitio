@@ -4652,7 +4652,7 @@ function rAdmCodes() {
         '<div style="font-size:.86rem;font-weight:600;">🎭 Roles de Discord</div>' +
         '<button id="btn-sync-discord-roles" style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.3);color:#8f9aff;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">Sincronizar desde Discord</button>' +
       '</div>' +
-      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Activa los roles que se asignan automáticamente cuando un alumno conecta su Discord. La lista viene directo de tu servidor — no se escriben IDs a mano.</div>' +
+      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Sincroniza los roles reales de tu servidor. Los que dejes "Disponibles" aparecerán como opción al configurar qué roles otorga cada plan — desactiva los que no quieras ofrecer (ej: Moderador, Bot).</div>' +
       '<div id="discord-roles-list"><span class="spin"></span></div>' +
     '</div>' +
 
@@ -4697,9 +4697,9 @@ function loadDiscordRoles() {
             '<div style="font-size:.83rem;font-weight:600;color:#f0f0f0;">' + role.name + '</div>' +
           '</div>' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (role.active ? 'rgba(74,222,128,.1)' : 'rgba(255,255,255,.05)') + ';color:' + (role.active ? '#4ade80' : '#555') + ';">' + (role.active ? 'Se asigna' : 'Inactivo') + '</span>' +
+            '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (role.active ? 'rgba(74,222,128,.1)' : 'rgba(255,255,255,.05)') + ';color:' + (role.active ? '#4ade80' : '#555') + ';">' + (role.active ? 'Disponible' : 'Oculto') + '</span>' +
             '<button onclick="toggleDiscordRole(\'' + role.id + '\',' + role.active + ')" style="background:' + (role.active ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)') + ';border:1px solid ' + (role.active ? 'rgba(248,113,113,.25)' : 'rgba(74,222,128,.25)') + ';color:' + (role.active ? '#f87171' : '#4ade80') + ';padding:4px 12px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
-              (role.active ? 'Desactivar' : 'Activar') +
+              (role.active ? 'Ocultar' : 'Mostrar') +
             '</button>' +
           '</div>' +
         '</div>';
@@ -4950,13 +4950,16 @@ function openPlanModal(planId) {
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
 
-  // Cargar roles de Discord disponibles como chips
+  // Cargar roles de Discord disponibles como chips (solo los marcados "Disponible",
+  // más cualquiera que este plan ya tuviera asignado aunque después se haya ocultado)
   var selectedRoles = (p.discord_role_ids || []);
   sb.from('discord_roles').select('*').order('sort_order').then(function(r) {
     var wrap = document.getElementById('pm-discord-roles');
     if (!wrap) return;
-    var roles = r.data || [];
-    if (!roles.length) { wrap.innerHTML = '<span style="font-size:.76rem;color:#5c6470;">Sin roles sincronizados — ve a la sección de arriba.</span>'; return; }
+    var allRoles = r.data || [];
+    var roles = allRoles.filter(function(role) { return role.active || selectedRoles.indexOf(role.discord_role_id) >= 0; });
+    if (!allRoles.length) { wrap.innerHTML = '<span style="font-size:.76rem;color:#5c6470;">Sin roles sincronizados — ve a la sección de arriba.</span>'; return; }
+    if (!roles.length) { wrap.innerHTML = '<span style="font-size:.76rem;color:#5c6470;">No hay roles disponibles — todos están ocultos en la sección de arriba.</span>'; return; }
     wrap.innerHTML = roles.map(function(role) {
       var checked = selectedRoles.indexOf(role.discord_role_id) >= 0;
       return '<label class="wp-chip"><input type="checkbox" class="pm-role-cb" value="'+role.discord_role_id+'" '+(checked?'checked':'')+'>' + role.name + '</label>';

@@ -1189,6 +1189,11 @@ function loadApp(user) {
         _showCompleteProfile();
         return;
       }
+      // Si no tiene Discord conectado, es obligatorio antes de continuar
+      if (!cProfile.discord_id && cProfile.role !== 'admin') {
+        _showMandatoryDiscord();
+        return;
+      }
       // Start auto session checker
       startSessionChecker();
       // Restore route from URL or start at dash
@@ -1231,6 +1236,43 @@ function loadApp(user) {
           '<button onclick="submitCompleteProfile()" style="background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;padding:12px 28px;border-radius:8px;border:none;font-weight:600;font-size:.86rem;cursor:pointer;width:100%;max-width:340px;">Guardar y continuar →</button>' +
           '<div id="avatar-complete-msg" style="font-size:.78rem;color:#555;margin-top:12px;"></div>' +
         '</div>';
+    }
+
+    function _showMandatoryDiscord() {
+      // Ocultar sidebar y nav mobile y bloquear navegación
+      var aside = document.querySelector('.aside');
+      if (aside) aside.style.display = 'none';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.style.display = 'none';
+      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+        b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
+      });
+
+      var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
+      document.getElementById('amain').innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:40px 20px;">' +
+          '<div style="width:64px;height:64px;background:rgba(88,101,242,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">' +
+            '<svg width="34" height="26" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="#5865F2"/></svg>' +
+          '</div>' +
+          '<div style="font-family:sans-serif;font-size:1.5rem;font-weight:800;text-transform:uppercase;color:#f0f0f0;margin-bottom:6px;">¡Ya casi, ' + name + '!</div>' +
+          '<p style="font-size:.84rem;color:#666;max-width:340px;margin:0 auto 28px;">Para acceder a la plataforma necesitas conectar tu cuenta de Discord. Recibirás tu rol de estudiante automáticamente.</p>' +
+          '<button id="btn-mandatory-discord-connect" style="background:#5865F2;border:none;color:#fff;padding:13px 28px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;width:100%;max-width:340px;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+            '<svg width="18" height="14" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="white"/></svg>' +
+            'Conectar con Discord' +
+          '</button>' +
+          '<div style="font-size:.72rem;color:#444;margin-top:16px;max-width:340px;">Este paso es obligatorio solo la primera vez.</div>' +
+        '</div>';
+
+      document.getElementById('btn-mandatory-discord-connect').addEventListener('click', function() {
+        var params = new URLSearchParams({
+          client_id:     '1482794976118046851',
+          redirect_uri:  'https://www.mrkatanafx.com/api/discord-callback',
+          response_type: 'code',
+          scope:         'identify guilds.join',
+          state:         cUser ? cUser.id : '',
+        });
+        window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
+      });
     }
   });
 }
@@ -1288,6 +1330,12 @@ async function submitCompleteProfile() {
   msg.textContent = '✓ Perfil completado';
 
   setTimeout(function() {
+    // Si aún no tiene Discord conectado, ese paso sigue pendiente —
+    // no se restaura la navegación ni se muestra el dashboard todavía.
+    if (!cProfile.discord_id) {
+      loadApp(cUser);
+      return;
+    }
     var aside = document.querySelector('.aside');
     if (aside) aside.style.display = '';
     var mobNav = document.getElementById('mob-nav');
@@ -2248,9 +2296,6 @@ function rSes() {
   var m = document.getElementById('amain');
   m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
 
-  // Check if user has Discord connected
-  var hasDiscord = cProfile && cProfile.discord_id;
-
   sb.from('live_sessions').select('*').order('scheduled_at').then(function(r) {
     var sessions = r.data || [];
     var now = new Date();
@@ -2368,13 +2413,8 @@ function rSes() {
     if (joinBtn) {
       joinBtn.addEventListener('click', function() {
         var discordUrl = this.getAttribute('data-url');
-        if (hasDiscord) {
-          // Already connected — go straight to Discord
-          if (discordUrl) window.open(discordUrl, '_blank');
-        } else {
-          // Show Discord connect modal
-          showDiscordModal(discordUrl);
-        }
+        // El gate obligatorio del primer login garantiza que ya está conectado
+        if (discordUrl) window.open(discordUrl, '_blank');
       });
     }
   });
@@ -2411,53 +2451,6 @@ function openRecModal(title, date, embedUrl) {
   document.getElementById('rec-modal-close').addEventListener('click', function() {
     overlay.remove();
   });
-  overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) overlay.remove();
-  });
-}
-
-function showDiscordModal(discordUrl) {
-  var existing = document.getElementById('discord-modal');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.id = 'discord-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
-
-  overlay.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:18px;width:100%;max-width:380px;padding:32px 28px;text-align:center;">' +
-      '<div style="width:56px;height:56px;background:rgba(88,101,242,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">' +
-        '<svg width="32" height="24" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="#5865F2"/></svg>' +
-      '</div>' +
-      '<div style="font-size:1.1rem;font-weight:700;color:#f0f0f0;margin-bottom:10px;">Conecta tu Discord</div>' +
-      '<div style="font-size:.82rem;color:#666;line-height:1.7;margin-bottom:22px;">Para unirte a las sesiones en vivo necesitas vincular tu cuenta de Discord. Recibirás el rol de estudiante automáticamente.</div>' +
-      '<button id="btn-discord-connect" style="background:#5865F2;border:none;color:#fff;padding:12px 20px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">' +
-        '<svg width="18" height="14" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="white"/></svg>' +
-        'Conectar con Discord' +
-      '</button>' +
-      '<button id="btn-discord-skip" style="background:none;border:none;color:#444;font-size:.78rem;cursor:pointer;padding:6px;">Ahora no</button>' +
-    '</div>';
-
-  document.body.appendChild(overlay);
-
-  // Connect button — redirect to Discord OAuth
-  document.getElementById('btn-discord-connect').addEventListener('click', function() {
-    var params = new URLSearchParams({
-      client_id:     '1482794976118046851',
-      redirect_uri:  'https://www.mrkatanafx.com/api/discord-callback',
-      response_type: 'code',
-      scope:         'identify guilds.join',
-      state:         cUser ? cUser.id : '',
-    });
-    window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
-  });
-
-  document.getElementById('btn-discord-skip').addEventListener('click', function() {
-    overlay.remove();
-    // If they skip, open Discord URL directly anyway
-    if (discordUrl) window.open(discordUrl, '_blank');
-  });
-
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay) overlay.remove();
   });

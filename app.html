@@ -4541,7 +4541,20 @@ function rAdmCodes() {
     // ── SEPARADOR ──
     '<div style="border-top:1px solid rgba(91,127,166,.12);margin:4px 0 22px;"></div>' +
 
-    // ── SECCIÓN 2: CÓDIGOS ──
+    // ── SECCIÓN 2: ROLES DE DISCORD ──
+    '<div class="aform" style="margin-bottom:22px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+        '<div style="font-size:.86rem;font-weight:600;">🎭 Roles de Discord</div>' +
+        '<button id="btn-sync-discord-roles" style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.3);color:#8f9aff;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">Sincronizar desde Discord</button>' +
+      '</div>' +
+      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Activa los roles que se asignan automáticamente cuando un alumno conecta su Discord. La lista viene directo de tu servidor — no se escriben IDs a mano.</div>' +
+      '<div id="discord-roles-list"><span class="spin"></span></div>' +
+    '</div>' +
+
+    // ── SEPARADOR ──
+    '<div style="border-top:1px solid rgba(91,127,166,.12);margin:4px 0 22px;"></div>' +
+
+    // ── SECCIÓN 3: CÓDIGOS ──
     '<div class="aform">' +
       '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">🔑 Generar código de acceso</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:9px;">' +
@@ -4554,8 +4567,71 @@ function rAdmCodes() {
     '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>';
 
   document.getElementById('btn-gen-code').addEventListener('click', genCode);
+  document.getElementById('btn-sync-discord-roles').addEventListener('click', syncDiscordRoles);
   loadPlansAdmin();
+  loadDiscordRoles();
   loadCodes();
+}
+
+function loadDiscordRoles() {
+  var c = document.getElementById('discord-roles-list'); if (!c) return;
+  sb.from('discord_roles').select('*').order('sort_order').then(function(r) {
+    if (r.error) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Aún no se ha creado la tabla discord_roles en Supabase.</p>';
+      return;
+    }
+    if (!r.data || !r.data.length) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin roles sincronizados todavía. Dale clic a "Sincronizar desde Discord".</p>';
+      return;
+    }
+    c.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">' +
+      r.data.map(function(role) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(91,127,166,.12);border-radius:8px;">' +
+          '<div style="display:flex;align-items:center;gap:9px;">' +
+            '<div style="width:9px;height:9px;border-radius:50%;background:' + (role.color || '#5865F2') + ';flex-shrink:0;"></div>' +
+            '<div style="font-size:.83rem;font-weight:600;color:#f0f0f0;">' + role.name + '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (role.active ? 'rgba(74,222,128,.1)' : 'rgba(255,255,255,.05)') + ';color:' + (role.active ? '#4ade80' : '#555') + ';">' + (role.active ? 'Se asigna' : 'Inactivo') + '</span>' +
+            '<button onclick="toggleDiscordRole(\'' + role.id + '\',' + role.active + ')" style="background:' + (role.active ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)') + ';border:1px solid ' + (role.active ? 'rgba(248,113,113,.25)' : 'rgba(74,222,128,.25)') + ';color:' + (role.active ? '#f87171' : '#4ade80') + ';padding:4px 12px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
+              (role.active ? 'Desactivar' : 'Activar') +
+            '</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  });
+}
+
+function toggleDiscordRole(id, currentActive) {
+  sb.from('discord_roles').update({ active: !currentActive }).eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Rol ' + (!currentActive ? 'activado' : 'desactivado'));
+    loadDiscordRoles();
+  });
+}
+
+async function syncDiscordRoles() {
+  var btn = document.getElementById('btn-sync-discord-roles');
+  var originalText = btn.textContent;
+  btn.textContent = 'Sincronizando...';
+  btn.disabled = true;
+  try {
+    var session = await sb.auth.getSession();
+    var token = session && session.data && session.data.session ? session.data.session.access_token : '';
+    var res = await fetch('/api/discord-roles', { headers: { Authorization: 'Bearer ' + token } });
+    var data = await res.json();
+    if (!res.ok || data.error) {
+      tst('Error al sincronizar: ' + (data.error || res.status), 1);
+    } else {
+      tst('✓ ' + data.count + ' roles sincronizados desde Discord');
+      loadDiscordRoles();
+    }
+  } catch (e) {
+    tst('Error al sincronizar roles', 1);
+  }
+  btn.textContent = originalText;
+  btn.disabled = false;
 }
 
 function loadPlansAdmin() {

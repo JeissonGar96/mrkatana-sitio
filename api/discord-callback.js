@@ -10,7 +10,6 @@ const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_BOT_TOKEN     = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_SERVER_ID     = '1458313559271276617';
 const DISCORD_ROLE_ID       = '1461911161267032279'; // rol de respaldo por si discord_roles aún no está configurada
-const REDIRECT_URI          = 'https://www.mrkatanafx.com/api/discord-callback';
 
 const sb = createClient(
   'https://rxyezbyvwqwihggechsc.supabase.co',
@@ -19,6 +18,9 @@ const sb = createClient(
 
 module.exports = async function handler(req, res) {
   const { code, state } = req.query;
+  // Detecta automáticamente el dominio desde donde llegó la petición
+  // (funciona igual en producción y en cualquier preview de Vercel)
+  const REDIRECT_URI = `https://${req.headers.host}/api/discord-callback`;
 
   if (!code) {
     return res.redirect('/?discord_error=no_code');

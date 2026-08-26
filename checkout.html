@@ -570,10 +570,13 @@ var sb = supabase.createClient(SB_URL, SB_KEY);
 
 var state = {
   page: 1,
-  plan: null,       // { id, price, label, durationClases, durationLive }
+  plan: null,       // { id, price, label, durationClases, durationLive, accessClases }
   codeData: null,
   avatarBlob: null,
 };
+
+// "Ilimitado" se guarda como una fecha muy lejana (no null) — mismo criterio que app.html
+var UNLIMITED_ISO = '2099-12-31T00:00:00.000Z';
 
 // ── PLANES DISPONIBLES (estructura base) ──
 // La visibilidad y configuración de cada plan se controla desde Supabase →
@@ -612,7 +615,7 @@ async function loadPlans() {
   activePlans.forEach(function(p) {
     var hasVariants = p.variants && p.variants.length > 0;
     var popularClass = p.popular ? ' popular' : '';
-    html += '<div class="plan-item' + popularClass + '" data-plan="' + p.id + '" data-price="' + p.price + '" data-label="' + p.name + '" data-dur-clases="' + (p.duration_clases_months||'') + '" data-dur-live="' + (p.duration_live_months||'') + '" data-access1on1="' + (p.access_1on1?'1':'') + '" data-roadmap="' + (p.roadmap_mode||'') + '">';
+    html += '<div class="plan-item' + popularClass + '" data-plan="' + p.id + '" data-price="' + p.price + '" data-label="' + p.name + '" data-dur-clases="' + (p.duration_clases_months||'') + '" data-dur-live="' + (p.duration_live_months||'') + '" data-access1on1="' + (p.access_1on1?'1':'') + '" data-roadmap="' + (p.roadmap_mode||'') + '" data-access-clases="' + (p.access_clases===false?'0':'1') + '">';
     html += '<div class="plan-inner">';
     html += '<div class="plan-radio-wrap"></div>';
     html += '<div class="plan-info"><div class="plan-name">' + p.name + '</div>';
@@ -626,7 +629,8 @@ async function loadPlans() {
       html += '<div class="live-options" id="variant-options-' + p.id + '" data-parent-plan="' + p.id + '">';
       html += '<div class="live-opts-label">Elige tu duración</div>';
       p.variants.forEach(function(v, i) {
-        html += '<div class="live-opt' + (i===0?' selected':'') + '" data-variant="' + v.id + '" data-price="' + v.price + '" data-label="' + p.name + ' — ' + v.name + '" data-dur-clases="' + (v.duration_clases_months||'') + '" data-dur-live="' + (v.duration_live_months||'') + '">';
+        var vAccessClases = (v.access_clases === null || v.access_clases === undefined) ? (p.access_clases !== false) : !!v.access_clases;
+        html += '<div class="live-opt' + (i===0?' selected':'') + '" data-variant="' + v.id + '" data-price="' + v.price + '" data-label="' + p.name + ' — ' + v.name + '" data-dur-clases="' + (v.duration_clases_months||'') + '" data-dur-live="' + (v.duration_live_months||'') + '" data-access-clases="' + (vAccessClases?'1':'0') + '">';
         html += '<div class="live-opt-radio"></div>';
         html += '<div class="live-opt-label">' + v.name + (v.description ? '<span class="live-opt-save">— ' + v.description + '</span>' : '') + '</div>';
         html += '<div class="live-opt-price">$' + Number(v.price).toLocaleString() + '<span class="live-opt-period">' + (v.period||'') + '</span></div>';
@@ -659,6 +663,7 @@ async function loadPlans() {
         label: el.dataset.label,
         durationClases: el.dataset.durClases ? parseInt(el.dataset.durClases) : null,
         durationLive: el.dataset.durLive ? parseInt(el.dataset.durLive) : null,
+        accessClases: el.dataset.accessClases !== '0',
         access1on1: !!el.dataset.access1on1,
         roadmapMode: el.dataset.roadmap || null
       };
@@ -691,6 +696,7 @@ function setVariant(el) {
     label: el.dataset.label,
     durationClases: el.dataset.durClases ? parseInt(el.dataset.durClases) : null,
     durationLive: el.dataset.durLive ? parseInt(el.dataset.durLive) : null,
+    accessClases: el.dataset.accessClases !== '0',
     access1on1: !!(parentEl && parentEl.dataset.access1on1),
     roadmapMode: (parentEl && parentEl.dataset.roadmap) || null
   };
@@ -977,18 +983,31 @@ async function createAccount() {
     // Renovación o usuario existente — solo actualizar membresía, no tocar el perfil
     if (userId) {
       var planId = state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo');
-      // Los códigos ya traen su propia duración (independiente del plan); si no hay código,
-      // se usa la duración configurada en el plan elegido (null = ilimitado → 180 meses de respaldo)
-      var months2 = state.codeData ? (state.codeData.months || 6) : ((state.plan && state.plan.durationClases) || 180);
-      var membershipEnd2 = new Date();
-      membershipEnd2.setMonth(membershipEnd2.getMonth() + months2);
       var renewUpd2 = {
         plan: planId,
         access_1on1: state.plan ? !!state.plan.access1on1 : false,
-        roadmap_mode: state.plan ? (state.plan.roadmapMode || null) : null,
-        membership_start: new Date().toISOString(),
-        membership_end: membershipEnd2.toISOString()
+        roadmap_mode: state.plan ? (state.plan.roadmapMode || null) : null
       };
+      if (state.codeData) {
+        // Los códigos ya traen su propia duración de Clases (independiente del plan)
+        var membershipEnd2 = new Date();
+        membershipEnd2.setMonth(membershipEnd2.getMonth() + (state.codeData.months || 6));
+        renewUpd2.membership_start = new Date().toISOString();
+        renewUpd2.membership_end = membershipEnd2.toISOString();
+      } else if (state.plan && state.plan.accessClases === false) {
+        // Este plan no incluye acceso a Clases
+        renewUpd2.membership_start = null;
+        renewUpd2.membership_end = null;
+      } else {
+        renewUpd2.membership_start = new Date().toISOString();
+        if (state.plan && state.plan.durationClases) {
+          var membershipEnd2b = new Date();
+          membershipEnd2b.setMonth(membershipEnd2b.getMonth() + state.plan.durationClases);
+          renewUpd2.membership_end = membershipEnd2b.toISOString();
+        } else {
+          renewUpd2.membership_end = UNLIMITED_ISO; // ilimitado
+        }
+      }
       if (!state.codeData && state.plan && state.plan.durationLive) {
         var liveEnd2 = new Date(); liveEnd2.setMonth(liveEnd2.getMonth() + state.plan.durationLive);
         renewUpd2.live_plan = planId; renewUpd2.live_end = liveEnd2.toISOString();
@@ -1030,12 +1049,25 @@ async function createAccount() {
       access_1on1:        state.codeData ? false : (state.plan ? !!state.plan.access1on1 : false),
       roadmap_mode:       state.codeData ? null : (state.plan ? (state.plan.roadmapMode || null) : null)
     };
-    if (!state.codeData && state.plan) {
-      var freeStart = new Date();
-      profile.membership_start = freeStart.toISOString();
-      if (state.plan.durationClases) {
-        var freeEnd = new Date(); freeEnd.setMonth(freeEnd.getMonth() + state.plan.durationClases);
-        profile.membership_end = freeEnd.toISOString();
+    if (state.codeData) {
+      var codeStart = new Date();
+      profile.membership_start = codeStart.toISOString();
+      var codeEnd = new Date(); codeEnd.setMonth(codeEnd.getMonth() + (state.codeData.months || 6));
+      profile.membership_end = codeEnd.toISOString();
+    } else if (state.plan) {
+      if (state.plan.accessClases === false) {
+        // Este plan no incluye acceso a Clases
+        profile.membership_start = null;
+        profile.membership_end = null;
+      } else {
+        var freeStart = new Date();
+        profile.membership_start = freeStart.toISOString();
+        if (state.plan.durationClases) {
+          var freeEnd = new Date(); freeEnd.setMonth(freeEnd.getMonth() + state.plan.durationClases);
+          profile.membership_end = freeEnd.toISOString();
+        } else {
+          profile.membership_end = UNLIMITED_ISO; // ilimitado
+        }
       }
       if (state.plan.durationLive) {
         var freeLiveEnd = new Date(); freeLiveEnd.setMonth(freeLiveEnd.getMonth() + state.plan.durationLive);
@@ -1171,11 +1203,20 @@ async function createAccountAfterPayment(paypalDetails) {
     }
   }
 
-  // Membership end según el plan/variante elegido (null = ilimitado → 180 meses de respaldo)
   var planId = state.plan ? state.plan.id : 'formacion';
-  var months = (state.plan && state.plan.durationClases) || 180;
-  var membershipEnd = new Date();
-  membershipEnd.setMonth(membershipEnd.getMonth() + months);
+  var accessClases = !state.plan || state.plan.accessClases !== false;
+
+  // Membership end (Clases) — respeta si el plan incluye Clases o no, e ilimitado real
+  var membershipStart = accessClases ? new Date() : null;
+  var membershipEnd = null;
+  if (accessClases) {
+    membershipEnd = new Date();
+    if (state.plan && state.plan.durationClases) {
+      membershipEnd.setMonth(membershipEnd.getMonth() + state.plan.durationClases);
+    } else {
+      membershipEnd = new Date(UNLIMITED_ISO);
+    }
+  }
 
   // Live end — según lo que el plan tenga configurado (sin reglas fijas por nombre de plan)
   var liveEnd = null;
@@ -1193,8 +1234,8 @@ async function createAccountAfterPayment(paypalDetails) {
         plan: planId,
         access_1on1: state.plan ? !!state.plan.access1on1 : false,
         roadmap_mode: state.plan ? (state.plan.roadmapMode || null) : null,
-        membership_start: new Date().toISOString(),
-        membership_end: membershipEnd.toISOString()
+        membership_start: membershipStart ? membershipStart.toISOString() : null,
+        membership_end: membershipEnd ? membershipEnd.toISOString() : null
       };
       if (livePlan) { renewData.live_plan = livePlan; renewData.live_end = liveEnd.toISOString(); }
       await sb.from('profiles').update(renewData).eq('id', userId);
@@ -1209,7 +1250,9 @@ async function createAccountAfterPayment(paypalDetails) {
       var profile = {
         full_name: name, country: country, phone_prefix: prefix,
         phone: phone, trading_experience: exp,
-        plan: planId, membership_end: membershipEnd.toISOString(),
+        plan: planId,
+        membership_start: membershipStart ? membershipStart.toISOString() : null,
+        membership_end: membershipEnd ? membershipEnd.toISOString() : null,
         access_1on1: state.plan ? !!state.plan.access1on1 : false,
         roadmap_mode: state.plan ? (state.plan.roadmapMode || null) : null
       };

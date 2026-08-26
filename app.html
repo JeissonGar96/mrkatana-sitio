@@ -2988,6 +2988,20 @@ function _planById(id) {
   return (window._allPlans || []).find(function(p) { return p.id === id; });
 }
 
+// "Ilimitado" se guarda como una fecha muy lejana (no null), para que todas las
+// comparaciones de fecha que ya existen en la app (>) sigan funcionando sin
+// tener que agregar casos especiales por todos lados.
+var UNLIMITED_ISO = '2099-12-31T00:00:00.000Z';
+function _isUnlimitedDate(dateStr) {
+  if (!dateStr) return false;
+  return new Date(dateStr).getFullYear() >= 2098;
+}
+function _fmtExpiry(dateStr) {
+  if (!dateStr) return '—';
+  if (_isUnlimitedDate(dateStr)) return 'Ilimitado';
+  return new Date(dateStr).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+}
+
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
   c.innerHTML =
@@ -3128,7 +3142,11 @@ function changePlanModal(id, currentPlan) {
         '<div id="plan-modal-variant-wrap" class="wp-field" style="display:none;"><select id="plan-modal-variant-sel" class="wp-input"></select></div>' +
         '<div class="wp-toggle-row">' +
           '<span class="wp-toggle-text">Mantener fechas actuales</span>' +
-          '<label class="wp-toggle"><input type="checkbox" id="plan-keep-dates" checked><span class="wp-toggle-track"></span></label>' +
+          '<label class="wp-toggle"><input type="checkbox" id="plan-keep-dates" checked onchange="document.getElementById(\'plan-manual-date-wrap\').style.display=this.checked?\'none\':\'\';"><span class="wp-toggle-track"></span></label>' +
+        '</div>' +
+        '<div id="plan-manual-date-wrap" class="wp-field" style="display:none;">' +
+          '<label class="wp-label">Fecha de vencimiento manual (opcional — anula la duración del plan)</label>' +
+          '<input type="date" id="plan-manual-date" class="wp-input">' +
         '</div>' +
         '<div class="wp-footer">' +
           '<button id="plan-modal-btn" class="wp-btn-primary">Cambiar</button>' +
@@ -3162,6 +3180,7 @@ function changePlanModal(id, currentPlan) {
     var variantId = document.getElementById('plan-modal-variant-sel').value;
     var variantDef = planDef && planDef.variants ? planDef.variants.find(function(v){ return v.id === variantId; }) : null;
     var keepDates = document.getElementById('plan-keep-dates').checked;
+    var manualDate = document.getElementById('plan-manual-date').value;
     var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
 
     var upd = {
@@ -3170,15 +3189,21 @@ function changePlanModal(id, currentPlan) {
       roadmap_mode: planDef ? planDef.roadmap_mode : null
     };
     if (!keepDates) {
+      var accessClases = variantDef && variantDef.access_clases !== null ? variantDef.access_clases : (planDef ? planDef.access_clases !== false : true);
       var durClases = variantDef ? variantDef.duration_clases_months : (planDef ? planDef.duration_clases_months : null);
       var durLive = variantDef ? variantDef.duration_live_months : (planDef ? planDef.duration_live_months : null);
       var now = new Date();
-      upd.membership_start = now.toISOString();
-      if (durClases) {
-        var end = new Date(); end.setMonth(end.getMonth() + durClases);
-        upd.membership_end = end.toISOString();
+
+      if (manualDate) {
+        // Fecha manual: aplica a Clases (la más usada para esto), anula la duración del plan
+        upd.membership_start = now.toISOString();
+        upd.membership_end = new Date(manualDate + 'T23:59:59').toISOString();
+      } else if (!accessClases) {
+        upd.membership_start = null;
+        upd.membership_end = null; // este plan no incluye Clases
       } else {
-        upd.membership_end = null; // ilimitado
+        upd.membership_start = now.toISOString();
+        upd.membership_end = durClases ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+durClases); return e.toISOString(); })() : UNLIMITED_ISO;
       }
       if (durLive) {
         var liveEnd = new Date(); liveEnd.setMonth(liveEnd.getMonth() + durLive);
@@ -3841,6 +3866,44 @@ function delAdmMtg(id) {
 }
 
 
+function toggleStudentLive(studentId, enabled) {
+  if (!enabled) {
+    if (!confirm('¿Quitar el acceso a Live de este alumno?')) {
+      var cb = document.getElementById('stud-live-toggle'); if (cb) cb.checked = true;
+      return;
+    }
+    sb.from('profiles').update({ live_plan: null, live_end: null }).eq('id', studentId).then(function(r) {
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Live desactivado');
+      viewStudentProfile(studentId);
+    });
+    return;
+  }
+  var months = prompt('¿Por cuántos meses activar el Live?\n(deja vacío para acceso ilimitado)');
+  if (months === null) {
+    var cb2 = document.getElementById('stud-live-toggle'); if (cb2) cb2.checked = false;
+    return;
+  }
+  var liveEnd;
+  if (months.trim() === '') {
+    liveEnd = UNLIMITED_ISO;
+  } else {
+    var m = parseInt(months);
+    if (isNaN(m) || m <= 0) {
+      tst('Meses inválido', 1);
+      var cb3 = document.getElementById('stud-live-toggle'); if (cb3) cb3.checked = false;
+      return;
+    }
+    var d = new Date(); d.setMonth(d.getMonth() + m);
+    liveEnd = d.toISOString();
+  }
+  sb.from('profiles').update({ live_plan: 'manual', live_end: liveEnd }).eq('id', studentId).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Live activado');
+    viewStudentProfile(studentId);
+  });
+}
+
 function toggleStudent1on1(studentId, enabled) {
   sb.from('profiles').update({ access_1on1: enabled }).eq('id', studentId).then(function(r) {
     if (r.error) { tst('Error: ' + r.error.message, 1); return; }
@@ -3902,10 +3965,14 @@ function viewStudentProfile(id) {
         '<div class="wp-card">' +
           '<div class="wp-card-head"><span class="wp-card-icon">⏳</span><span class="wp-card-title">Membresía</span></div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Clases vence</div><div style="font-size:.86rem;color:#e2e5ea;">'+(endDate ? endDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div></div>' +
-            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Live vence</div><div style="font-size:.86rem;color:'+(liveActive?'#4ade80':'#5c6470')+';">'+(liveEndDate ? liveEndDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin live')+'</div></div>' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Clases vence</div><div style="font-size:.86rem;color:#e2e5ea;">'+_fmtExpiry(p.membership_end)+'</div></div>' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Live vence</div><div style="font-size:.86rem;color:'+(liveActive?'#4ade80':'#5c6470')+';">'+(p.live_end ? _fmtExpiry(p.live_end) : 'Sin live')+'</div></div>' +
           '</div>' +
           '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
+            '<div><span class="wp-toggle-text">Acceso a Sesiones en Vivo</span><div class="wp-toggle-sub">Independiente del plan — override manual</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="stud-live-toggle" '+(liveActive?'checked':'')+' onchange="toggleStudentLive(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-toggle-row">' +
             '<div><span class="wp-toggle-text">Reuniones 1-a-1</span><div class="wp-toggle-sub">Independiente del plan — override manual</div></div>' +
             '<label class="wp-toggle"><input type="checkbox" id="stud-1on1-toggle" '+(p.access_1on1?'checked':'')+' onchange="toggleStudent1on1(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
           '</div>' +
@@ -4205,7 +4272,11 @@ function activateMember(id, isActive) {
         '</select></div>' +
         '<div class="wp-toggle-row">' +
           '<span class="wp-toggle-text">Mantener fechas actuales</span>' +
-          '<label class="wp-toggle"><input type="checkbox" id="act-keep-dates"><span class="wp-toggle-track"></span></label>' +
+          '<label class="wp-toggle"><input type="checkbox" id="act-keep-dates" onchange="document.getElementById(\'act-manual-date-wrap\').style.display=this.checked?\'none\':\'\';"><span class="wp-toggle-track"></span></label>' +
+        '</div>' +
+        '<div id="act-manual-date-wrap" class="wp-field">' +
+          '<label class="wp-label">Fecha de vencimiento manual (opcional — anula la duración del plan)</label>' +
+          '<input type="date" id="act-manual-date" class="wp-input">' +
         '</div>' +
         '<div class="wp-footer">' +
           '<button id="act-plan-btn" class="wp-btn-primary">Aplicar</button>' +
@@ -4224,6 +4295,7 @@ function activateMember(id, isActive) {
     var planDef = _planById(planId);
     var variantDef = (variantId && planDef && planDef.variants) ? planDef.variants.find(function(v){ return v.id === variantId; }) : null;
     var keepDates = document.getElementById('act-keep-dates').checked;
+    var manualDate = document.getElementById('act-manual-date').value;
     var btn = this;
     btn.disabled = true; btn.textContent = 'Aplicando...';
 
@@ -4233,15 +4305,20 @@ function activateMember(id, isActive) {
       roadmap_mode: planDef ? planDef.roadmap_mode : null
     };
     if (!keepDates) {
+      var accessClases = variantDef && variantDef.access_clases !== null ? variantDef.access_clases : (planDef ? planDef.access_clases !== false : true);
       var durClases = variantDef ? variantDef.duration_clases_months : (planDef ? planDef.duration_clases_months : null);
       var durLive = variantDef ? variantDef.duration_live_months : (planDef ? planDef.duration_live_months : null);
       var now = new Date();
-      updateData.membership_start = now.toISOString();
-      if (durClases) {
-        var end = new Date(); end.setMonth(end.getMonth() + durClases);
-        updateData.membership_end = end.toISOString();
-      } else {
+
+      if (manualDate) {
+        updateData.membership_start = now.toISOString();
+        updateData.membership_end = new Date(manualDate + 'T23:59:59').toISOString();
+      } else if (!accessClases) {
+        updateData.membership_start = null;
         updateData.membership_end = null;
+      } else {
+        updateData.membership_start = now.toISOString();
+        updateData.membership_end = durClases ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+durClases); return e.toISOString(); })() : UNLIMITED_ISO;
       }
       if (durLive) {
         var liveEnd = new Date(); liveEnd.setMonth(liveEnd.getMonth() + durLive);
@@ -4925,16 +5002,20 @@ function openPlanModal(planId) {
         // Card: Duración y accesos
         '<div class="wp-card">' +
           '<div class="wp-card-head"><span class="wp-card-icon">⏳</span><span class="wp-card-title">Duración y accesos</span></div>' +
-          '<div class="wp-field wp-grid2">' +
-            '<div><label class="wp-label">Duración Clases (meses)</label><input id="pm-dur-clases" type="number" class="wp-input" value="'+(p.duration_clases_months||'')+'" placeholder="Vacío = ilimitado"></div>' +
+          '<div class="wp-toggle-row">' +
+            '<span class="wp-toggle-text">Incluye acceso a Clases</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-clases" '+(p.access_clases !== false?'checked':'')+' onchange="document.getElementById(\'pm-dur-clases-wrap\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-field wp-grid2" style="margin-top:12px;">' +
+            '<div id="pm-dur-clases-wrap" style="'+(p.access_clases===false?'display:none;':'')+'"><label class="wp-label">Duración Clases (meses)</label><input id="pm-dur-clases" type="number" class="wp-input" value="'+(p.duration_clases_months||'')+'" placeholder="Vacío = ilimitado"></div>' +
             '<div><label class="wp-label">Duración Live (meses)</label><input id="pm-dur-live" type="number" class="wp-input" value="'+(p.duration_live_months||'')+'" placeholder="Vacío = no incluido"></div>' +
           '</div>' +
-          '<div class="wp-field"><label class="wp-label">Modo Roadmap</label><select id="pm-roadmap" class="wp-input">' +
+          '<div class="wp-field" style="margin-top:12px;"><label class="wp-label">Modo Roadmap</label><select id="pm-roadmap" class="wp-input">' +
             '<option value="ninguno"'+(p.roadmap_mode==='ninguno'||!p.roadmap_mode?' selected':'')+'>Ninguno</option>' +
             '<option value="manual"'+(p.roadmap_mode==='manual'?' selected':'')+'>Manual</option>' +
             '<option value="automatico"'+(p.roadmap_mode==='automatico'?' selected':'')+'>Automático</option>' +
           '</select></div>' +
-          '<div class="wp-toggle-row">' +
+          '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
             '<span class="wp-toggle-text">Incluye sesiones 1-a-1</span>' +
             '<label class="wp-toggle"><input type="checkbox" id="pm-1on1" '+(p.access_1on1?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
           '</div>' +
@@ -5019,6 +5100,7 @@ function openPlanModal(planId) {
       label: document.getElementById('pm-label').value.trim(),
       color: document.getElementById('pm-color').value,
       duration_clases_months: document.getElementById('pm-dur-clases').value ? parseInt(document.getElementById('pm-dur-clases').value) : null,
+      access_clases: document.getElementById('pm-clases').checked,
       duration_live_months: document.getElementById('pm-dur-live').value ? parseInt(document.getElementById('pm-dur-live').value) : null,
       roadmap_mode: document.getElementById('pm-roadmap').value,
       access_1on1: document.getElementById('pm-1on1').checked,
@@ -5099,6 +5181,11 @@ function openVariantModal(planId, variantId) {
           '<div><label class="wp-label">Duración Clases (meses)</label><input id="vm-dur-clases" type="number" class="wp-input" value="'+(v.duration_clases_months||'')+'"></div>' +
           '<div><label class="wp-label">Duración Live (meses)</label><input id="vm-dur-live" type="number" class="wp-input" value="'+(v.duration_live_months||'')+'"></div>' +
         '</div>' +
+        '<div class="wp-field"><label class="wp-label">¿Incluye Clases?</label><select id="vm-clases" class="wp-input">' +
+          '<option value="inherit"'+(v.access_clases===null||v.access_clases===undefined?' selected':'')+'>Igual que el plan</option>' +
+          '<option value="yes"'+(v.access_clases===true?' selected':'')+'>Sí</option>' +
+          '<option value="no"'+(v.access_clases===false?' selected':'')+'>No</option>' +
+        '</select></div>' +
         '<div class="wp-footer">' +
           '<button id="vm-save-btn" class="wp-btn-primary">Guardar</button>' +
           '<button class="wp-btn-ghost" onclick="document.getElementById(\'variant-edit-modal\').remove();">Cancelar</button>' +
@@ -5110,6 +5197,7 @@ function openVariantModal(planId, variantId) {
 
   document.getElementById('vm-save-btn').addEventListener('click', function() {
     var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
+    var clasesVal = document.getElementById('vm-clases').value;
     var data = {
       plan_id: planId,
       name: document.getElementById('vm-name').value.trim(),
@@ -5117,7 +5205,8 @@ function openVariantModal(planId, variantId) {
       price: parseFloat(document.getElementById('vm-price').value) || 0,
       period: document.getElementById('vm-period').value.trim(),
       duration_clases_months: document.getElementById('vm-dur-clases').value ? parseInt(document.getElementById('vm-dur-clases').value) : null,
-      duration_live_months: document.getElementById('vm-dur-live').value ? parseInt(document.getElementById('vm-dur-live').value) : null
+      duration_live_months: document.getElementById('vm-dur-live').value ? parseInt(document.getElementById('vm-dur-live').value) : null,
+      access_clases: clasesVal === 'inherit' ? null : (clasesVal === 'yes')
     };
     var op = isNew ? sb.from('checkout_plan_variants').insert(data) : sb.from('checkout_plan_variants').update(data).eq('id', v.id);
     op.then(function(r) {

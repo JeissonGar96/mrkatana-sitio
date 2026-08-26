@@ -3229,20 +3229,24 @@ function openWeekModal(weekNum, studentId) {
       var isAdmin = cProfile && cProfile.role === 'admin';
 
       var ov = document.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+      _injectWhopStyles();
+      ov.className = 'wp-overlay';
       ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
 
       var box = document.createElement('div');
-      box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;';
+      box.className = 'wp-modal';
+      box.style.maxWidth = '500px';
+      box.style.maxHeight = '85vh';
+      box.style.overflowY = 'auto';
       box.innerHTML =
-        '<div style="padding:18px 22px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#1a1a1a;z-index:1;">' +
-          '<div>' +
-            '<div style="font-size:.64rem;color:#555;text-transform:uppercase;letter-spacing:1px;">Semana '+weekNum+'</div>' +
-            '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;margin-top:2px;">'+week.title+'</div>' +
+        '<div class="wp-header" style="padding:20px 24px 4px;">' +
+          '<div style="flex:1;">' +
+            '<div class="wp-subtitle" style="margin:0;">Semana '+weekNum+'</div>' +
+            '<div class="wp-title" style="font-size:1.05rem;margin-top:2px;">'+week.title+'</div>' +
           '</div>' +
-          '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+          '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
         '</div>' +
-        '<div style="padding:20px 22px;">' +
+        '<div class="wp-body" style="padding:12px 24px 24px;">' +
           // Objective
           (week.objective ? '<div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);border-radius:8px;padding:12px 14px;margin-bottom:16px;">' +
             '<div style="font-size:.64rem;color:#c9a84c;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">🎯 Objetivo de la semana</div>' +
@@ -3262,8 +3266,8 @@ function openWeekModal(weekNum, studentId) {
           '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:14px;">' +
             '<div style="font-size:.7rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">📝 Nota personal</div>' +
             (isAdmin ?
-              '<textarea id="week-note-input" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid var(--br);color:#f0f0f0;border-radius:6px;padding:8px 10px;font-size:.8rem;resize:vertical;min-height:70px;" placeholder="Agregar nota para este alumno en esta semana...">'+note+'</textarea>' +
-              '<button onclick="saveWeekNote('+weekNum+',\''+sid+'\')" style="margin-top:8px;background:var(--st);border:none;color:#fff;padding:7px 14px;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;">Guardar nota</button>'
+              '<textarea id="week-note-input" class="wp-input" style="width:100%;box-sizing:border-box;resize:vertical;min-height:70px;" placeholder="Agregar nota para este alumno en esta semana...">'+note+'</textarea>' +
+              '<button onclick="saveWeekNote('+weekNum+',\''+sid+'\')" class="wp-btn-primary" style="margin-top:10px;padding:9px 16px;width:auto;">Guardar nota</button>'
             :
               '<div style="font-size:.82rem;color:'+(note?'#ccc':'#444')+';">'+( note || 'Sin notas para esta semana.')+'</div>'
             ) +
@@ -3329,25 +3333,30 @@ function rAdmRoadmap() {
 function editRoadmapWeek(weekNum, existing) {
   var acts = existing && Array.isArray(existing.activities) ? existing.activities : (existing ? JSON.parse(existing.activities||'[]') : []);
   var ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.id = 'roadmap-week-modal';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
   var box = document.createElement('div');
-  box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;';
+  box.className = 'wp-modal';
+  box.style.maxWidth = '520px';
+  box.style.maxHeight = '85vh';
+  box.style.overflowY = 'auto';
   box.innerHTML =
-    '<div style="padding:18px 22px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">' +
-      '<div style="font-weight:700;font-size:.95rem;">Editar Semana '+weekNum+'</div>' +
-      '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-header" style="padding:20px 24px 4px;">' +
+      '<div class="wp-title" style="flex:1;font-size:1.05rem;">Editar Semana '+weekNum+'</div>' +
+      '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
     '</div>' +
-    '<div style="padding:20px 22px;">' +
-      '<div style="margin-bottom:12px;"><label class="al">Título de la semana</label><input id="rw-title" class="ai" value="'+(existing?existing.title:'')+'" placeholder="Ej: Fundamentos del mercado"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Objetivo</label><textarea id="rw-obj" class="ai" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="¿Qué debe lograr el alumno esta semana?">'+(existing?existing.objective:'')+'</textarea></div>' +
-      '<div style="margin-bottom:14px;">' +
-        '<label class="al">Actividades (una por línea)</label>' +
-        '<textarea id="rw-acts" class="ai" rows="5" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Actividad 1&#10;Actividad 2&#10;Tarea: ...">' + acts.join('\n') + '</textarea>' +
+    '<div class="wp-body" style="padding:12px 24px 24px;">' +
+      '<div class="wp-field"><label class="wp-label">Título de la semana</label><input id="rw-title" class="wp-input" value="'+(existing?existing.title:'')+'" placeholder="Ej: Fundamentos del mercado"></div>' +
+      '<div class="wp-field"><label class="wp-label">Objetivo</label><textarea id="rw-obj" class="wp-input" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="¿Qué debe lograr el alumno esta semana?">'+(existing?existing.objective:'')+'</textarea></div>' +
+      '<div class="wp-field">' +
+        '<label class="wp-label">Actividades (una por línea)</label>' +
+        '<textarea id="rw-acts" class="wp-input" rows="5" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Actividad 1&#10;Actividad 2&#10;Tarea: ...">' + acts.join('\n') + '</textarea>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button onclick="saveRoadmapWeek('+weekNum+')" class="abtn2" style="flex:1;">Guardar semana</button>' +
-        (existing ? '<button onclick="deleteRoadmapWeek('+weekNum+')" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:8px 14px;border-radius:6px;font-size:.78rem;cursor:pointer;">Eliminar</button>' : '') +
+      '<div class="wp-footer" style="margin-top:6px;">' +
+        '<button onclick="saveRoadmapWeek('+weekNum+')" class="wp-btn-primary">Guardar semana</button>' +
+        (existing ? '<button onclick="deleteRoadmapWeek('+weekNum+')" class="wp-btn-danger">Eliminar</button>' : '') +
       '</div>' +
     '</div>';
   ov.appendChild(box);
@@ -3365,7 +3374,7 @@ function saveRoadmapWeek(weekNum) {
   }, { onConflict: 'week_number' }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Semana ' + weekNum + ' guardada');
-    var ov = document.querySelector('div[style*="z-index:900"]'); if (ov) ov.remove();
+    var ov = document.getElementById('roadmap-week-modal'); if (ov) ov.remove();
     rAdmRoadmap();
   });
 }
@@ -3375,7 +3384,7 @@ function deleteRoadmapWeek(weekNum) {
   sb.from('roadmap_weeks').delete().eq('week_number', weekNum).then(function(r) {
     if (r.error) return tst('Error', 1);
     tst('✓ Semana eliminada');
-    var ov = document.querySelector('div[style*="z-index:900"]'); if (ov) ov.remove();
+    var ov = document.getElementById('roadmap-week-modal'); if (ov) ov.remove();
     rAdmRoadmap();
   });
 }
@@ -3476,37 +3485,36 @@ function openSchModal() {
 
   var ov = document.createElement('div');
   ov.id = 'sch-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">' +
+    '<div class="wp-modal" style="max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">' +
       // Header
-      '<div style="padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">' +
-        '<div>' +
-          '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">📅 Programar reunión 1-1</div>' +
-          '<div style="font-size:.72rem;color:#555;margin-top:2px;" id="sch-modal-subtitle">Selecciona un alumno</div>' +
-        '</div>' +
-        '<button onclick="document.getElementById(\'sch-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;padding:2px 8px;">✕</button>' +
+      '<div class="wp-header" style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar reunión 1-1</div><div class="wp-subtitle" id="sch-modal-subtitle">Selecciona un alumno</div></div>' +
+        '<button onclick="document.getElementById(\'sch-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;padding:2px 8px;">✕</button>' +
       '</div>' +
       // Step 1: Student picker
       '<div id="sch-step1" style="display:flex;flex-direction:column;overflow:hidden;flex:1;">' +
-        '<div style="padding:14px 22px 8px;flex-shrink:0;">' +
-          '<input id="sch-modal-search" class="ai" placeholder="🔍 Buscar alumno..." oninput="filterSchModal(this.value)" style="width:100%;box-sizing:border-box;">' +
+        '<div style="padding:14px 24px 8px;flex-shrink:0;">' +
+          '<input id="sch-modal-search" class="wp-input" placeholder="🔍 Buscar alumno..." oninput="filterSchModal(this.value)">' +
         '</div>' +
-        '<div id="sch-modal-list" style="overflow-y:auto;padding:0 22px 18px;flex:1;"></div>' +
+        '<div id="sch-modal-list" style="overflow-y:auto;padding:0 24px 20px;flex:1;"></div>' +
       '</div>' +
       // Step 2: Form (hidden until student selected)
-      '<div id="sch-step2" style="display:none;padding:18px 22px 22px;overflow-y:auto;">' +
-        '<button onclick="schBack()" style="display:flex;align-items:center;gap:5px;background:none;border:none;color:#555;font-size:.75rem;cursor:pointer;padding:0;margin-bottom:14px;">' +
+      '<div id="sch-step2" style="display:none;padding:18px 24px 24px;overflow-y:auto;">' +
+        '<button onclick="schBack()" style="display:flex;align-items:center;gap:5px;background:none;border:none;color:#5c6470;font-size:.75rem;cursor:pointer;padding:0;margin-bottom:14px;">' +
           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Cambiar alumno' +
         '</button>' +
-        '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:8px;margin-bottom:16px;"></div>' +
-        '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-m-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1" style="box-sizing:border-box;"></div>' +
-        '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-          '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-m-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-          '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-m-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
+        '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:12px;margin-bottom:16px;"></div>' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="sch-m-title" class="wp-input" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1"></div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Fecha</label><input type="date" id="sch-m-date" class="wp-input"></div>' +
+          '<div><label class="wp-label">Hora</label><input type="time" id="sch-m-time" class="wp-input"></div>' +
         '</div>' +
-        '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..." style="box-sizing:border-box;"></div>' +
-        '<button id="sch-m-save" class="abtn2" onclick="saveSchModal()" style="width:100%;padding:11px;margin-top:4px;">Programar sesión</button>' +
+        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="sch-m-url" class="wp-input" placeholder="meet.google.com/..."></div>' +
+        '<button id="sch-m-save" class="wp-btn-primary" onclick="saveSchModal()" style="width:100%;">Programar sesión</button>' +
       '</div>' +
     '</div>';
 
@@ -3609,19 +3617,23 @@ function openEditMtgModal(id, encTitle, encUrl, isoDate) {
 
   var ov = document.createElement('div');
   ov.id = 'edit-mtg-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">✎ Editar reunión</div>' +
-        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-modal" style="max-width:420px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div class="wp-title" style="flex:1;font-size:1rem;">Editar reunión</div>' +
+        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="emtg-title" class="ai" value="' + title.replace(/"/g,"'") + '"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="ai" value="' + dtLocal + '"></div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="emtg-url" class="ai" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
-      '<div style="display:flex;gap:8px;margin-top:4px;">' +
-        '<button id="emtg-save" class="abtn2" onclick="saveEditMtg(\'' + id + '\')" style="flex:1;padding:11px;">Guardar cambios</button>' +
-        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:11px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="emtg-title" class="wp-input" value="' + title.replace(/"/g,"'") + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="wp-input" value="' + dtLocal + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="emtg-url" class="wp-input" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
+        '<div class="wp-footer">' +
+          '<button id="emtg-save" class="wp-btn-primary" onclick="saveEditMtg(\'' + id + '\')">Guardar cambios</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'edit-mtg-modal\').remove()">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(ov);
@@ -3772,20 +3784,24 @@ function admEditRec(id, encTitle, encUrl, encDesc, dateStr) {
 
   var ov = document.createElement('div');
   ov.id = 'adm-rec-edit-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:440px;padding:24px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">✎ Editar grabación</div>' +
-        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-modal" style="max-width:440px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div class="wp-title" style="flex:1;font-size:1rem;">Editar grabación</div>' +
+        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="aer-title" class="ai" value="' + title.replace(/"/g,"'") + '"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">URL Video</label><input id="aer-url" class="ai" value="' + url.replace(/"/g,"'") + '"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="aer-desc" class="ai" value="' + desc.replace(/"/g,"'") + '" placeholder="Notas de la sesión..."></div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Fecha</label><input type="date" id="aer-date" class="ai" value="' + dateStr + '"></div>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="aer-save" class="abtn2" onclick="admSaveRec(\'' + id + '\')" style="flex:1;padding:11px;">Guardar cambios</button>' +
-        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:11px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="aer-title" class="wp-input" value="' + title.replace(/"/g,"'") + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">URL Video</label><input id="aer-url" class="wp-input" value="' + url.replace(/"/g,"'") + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">Descripción (opcional)</label><input id="aer-desc" class="wp-input" value="' + desc.replace(/"/g,"'") + '" placeholder="Notas de la sesión..."></div>' +
+        '<div class="wp-field"><label class="wp-label">Fecha</label><input type="date" id="aer-date" class="wp-input" value="' + dateStr + '"></div>' +
+        '<div class="wp-footer">' +
+          '<button id="aer-save" class="wp-btn-primary" onclick="admSaveRec(\'' + id + '\')">Guardar cambios</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'adm-rec-edit-modal\').remove()">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(ov);
@@ -3843,88 +3859,73 @@ function viewStudentProfile(id) {
     var liveActive = liveEndDate && liveEndDate > new Date();
 
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+    ov.className = 'wp-overlay';
     ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
 
     var box = document.createElement('div');
-    box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;';
+    box.className = 'wp-modal';
+    box.style.maxWidth = '520px';
+    box.style.maxHeight = '88vh';
+    box.style.overflowY = 'auto';
     box.innerHTML =
-      '<div style="padding:20px 24px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#1a1a1a;z-index:1;">' +
-        '<div style="font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Perfil del alumno</div>' +
-        '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+      '<div class="wp-header" style="padding:22px 26px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">👤</div>' +
+        '<div class="wp-title" style="flex:1;font-size:1.05rem;">Perfil del alumno</div>' +
+        '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="padding:24px;">' +
+      '<div class="wp-body" style="padding:12px 26px 26px;">' +
 
         // Avatar + name
-        '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">' +
-          '<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
+        '<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">' +
+          '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
             (p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (p.full_name ? p.full_name[0].toUpperCase() : '?')) +
           '</div>' +
           '<div>' +
             '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">'+(p.full_name||'Sin nombre')+'</div>' +
-            '<div style="font-size:.78rem;color:#666;margin-top:2px;">'+(p.email||'')+'</div>' +
-            '<span style="font-size:.68rem;padding:2px 8px;border-radius:10px;background:'+(active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(active?'#4ade80':'#f87171')+';margin-top:4px;display:inline-block;">'+(active?'Activo':'Inactivo')+'</span>' +
+            '<div style="font-size:.78rem;color:#5c6470;margin-top:2px;">'+(p.email||'')+'</div>' +
+            '<span style="font-size:.68rem;padding:2px 9px;border-radius:20px;background:'+(active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(active?'#4ade80':'#f87171')+';margin-top:5px;display:inline-block;">'+(active?'● Activo':'○ Inactivo')+'</span>' +
           '</div>' +
         '</div>' +
 
-        // Info grid
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Edad</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.age || (p.date_of_birth ? (function(){ var b=new Date(p.date_of_birth),t=new Date(),a=t.getFullYear()-b.getFullYear(); if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--; return a; })() : '—'))+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">País</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.country||'—')+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Experiencia</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.trading_experience||'—')+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Membresía vence</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(endDate ? endDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div>' +
-          '</div>' +
-          '<div style="background:'+(liveActive?'rgba(74,222,128,.06)':'rgba(255,255,255,.03)')+';border:1px solid '+(liveActive?'rgba(74,222,128,.2)':'var(--br)')+';border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Live vence</div>' +
-            '<div style="font-size:.88rem;color:'+(liveActive?'#4ade80':'#f87171')+'">'+(liveEndDate ? liveEndDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin live')+'</div>' +
+        // Card: datos generales
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">📋</span><span class="wp-card-title">Datos generales</span></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            '<div><div class="wp-label" style="margin-bottom:2px;">Edad</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.age || (p.date_of_birth ? (function(){ var b=new Date(p.date_of_birth),t=new Date(),a=t.getFullYear()-b.getFullYear(); if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--; return a; })() : '—'))+'</div></div>' +
+            '<div><div class="wp-label" style="margin-bottom:2px;">País</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.country||'—')+'</div></div>' +
+            '<div><div class="wp-label" style="margin-bottom:2px;">Experiencia</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.trading_experience||'—')+'</div></div>' +
+            (p.phone ? '<div><div class="wp-label" style="margin-bottom:2px;">Teléfono</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</div></div>' : '') +
           '</div>' +
         '</div>' +
 
-        // Phone
-        ((p.phone) ?
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Teléfono / WhatsApp</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</div>' +
-          '</div>'
-        : '') +
-
-        // Toggle 1-a-1
-        '<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px 14px;margin-bottom:14px;">' +
-          '<div>' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Reuniones 1-a-1</div>' +
-            '<div style="font-size:.72rem;color:#5c6470;">Independiente del plan — override manual</div>' +
+        // Card: membresía
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">⏳</span><span class="wp-card-title">Membresía</span></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            '<div><div class="wp-label" style="margin-bottom:2px;">Clases vence</div><div style="font-size:.86rem;color:#e2e5ea;">'+(endDate ? endDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div></div>' +
+            '<div><div class="wp-label" style="margin-bottom:2px;">Live vence</div><div style="font-size:.86rem;color:'+(liveActive?'#4ade80':'#5c6470')+';">'+(liveEndDate ? liveEndDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin live')+'</div></div>' +
           '</div>' +
-          '<label class="wp-toggle"><input type="checkbox" id="stud-1on1-toggle" '+(p.access_1on1?'checked':'')+' onchange="toggleStudent1on1(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+          '<div class="wp-toggle-row">' +
+            '<div><span class="wp-toggle-text">Reuniones 1-a-1</span><div class="wp-toggle-sub">Independiente del plan — override manual</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="stud-1on1-toggle" '+(p.access_1on1?'checked':'')+' onchange="toggleStudent1on1(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
         '</div>' +
 
-        // Week progress
-        '<div id="stud-roadmap-'+p.id+'" style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
-          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Progreso del Roadmap</div>' +
-          '<div style="color:#555;font-size:.78rem;">Cargando...</div>' +
+        // Roadmap
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🗺️</span><span class="wp-card-title">Progreso del Roadmap</span></div>' +
+          '<div id="stud-roadmap-'+p.id+'"><div style="color:#5c6470;font-size:.78rem;">Cargando...</div></div>' +
         '</div>' +
 
         // Bio
-        (p.bio ? '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;"><div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Bio</div><div style="font-size:.82rem;color:#9a9a9a;line-height:1.6;">'+p.bio+'</div></div>' : '') +
+        (p.bio ? '<div class="wp-card"><div class="wp-card-head"><span class="wp-card-icon">💬</span><span class="wp-card-title">Bio</span></div><div style="font-size:.84rem;color:#c5c9d1;line-height:1.6;">'+p.bio+'</div></div>' : '') +
 
         // Action buttons
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">' +
-          '<button onclick="openScheduleModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="abtn2" style="padding:11px;display:flex;align-items:center;justify-content:center;gap:6px;">📅 Programar sesión</button>' +
-          '<button onclick="openRecordingModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" style="padding:11px;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);color:var(--sl);border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">🎥 Subir grabación</button>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">' +
+          '<button onclick="openScheduleModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="wp-btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;">📅 Programar sesión</button>' +
+          '<button onclick="openRecordingModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="wp-btn-ghost" style="display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(91,127,166,.25);color:var(--sl);">🎥 Subir grabación</button>' +
         '</div>' +
-        '<div style="margin-top:10px;">' +
-          '<button onclick="if(confirm(\'¿Eliminar este alumno? Esta acción no se puede deshacer.\')){dStudent(\''+p.id+'\');this.closest(\'div[style*=fixed]\').remove();}" style="width:100%;padding:10px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;">🗑 Eliminar alumno</button>' +
-        '</div>' +
+        '<button onclick="if(confirm(\'¿Eliminar este alumno? Esta acción no se puede deshacer.\')){dStudent(\''+p.id+'\');this.closest(\'.wp-overlay\').remove();}" class="wp-btn-danger" style="width:100%;margin-top:10px;">🗑 Eliminar alumno</button>' +
 
       '</div>';
 
@@ -3961,7 +3962,7 @@ function loadStudentRoadmap(studentId, roadmapMode, membershipStart) {
     weeks.forEach(function(w) { if (completedWeeks[w.week_number]) lastCompleted = w.week_number; });
     var currentWeek = isMentoria ? (lastCompleted + 1) : timeWeek;
 
-    var html = '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Progreso del Roadmap ' + (isMentoria ? '· <span style="color:#c9a84c;">Avance manual</span>' : '· <span style="color:var(--sl);">Automático</span>') + '</div>';
+    var html = '<div style="font-size:.7rem;margin-bottom:10px;">' + (isMentoria ? '<span style="color:#c9a84c;">● Avance manual</span>' : '<span style="color:var(--sl);">● Automático</span>') + '</div>';
 
     html += '<div style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;">';
     weeks.forEach(function(w) {
@@ -4430,22 +4431,26 @@ function openEditModal(type, data, parentLvId, parentModId) {
 
   var modal = document.createElement('div');
   modal.id = 'edit-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);overflow-y:auto;';
+  _injectWhopStyles();
+  modal.className = 'wp-overlay';
+  modal.style.overflowY = 'auto';
 
   var box = document.createElement('div');
-  box.style.cssText = 'background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:520px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.6);';
+  box.className = 'wp-modal';
+  box.style.maxWidth = '540px';
+  box.style.padding = '4px';
 
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
-    '<div style="font-size:.92rem;font-weight:700;color:#f0f0f0;">'+title+'</div>' +
-    '<button onclick="closeEditModal()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;padding:0 4px;">✕</button>' +
-    '</div>';
+  var html = '<div class="wp-header" style="padding:22px 24px 4px;">' +
+    '<div class="wp-title" style="flex:1;font-size:1.05rem;">'+title+'</div>' +
+    '<button onclick="closeEditModal()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;padding:0 4px;">✕</button>' +
+    '</div><div class="wp-body" style="padding:12px 24px 26px;">';
 
   if (type === 'level') {
     html +=
-      '<div style="margin-bottom:12px;"><label class="al">Título del nivel</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: Nivel Básico"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Título del nivel</label><input id="em-title" class="wp-input" value="'+(data?data.title:'')+'" placeholder="Ej: Nivel Básico"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Descripción</label><input id="em-desc" class="wp-input" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
       '<div style="margin-bottom:12px;">' +
-        '<label class="al">Imagen del nivel</label>';
+        '<label class="wp-label">Imagen del nivel</label>';
     if (data && data.thumbnail_url) {
       html += '<div style="margin-bottom:8px;"><img src="'+data.thumbnail_url+'" style="height:70px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>';
     }
@@ -4460,26 +4465,26 @@ function openEditModal(type, data, parentLvId, parentModId) {
         '<div id="em-img-preview" style="margin-top:8px;display:none;"><img id="em-img-prev" style="height:60px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:10px;margin-bottom:12px;">' +
-        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
+        '<div><label class="wp-label">Orden</label><input id="em-ord" type="number" class="wp-input" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
         '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-pub"'+(data&&data.is_published?' checked':' checked')+'> Publicado</label></div>' +
         '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#c9a84c;cursor:pointer;" title="Los módulos de este nivel se desbloquean semana a semana"><input type="checkbox" id="em-controlled"'+(data&&data.is_controlled?' checked':'')+'> 🔒 Controlado por semana</label></div>' +
       '</div>';
 
   } else if (type === 'module') {
     html +=
-      '<div style="margin-bottom:12px;"><label class="al">Título del módulo</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: Fundamentos de Precio"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Título del módulo</label><input id="em-title" class="wp-input" value="'+(data?data.title:'')+'" placeholder="Ej: Fundamentos de Precio"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Descripción</label><input id="em-desc" class="wp-input" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
       '<div style="display:grid;grid-template-columns:80px 1fr;gap:10px;margin-bottom:12px;">' +
-        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'" style="width:80px;"></div>' +
-        '<div><label class="al" title="Semana del roadmap en que se desbloquea (solo para niveles controlados)">Desbloquear en semana <span style="color:#c9a84c;">🔒</span></label><input id="em-unlock" type="number" class="ai" value="'+(data&&data.unlock_week?data.unlock_week:'')+'" placeholder="Ej: 3 (vacío = siempre visible)" min="1"></div>' +
+        '<div><label class="wp-label">Orden</label><input id="em-ord" type="number" class="wp-input" value="'+(data&&data.sort_order?data.sort_order:1)+'" style="width:80px;"></div>' +
+        '<div><label class="wp-label" title="Semana del roadmap en que se desbloquea (solo para niveles controlados)">Desbloquear en semana <span style="color:#c9a84c;">🔒</span></label><input id="em-unlock" type="number" class="wp-input" value="'+(data&&data.unlock_week?data.unlock_week:'')+'" placeholder="Ej: 3 (vacío = siempre visible)" min="1"></div>' +
       '</div>';
 
   } else if (type === 'lesson') {
     html +=
-      '<div style="margin-bottom:12px;"><label class="al">Título de la clase</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: ¿Qué es el Order Flow?"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">URL del video (YouTube / Bunny / Vimeo)</label><input id="em-url" class="ai" value="'+(data&&data.video_url?data.video_url:'')+'" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Título de la clase</label><input id="em-title" class="wp-input" value="'+(data?data.title:'')+'" placeholder="Ej: ¿Qué es el Order Flow?"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">URL del video (YouTube / Bunny / Vimeo)</label><input id="em-url" class="wp-input" value="'+(data&&data.video_url?data.video_url:'')+'" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
       '<div style="margin-bottom:12px;">' +
-        '<label class="al">Miniatura de la clase</label>' +
+        '<label class="wp-label">Miniatura de la clase</label>' +
         (data&&data.thumbnail_url
           ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
               '<img src="'+data.thumbnail_url+'" style="height:56px;width:90px;border-radius:6px;border:1px solid var(--br);object-fit:cover;">' +
@@ -4489,22 +4494,22 @@ function openEditModal(type, data, parentLvId, parentModId) {
               '</div>' +
             '</div>'
           : '') +
-        '<input type="file" id="em-thumb-file" accept="image/*" class="ai" style="font-size:.78rem;padding:6px;">' +
+        '<input type="file" id="em-thumb-file" accept="image/*" class="wp-input" style="font-size:.78rem;padding:6px;">' +
       '</div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Descripción</label><input id="em-desc" class="wp-input" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
       '<div style="display:grid;grid-template-columns:80px 80px 1fr;gap:10px;margin-bottom:12px;">' +
-        '<div><label class="al">Duración (min)</label><input id="em-min" type="number" class="ai" value="'+(data&&data.duration_minutes?data.duration_minutes:'')+'" placeholder="15"></div>' +
-        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
+        '<div><label class="wp-label">Duración (min)</label><input id="em-min" type="number" class="wp-input" value="'+(data&&data.duration_minutes?data.duration_minutes:'')+'" placeholder="15"></div>' +
+        '<div><label class="wp-label">Orden</label><input id="em-ord" type="number" class="wp-input" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
         '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-pub"'+(data&&data.is_published?' checked':' checked')+'> Publicado</label></div>' +
       '</div>' +
       '<div style="margin-bottom:12px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-task"'+(data&&data.has_task?' checked':'')+'> Tiene tarea</label></div>' +
-      '<div id="em-task-wrap" style="'+(data&&data.has_task?'':'display:none;')+'margin-bottom:12px;"><label class="al">Instrucciones de la tarea</label><textarea id="em-task-ins" class="ai" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Describe qué debe hacer el alumno...">'+(data&&data.task_instructions?data.task_instructions:'')+'</textarea></div>';
+      '<div id="em-task-wrap" style="'+(data&&data.has_task?'':'display:none;')+'margin-bottom:12px;"><label class="wp-label">Instrucciones de la tarea</label><textarea id="em-task-ins" class="wp-input" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Describe qué debe hacer el alumno...">'+(data&&data.task_instructions?data.task_instructions:'')+'</textarea></div>';
   }
 
-  html += '<div style="display:flex;gap:10px;margin-top:6px;">' +
-    '<button id="em-save-btn" style="flex:1;background:var(--st);border:none;color:#fff;padding:10px;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">'+( isNew ? 'Crear' : 'Guardar cambios')+'</button>' +
-    '<button onclick="closeEditModal()" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 18px;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
-    '</div>';
+  html += '<div class="wp-footer" style="margin-top:10px;">' +
+    '<button id="em-save-btn" class="wp-btn-primary">'+( isNew ? 'Crear' : 'Guardar cambios')+'</button>' +
+    '<button class="wp-btn-ghost" onclick="closeEditModal()">Cancelar</button>' +
+    '</div></div>';
 
   box.innerHTML = html;
   modal.appendChild(box);
@@ -5358,27 +5363,31 @@ function openEditSe(id) {
 
     var overlay = document.createElement('div');
     overlay.id = 'edit-se-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+    _injectWhopStyles();
+    overlay.className = 'wp-overlay';
     overlay.innerHTML =
-      '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:480px;padding:24px;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-          '<div style="font-size:.92rem;font-weight:700;">✎ Editar sesión</div>' +
-          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+      '<div class="wp-modal" style="max-width:480px;">' +
+        '<div class="wp-header" style="padding:22px 24px 4px;">' +
+          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+          '<div class="wp-title" style="flex:1;font-size:1rem;">Editar sesión</div>' +
+          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
         '</div>' +
-        '<div style="margin-bottom:9px;">' +
-          '<label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '">' +
-        '</div>' +
-        '<div class="ses-dt-grid" style="margin-bottom:10px;">' +
-          '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai ses-dt-input" value="' + localDt + '"></div>' +
-          '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai ses-dt-input" value="' + localEndDt + '"></div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
-          '<div><label class="al">Link Discord</label><input id="es-u" class="ai" value="' + (s.discord_url||'') + '"></div>' +
-          '<div><label class="al">Descripción</label><input id="es-desc" class="ai" value="' + (s.description||'') + '"></div>' +
-        '</div>' +
-        '<div style="display:flex;gap:10px;margin-top:6px;">' +
-          '<button id="es-save-btn" onclick="saveSe(this.dataset.id)" data-id="' + s.id + '" class="abtn2" style="flex:1;padding:10px;">Guardar cambios</button>' +
-          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 16px;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+        '<div class="wp-body" style="padding:16px 24px 24px;">' +
+          '<div class="wp-field">' +
+            '<label class="wp-label">Título</label><input id="es-t" class="wp-input" value="' + (s.title||'') + '">' +
+          '</div>' +
+          '<div class="wp-field wp-grid2">' +
+            '<div><label class="wp-label">Inicio</label><input id="es-d" type="datetime-local" class="wp-input" value="' + localDt + '"></div>' +
+            '<div><label class="wp-label">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="wp-input" value="' + localEndDt + '"></div>' +
+          '</div>' +
+          '<div class="wp-field wp-grid2">' +
+            '<div><label class="wp-label">Link Discord</label><input id="es-u" class="wp-input" value="' + (s.discord_url||'') + '"></div>' +
+            '<div><label class="wp-label">Descripción</label><input id="es-desc" class="wp-input" value="' + (s.description||'') + '"></div>' +
+          '</div>' +
+          '<div class="wp-footer">' +
+            '<button id="es-save-btn" onclick="saveSe(this.dataset.id)" data-id="' + s.id + '" class="wp-btn-primary">Guardar cambios</button>' +
+            '<button class="wp-btn-ghost" onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();">Cancelar</button>' +
+          '</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(overlay);
@@ -5922,16 +5931,21 @@ function editCalReal(name, isoDate, currentVal) {
 
   var overlay = document.createElement('div');
   overlay.id = 'cal-edit-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  overlay.className = 'wp-overlay';
   overlay.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;margin-bottom:6px;">✎ Editar valor Real</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:16px;">' + name + ' · ' + isoDate + '</div>' +
-      '<label class="al">Valor Real</label>' +
-      '<input id="cal-real-input" class="ai" value="' + (currentVal||'') + '" placeholder="Ej: 3.2%" style="margin-bottom:14px;">' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="cal-real-save" class="abtn2" style="flex:1;padding:10px;">Guardar</button>' +
-        '<button onclick="var m=document.getElementById(\'cal-edit-modal\');if(m)m.remove();" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 14px;border-radius:7px;font-size:.82rem;cursor:pointer;">Cancelar</button>' +
+    '<div class="wp-modal" style="max-width:380px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div><div class="wp-title" style="font-size:1rem;">Editar valor Real</div><div class="wp-subtitle">' + name + ' · ' + isoDate + '</div></div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Valor Real</label>' +
+        '<input id="cal-real-input" class="wp-input" value="' + (currentVal||'') + '" placeholder="Ej: 3.2%"></div>' +
+        '<div class="wp-footer">' +
+          '<button id="cal-real-save" class="wp-btn-primary">Guardar</button>' +
+          '<button class="wp-btn-ghost" onclick="var m=document.getElementById(\'cal-edit-modal\');if(m)m.remove();">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(overlay);

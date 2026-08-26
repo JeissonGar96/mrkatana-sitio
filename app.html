@@ -4782,91 +4782,187 @@ function togglePlan(planId, currentActive) {
 }
 
 // ── MODAL: crear/editar plan ──
+function _injectWhopStyles() {
+  if (document.getElementById('wp-styles')) return;
+  var style = document.createElement('style');
+  style.id = 'wp-styles';
+  style.textContent =
+    '.wp-overlay{position:fixed;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}' +
+    '.wp-modal{background:linear-gradient(180deg,#181b22,#141720);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;}' +
+    '.wp-header{position:sticky;top:0;background:linear-gradient(180deg,#181b22 70%,rgba(24,27,34,0));padding:26px 28px 18px;z-index:2;display:flex;align-items:center;gap:12px;}' +
+    '.wp-header-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}' +
+    '.wp-title{font-family:var(--font-cond);font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#fff;}' +
+    '.wp-subtitle{font-size:.74rem;color:#6b7280;margin-top:2px;}' +
+    '.wp-body{padding:4px 28px 28px;}' +
+    '.wp-card{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;margin-bottom:12px;}' +
+    '.wp-card-head{display:flex;align-items:center;gap:9px;margin-bottom:14px;}' +
+    '.wp-card-icon{width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0;}' +
+    '.wp-card-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8b93a1;}' +
+    '.wp-field{margin-bottom:12px;}' +
+    '.wp-field:last-child{margin-bottom:0;}' +
+    '.wp-label{display:block;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#5c6470;margin-bottom:6px;}' +
+    '.wp-input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:11px 14px;color:#f0f0f0;font-size:.85rem;transition:border-color .15s,background .15s;outline:none;}' +
+    '.wp-input:focus{border-color:var(--sl);background:rgba(255,255,255,.06);}' +
+    '.wp-input:disabled{opacity:.4;}' +
+    '.wp-input::placeholder{color:#4a5058;}' +
+    '.wp-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}' +
+    '.wp-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0;}' +
+    '.wp-toggle-row + .wp-toggle-row{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05);}' +
+    '.wp-toggle-text{font-size:.8rem;color:#d5d8dd;}' +
+    '.wp-toggle-sub{font-size:.68rem;color:#5c6470;margin-top:1px;}' +
+    '.wp-toggle{position:relative;display:inline-block;width:40px;height:23px;flex-shrink:0;cursor:pointer;}' +
+    '.wp-toggle input{opacity:0;width:0;height:0;}' +
+    '.wp-toggle-track{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:12px;transition:background .2s;}' +
+    '.wp-toggle-track:before{content:"";position:absolute;width:17px;height:17px;left:3px;top:3px;background:#9aa0aa;border-radius:50%;transition:all .2s;}' +
+    '.wp-toggle input:checked + .wp-toggle-track{background:var(--sl);}' +
+    '.wp-toggle input:checked + .wp-toggle-track:before{transform:translateX(17px);background:#fff;}' +
+    '.wp-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:20px;cursor:pointer;font-size:.75rem;color:#d5d8dd;transition:border-color .15s,background .15s;}' +
+    '.wp-chip:has(input:checked){background:rgba(91,127,166,.14);border-color:var(--sl);color:#fff;}' +
+    '.wp-chip input{width:12px;height:12px;accent-color:var(--sl);}' +
+    '.wp-variant-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-top:8px;}' +
+    '.wp-variant-name{font-size:.8rem;color:#f0f0f0;font-weight:500;}' +
+    '.wp-link-btn{background:none;border:none;font-size:.72rem;cursor:pointer;font-weight:600;}' +
+    '.wp-btn-add{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);color:#4ade80;padding:7px 14px;border-radius:10px;font-size:.74rem;font-weight:600;cursor:pointer;}' +
+    '.wp-footer{display:flex;gap:9px;margin-top:22px;}' +
+    '.wp-btn-primary{flex:1;padding:13px;background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;border:none;border-radius:12px;font-size:.86rem;font-weight:700;cursor:pointer;letter-spacing:.2px;}' +
+    '.wp-btn-danger{padding:13px 18px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:#f87171;border-radius:12px;font-size:.85rem;font-weight:600;cursor:pointer;}' +
+    '.wp-btn-ghost{padding:13px 18px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#8b93a1;border-radius:12px;font-size:.85rem;cursor:pointer;}' +
+    '.wp-callout{margin-top:14px;padding:14px 16px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:14px;}';
+  document.head.appendChild(style);
+}
+
+function _planSectionHeader(icon, title) {
+  return '<div style="display:flex;align-items:center;gap:7px;margin:20px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(91,127,166,.15);">' +
+    '<span style="font-size:.9rem;">'+icon+'</span>' +
+    '<span style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7a8699;">'+title+'</span>' +
+  '</div>';
+}
+
 function openPlanModal(planId) {
   var existing = document.getElementById('plan-edit-modal');
   if (existing) existing.remove();
+  _injectWhopStyles();
 
   var isNew = !planId;
   var p = isNew ? {} : (_planById(planId) || {});
 
   var modal = document.createElement('div');
   modal.id = 'plan-edit-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  modal.className = 'wp-overlay';
+  modal.style.overflowY = 'auto';
   modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:480px;padding:24px;max-height:90vh;overflow-y:auto;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.2rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:18px;">' + (isNew ? 'Crear plan' : 'Editar plan') + '</div>' +
+    '<div class="wp-modal" style="max-width:540px;max-height:90vh;overflow-y:auto;">' +
 
-      (isNew ?
-        '<div style="margin-bottom:12px;"><label class="al">ID del plan (único, sin espacios — ej: mentoria-vip)</label><input id="pm-id" class="ai" placeholder="mentoria-vip"></div>'
-        : '<div style="margin-bottom:12px;"><label class="al">ID</label><input class="ai" value="'+p.id+'" disabled style="opacity:.5;"></div>'
-      ) +
-      '<div style="margin-bottom:12px;"><label class="al">Nombre</label><input id="pm-name" class="ai" value="'+(p.name||'')+'" placeholder="Ej: Mentoría Premium"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Descripción (se ve en el checkout)</label><input id="pm-desc" class="ai" value="'+(p.description||'')+'" placeholder="Ej: Clases grabadas · Sesiones 1-1"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;">' +
-        '<div><label class="al">Precio (USD)</label><input id="pm-price" type="number" class="ai" value="'+(p.price||'')+'"></div>' +
-        '<div><label class="al">Periodo (texto libre)</label><input id="pm-period" class="ai" value="'+(p.period||'')+'" placeholder="pago único / mes"></div>' +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;">' +
-        '<div><label class="al">Etiqueta corta (lista de alumnos)</label><input id="pm-label" class="ai" value="'+(p.label||'')+'" placeholder="Ej: mentoria"></div>' +
-        '<div><label class="al">Color</label><input id="pm-color" type="color" class="ai" value="'+(p.color||'#5b7fa6')+'" style="height:38px;padding:4px;"></div>' +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;">' +
-        '<div><label class="al">Duración Clases (meses, vacío = ilimitado)</label><input id="pm-dur-clases" type="number" class="ai" value="'+(p.duration_clases_months||'')+'"></div>' +
-        '<div><label class="al">Duración Live (meses, vacío = no incluido)</label><input id="pm-dur-live" type="number" class="ai" value="'+(p.duration_live_months||'')+'"></div>' +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;">' +
-        '<div><label class="al">Modo Roadmap</label><select id="pm-roadmap" class="ai">' +
-          '<option value="ninguno"'+(p.roadmap_mode==='ninguno'||!p.roadmap_mode?' selected':'')+'>Ninguno</option>' +
-          '<option value="manual"'+(p.roadmap_mode==='manual'?' selected':'')+'>Manual</option>' +
-          '<option value="automatico"'+(p.roadmap_mode==='automatico'?' selected':'')+'>Automático</option>' +
-        '</select></div>' +
-        '<div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px;">' +
-          '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;"><input type="checkbox" id="pm-1on1" '+(p.access_1on1?'checked':'')+' style="width:14px;height:14px;accent-color:var(--sl);"><span style="font-size:.78rem;color:#9a9a9a;">Incluye 1-a-1</span></label>' +
-          '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;"><input type="checkbox" id="pm-popular" '+(p.popular?'checked':'')+' style="width:14px;height:14px;accent-color:var(--sl);"><span style="font-size:.78rem;color:#9a9a9a;">Marcar "Popular" en checkout</span></label>' +
-        '</div>' +
-      '</div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Roles de Discord que asigna</label><div id="pm-discord-roles" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"><span class="spin"></span></div></div>' +
-
-      // Variantes
-      '<div style="border-top:1px solid rgba(91,127,166,.12);padding-top:14px;margin-bottom:14px;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-          '<label class="al" style="margin:0;">Variantes (sub-opciones, ej. duraciones de Live)</label>' +
-          (isNew ? '<span style="font-size:.68rem;color:#555;">Guarda el plan primero</span>' : '<button onclick="openVariantModal(\''+p.id+'\',null)" style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);color:#4ade80;padding:3px 9px;border-radius:4px;font-size:.68rem;cursor:pointer;">+ Agregar</button>') +
-        '</div>' +
-        '<div id="pm-variants-list">' +
-          (isNew ? '' : (p.variants && p.variants.length ? p.variants.map(function(v) {
-            return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:6px;margin-top:6px;">' +
-              '<span style="font-size:.76rem;color:#f0f0f0;">'+v.name+' — $'+Number(v.price).toLocaleString()+'</span>' +
-              '<span><button onclick="openVariantModal(\''+p.id+'\',\''+v.id+'\')" style="background:none;border:none;color:var(--sl);font-size:.7rem;cursor:pointer;margin-right:8px;">Editar</button><button onclick="deleteVariant(\''+v.id+'\',\''+p.id+'\')" style="background:none;border:none;color:#f87171;font-size:.7rem;cursor:pointer;">Eliminar</button></span>' +
-            '</div>';
-          }).join('') : '<div style="font-size:.74rem;color:#555;margin-top:6px;">Sin variantes.</div>')) +
+      '<div class="wp-header">' +
+        '<div class="wp-header-icon">' + (isNew ? '✨' : '⚙️') + '</div>' +
+        '<div>' +
+          '<div class="wp-title">' + (isNew ? 'Crear plan' : (p.name || 'Editar plan')) + '</div>' +
+          (isNew ? '<div class="wp-subtitle">Se crea oculto — actívalo cuando esté listo</div>' : '<div class="wp-subtitle">ID: ' + p.id + '</div>') +
         '</div>' +
       '</div>' +
 
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="pm-save-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">'+(isNew?'Crear plan':'Guardar cambios')+'</button>' +
-        (isNew ? '' : '<button id="pm-delete-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Eliminar</button>') +
-        '<button onclick="document.getElementById(\'plan-edit-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
-      '</div>' +
-    '</div>';
+      '<div class="wp-body">' +
+
+        // Card: Información general
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">📋</span><span class="wp-card-title">Información general</span></div>' +
+          (isNew ? '<div class="wp-field"><label class="wp-label">ID del plan (único, sin espacios)</label><input id="pm-id" class="wp-input" placeholder="mentoria-vip"></div>' : '') +
+          '<div class="wp-field"><label class="wp-label">Nombre</label><input id="pm-name" class="wp-input" value="'+(p.name||'')+'" placeholder="Ej: Mentoría Premium"></div>' +
+          '<div class="wp-field"><label class="wp-label">Descripción (checkout)</label><input id="pm-desc" class="wp-input" value="'+(p.description||'')+'" placeholder="Ej: Clases grabadas · Sesiones 1-1"></div>' +
+          '<div class="wp-field wp-grid2">' +
+            '<div><label class="wp-label">Precio (USD)</label><input id="pm-price" type="number" class="wp-input" value="'+(p.price||'')+'"></div>' +
+            '<div><label class="wp-label">Periodo</label><input id="pm-period" class="wp-input" value="'+(p.period||'')+'" placeholder="pago único / mes"></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Card: Etiqueta
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🏷️</span><span class="wp-card-title">Etiqueta visual</span></div>' +
+          '<div class="wp-field" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">' +
+            '<div><label class="wp-label">Etiqueta corta (lista de alumnos)</label><input id="pm-label" class="wp-input" value="'+(p.label||'')+'" placeholder="Ej: mentoria"></div>' +
+            '<div><label class="wp-label">Color</label><input id="pm-color" type="color" class="wp-input" value="'+(p.color||'#5b7fa6')+'" style="height:41px;width:52px;padding:4px;"></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Card: Duración y accesos
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">⏳</span><span class="wp-card-title">Duración y accesos</span></div>' +
+          '<div class="wp-field wp-grid2">' +
+            '<div><label class="wp-label">Duración Clases (meses)</label><input id="pm-dur-clases" type="number" class="wp-input" value="'+(p.duration_clases_months||'')+'" placeholder="Vacío = ilimitado"></div>' +
+            '<div><label class="wp-label">Duración Live (meses)</label><input id="pm-dur-live" type="number" class="wp-input" value="'+(p.duration_live_months||'')+'" placeholder="Vacío = no incluido"></div>' +
+          '</div>' +
+          '<div class="wp-field"><label class="wp-label">Modo Roadmap</label><select id="pm-roadmap" class="wp-input">' +
+            '<option value="ninguno"'+(p.roadmap_mode==='ninguno'||!p.roadmap_mode?' selected':'')+'>Ninguno</option>' +
+            '<option value="manual"'+(p.roadmap_mode==='manual'?' selected':'')+'>Manual</option>' +
+            '<option value="automatico"'+(p.roadmap_mode==='automatico'?' selected':'')+'>Automático</option>' +
+          '</select></div>' +
+          '<div class="wp-toggle-row">' +
+            '<span class="wp-toggle-text">Incluye sesiones 1-a-1</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-1on1" '+(p.access_1on1?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-toggle-row">' +
+            '<span class="wp-toggle-text">Marcar "Popular" en checkout</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-popular" '+(p.popular?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+        '</div>' +
+
+        // Card: Discord roles
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🎭</span><span class="wp-card-title">Roles de Discord que asigna</span></div>' +
+          '<div id="pm-discord-roles" style="display:flex;flex-wrap:wrap;gap:7px;"><span class="spin"></span></div>' +
+        '</div>' +
+
+        // Card: Variantes
+        '<div class="wp-card">' +
+          '<div class="wp-card-head" style="justify-content:space-between;">' +
+            '<div style="display:flex;align-items:center;gap:9px;"><span class="wp-card-icon">🔀</span><span class="wp-card-title">Variantes (ej. duraciones de Live)</span></div>' +
+            (isNew ? '' : '<button class="wp-btn-add" onclick="openVariantModal(\''+p.id+'\',null)">+ Agregar</button>') +
+          '</div>' +
+          (isNew ? '<div style="font-size:.78rem;color:#5c6470;">Guarda el plan primero para poder agregar variantes.</div>' : '') +
+          '<div id="pm-variants-list">' +
+            (isNew ? '' : (p.variants && p.variants.length ? p.variants.map(function(v) {
+              return '<div class="wp-variant-row">' +
+                '<span class="wp-variant-name">'+v.name+' — $'+Number(v.price).toLocaleString()+'</span>' +
+                '<span><button class="wp-link-btn" style="color:var(--sl);margin-right:12px;" onclick="openVariantModal(\''+p.id+'\',\''+v.id+'\')">Editar</button><button class="wp-link-btn" style="color:#f87171;" onclick="deleteVariant(\''+v.id+'\',\''+p.id+'\')">Eliminar</button></span>' +
+              '</div>';
+            }).join('') : '<div style="font-size:.78rem;color:#5c6470;">Sin variantes.</div>')) +
+          '</div>' +
+        '</div>' +
+
+        (isNew ? '' :
+          '<div class="wp-callout">' +
+            '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">' +
+              '<input type="checkbox" id="pm-apply-existing" style="width:14px;height:14px;margin-top:2px;accent-color:#c9a84c;flex-shrink:0;">' +
+              '<span style="font-size:.76rem;color:#c9a84c;line-height:1.5;">Aplicar también estos cambios (1-a-1, roadmap) a los alumnos que ya tienen este plan. Sin marcar, solo afecta a quienes lo obtengan de ahora en adelante.</span>' +
+            '</label>' +
+          '</div>'
+        ) +
+
+        '<div class="wp-footer">' +
+          '<button id="pm-save-btn" class="wp-btn-primary">'+(isNew?'Crear plan':'Guardar cambios')+'</button>' +
+          (isNew ? '' : '<button id="pm-delete-btn" class="wp-btn-danger">Eliminar</button>') +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'plan-edit-modal\').remove();">Cancelar</button>' +
+        '</div>' +
+
+      '</div>' + // wp-body
+    '</div>'; // wp-modal
 
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
 
-  // Cargar roles de Discord disponibles como checkboxes
+  // Cargar roles de Discord disponibles como chips
   var selectedRoles = (p.discord_role_ids || []);
   sb.from('discord_roles').select('*').order('sort_order').then(function(r) {
     var wrap = document.getElementById('pm-discord-roles');
     if (!wrap) return;
     var roles = r.data || [];
-    if (!roles.length) { wrap.innerHTML = '<span style="font-size:.74rem;color:#555;">Sin roles sincronizados — ve a la sección de arriba.</span>'; return; }
+    if (!roles.length) { wrap.innerHTML = '<span style="font-size:.76rem;color:#5c6470;">Sin roles sincronizados — ve a la sección de arriba.</span>'; return; }
     wrap.innerHTML = roles.map(function(role) {
       var checked = selectedRoles.indexOf(role.discord_role_id) >= 0;
-      return '<label style="display:flex;align-items:center;gap:5px;padding:4px 9px;background:rgba(255,255,255,.03);border:1px solid rgba(91,127,166,.15);border-radius:5px;cursor:pointer;font-size:.74rem;color:#f0f0f0;">' +
-        '<input type="checkbox" class="pm-role-cb" value="'+role.discord_role_id+'" '+(checked?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);">' + role.name +
-      '</label>';
+      return '<label class="wp-chip"><input type="checkbox" class="pm-role-cb" value="'+role.discord_role_id+'" '+(checked?'checked':'')+'>' + role.name + '</label>';
     }).join('');
   });
+
 
   document.getElementById('pm-save-btn').addEventListener('click', function() {
     var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
@@ -4893,9 +4989,26 @@ function openPlanModal(planId) {
     var op = isNew ? sb.from('checkout_plans').insert(data) : sb.from('checkout_plans').update(data).eq('id', id);
     op.then(function(r) {
       if (r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = isNew ? 'Crear plan' : 'Guardar cambios'; return; }
-      tst(isNew ? '✓ Plan creado (queda oculto — actívalo cuando esté listo)' : '✓ Plan actualizado');
-      modal.remove();
-      loadPlansAdmin();
+
+      var applyExisting = !isNew && document.getElementById('pm-apply-existing') && document.getElementById('pm-apply-existing').checked;
+      if (applyExisting) {
+        // Propaga access_1on1 y roadmap_mode a todos los alumnos que ya tienen este plan.
+        // (La duración NO se toca — ya tienen una fecha de vencimiento fija asignada;
+        // y los roles de Discord no se re-asignan automáticamente aquí.)
+        sb.from('profiles').update({
+          access_1on1: data.access_1on1,
+          roadmap_mode: data.roadmap_mode
+        }).eq('plan', id).then(function(r2) {
+          modal.remove();
+          if (r2.error) { tst('Plan guardado, pero falló al aplicar a alumnos: ' + r2.error.message, 1); }
+          else { tst('✓ Plan actualizado y aplicado a alumnos existentes'); }
+          loadPlansAdmin();
+        });
+      } else {
+        tst(isNew ? '✓ Plan creado (queda oculto — actívalo cuando esté listo)' : '✓ Plan actualizado');
+        modal.remove();
+        loadPlansAdmin();
+      }
     });
   });
 
@@ -4917,6 +5030,7 @@ function openVariantModal(planId, variantId) {
   var planEditModal = document.getElementById('plan-edit-modal');
   var existing = document.getElementById('variant-edit-modal');
   if (existing) existing.remove();
+  _injectWhopStyles();
 
   var planDef = _planById(planId);
   var isNew = !variantId;
@@ -4924,23 +5038,30 @@ function openVariantModal(planId, variantId) {
 
   var modal = document.createElement('div');
   modal.id = 'variant-edit-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.className = 'wp-overlay';
+  modal.style.zIndex = '10000';
+  modal.style.background = 'rgba(4,5,8,.85)';
   modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:380px;padding:22px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.05rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:14px;">'+(isNew?'Agregar variante':'Editar variante')+'</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Nombre (ej: Trimestral)</label><input id="vm-name" class="ai" value="'+(v.name||'')+'"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="vm-desc" class="ai" value="'+(v.description||'')+'" placeholder="Ej: Ahorra $50 vs mensual"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
-        '<div><label class="al">Precio</label><input id="vm-price" type="number" class="ai" value="'+(v.price||'')+'"></div>' +
-        '<div><label class="al">Periodo</label><input id="vm-period" class="ai" value="'+(v.period||'')+'" placeholder="/3 meses"></div>' +
+    '<div class="wp-modal" style="max-width:400px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🔀</div>' +
+        '<div class="wp-title" style="font-size:1rem;">'+(isNew?'Agregar variante':'Editar variante')+'</div>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;">' +
-        '<div><label class="al">Duración Clases (meses)</label><input id="vm-dur-clases" type="number" class="ai" value="'+(v.duration_clases_months||'')+'"></div>' +
-        '<div><label class="al">Duración Live (meses)</label><input id="vm-dur-live" type="number" class="ai" value="'+(v.duration_live_months||'')+'"></div>' +
-      '</div>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="vm-save-btn" style="flex:1;padding:9px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;">Guardar</button>' +
-        '<button onclick="document.getElementById(\'variant-edit-modal\').remove();" style="padding:9px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.82rem;cursor:pointer;">Cancelar</button>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Nombre (ej: Trimestral)</label><input id="vm-name" class="wp-input" value="'+(v.name||'')+'"></div>' +
+        '<div class="wp-field"><label class="wp-label">Descripción (opcional)</label><input id="vm-desc" class="wp-input" value="'+(v.description||'')+'" placeholder="Ej: Ahorra $50 vs mensual"></div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Precio</label><input id="vm-price" type="number" class="wp-input" value="'+(v.price||'')+'"></div>' +
+          '<div><label class="wp-label">Periodo</label><input id="vm-period" class="wp-input" value="'+(v.period||'')+'" placeholder="/3 meses"></div>' +
+        '</div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Duración Clases (meses)</label><input id="vm-dur-clases" type="number" class="wp-input" value="'+(v.duration_clases_months||'')+'"></div>' +
+          '<div><label class="wp-label">Duración Live (meses)</label><input id="vm-dur-live" type="number" class="wp-input" value="'+(v.duration_live_months||'')+'"></div>' +
+        '</div>' +
+        '<div class="wp-footer">' +
+          '<button id="vm-save-btn" class="wp-btn-primary">Guardar</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'variant-edit-modal\').remove();">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(modal);

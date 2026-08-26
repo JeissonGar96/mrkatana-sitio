@@ -85,7 +85,7 @@ module.exports = async function handler(req, res) {
 
     // 6. Redirect back to app with success
     const discordTag = encodeURIComponent(discordUser.username);
-    res.redirect(`/app/sesiones?discord_ok=1&discord_user=${discordTag}`);
+    res.redirect(`/app/dash?discord_ok=1&discord_user=${discordTag}`);
 
   } catch (err) {
     console.error('Discord callback error:', err);

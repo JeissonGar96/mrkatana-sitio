@@ -3905,7 +3905,7 @@ function viewStudentProfile(id) {
             '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Clases vence</div><div style="font-size:.86rem;color:#e2e5ea;">'+(endDate ? endDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div></div>' +
             '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Live vence</div><div style="font-size:.86rem;color:'+(liveActive?'#4ade80':'#5c6470')+';">'+(liveEndDate ? liveEndDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin live')+'</div></div>' +
           '</div>' +
-          '<div class="wp-toggle-row">' +
+          '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
             '<div><span class="wp-toggle-text">Reuniones 1-a-1</span><div class="wp-toggle-sub">Independiente del plan — override manual</div></div>' +
             '<label class="wp-toggle"><input type="checkbox" id="stud-1on1-toggle" '+(p.access_1on1?'checked':'')+' onchange="toggleStudent1on1(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
           '</div>' +

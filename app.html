@@ -3192,7 +3192,7 @@ function openWeekModal(weekNum, studentId) {
       var box = document.createElement('div');
       box.className = 'wp-modal';
       box.style.maxWidth = '500px';
-      box.style.maxHeight = '85vh';
+      box.style.maxHeight = '80vh'; box.style.maxHeight = '80dvh';
       box.style.overflowY = 'auto';
       box.innerHTML =
         '<div class="wp-header" style="padding:20px 24px 4px;">' +
@@ -3296,7 +3296,7 @@ function editRoadmapWeek(weekNum, existing) {
   var box = document.createElement('div');
   box.className = 'wp-modal';
   box.style.maxWidth = '520px';
-  box.style.maxHeight = '85vh';
+  box.style.maxHeight = '80vh'; box.style.maxHeight = '80dvh';
   box.style.overflowY = 'auto';
   box.innerHTML =
     '<div class="wp-header" style="padding:20px 24px 4px;">' +
@@ -3444,7 +3444,7 @@ function openSchModal() {
   _injectWhopStyles();
   ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div class="wp-modal" style="max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">' +
+    '<div class="wp-modal" style="max-width:480px;max-height:80vh;max-height:80dvh;display:flex;flex-direction:column;overflow:hidden;">' +
       // Header
       '<div class="wp-header" style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;">' +
         '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
@@ -3867,7 +3867,7 @@ function viewStudentProfile(id) {
     var box = document.createElement('div');
     box.className = 'wp-modal';
     box.style.maxWidth = '520px';
-    box.style.maxHeight = '88vh';
+    box.style.maxHeight = '80vh'; box.style.maxHeight = '80dvh';
     box.style.overflowY = 'auto';
     box.innerHTML =
       '<div class="wp-header" style="padding:22px 26px 4px;">' +
@@ -4839,9 +4839,9 @@ function _injectWhopStyles() {
   var style = document.createElement('style');
   style.id = 'wp-styles';
   style.textContent =
-    '.wp-overlay{position:fixed;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overscroll-behavior:contain;}' +
-    '.wp-modal{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}' +
-    '.wp-modal{background:linear-gradient(180deg,#181b22,#141720);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;}' +
+    '.wp-overlay{position:fixed;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;}' +
+    '.wp-modal{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:80vh;max-height:80dvh;}' +
+    '.wp-modal{background:linear-gradient(180deg,#181b22,#141720);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:auto;}' +
     '.wp-header{position:sticky;top:0;background:linear-gradient(180deg,#181b22 70%,rgba(24,27,34,0));padding:26px 28px 18px;z-index:2;display:flex;align-items:center;gap:12px;}' +
     '.wp-header-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}' +
     '.wp-title{font-family:var(--font-cond);font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#fff;}' +
@@ -4884,6 +4884,35 @@ function _injectWhopStyles() {
     '.wp-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 12px;}' +
     '.wp-card + .wp-card{margin-top:2px;}';
   document.head.appendChild(style);
+
+  // Bloquea el scroll de la página de fondo mientras haya algún modal (.wp-overlay)
+  // abierto — evita el "rebote"/estiramiento de iOS/Safari cuando el modal necesita
+  // scroll interno porque es más alto que la pantalla. Se activa/desactiva solo,
+  // sin tener que tocar cada función de modal individualmente.
+  var _wpScrollY = 0;
+  function _wpLockBody() {
+    _wpScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + _wpScrollY + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  function _wpUnlockBody() {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _wpScrollY);
+  }
+  var _wpObserver = new MutationObserver(function() {
+    var hasOverlay = !!document.querySelector('.wp-overlay');
+    var isLocked = document.body.style.position === 'fixed';
+    if (hasOverlay && !isLocked) _wpLockBody();
+    else if (!hasOverlay && isLocked) _wpUnlockBody();
+  });
+  _wpObserver.observe(document.body, { childList: true });
 }
 
 function _planSectionHeader(icon, title) {
@@ -4906,7 +4935,7 @@ function openPlanModal(planId) {
   modal.className = 'wp-overlay';
   modal.style.overflowY = 'auto';
   modal.innerHTML =
-    '<div class="wp-modal" style="max-width:540px;max-height:90vh;overflow-y:auto;">' +
+    '<div class="wp-modal" style="max-width:540px;max-height:80vh;max-height:80dvh;overflow-y:auto;">' +
 
       '<div class="wp-header">' +
         '<div class="wp-header-icon">' + (isNew ? '✨' : '⚙️') + '</div>' +

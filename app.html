@@ -3844,6 +3844,8 @@ function toggleStudent1on1(studentId, enabled) {
 
 function viewStudentProfile(id) {
   _injectWhopStyles();
+  var already = document.getElementById('student-profile-modal');
+  if (already) already.remove();
   sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end, roadmap_mode, access_1on1').eq('id', id).single().then(function(pr) {
     if (pr.error || !pr.data) return tst('No se encontró el perfil', 1);
     var p = pr.data;
@@ -3852,7 +3854,13 @@ function viewStudentProfile(id) {
     var liveEndDate = p.live_end ? new Date(p.live_end) : null;
     var liveActive = liveEndDate && liveEndDate > new Date();
 
+    // Evita que se abran 2 fichas encimadas si se toca la fila más de una vez
+    // mientras carga (típico en móvil)
+    var existingModal = document.getElementById('student-profile-modal');
+    if (existingModal) existingModal.remove();
+
     var ov = document.createElement('div');
+    ov.id = 'student-profile-modal';
     ov.className = 'wp-overlay';
     ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
 
@@ -4831,7 +4839,8 @@ function _injectWhopStyles() {
   var style = document.createElement('style');
   style.id = 'wp-styles';
   style.textContent =
-    '.wp-overlay{position:fixed;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}' +
+    '.wp-overlay{position:fixed;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overscroll-behavior:contain;}' +
+    '.wp-modal{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}' +
     '.wp-modal{background:linear-gradient(180deg,#181b22,#141720);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:hidden;}' +
     '.wp-header{position:sticky;top:0;background:linear-gradient(180deg,#181b22 70%,rgba(24,27,34,0));padding:26px 28px 18px;z-index:2;display:flex;align-items:center;gap:12px;}' +
     '.wp-header-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}' +

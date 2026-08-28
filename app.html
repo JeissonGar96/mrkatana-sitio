@@ -3192,7 +3192,6 @@ function openWeekModal(weekNum, studentId) {
       var box = document.createElement('div');
       box.className = 'wp-modal';
       box.style.maxWidth = '500px';
-      box.style.maxHeight = '80vh'; box.style.maxHeight = '80dvh';
       box.style.overflowY = 'auto';
       box.innerHTML =
         '<div class="wp-header" style="padding:20px 24px 4px;">' +
@@ -3296,7 +3295,6 @@ function editRoadmapWeek(weekNum, existing) {
   var box = document.createElement('div');
   box.className = 'wp-modal';
   box.style.maxWidth = '520px';
-  box.style.maxHeight = '80vh'; box.style.maxHeight = '80dvh';
   box.style.overflowY = 'auto';
   box.innerHTML =
     '<div class="wp-header" style="padding:20px 24px 4px;">' +
@@ -3444,7 +3442,7 @@ function openSchModal() {
   _injectWhopStyles();
   ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div class="wp-modal" style="max-width:480px;max-height:80vh;max-height:80dvh;display:flex;flex-direction:column;overflow:hidden;">' +
+    '<div class="wp-modal" style="max-width:480px;display:flex;flex-direction:column;overflow:hidden;">' +
       // Header
       '<div class="wp-header" style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;">' +
         '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
@@ -3867,8 +3865,7 @@ function viewStudentProfile(id) {
     var box = document.createElement('div');
     box.className = 'wp-modal';
     box.style.maxWidth = '520px';
-    box.style.maxHeight = '80vh'; box.style.maxHeight = '80dvh';
-    box.style.overflowY = 'auto';
+      box.style.overflowY = 'auto';
     box.innerHTML =
       '<div class="wp-header" style="padding:22px 26px 4px;">' +
         '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">👤</div>' +
@@ -4935,7 +4932,7 @@ function openPlanModal(planId) {
   modal.className = 'wp-overlay';
   modal.style.overflowY = 'auto';
   modal.innerHTML =
-    '<div class="wp-modal" style="max-width:540px;max-height:80vh;max-height:80dvh;overflow-y:auto;">' +
+    '<div class="wp-modal" style="max-width:540px;overflow-y:auto;">' +
 
       '<div class="wp-header">' +
         '<div class="wp-header-icon">' + (isNew ? '✨' : '⚙️') + '</div>' +

@@ -4710,15 +4710,49 @@ function rAdmCodes() {
 
     // ── SECCIÓN 3: CÓDIGOS ──
     '<div class="aform">' +
-      '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">🔑 Generar código de acceso</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:9px;">' +
-        '<div><label class="al">Nota (para quién es)</label><input id="code-note" class="ai" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
-        '<div><label class="al">Plan que activa</label><select id="code-plan" class="ai"><option value="">Cargando...</option></select></div>' +
-        '<div><label class="al">Meses</label><input id="code-months" type="number" class="ai" value="6" min="1" max="24"></div>' +
+      '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">🔑 Generar código</div>' +
+      '<div style="display:flex;gap:16px;margin-bottom:12px;">' +
+        '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.82rem;color:#e2e5ea;"><input type="radio" name="code-type" value="free" checked onchange="_toggleCodeType(this.value)"> Acceso gratis</label>' +
+        '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.82rem;color:#e2e5ea;"><input type="radio" name="code-type" value="discount" onchange="_toggleCodeType(this.value)"> Descuento</label>' +
       '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
+        '<div><label class="al">Nota (para quién es)</label><input id="code-note" class="ai" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
+        '<div><label class="al" id="code-plan-label">Plan que activa</label><select id="code-plan" class="ai"><option value="">Cargando...</option></select></div>' +
+      '</div>' +
+
+      // Bloque "Acceso gratis"
+      '<div id="code-free-block" style="margin-top:9px;">' +
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+          '<input type="checkbox" id="code-custom-dur" onchange="document.getElementById(\'code-custom-dur-opts\').style.display=this.checked?\'\':\'none\';">' +
+          '<span style="font-size:.8rem;color:#9a9a9a;">Personalizar duración (si no lo marcas, usa la duración normal del plan)</span>' +
+        '</label>' +
+        '<div id="code-custom-dur-opts" style="display:none;margin-top:9px;padding:12px;background:rgba(255,255,255,.03);border-radius:8px;">' +
+          '<div style="display:flex;gap:16px;margin-bottom:9px;">' +
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.8rem;color:#e2e5ea;"><input type="checkbox" id="code-applies-clases"> Clases</label>' +
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.8rem;color:#e2e5ea;"><input type="checkbox" id="code-applies-live"> Live</label>' +
+          '</div>' +
+          '<label class="al">Meses (aplica a lo marcado arriba)</label><input id="code-months" type="number" class="ai" value="1" min="1" max="24">' +
+        '</div>' +
+      '</div>' +
+
+      // Bloque "Descuento"
+      '<div id="code-discount-block" style="display:none;margin-top:9px;">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
+          '<div><label class="al">Tipo</label><select id="code-discount-type" class="ai">' +
+            '<option value="percent">Porcentaje (%)</option>' +
+            '<option value="fixed">Monto fijo ($)</option>' +
+          '</select></div>' +
+          '<div><label class="al" id="code-discount-value-label">Valor (%)</label><input id="code-discount-value" type="number" class="ai" placeholder="Ej: 20"></div>' +
+        '</div>' +
+      '</div>' +
+
       '<button class="abtn2" id="btn-gen-code" style="margin-top:11px;">Generar código</button>' +
     '</div>' +
     '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>';
+
+  document.getElementById('code-discount-type').addEventListener('change', function() {
+    document.getElementById('code-discount-value-label').textContent = this.value === 'percent' ? 'Valor (%)' : 'Valor ($)';
+  });
 
   document.getElementById('btn-gen-code').addEventListener('click', genCode);
   document.getElementById('btn-sync-discord-roles').addEventListener('click', syncDiscordRoles);
@@ -4837,7 +4871,7 @@ function _injectWhopStyles() {
   style.id = 'wp-styles';
   style.textContent =
     '.wp-overlay{position:fixed;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;}' +
-    '.wp-modal{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:85vh;max-height:85dvh;}' +
+    '.wp-modal{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:80vh;max-height:80dvh;}' +
     '.wp-modal{background:linear-gradient(180deg,#181b22,#141720);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:auto;}' +
     '.wp-header{position:sticky;top:0;background:linear-gradient(180deg,#181b22 70%,rgba(24,27,34,0));padding:26px 28px 18px;z-index:2;display:flex;align-items:center;gap:12px;}' +
     '.wp-header-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}' +
@@ -5200,20 +5234,43 @@ function deleteVariant(variantId, planId) {
 }
 
 
+function _toggleCodeType(type) {
+  document.getElementById('code-free-block').style.display = type === 'free' ? '' : 'none';
+  document.getElementById('code-discount-block').style.display = type === 'discount' ? '' : 'none';
+  document.getElementById('code-plan-label').textContent = type === 'free' ? 'Plan que activa' : 'Plan al que aplica el descuento';
+}
+
 function genCode() {
   var note = document.getElementById('code-note').value.trim();
-  var months = parseInt(document.getElementById('code-months').value) || 6;
-  var plan = document.getElementById('code-plan') ? document.getElementById('code-plan').value : 'formacion';
+  var plan = document.getElementById('code-plan') ? document.getElementById('code-plan').value : '';
+  var codeType = document.querySelector('input[name="code-type"]:checked').value;
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var code = 'KATANA-';
   for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  sb.from('access_codes').insert({
-    code: code,
-    created_by: cUser.id,
-    months: months,
-    plan: plan,
-    notes: note
-  }).then(function(r) {
+
+  var data = { code: code, created_by: cUser.id, plan: plan, notes: note, code_type: codeType };
+
+  if (codeType === 'free') {
+    var customDur = document.getElementById('code-custom-dur').checked;
+    data.custom_duration = customDur;
+    if (customDur) {
+      var appliesClases = document.getElementById('code-applies-clases').checked;
+      var appliesLive = document.getElementById('code-applies-live').checked;
+      var months = parseInt(document.getElementById('code-months').value) || 1;
+      data.applies_clases = appliesClases;
+      data.applies_live = appliesLive;
+      data.months = months; // se guarda igual, para compatibilidad con lecturas existentes
+    } else {
+      data.applies_clases = false;
+      data.applies_live = false;
+      data.months = null;
+    }
+  } else {
+    data.discount_type = document.getElementById('code-discount-type').value;
+    data.discount_value = parseFloat(document.getElementById('code-discount-value').value) || 0;
+  }
+
+  sb.from('access_codes').insert(data).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Código generado: ' + code);
     loadCodes();
@@ -5233,16 +5290,27 @@ function loadCodes() {
   sb.from('access_codes').select('*').order('created_at', {ascending: false}).then(function(r) {
     if (!r.data || !r.data.length) { c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin códigos generados aún.</p>'; return; }
     var tbl = document.createElement('table'); tbl.className = 'dtab';
-    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Meses</th><th>Estado</th><th>Usado</th><th></th></tr></thead>';
+    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Detalle</th><th>Estado</th><th>Usado</th><th></th></tr></thead>';
     var tb = document.createElement('tbody');
     r.data.forEach(function(cd) {
       var tr = document.createElement('tr');
       var usedDate = cd.used_at ? new Date(cd.used_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '—';
+      var detail;
+      if (cd.code_type === 'discount') {
+        detail = '<span style="color:#c9a84c;">' + (cd.discount_type === 'percent' ? cd.discount_value + '% off' : '$' + cd.discount_value + ' off') + '</span>';
+      } else if (cd.custom_duration) {
+        var parts = [];
+        if (cd.applies_clases) parts.push('Clases');
+        if (cd.applies_live) parts.push('Live');
+        detail = cd.months + ' mes' + (cd.months===1?'':'es') + ' (' + (parts.join(' + ') || '—') + ')';
+      } else {
+        detail = 'Duración del plan';
+      }
       tr.innerHTML =
         '<td><span style="font-family:monospace;font-size:.82rem;color:#f0f0f0;letter-spacing:1px;">' + cd.code + '</span>' +
         '<button onclick="navigator.clipboard.writeText(\'' + cd.code + '\').then(function(){tst(\'✓ Copiado\')})" style="background:none;border:none;color:#555;cursor:pointer;font-size:.7rem;margin-left:6px;padding:2px 5px;border:1px solid var(--br);border-radius:3px;">Copiar</button></td>' +
         '<td style="font-size:.74rem;color:#666;">' + (cd.notes || '—') + '</td>' +
-        '<td style="font-size:.74rem;">' + cd.months + '</td>' +
+        '<td style="font-size:.74rem;">' + detail + '</td>' +
         '<td><span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (cd.is_used ? 'rgba(248,113,113,.1)' : 'rgba(74,222,128,.1)') + ';color:' + (cd.is_used ? '#f87171' : '#4ade80') + ';">' + (cd.is_used ? 'Usado' : 'Disponible') + '</span></td>' +
         '<td style="font-size:.74rem;color:#555;">' + usedDate + '</td>' +
         '<td></td>';

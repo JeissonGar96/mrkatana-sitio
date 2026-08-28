@@ -572,11 +572,23 @@ var state = {
   page: 1,
   plan: null,       // { id, price, label, durationClases, durationLive, accessClases }
   codeData: null,
+  discountData: null, // { discount_type: 'percent'|'fixed', discount_value: number }
   avatarBlob: null,
 };
 
 // "Ilimitado" se guarda como una fecha muy lejana (no null) — mismo criterio que app.html
 var UNLIMITED_ISO = '2099-12-31T00:00:00.000Z';
+
+// Precio final a cobrar, aplicando el código de descuento si hay uno válido
+function _finalPrice() {
+  var base = state.plan ? state.plan.price : 0;
+  if (!state.discountData) return base;
+  var d = state.discountData;
+  var price = d.discount_type === 'percent'
+    ? base - (base * (d.discount_value / 100))
+    : base - d.discount_value;
+  return Math.max(0, Math.round(price * 100) / 100);
+}
 
 // ── PLANES DISPONIBLES (estructura base) ──
 // La visibilidad y configuración de cada plan se controla desde Supabase →
@@ -657,6 +669,8 @@ async function loadPlans() {
         var sel = variantWrap.querySelector('.live-opt.selected') || variantWrap.querySelector('.live-opt');
         if (sel) { setVariant(sel); updateSummary(); return; }
       }
+      state.codeData = null;
+      state.discountData = null;
       state.plan = {
         id: el.dataset.plan,
         price: parseInt(el.dataset.price),
@@ -690,6 +704,8 @@ function setVariant(el) {
   el.classList.add('selected');
   var planId = wrap ? wrap.dataset.parentPlan : el.dataset.variant;
   var parentEl = document.querySelector('.plan-item[data-plan="' + planId + '"]');
+  state.codeData = null;
+  state.discountData = null;
   state.plan = {
     id: planId,
     price: parseInt(el.dataset.price),
@@ -816,6 +832,9 @@ function updateSummary() {
   if (state.codeData) {
     discountEl.classList.remove('hidden');
     document.getElementById('sum-total').textContent = '$0 USD';
+  } else if (state.discountData) {
+    discountEl.classList.remove('hidden');
+    document.getElementById('sum-total').textContent = '$' + _finalPrice().toLocaleString() + ' USD';
   } else {
     discountEl.classList.add('hidden');
     document.getElementById('sum-total').textContent = priceStr;
@@ -906,6 +925,20 @@ function applyCode() {
         msg.className = 'ck-code-msg err';
         msg.textContent = '✗ Este código no es válido para el plan seleccionado.';
         state.codeData = null;
+        state.discountData = null;
+        document.getElementById('pay-free').style.display = 'none';
+        document.getElementById('pay-card').style.display = '';
+        updateSummary();
+        return;
+      }
+
+      if (r.data.code_type === 'discount') {
+        // Código de descuento — no da acceso gratis, reduce el precio a pagar
+        state.codeData = null;
+        state.discountData = r.data;
+        msg.className = 'ck-code-msg ok';
+        var discTxt = r.data.discount_type === 'percent' ? r.data.discount_value + '% de descuento' : '$' + r.data.discount_value + ' de descuento';
+        msg.textContent = '✓ Código válido — ' + discTxt;
         document.getElementById('pay-free').style.display = 'none';
         document.getElementById('pay-card').style.display = '';
         updateSummary();
@@ -913,6 +946,7 @@ function applyCode() {
       }
 
       state.codeData = r.data;
+      state.discountData = null;
       msg.className = 'ck-code-msg ok';
       msg.textContent = '✓ Código válido';
       document.getElementById('code-detail').textContent =
@@ -1045,15 +1079,15 @@ async function createAccount() {
       phone_prefix:       prefix,
       phone:              phone,
       trading_experience: exp,
-      plan:               state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo'),
+      plan:               state.codeData ? undefined : (state.plan ? state.plan.id : 'completo'),
       access_1on1:        state.codeData ? undefined : (state.plan ? !!state.plan.access1on1 : false),
       roadmap_mode:       state.codeData ? undefined : (state.plan ? (state.plan.roadmapMode || null) : null)
     };
     if (state.codeData) {
-      var codeStart = new Date();
-      profile.membership_start = codeStart.toISOString();
-      var codeEnd = new Date(); codeEnd.setMonth(codeEnd.getMonth() + (state.codeData.months || 6));
-      profile.membership_end = codeEnd.toISOString();
+      // El RPC use_access_code ya se encarga de plan, membership_end, live_end,
+      // access_1on1 y roadmap_mode con la lógica completa (duración personalizada
+      // del código si aplica, o la del plan si no) — no se duplica aquí para no
+      // sobreescribirlo con una versión más simple.
     } else if (state.plan) {
       if (state.plan.accessClases === false) {
         // Este plan no incluye acceso a Clases
@@ -1133,7 +1167,7 @@ function renderPayPal() {
   paypal.Buttons({
     style: { layout:'vertical', color:'blue', shape:'rect', label:'pay' },
     createOrder: function(data, actions) {
-      var amount = state.plan ? state.plan.price : 0;
+      var amount = _finalPrice();
       return actions.order.create({
         purchase_units: [{
           description: state.plan ? state.plan.label : 'Mr Katana FX',

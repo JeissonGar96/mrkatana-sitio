@@ -5057,7 +5057,7 @@ function openPlanModal(planId) {
           '<div class="wp-callout">' +
             '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">' +
               '<input type="checkbox" id="pm-apply-existing" style="width:14px;height:14px;margin-top:2px;accent-color:#c9a84c;flex-shrink:0;">' +
-              '<span style="font-size:.76rem;color:#c9a84c;line-height:1.5;">Aplicar también estos cambios (1-a-1, roadmap) a los alumnos que ya tienen este plan. Sin marcar, solo afecta a quienes lo obtengan de ahora en adelante.</span>' +
+              '<span style="font-size:.76rem;color:#c9a84c;line-height:1.5;">Aplicar también estos cambios a los alumnos que ya tienen este plan — 1-a-1/roadmap a todos, y Clases solo a quienes la tengan activa ahora mismo (no reactiva a quien ya venció). Live nunca se toca aquí — se protege siempre, activo o vencido. Sin marcar, solo afecta a quienes lo obtengan de ahora en adelante.</span>' +
             '</label>' +
           '</div>'
         ) +
@@ -5120,16 +5120,37 @@ function openPlanModal(planId) {
 
       var applyExisting = !isNew && document.getElementById('pm-apply-existing') && document.getElementById('pm-apply-existing').checked;
       if (applyExisting) {
-        // Propaga access_1on1 y roadmap_mode a todos los alumnos que ya tienen este plan.
-        // (La duración NO se toca — ya tienen una fecha de vencimiento fija asignada;
-        // y los roles de Discord no se re-asignan automáticamente aquí.)
-        sb.from('profiles').update({
+        var nowISO = new Date().toISOString();
+        var promises = [];
+
+        // 1-a-1 y roadmap: a TODOS los alumnos de este plan, sin excepción (no tienen vencimiento)
+        promises.push(sb.from('profiles').update({
           access_1on1: data.access_1on1,
           roadmap_mode: data.roadmap_mode
-        }).eq('plan', id).then(function(r2) {
+        }).eq('plan', id));
+
+        // Clases: solo a quienes tienen acceso ACTIVO ahora mismo (no revive a quien ya venció)
+        var clasesUpdate;
+        if (data.access_clases === false) {
+          clasesUpdate = { membership_start: null, membership_end: null };
+        } else {
+          var clasesEnd = data.duration_clases_months
+            ? (function(){ var e = new Date(); e.setMonth(e.getMonth() + data.duration_clases_months); return e.toISOString(); })()
+            : UNLIMITED_ISO;
+          clasesUpdate = { membership_start: new Date().toISOString(), membership_end: clasesEnd };
+        }
+        promises.push(sb.from('profiles').update(clasesUpdate).eq('plan', id).gt('membership_end', nowISO));
+
+        // Live NUNCA se toca aquí — ni activo ni vencido. Es un servicio recurrente con
+        // valor monetario real; extenderlo o reactivarlo sin que el alumno haya pagado
+        // de nuevo no sería justo. Si el plan cambia su duración de Live, eso solo aplica
+        // a quienes lo obtengan de ahora en adelante (compra, código, o asignación manual).
+
+        Promise.all(promises).then(function(results) {
           modal.remove();
-          if (r2.error) { tst('Plan guardado, pero falló al aplicar a alumnos: ' + r2.error.message, 1); }
-          else { tst('✓ Plan actualizado y aplicado a alumnos existentes'); }
+          var anyError = results.some(function(r){ return r.error; });
+          if (anyError) tst('Plan guardado, pero algo falló al aplicar a alumnos existentes', 1);
+          else tst('✓ Plan actualizado y aplicado a alumnos activos');
           loadPlansAdmin();
         });
       } else {

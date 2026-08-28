@@ -4680,6 +4680,7 @@ function dLesson(id) {
 
 function rAdmCodes() {
   var c = document.getElementById('a-codes'); if (!c) return;
+  _injectWhopStyles();
   c.innerHTML =
 
     // ── SECCIÓN 1: PLANES ──
@@ -4709,44 +4710,48 @@ function rAdmCodes() {
     '<div style="border-top:1px solid rgba(91,127,166,.12);margin:4px 0 22px;"></div>' +
 
     // ── SECCIÓN 3: CÓDIGOS ──
-    '<div class="aform">' +
-      '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">🔑 Generar código</div>' +
-      '<div style="display:flex;gap:16px;margin-bottom:12px;">' +
-        '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.82rem;color:#e2e5ea;"><input type="radio" name="code-type" value="free" checked onchange="_toggleCodeType(this.value)"> Acceso gratis</label>' +
-        '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.82rem;color:#e2e5ea;"><input type="radio" name="code-type" value="discount" onchange="_toggleCodeType(this.value)"> Descuento</label>' +
+    '<div class="wp-card">' +
+      '<div class="wp-card-head"><span class="wp-card-icon">🔑</span><span class="wp-card-title">Generar código</span></div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+        '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="free" checked onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Acceso gratis</label>' +
+        '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="discount" onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Descuento</label>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
-        '<div><label class="al">Nota (para quién es)</label><input id="code-note" class="ai" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
-        '<div><label class="al" id="code-plan-label">Plan que activa</label><select id="code-plan" class="ai"><option value="">Cargando...</option></select></div>' +
+      '<div class="wp-field wp-grid2">' +
+        '<div><label class="wp-label">Nota (para quién es)</label><input id="code-note" class="wp-input" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
+        '<div><label class="wp-label" id="code-plan-label">Plan que activa</label><select id="code-plan" class="wp-input"><option value="">Cargando...</option></select></div>' +
       '</div>' +
 
       // Bloque "Acceso gratis"
-      '<div id="code-free-block" style="margin-top:9px;">' +
-        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
-          '<input type="checkbox" id="code-custom-dur" onchange="document.getElementById(\'code-custom-dur-opts\').style.display=this.checked?\'\':\'none\';">' +
-          '<span style="font-size:.8rem;color:#9a9a9a;">Personalizar duración (si no lo marcas, usa la duración normal del plan)</span>' +
-        '</label>' +
-        '<div id="code-custom-dur-opts" style="display:none;margin-top:9px;padding:12px;background:rgba(255,255,255,.03);border-radius:8px;">' +
-          '<div style="display:flex;gap:16px;margin-bottom:9px;">' +
-            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.8rem;color:#e2e5ea;"><input type="checkbox" id="code-applies-clases"> Clases</label>' +
-            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.8rem;color:#e2e5ea;"><input type="checkbox" id="code-applies-live"> Live</label>' +
+      '<div id="code-free-block">' +
+        '<div class="wp-toggle-row" style="margin-top:6px;">' +
+          '<div><span class="wp-toggle-text">Personalizar duración</span><div class="wp-toggle-sub">Si lo dejas apagado, usa la duración normal del plan</div></div>' +
+          '<label class="wp-toggle"><input type="checkbox" id="code-custom-dur" onchange="document.getElementById(\'code-custom-dur-opts\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
+        '</div>' +
+        '<div id="code-custom-dur-opts" style="display:none;margin-top:10px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;">' +
+          '<div class="wp-toggle-row">' +
+            '<span class="wp-toggle-text">Aplica a Clases</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="code-applies-clases"><span class="wp-toggle-track"></span></label>' +
           '</div>' +
-          '<label class="al">Meses (aplica a lo marcado arriba)</label><input id="code-months" type="number" class="ai" value="1" min="1" max="24">' +
+          '<div class="wp-toggle-row">' +
+            '<span class="wp-toggle-text">Aplica a Live</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="code-applies-live"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-field" style="margin-top:12px;"><label class="wp-label">Meses (aplica a lo marcado arriba)</label><input id="code-months" type="number" class="wp-input" value="1" min="1" max="24"></div>' +
         '</div>' +
       '</div>' +
 
       // Bloque "Descuento"
-      '<div id="code-discount-block" style="display:none;margin-top:9px;">' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' +
-          '<div><label class="al">Tipo</label><select id="code-discount-type" class="ai">' +
+      '<div id="code-discount-block" style="display:none;">' +
+        '<div class="wp-field wp-grid2" style="margin-top:6px;">' +
+          '<div><label class="wp-label">Tipo</label><select id="code-discount-type" class="wp-input">' +
             '<option value="percent">Porcentaje (%)</option>' +
             '<option value="fixed">Monto fijo ($)</option>' +
           '</select></div>' +
-          '<div><label class="al" id="code-discount-value-label">Valor (%)</label><input id="code-discount-value" type="number" class="ai" placeholder="Ej: 20"></div>' +
+          '<div><label class="wp-label" id="code-discount-value-label">Valor (%)</label><input id="code-discount-value" type="number" class="wp-input" placeholder="Ej: 20"></div>' +
         '</div>' +
       '</div>' +
 
-      '<button class="abtn2" id="btn-gen-code" style="margin-top:11px;">Generar código</button>' +
+      '<button class="wp-btn-primary" id="btn-gen-code" style="margin-top:14px;width:100%;">Generar código</button>' +
     '</div>' +
     '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>';
 

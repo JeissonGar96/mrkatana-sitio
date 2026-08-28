@@ -535,7 +535,7 @@
 
         <div class="ck-summary-discount hidden" id="sum-discount">
           <span>🎟️ Código aplicado</span>
-          <span style="color:var(--green);font-weight:700;">-100%</span>
+          <span id="sum-discount-value" style="color:var(--green);font-weight:700;">-100%</span>
         </div>
 
         <div class="ck-summary-total">
@@ -829,10 +829,14 @@ function updateSummary() {
   var priceStr = '$' + state.plan.price.toLocaleString() + ' USD';
   document.getElementById('sum-plan-price').textContent = priceStr;
   var discountEl = document.getElementById('sum-discount');
+  var discountValueEl = document.getElementById('sum-discount-value');
   if (state.codeData) {
+    discountValueEl.textContent = '-100%';
     discountEl.classList.remove('hidden');
     document.getElementById('sum-total').textContent = '$0 USD';
   } else if (state.discountData) {
+    var d = state.discountData;
+    discountValueEl.textContent = d.discount_type === 'percent' ? '-' + d.discount_value + '%' : '-$' + d.discount_value;
     discountEl.classList.remove('hidden');
     document.getElementById('sum-total').textContent = '$' + _finalPrice().toLocaleString() + ' USD';
   } else {

@@ -1046,8 +1046,8 @@ async function createAccount() {
       phone:              phone,
       trading_experience: exp,
       plan:               state.codeData ? (state.codeData.plan || 'completo') : (state.plan ? state.plan.id : 'completo'),
-      access_1on1:        state.codeData ? false : (state.plan ? !!state.plan.access1on1 : false),
-      roadmap_mode:       state.codeData ? null : (state.plan ? (state.plan.roadmapMode || null) : null)
+      access_1on1:        state.codeData ? undefined : (state.plan ? !!state.plan.access1on1 : false),
+      roadmap_mode:       state.codeData ? undefined : (state.plan ? (state.plan.roadmapMode || null) : null)
     };
     if (state.codeData) {
       var codeStart = new Date();

@@ -13,40 +13,46 @@ const sb = createClient(
 );
 
 module.exports = async function handler(req, res) {
-  // 1. Verificar quién llama
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'no_token' });
-
-  const { data: userData, error: userErr } = await sb.auth.getUser(token);
-  if (userErr || !userData || !userData.user) {
-    return res.status(401).json({ error: 'invalid_token' });
-  }
-
-  // 2. Traer el rol del que llama Y los permisos de staff en paralelo
-  //    (antes se hacía uno después del otro — esto recorta un viaje de red)
-  const [profileResult, permsResult] = await Promise.all([
-    sb.from('profiles').select('role').eq('id', userData.user.id).single(),
-    sb.from('staff_permissions').select('*').eq('id', 1).single()
-  ]);
-
-  const callerProfile = profileResult.data;
-  if (!callerProfile || (callerProfile.role !== 'admin' && callerProfile.role !== 'staff')) {
-    return res.status(403).json({ error: 'not_authorized' });
-  }
-
-  if (callerProfile.role === 'staff') {
-    const perms = permsResult.data;
-    if (!perms || !perms.access_students) {
-      return res.status(403).json({ error: 'no_permission' });
-    }
-    if (req.method === 'DELETE' && !perms.delete_students) {
-      return res.status(403).json({ error: 'no_delete_permission' });
-    }
-  }
-
-  // 3. Ejecutar la acción pedida
   try {
+    // 1. Verificar quién llama
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'no_token' });
+
+    const { data: userData, error: userErr } = await sb.auth.getUser(token);
+    if (userErr || !userData || !userData.user) {
+      return res.status(401).json({ error: 'invalid_token', detail: userErr ? userErr.message : null });
+    }
+
+    // 2. Traer el rol del que llama Y los permisos de staff en paralelo
+    const [profileResult, permsResult] = await Promise.all([
+      sb.from('profiles').select('role').eq('id', userData.user.id).single(),
+      sb.from('staff_permissions').select('*').eq('id', 1).single()
+    ]);
+
+    if (profileResult.error) {
+      return res.status(500).json({ error: 'profile_lookup_failed', detail: profileResult.error.message });
+    }
+
+    const callerProfile = profileResult.data;
+    if (!callerProfile || (callerProfile.role !== 'admin' && callerProfile.role !== 'staff')) {
+      return res.status(403).json({ error: 'not_authorized' });
+    }
+
+    if (callerProfile.role === 'staff') {
+      if (permsResult.error) {
+        return res.status(500).json({ error: 'perms_lookup_failed', detail: permsResult.error.message });
+      }
+      const perms = permsResult.data;
+      if (!perms || !perms.access_students) {
+        return res.status(403).json({ error: 'no_permission' });
+      }
+      if (req.method === 'DELETE' && !perms.delete_students) {
+        return res.status(403).json({ error: 'no_delete_permission' });
+      }
+    }
+
+    // 3. Ejecutar la acción pedida
     if (req.method === 'GET') {
       const { id } = req.query;
       if (id) {
@@ -81,6 +87,6 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'method_not_allowed' });
   } catch (err) {
     console.error('staff-profiles error:', err);
-    return res.status(500).json({ error: 'server_error' });
+    return res.status(500).json({ error: 'server_error', detail: err && err.message });
   }
 };

@@ -2948,10 +2948,50 @@ async function uploadAvatar(input) {
 function rAdmin() {
   var m = document.getElementById('amain');
   m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
+
+  if (cProfile && cProfile.role === 'staff') {
+    sb.from('staff_permissions').select('*').eq('id', 1).single().then(function(r) {
+      window._staffPerms = r.data || {};
+      _buildAdminTabs();
+    });
+  } else {
+    window._staffPerms = null; // null = sin restricciones (admin ve todo)
+    _buildAdminTabs();
+  }
+}
+
+function _staffCan(key) {
+  // Admin siempre puede todo. Staff depende de la config de staff_permissions.
+  if (!cProfile || cProfile.role !== 'staff') return true;
+  return !!(window._staffPerms && window._staffPerms[key]);
+}
+
+function _buildAdminTabs() {
+  var m = document.getElementById('amain');
   var tabs = document.createElement('div');
   tabs.className = 'admtabs-wrap';
   tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;overflow-y:hidden;padding:6px 18px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom;overscroll-behavior-x:contain;overscroll-behavior-y:none;flex-wrap:nowrap;-ms-overflow-style:none;position:sticky;top:61px;z-index:9;background:linear-gradient(180deg,#111418 92%,transparent);margin-left:-18px;margin-right:-18px;';
-  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['1on1','Reuniones 1-1'],['codes','Planes'],['roadmap','Roadmap']].forEach(function(item, i) {
+
+  var allTabs = [
+    ['st','Alumnos','access_students'],
+    ['cl','Clases','access_clases'],
+    ['se','Sesiones','access_sesiones'],
+    ['1on1','Reuniones 1-1','access_students'],
+    ['codes','Planes', ['access_plans','access_discord','access_codes']],
+    ['roadmap','Roadmap','access_roadmap']
+  ];
+  var visibleTabs = allTabs.filter(function(item) {
+    var perm = item[2];
+    if (Array.isArray(perm)) return perm.some(function(k){ return _staffCan(k); });
+    return _staffCan(perm);
+  });
+
+  if (!visibleTabs.length) {
+    m.innerHTML += '<p style="color:#666;font-size:.86rem;padding:20px 0;">Tu cuenta de Staff no tiene ningún permiso habilitado todavía. Pídele al admin que te active alguno en Planes → Permisos de Staff.</p>';
+    return;
+  }
+
+  visibleTabs.forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');
     btn.textContent = item[1];
@@ -2959,13 +2999,15 @@ function rAdmin() {
     tabs.appendChild(btn);
   });
   m.appendChild(tabs);
-  ['st','cl','se','1on1','codes','roadmap'].forEach(function(s, i) {
+  visibleTabs.forEach(function(item, i) {
     var div = document.createElement('div');
-    div.id = 'a-'+s;
+    div.id = 'a-'+item[0];
     if (i > 0) div.style.display = 'none';
     m.appendChild(div);
   });
-  rAdmSt();
+
+  var first = visibleTabs[0][0];
+  if (first==='cl') rAdmCl(); else if (first==='se') rAdmSe(); else if (first==='codes') rAdmCodes(); else if (first==='roadmap') rAdmRoadmap(); else if (first==='1on1') rAdm1on1(); else rAdmSt();
 }
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
@@ -3870,8 +3912,8 @@ function viewStudentProfile(id) {
           '</div>' +
         '</div>' +
 
-        // Card: rol de la cuenta (Staff) — solo si no es admin
-        (p.role === 'admin' ? '' :
+        // Card: rol de la cuenta (Staff) — solo un admin real puede asignarlo/quitarlo
+        (p.role === 'admin' || !cProfile || cProfile.role !== 'admin' ? '' :
           '<div class="wp-card">' +
             '<div class="wp-toggle-row">' +
               '<div><span class="wp-toggle-text">Miembro del Staff</span><div class="wp-toggle-sub">Acceso limitado al admin, según lo configurado en Planes → Permisos de Staff</div></div>' +
@@ -3926,7 +3968,7 @@ function viewStudentProfile(id) {
           '<button onclick="openScheduleModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="wp-btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;">📅 Programar sesión</button>' +
           '<button onclick="openRecordingModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="wp-btn-ghost" style="display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(91,127,166,.25);color:var(--sl);">🎥 Subir grabación</button>' +
         '</div>' +
-        '<button onclick="if(confirm(\'¿Eliminar este alumno? Esta acción no se puede deshacer.\')){dStudent(\''+p.id+'\');this.closest(\'.wp-overlay\').remove();}" class="wp-btn-danger" style="width:100%;margin-top:10px;">🗑 Eliminar alumno</button>' +
+        (_staffCan('delete_students') ? '<button onclick="if(confirm(\'¿Eliminar este alumno? Esta acción no se puede deshacer.\')){dStudent(\''+p.id+'\');this.closest(\'.wp-overlay\').remove();}" class="wp-btn-danger" style="width:100%;margin-top:10px;">🗑 Eliminar alumno</button>' : '') +
 
       '</div>';
 
@@ -4679,17 +4721,36 @@ function dLesson(id) {
 function rAdmCodes() {
   var c = document.getElementById('a-codes'); if (!c) return;
   _injectWhopStyles();
+
+  var canPlans = _staffCan('access_plans');
+  var canDiscord = _staffCan('access_discord');
+  var canCodes = _staffCan('access_codes');
+  // "Permisos de Staff" es exclusivo de admin, sin importar la config de permisos
+  var canStaffPerms = !cProfile || cProfile.role !== 'staff';
+
+  var subtabDefs = [
+    ['plans', 'Gestionar Plan', canPlans],
+    ['discord', 'Roles de Discord', canDiscord],
+    ['codes', 'Generar código', canCodes],
+    ['staff', 'Permisos de Staff', canStaffPerms]
+  ];
+  var visibleSubtabs = subtabDefs.filter(function(s){ return s[2]; });
+
+  if (!visibleSubtabs.length) {
+    c.innerHTML = '<p style="color:#666;font-size:.86rem;padding:20px 0;">No tienes permisos habilitados para esta sección.</p>';
+    return;
+  }
+
   c.innerHTML =
 
     '<div class="wp-subtabs">' +
-      '<button class="wp-subtab-btn active" data-subtab="plans" onclick="_switchCodesSubtab(\'plans\')">Gestionar Plan</button>' +
-      '<button class="wp-subtab-btn" data-subtab="discord" onclick="_switchCodesSubtab(\'discord\')">Roles de Discord</button>' +
-      '<button class="wp-subtab-btn" data-subtab="codes" onclick="_switchCodesSubtab(\'codes\')">Generar código</button>' +
-      '<button class="wp-subtab-btn" data-subtab="staff" onclick="_switchCodesSubtab(\'staff\')">Permisos de Staff</button>' +
+      visibleSubtabs.map(function(s, i) {
+        return '<button class="wp-subtab-btn'+(i===0?' active':'')+'" data-subtab="'+s[0]+'" onclick="_switchCodesSubtab(\''+s[0]+'\')">'+s[1]+'</button>';
+      }).join('') +
     '</div>' +
 
     // ── SUB-PESTAÑA: PLANES ──
-    '<div id="codes-subtab-plans" class="codes-subtab-panel">' +
+    '<div id="codes-subtab-plans" class="codes-subtab-panel" style="display:none;">' +
       '<div class="aform">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
           '<div style="font-size:.86rem;font-weight:600;">🛒 Gestión de Planes</div>' +
@@ -4775,10 +4836,15 @@ function rAdmCodes() {
 
   document.getElementById('btn-gen-code').addEventListener('click', genCode);
   document.getElementById('btn-sync-discord-roles').addEventListener('click', syncDiscordRoles);
-  loadPlansAdmin();
-  loadDiscordRoles();
-  loadCodes();
-  loadStaffPermissions();
+  if (canPlans) loadPlansAdmin();
+  else if (canCodes) _loadCodePlanOptions();
+  if (canDiscord) loadDiscordRoles();
+  if (canCodes) loadCodes();
+  if (canStaffPerms) loadStaffPermissions();
+
+  // Mostrar solo la primera sub-pestaña realmente visible
+  var firstSubtab = visibleSubtabs[0][0];
+  document.getElementById('codes-subtab-' + firstSubtab).style.display = '';
 }
 
 function _switchCodesSubtab(tab) {
@@ -4885,6 +4951,17 @@ async function syncDiscordRoles() {
   }
   btn.textContent = originalText;
   btn.disabled = false;
+}
+
+// Llena el selector "Plan que activa" del generador de códigos — independiente
+// de si la persona tiene permiso para ver la gestión completa de Planes.
+function _loadCodePlanOptions() {
+  var codeSel = document.getElementById('code-plan');
+  if (!codeSel) return;
+  sb.from('checkout_plans').select('id, name, price').order('sort_order').then(function(r) {
+    var plans = r.data || [];
+    codeSel.innerHTML = plans.map(function(p) { return '<option value="'+p.id+'">'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') || '<option value="">Sin planes creados</option>';
+  });
 }
 
 function loadPlansAdmin() {

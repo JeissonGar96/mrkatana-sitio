@@ -3949,6 +3949,41 @@ function viewStudentProfile(id) {
   _injectWhopStyles();
   var already = document.getElementById('student-profile-modal');
   if (already) already.remove();
+
+  // Si ya tenemos al alumno en la lista cargada, mostramos algo al instante
+  // (nombre, foto, estado) mientras llega el resto de los datos por detrás —
+  // se siente mucho más rápido aunque el dato completo tarde lo mismo.
+  var cached = (window._allStudents || []).find(function(s){ return s.id === id; });
+  if (cached) {
+    var skel = document.createElement('div');
+    skel.id = 'student-profile-modal';
+    skel.className = 'wp-overlay';
+    skel.onclick = function(e){ if (e.target === skel) skel.remove(); };
+    var skelActive = cached.membership_end && new Date(cached.membership_end) > new Date();
+    skel.innerHTML =
+      '<div class="wp-modal" style="max-width:520px;">' +
+        '<div class="wp-header" style="padding:22px 26px 4px;">' +
+          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">👤</div>' +
+          '<div class="wp-title" style="flex:1;font-size:1.05rem;">Perfil del alumno</div>' +
+          '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
+        '</div>' +
+        '<div class="wp-body" style="padding:12px 26px 26px;">' +
+          '<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">' +
+            '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
+              (cached.avatar_url ? '<img src="'+cached.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (cached.full_name ? cached.full_name[0].toUpperCase() : '?')) +
+            '</div>' +
+            '<div>' +
+              '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">'+(cached.full_name||'Sin nombre')+'</div>' +
+              '<div style="font-size:.78rem;color:#5c6470;margin-top:2px;">'+(cached.email||'')+'</div>' +
+              '<span style="font-size:.68rem;padding:2px 9px;border-radius:20px;background:'+(skelActive?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(skelActive?'#4ade80':'#f87171')+';margin-top:5px;display:inline-block;">'+(skelActive?'● Activo':'○ Inactivo')+'</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:center;padding:30px 0;color:#5c6470;font-size:.82rem;"><span class="spin" style="margin-bottom:10px;display:inline-block;"></span><div>Cargando el resto del perfil...</div></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(skel);
+  }
+
   _fetchStudent(id).then(function(p) {
     if (!p) return tst('No se encontró el perfil', 1);
     var endDate = p.membership_end ? new Date(p.membership_end) : null;

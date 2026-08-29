@@ -3802,6 +3802,20 @@ function openAccessPickerModal(studentId, kind) {
   });
 }
 
+function toggleStudentStaff(studentId, enabled) {
+  var newRole = enabled ? 'staff' : null;
+  var msg = enabled ? '¿Convertir a esta persona en Staff? Tendrá acceso al panel de admin según los permisos configurados.' : '¿Quitarle el rol de Staff a esta persona?';
+  if (!confirm(msg)) {
+    var cb = document.getElementById('stud-staff-toggle'); if (cb) cb.checked = !enabled;
+    return;
+  }
+  sb.from('profiles').update({ role: newRole }).eq('id', studentId).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst(enabled ? '✓ Ahora es Staff' : '✓ Rol de Staff removido');
+    viewStudentProfile(studentId);
+  });
+}
+
 function toggleStudent1on1(studentId, enabled) {
   sb.from('profiles').update({ access_1on1: enabled }).eq('id', studentId).then(function(r) {
     if (r.error) { tst('Error: ' + r.error.message, 1); return; }
@@ -3855,6 +3869,16 @@ function viewStudentProfile(id) {
             '<span style="font-size:.68rem;padding:2px 9px;border-radius:20px;background:'+(active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(active?'#4ade80':'#f87171')+';margin-top:5px;display:inline-block;">'+(active?'● Activo':'○ Inactivo')+'</span>' +
           '</div>' +
         '</div>' +
+
+        // Card: rol de la cuenta (Staff) — solo si no es admin
+        (p.role === 'admin' ? '' :
+          '<div class="wp-card">' +
+            '<div class="wp-toggle-row">' +
+              '<div><span class="wp-toggle-text">Miembro del Staff</span><div class="wp-toggle-sub">Acceso limitado al admin, según lo configurado en Planes → Permisos de Staff</div></div>' +
+              '<label class="wp-toggle"><input type="checkbox" id="stud-staff-toggle" '+(p.role==='staff'?'checked':'')+' onchange="toggleStudentStaff(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+            '</div>' +
+          '</div>'
+        ) +
 
         // Card: datos generales
         '<div class="wp-card">' +

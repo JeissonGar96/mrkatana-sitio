@@ -23,19 +23,20 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'invalid_token' });
   }
 
-  const { data: callerProfile } = await sb
-    .from('profiles')
-    .select('role')
-    .eq('id', userData.user.id)
-    .single();
+  // 2. Traer el rol del que llama Y los permisos de staff en paralelo
+  //    (antes se hacía uno después del otro — esto recorta un viaje de red)
+  const [profileResult, permsResult] = await Promise.all([
+    sb.from('profiles').select('role').eq('id', userData.user.id).single(),
+    sb.from('staff_permissions').select('*').eq('id', 1).single()
+  ]);
 
+  const callerProfile = profileResult.data;
   if (!callerProfile || (callerProfile.role !== 'admin' && callerProfile.role !== 'staff')) {
     return res.status(403).json({ error: 'not_authorized' });
   }
 
-  // 2. Si es staff, verificar el permiso específico
   if (callerProfile.role === 'staff') {
-    const { data: perms } = await sb.from('staff_permissions').select('*').eq('id', 1).single();
+    const perms = permsResult.data;
     if (!perms || !perms.access_students) {
       return res.status(403).json({ error: 'no_permission' });
     }

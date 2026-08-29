@@ -4657,77 +4657,93 @@ function rAdmCodes() {
   _injectWhopStyles();
   c.innerHTML =
 
-    // ── SECCIÓN 1: PLANES ──
-    '<div class="aform" style="margin-bottom:22px;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-        '<div style="font-size:.86rem;font-weight:600;">🛒 Gestión de Planes</div>' +
-        '<button onclick="openPlanModal(null)" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#4ade80;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">+ Crear plan</button>' +
-      '</div>' +
-      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Crea, edita o elimina planes — precio, duración, accesos y roles de Discord. Se refleja automáticamente en el checkout y en toda la plataforma.</div>' +
-      '<div id="plans-admin-list"><span class="spin"></span></div>' +
+    '<div class="wp-subtabs">' +
+      '<button class="wp-subtab-btn active" data-subtab="plans" onclick="_switchCodesSubtab(\'plans\')">Gestionar Plan</button>' +
+      '<button class="wp-subtab-btn" data-subtab="discord" onclick="_switchCodesSubtab(\'discord\')">Roles de Discord</button>' +
+      '<button class="wp-subtab-btn" data-subtab="codes" onclick="_switchCodesSubtab(\'codes\')">Generar código</button>' +
+      '<button class="wp-subtab-btn" data-subtab="staff" onclick="_switchCodesSubtab(\'staff\')">Permisos de Staff</button>' +
     '</div>' +
 
-    // ── SEPARADOR ──
-    '<div style="border-top:1px solid rgba(91,127,166,.12);margin:4px 0 22px;"></div>' +
-
-    // ── SECCIÓN 2: ROLES DE DISCORD ──
-    '<div class="aform" style="margin-bottom:22px;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-        '<div style="font-size:.86rem;font-weight:600;">🎭 Roles de Discord</div>' +
-        '<button id="btn-sync-discord-roles" style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.3);color:#8f9aff;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">Sincronizar desde Discord</button>' +
-      '</div>' +
-      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Sincroniza los roles reales de tu servidor. Los que dejes "Disponibles" aparecerán como opción al configurar qué roles otorga cada plan — desactiva los que no quieras ofrecer (ej: Moderador, Bot).</div>' +
-      '<div id="discord-roles-list"><span class="spin"></span></div>' +
-    '</div>' +
-
-    // ── SEPARADOR ──
-    '<div style="border-top:1px solid rgba(91,127,166,.12);margin:4px 0 22px;"></div>' +
-
-    // ── SECCIÓN 3: CÓDIGOS ──
-    '<div class="wp-card">' +
-      '<div class="wp-card-head"><span class="wp-card-icon">🔑</span><span class="wp-card-title">Generar código</span></div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
-        '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="free" checked onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Acceso gratis</label>' +
-        '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="discount" onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Descuento</label>' +
-      '</div>' +
-      '<div class="wp-field wp-grid2">' +
-        '<div><label class="wp-label">Nota (para quién es)</label><input id="code-note" class="wp-input" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
-        '<div><label class="wp-label" id="code-plan-label">Plan que activa</label><select id="code-plan" class="wp-input"><option value="">Cargando...</option></select></div>' +
-      '</div>' +
-
-      // Bloque "Acceso gratis"
-      '<div id="code-free-block">' +
-        '<div class="wp-toggle-row" style="margin-top:6px;">' +
-          '<div><span class="wp-toggle-text">Personalizar duración</span><div class="wp-toggle-sub">Si lo dejas apagado, usa la duración normal del plan</div></div>' +
-          '<label class="wp-toggle"><input type="checkbox" id="code-custom-dur" onchange="document.getElementById(\'code-custom-dur-opts\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
+    // ── SUB-PESTAÑA: PLANES ──
+    '<div id="codes-subtab-plans" class="codes-subtab-panel">' +
+      '<div class="aform">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+          '<div style="font-size:.86rem;font-weight:600;">🛒 Gestión de Planes</div>' +
+          '<button onclick="openPlanModal(null)" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#4ade80;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">+ Crear plan</button>' +
         '</div>' +
-        '<div id="code-custom-dur-opts" style="display:none;margin-top:10px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;">' +
-          '<div class="wp-toggle-row">' +
-            '<span class="wp-toggle-text">Aplica a Clases</span>' +
-            '<label class="wp-toggle"><input type="checkbox" id="code-applies-clases"><span class="wp-toggle-track"></span></label>' +
+        '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Crea, edita o elimina planes — precio, duración, accesos y roles de Discord. Se refleja automáticamente en el checkout y en toda la plataforma.</div>' +
+        '<div id="plans-admin-list"><span class="spin"></span></div>' +
+      '</div>' +
+    '</div>' +
+
+    // ── SUB-PESTAÑA: ROLES DE DISCORD ──
+    '<div id="codes-subtab-discord" class="codes-subtab-panel" style="display:none;">' +
+      '<div class="aform">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+          '<div style="font-size:.86rem;font-weight:600;">🎭 Roles de Discord</div>' +
+          '<button id="btn-sync-discord-roles" style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.3);color:#8f9aff;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">Sincronizar desde Discord</button>' +
+        '</div>' +
+        '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Sincroniza los roles reales de tu servidor. Los que dejes "Disponibles" aparecerán como opción al configurar qué roles otorga cada plan — desactiva los que no quieras ofrecer (ej: Moderador, Bot).</div>' +
+        '<div id="discord-roles-list"><span class="spin"></span></div>' +
+      '</div>' +
+    '</div>' +
+
+    // ── SUB-PESTAÑA: CÓDIGOS ──
+    '<div id="codes-subtab-codes" class="codes-subtab-panel" style="display:none;">' +
+      '<div class="wp-card">' +
+        '<div class="wp-card-head"><span class="wp-card-icon">🔑</span><span class="wp-card-title">Generar código</span></div>' +
+        '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+          '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="free" checked onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Acceso gratis</label>' +
+          '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="discount" onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Descuento</label>' +
+        '</div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Nota (para quién es)</label><input id="code-note" class="wp-input" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
+          '<div><label class="wp-label" id="code-plan-label">Plan que activa</label><select id="code-plan" class="wp-input"><option value="">Cargando...</option></select></div>' +
+        '</div>' +
+
+        // Bloque "Acceso gratis"
+        '<div id="code-free-block">' +
+          '<div class="wp-toggle-row" style="margin-top:6px;">' +
+            '<div><span class="wp-toggle-text">Personalizar duración</span><div class="wp-toggle-sub">Si lo dejas apagado, usa la duración normal del plan</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="code-custom-dur" onchange="document.getElementById(\'code-custom-dur-opts\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
           '</div>' +
-          '<div class="wp-toggle-row">' +
-            '<span class="wp-toggle-text">Aplica a Live</span>' +
-            '<label class="wp-toggle"><input type="checkbox" id="code-applies-live"><span class="wp-toggle-track"></span></label>' +
+          '<div id="code-custom-dur-opts" style="display:none;margin-top:10px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;">' +
+            '<div class="wp-toggle-row">' +
+              '<span class="wp-toggle-text">Aplica a Clases</span>' +
+              '<label class="wp-toggle"><input type="checkbox" id="code-applies-clases"><span class="wp-toggle-track"></span></label>' +
+            '</div>' +
+            '<div class="wp-toggle-row">' +
+              '<span class="wp-toggle-text">Aplica a Live</span>' +
+              '<label class="wp-toggle"><input type="checkbox" id="code-applies-live"><span class="wp-toggle-track"></span></label>' +
+            '</div>' +
+            '<div class="wp-field" style="margin-top:12px;"><label class="wp-label">Meses (aplica a lo marcado arriba)</label><input id="code-months" type="number" class="wp-input" value="1" min="1" max="24"></div>' +
           '</div>' +
-          '<div class="wp-field" style="margin-top:12px;"><label class="wp-label">Meses (aplica a lo marcado arriba)</label><input id="code-months" type="number" class="wp-input" value="1" min="1" max="24"></div>' +
         '</div>' +
-      '</div>' +
 
-      // Bloque "Descuento"
-      '<div id="code-discount-block" style="display:none;">' +
-        '<div class="wp-field wp-grid2" style="margin-top:6px;">' +
-          '<div><label class="wp-label">Tipo</label><select id="code-discount-type" class="wp-input">' +
-            '<option value="percent">Porcentaje (%)</option>' +
-            '<option value="fixed">Monto fijo ($)</option>' +
-          '</select></div>' +
-          '<div><label class="wp-label" id="code-discount-value-label">Valor (%)</label><input id="code-discount-value" type="number" class="wp-input" placeholder="Ej: 20"></div>' +
+        // Bloque "Descuento"
+        '<div id="code-discount-block" style="display:none;">' +
+          '<div class="wp-field wp-grid2" style="margin-top:6px;">' +
+            '<div><label class="wp-label">Tipo</label><select id="code-discount-type" class="wp-input">' +
+              '<option value="percent">Porcentaje (%)</option>' +
+              '<option value="fixed">Monto fijo ($)</option>' +
+            '</select></div>' +
+            '<div><label class="wp-label" id="code-discount-value-label">Valor (%)</label><input id="code-discount-value" type="number" class="wp-input" placeholder="Ej: 20"></div>' +
+          '</div>' +
         '</div>' +
-      '</div>' +
 
-      '<button class="wp-btn-primary" id="btn-gen-code" style="margin-top:14px;width:100%;">Generar código</button>' +
+        '<button class="wp-btn-primary" id="btn-gen-code" style="margin-top:14px;width:100%;">Generar código</button>' +
+      '</div>' +
+      '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>' +
     '</div>' +
-    '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>';
+
+    // ── SUB-PESTAÑA: PERMISOS DE STAFF ──
+    '<div id="codes-subtab-staff" class="codes-subtab-panel" style="display:none;">' +
+      '<div class="wp-card">' +
+        '<div class="wp-card-head"><span class="wp-card-icon">🛡️</span><span class="wp-card-title">Permisos del rol Staff</span></div>' +
+        '<div style="font-size:.74rem;color:#5c6470;margin-bottom:14px;">Define qué puede hacer cualquier cuenta marcada como "staff" (asignas ese rol desde la ficha de cada persona). Cambia esto cuando quieras — se aplica al instante, sin tocar código.</div>' +
+        '<div id="staff-perms-list"><span class="spin"></span></div>' +
+      '</div>' +
+    '</div>';
 
   document.getElementById('code-discount-type').addEventListener('change', function() {
     document.getElementById('code-discount-value-label').textContent = this.value === 'percent' ? 'Valor (%)' : 'Valor ($)';
@@ -4738,6 +4754,52 @@ function rAdmCodes() {
   loadPlansAdmin();
   loadDiscordRoles();
   loadCodes();
+  loadStaffPermissions();
+}
+
+function _switchCodesSubtab(tab) {
+  document.querySelectorAll('.wp-subtab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.subtab === tab);
+  });
+  document.querySelectorAll('.codes-subtab-panel').forEach(function(p) {
+    p.style.display = p.id === 'codes-subtab-' + tab ? '' : 'none';
+  });
+}
+
+var STAFF_PERMS = [
+  { key: 'access_students',  label: 'Ver y administrar Alumnos', sub: 'Planes, live, 1-a-1, sesiones 1-1, grabaciones' },
+  { key: 'access_codes',     label: 'Generar códigos', sub: 'Acceso gratis y descuentos' },
+  { key: 'delete_students',  label: 'Eliminar alumnos', sub: 'Borrar una cuenta por completo' },
+  { key: 'access_plans',     label: 'Gestión de Planes', sub: 'Crear, editar o eliminar planes' },
+  { key: 'access_discord',   label: 'Roles de Discord', sub: 'Sincronizar y activar roles' },
+  { key: 'access_clases',    label: 'Clases', sub: 'Subir/editar contenido de cursos' },
+  { key: 'access_sesiones',  label: 'Sesiones en vivo', sub: 'Programar/editar sesiones' },
+  { key: 'access_roadmap',   label: 'Roadmap', sub: 'Editar contenido de las semanas' }
+];
+
+function loadStaffPermissions() {
+  var c = document.getElementById('staff-perms-list'); if (!c) return;
+  sb.from('staff_permissions').select('*').eq('id', 1).single().then(function(r) {
+    if (r.error || !r.data) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Aún no se ha creado la tabla staff_permissions en Supabase.</p>';
+      return;
+    }
+    var perms = r.data;
+    c.innerHTML = STAFF_PERMS.map(function(p, i) {
+      return '<div class="wp-toggle-row"' + (i>0?' style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);"':'') + '>' +
+        '<div><span class="wp-toggle-text">'+p.label+'</span><div class="wp-toggle-sub">'+p.sub+'</div></div>' +
+        '<label class="wp-toggle"><input type="checkbox" '+(perms[p.key]?'checked':'')+' onchange="toggleStaffPerm(\''+p.key+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function toggleStaffPerm(key, enabled) {
+  var upd = {}; upd[key] = enabled;
+  sb.from('staff_permissions').update(upd).eq('id', 1).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Permiso actualizado');
+  });
 }
 
 function loadDiscordRoles() {
@@ -4892,7 +4954,11 @@ function _injectWhopStyles() {
     '.wp-btn-ghost{padding:13px 18px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#8b93a1;border-radius:12px;font-size:.85rem;cursor:pointer;}' +
     '.wp-callout{margin-top:14px;padding:14px 16px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:14px;}' +
     '.wp-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 12px;}' +
-    '.wp-card + .wp-card{margin-top:2px;}';
+    '.wp-card + .wp-card{margin-top:2px;}' +
+    '.wp-subtabs{display:flex;gap:4px;margin-bottom:22px;border-bottom:1px solid rgba(255,255,255,.08);overflow-x:auto;}' +
+    '.wp-subtab-btn{background:none;border:none;color:#5c6470;padding:10px 16px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;}' +
+    '.wp-subtab-btn:hover{color:#9aa0aa;}' +
+    '.wp-subtab-btn.active{color:var(--sl);border-bottom-color:var(--sl);}';
   document.head.appendChild(style);
 
   // Bloquea el scroll de la página de fondo mientras haya algún modal (.wp-overlay)

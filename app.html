@@ -1136,7 +1136,11 @@ function loadApp(user) {
     function _checkMembershipFallback() {
       var now = new Date();
       var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
-      if (!end || end < now) {
+      var liveEnd = cProfile && cProfile.live_end ? new Date(cProfile.live_end) : null;
+      var hasClases = end && end > now;
+      var hasLive = liveEnd && liveEnd > now;
+      var has1on1 = !!(cProfile && cProfile.access_1on1);
+      if (!hasClases && !hasLive && !has1on1) {
         _showPendingLocked();
         return;
       }
@@ -6040,9 +6044,14 @@ function _checkInactivityAndMembership() {
     return;
   }
   // 2. Membresía vencida — mostrar pantalla bloqueada sin cerrar sesión
+  // (solo si NO tiene ningún acceso válido: ni Clases, ni Live, ni 1-a-1)
   if (cProfile && cProfile.role !== 'admin') {
     var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
-    if (end && end < new Date()) {
+    var liveEnd = cProfile.live_end ? new Date(cProfile.live_end) : null;
+    var hasClases = end && end > new Date();
+    var hasLive = liveEnd && liveEnd > new Date();
+    var has1on1 = !!cProfile.access_1on1;
+    if (!hasClases && !hasLive && !has1on1) {
       var aside = document.querySelector('.aside');
       if (aside) aside.style.display = 'none';
       var mobNav = document.getElementById('mob-nav');

@@ -3031,7 +3031,7 @@ function _renderStudents(data, showAll) {
       var label = planDef ? (planDef.label || planDef.name) : (plan || '—');
       var color = planDef && planDef.color ? planDef.color : '#9a9a9a';
       var bg = planDef && planDef.color ? planDef.color + '1a' : 'rgba(255,255,255,.05)'; // color + alpha aprox
-      return '<span onclick="changePlanModal(\''+s.id+'\',\''+plan+'\')" style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+bg+';color:'+color+';border-radius:4px;cursor:pointer;" title="Clic para cambiar plan">'+label+'</span>';
+      return '<span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+bg+';color:'+color+';border-radius:4px;" title="Administrar desde la ficha del alumno">'+label+'</span>';
     };
     t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th></th><th>Nombre</th><th>Email</th><th>Etiquetas</th><th>Estado</th></tr></thead><tbody>'+
       visible.map(function(s){
@@ -3052,120 +3052,6 @@ function _renderStudents(data, showAll) {
       (!q && data.length > 5 && !showAll ? '<div style="text-align:center;margin-top:12px;"><button onclick="_renderStudents(window._allStudents, true)" style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:7px 20px;border-radius:6px;font-size:.78rem;cursor:pointer;">Ver todos ('+data.length+')</button></div>' : '');
 }
 
-function changePlanModal(id, currentPlan) {
-  var existing = document.getElementById('plan-modal');
-  if (existing) existing.remove();
-  var plans = (window._allPlans || []).filter(function(p) { return p.active; });
-  var modal = document.createElement('div');
-  modal.id = 'plan-modal';
-  _injectWhopStyles();
-  modal.className = 'wp-overlay';
-  modal.innerHTML =
-    '<div class="wp-modal" style="max-width:400px;">' +
-      '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🔄</div>' +
-        '<div><div class="wp-title" style="font-size:1rem;">Gestionar Plan</div><div class="wp-subtitle">Actual: '+(currentPlan||'—')+'</div></div>' +
-      '</div>' +
-      '<div class="wp-body" style="padding:16px 24px 24px;">' +
-        '<div class="wp-field"><label class="wp-label">Nuevo plan</label><select id="plan-modal-sel" class="wp-input">' +
-          plans.map(function(p) { return '<option value="'+p.id+'"'+(currentPlan===p.id?' selected':'')+'>'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') +
-        '</select></div>' +
-        '<div id="plan-modal-variant-wrap" class="wp-field" style="display:none;"><select id="plan-modal-variant-sel" class="wp-input"></select></div>' +
-        '<div class="wp-toggle-row">' +
-          '<span class="wp-toggle-text">Mantener fechas actuales</span>' +
-          '<label class="wp-toggle"><input type="checkbox" id="plan-keep-dates" checked onchange="document.getElementById(\'plan-manual-date-wrap\').style.display=this.checked?\'none\':\'\';"><span class="wp-toggle-track"></span></label>' +
-        '</div>' +
-        '<div id="plan-manual-date-wrap" class="wp-field" style="display:none;">' +
-          '<label class="wp-label">Fecha de vencimiento manual (opcional — anula la duración del plan)</label>' +
-          '<input type="date" id="plan-manual-date" class="wp-input">' +
-        '</div>' +
-        '<div class="wp-footer">' +
-          '<button id="plan-modal-btn" class="wp-btn-primary">Cambiar</button>' +
-          '<button id="plan-delete-btn" class="wp-btn-danger">Eliminar</button>' +
-          '<button class="wp-btn-ghost" onclick="document.getElementById(\'plan-modal\').remove();">Cancelar</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(modal);
-  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
-
-  function refreshVariantSel() {
-    var planId = document.getElementById('plan-modal-sel').value;
-    var planDef = _planById(planId);
-    var wrap = document.getElementById('plan-modal-variant-wrap');
-    var sel = document.getElementById('plan-modal-variant-sel');
-    if (planDef && planDef.variants && planDef.variants.length) {
-      wrap.style.display = 'block';
-      sel.innerHTML = planDef.variants.map(function(v) { return '<option value="'+v.id+'">'+v.name+' ($'+Number(v.price).toLocaleString()+')</option>'; }).join('');
-    } else {
-      wrap.style.display = 'none';
-      sel.innerHTML = '';
-    }
-  }
-  document.getElementById('plan-modal-sel').addEventListener('change', refreshVariantSel);
-  refreshVariantSel();
-
-  document.getElementById('plan-modal-btn').addEventListener('click', function() {
-    var planId = document.getElementById('plan-modal-sel').value;
-    var planDef = _planById(planId);
-    var variantId = document.getElementById('plan-modal-variant-sel').value;
-    var variantDef = planDef && planDef.variants ? planDef.variants.find(function(v){ return v.id === variantId; }) : null;
-    var keepDates = document.getElementById('plan-keep-dates').checked;
-    var manualDate = document.getElementById('plan-manual-date').value;
-    var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
-
-    var upd = {
-      plan: planId,
-      access_1on1: planDef ? !!planDef.access_1on1 : false,
-      roadmap_mode: planDef ? planDef.roadmap_mode : null
-    };
-    if (!keepDates) {
-      var accessClases = variantDef && variantDef.access_clases !== null ? variantDef.access_clases : (planDef ? planDef.access_clases !== false : true);
-      var durClases = variantDef ? variantDef.duration_clases_months : (planDef ? planDef.duration_clases_months : null);
-      var durLive = variantDef ? variantDef.duration_live_months : (planDef ? planDef.duration_live_months : null);
-      var now = new Date();
-
-      if (manualDate) {
-        // Fecha manual: aplica a Clases (la más usada para esto), anula la duración del plan
-        upd.membership_start = now.toISOString();
-        upd.membership_end = new Date(manualDate + 'T23:59:59').toISOString();
-      } else if (!accessClases) {
-        upd.membership_start = null;
-        upd.membership_end = null; // este plan no incluye Clases
-      } else {
-        upd.membership_start = now.toISOString();
-        upd.membership_end = durClases ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+durClases); return e.toISOString(); })() : UNLIMITED_ISO;
-      }
-      if (durLive) {
-        var liveEnd = new Date(); liveEnd.setMonth(liveEnd.getMonth() + durLive);
-        upd.live_plan = planId; upd.live_end = liveEnd.toISOString();
-      }
-    }
-    sb.from('profiles').update(upd).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Plan actualizado');
-      rAdmSt();
-    });
-  });
-  document.getElementById('plan-delete-btn').addEventListener('click', function() {
-    if (!confirm('¿Eliminar la etiqueta de este alumno? Quedará sin plan activo.')) return;
-    sb.from('profiles').update({ plan: null, membership_start: null, membership_end: null, access_1on1: false, roadmap_mode: null }).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Etiqueta eliminada');
-      rAdmSt();
-    });
-  });
-}
-
-function changePlan(id, plan) {
-  sb.from('profiles').update({ plan: plan }).eq('id', id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Plan actualizado — ' + plan);
-    rAdmSt();
-  });
-}
 function filterStudents(query) {
   var q = (query||'').toLowerCase();
   var filtered = (window._allStudents||[]).filter(function(s) {
@@ -3808,28 +3694,107 @@ function toggleStudentLive(studentId, enabled) {
     });
     return;
   }
-  var months = prompt('¿Por cuántos meses activar el Live?\n(deja vacío para acceso ilimitado)');
-  if (months === null) {
-    var cb2 = document.getElementById('stud-live-toggle'); if (cb2) cb2.checked = false;
-    return;
-  }
-  var liveEnd;
-  if (months.trim() === '') {
-    liveEnd = UNLIMITED_ISO;
-  } else {
-    var m = parseInt(months);
-    if (isNaN(m) || m <= 0) {
-      tst('Meses inválido', 1);
-      var cb3 = document.getElementById('stud-live-toggle'); if (cb3) cb3.checked = false;
+  openAccessPickerModal(studentId, 'live');
+}
+
+function toggleStudentClases(studentId, enabled) {
+  if (!enabled) {
+    if (!confirm('¿Quitar el acceso a Clases de este alumno?')) {
+      var cb = document.getElementById('stud-clases-toggle'); if (cb) cb.checked = true;
       return;
     }
-    var d = new Date(); d.setMonth(d.getMonth() + m);
-    liveEnd = d.toISOString();
+    sb.from('profiles').update({ membership_start: null, membership_end: null }).eq('id', studentId).then(function(r) {
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Clases desactivadas');
+      viewStudentProfile(studentId);
+    });
+    return;
   }
-  sb.from('profiles').update({ live_plan: 'manual', live_end: liveEnd }).eq('id', studentId).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Live activado');
-    viewStudentProfile(studentId);
+  openAccessPickerModal(studentId, 'clases');
+}
+
+// Modal compartido: elige un plan/variante REAL (filtrado por categoría) y aplica
+// exactamente su duración a Clases o a Live, según cuál toggle lo abrió.
+function openAccessPickerModal(studentId, kind) {
+  var isLive = kind === 'live';
+  var existing = document.getElementById('access-picker-modal');
+  if (existing) existing.remove();
+  _injectWhopStyles();
+
+  var opts = [];
+  (window._allPlans || []).filter(function(p){ return p.active; }).forEach(function(p) {
+    var relevant = isLive ? (p.category === 'live' || p.category === 'ambos') : (p.category === 'clases' || p.category === 'ambos');
+    if (!relevant) return;
+    if (p.variants && p.variants.length) {
+      p.variants.forEach(function(v) {
+        var dur = isLive ? v.duration_live_months : v.duration_clases_months;
+        opts.push({ value: p.id + '|' + v.id, label: p.name + ' — ' + v.name, dur: dur });
+      });
+    } else {
+      var dur = isLive ? p.duration_live_months : p.duration_clases_months;
+      opts.push({ value: p.id + '|', label: p.name, dur: dur });
+    }
+  });
+
+  var modal = document.createElement('div');
+  modal.id = 'access-picker-modal';
+  modal.className = 'wp-overlay';
+  modal.style.zIndex = '10000';
+  modal.innerHTML =
+    '<div class="wp-modal" style="max-width:400px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+(isLive?'📡':'📚')+'</div>' +
+        '<div class="wp-title" style="font-size:1rem;">Activar '+(isLive?'Live':'Clases')+'</div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        (opts.length ?
+          '<div class="wp-field"><label class="wp-label">Plan a asignar</label><select id="ap-sel" class="wp-input">' +
+            opts.map(function(o){ return '<option value="'+o.value+'">'+o.label+(o.dur?' ('+o.dur+' meses)':' (ilimitado)')+'</option>'; }).join('') +
+          '</select></div>'
+        : '<div style="font-size:.8rem;color:#5c6470;">No hay planes activos de categoría "'+(isLive?'Live':'Clases')+'" — créalos primero en Gestión de Planes.</div>'
+        ) +
+        '<div class="wp-footer">' +
+          (opts.length ? '<button id="ap-btn" class="wp-btn-primary">Activar</button>' : '') +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'access-picker-modal\').remove();var cb=document.getElementById(\''+(isLive?'stud-live-toggle':'stud-clases-toggle')+'\');if(cb)cb.checked=false;">Cancelar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){
+    if (e.target === modal) {
+      modal.remove();
+      var cb = document.getElementById(isLive ? 'stud-live-toggle' : 'stud-clases-toggle');
+      if (cb) cb.checked = false;
+    }
+  });
+
+  if (!opts.length) return;
+
+  document.getElementById('ap-btn').addEventListener('click', function() {
+    var val = document.getElementById('ap-sel').value.split('|');
+    var planId = val[0];
+    var variantId = val[1] || null;
+    var chosen = opts.find(function(o){ return o.value === planId + '|' + (variantId||''); });
+    var dur = chosen ? chosen.dur : null;
+    var btn = this; btn.disabled = true; btn.textContent = 'Activando...';
+
+    var upd = {};
+    if (isLive) {
+      upd.live_plan = planId;
+      upd.live_end = dur ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+dur); return e.toISOString(); })() : UNLIMITED_ISO;
+    } else {
+      upd.plan = planId;
+      upd.membership_start = new Date().toISOString();
+      upd.membership_end = dur ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+dur); return e.toISOString(); })() : UNLIMITED_ISO;
+      var planDef = _planById(planId);
+      if (planDef) { upd.access_1on1 = !!planDef.access_1on1; upd.roadmap_mode = planDef.roadmap_mode; }
+    }
+    sb.from('profiles').update(upd).eq('id', studentId).then(function(r) {
+      modal.remove();
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ ' + (isLive?'Live':'Clases') + ' activado');
+      viewStudentProfile(studentId);
+    });
   });
 }
 
@@ -3851,6 +3816,7 @@ function viewStudentProfile(id) {
     var active  = endDate && endDate > new Date();
     var liveEndDate = p.live_end ? new Date(p.live_end) : null;
     var liveActive = liveEndDate && liveEndDate > new Date();
+    var clasesActive = p.membership_end && new Date(p.membership_end) > new Date();
 
     // Evita que se abran 2 fichas encimadas si se toca la fila más de una vez
     // mientras carga (típico en móvil)
@@ -3905,6 +3871,10 @@ function viewStudentProfile(id) {
             '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Live vence</div><div style="font-size:.86rem;color:'+(liveActive?'#4ade80':'#5c6470')+';">'+(p.live_end ? _fmtExpiry(p.live_end) : 'Sin live')+'</div></div>' +
           '</div>' +
           '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
+            '<div><span class="wp-toggle-text">Plan de Clases</span><div class="wp-toggle-sub">'+(p.plan?('Actual: '+p.plan):'Sin plan asignado')+'</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="stud-clases-toggle" '+(clasesActive?'checked':'')+' onchange="toggleStudentClases(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-toggle-row">' +
             '<div><span class="wp-toggle-text">Acceso a Sesiones en Vivo</span><div class="wp-toggle-sub">Independiente del plan — override manual</div></div>' +
             '<label class="wp-toggle"><input type="checkbox" id="stud-live-toggle" '+(liveActive?'checked':'')+' onchange="toggleStudentLive(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
           '</div>' +
@@ -5004,6 +4974,17 @@ function openPlanModal(planId) {
           '</div>' +
         '</div>' +
 
+        // Card: Categoría
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🏷️</span><span class="wp-card-title">Categoría del plan</span></div>' +
+          '<div style="font-size:.72rem;color:#5c6470;margin-bottom:10px;">Define qué tipo de acceso ofrece este plan — se usa para saber qué mostrarte al gestionar el plan/Live de un alumno.</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="clases" '+(p.category!=='live'&&p.category!=='ambos'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Clases</label>' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="live" '+(p.category==='live'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Live</label>' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="ambos" '+(p.category==='ambos'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Ambos</label>' +
+          '</div>' +
+        '</div>' +
+
         // Card: Duración y accesos
         '<div class="wp-card">' +
           '<div class="wp-card-head"><span class="wp-card-icon">⏳</span><span class="wp-card-title">Duración y accesos</span></div>' +
@@ -5011,11 +4992,15 @@ function openPlanModal(planId) {
             '<span class="wp-toggle-text">Incluye acceso a Clases</span>' +
             '<label class="wp-toggle"><input type="checkbox" id="pm-clases" '+(p.access_clases !== false?'checked':'')+' onchange="document.getElementById(\'pm-dur-clases-wrap\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
           '</div>' +
-          '<div class="wp-field wp-grid2" style="margin-top:12px;">' +
-            '<div id="pm-dur-clases-wrap" style="'+(p.access_clases===false?'display:none;':'')+'"><label class="wp-label">Duración Clases (meses)</label><input id="pm-dur-clases" type="number" class="wp-input" value="'+(p.duration_clases_months||'')+'" placeholder="Vacío = ilimitado"></div>' +
-            '<div><label class="wp-label">Duración Live (meses)</label><input id="pm-dur-live" type="number" class="wp-input" value="'+(p.duration_live_months||'')+'" placeholder="Vacío = no incluido"></div>' +
+          '<div id="pm-dur-clases-wrap" class="wp-field" style="margin-top:10px;'+(p.access_clases===false?'display:none;':'')+'"><label class="wp-label">Duración Clases (meses)</label><input id="pm-dur-clases" type="number" class="wp-input" value="'+(p.duration_clases_months||'')+'" placeholder="Vacío = ilimitado"></div>' +
+
+          '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
+            '<span class="wp-toggle-text">Incluye Live</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-live" '+(p.duration_live_months?'checked':'')+' onchange="document.getElementById(\'pm-dur-live-wrap\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
           '</div>' +
-          '<div class="wp-field" style="margin-top:12px;"><label class="wp-label">Modo Roadmap</label><select id="pm-roadmap" class="wp-input">' +
+          '<div id="pm-dur-live-wrap" class="wp-field" style="margin-top:10px;'+(p.duration_live_months?'':'display:none;')+'"><label class="wp-label">Duración Live (meses)</label><input id="pm-dur-live" type="number" class="wp-input" value="'+(p.duration_live_months||'')+'" placeholder="Ej: 1"></div>' +
+
+          '<div class="wp-field" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);"><label class="wp-label">Modo Roadmap</label><select id="pm-roadmap" class="wp-input">' +
             '<option value="ninguno"'+(p.roadmap_mode==='ninguno'||!p.roadmap_mode?' selected':'')+'>Ninguno</option>' +
             '<option value="manual"'+(p.roadmap_mode==='manual'?' selected':'')+'>Manual</option>' +
             '<option value="automatico"'+(p.roadmap_mode==='automatico'?' selected':'')+'>Automático</option>' +
@@ -5106,7 +5091,8 @@ function openPlanModal(planId) {
       color: document.getElementById('pm-color').value,
       duration_clases_months: document.getElementById('pm-dur-clases').value ? parseInt(document.getElementById('pm-dur-clases').value) : null,
       access_clases: document.getElementById('pm-clases').checked,
-      duration_live_months: document.getElementById('pm-dur-live').value ? parseInt(document.getElementById('pm-dur-live').value) : null,
+      duration_live_months: document.getElementById('pm-live').checked ? (document.getElementById('pm-dur-live').value ? parseInt(document.getElementById('pm-dur-live').value) : null) : null,
+      category: document.querySelector('input[name="pm-category"]:checked').value,
       roadmap_mode: document.getElementById('pm-roadmap').value,
       access_1on1: document.getElementById('pm-1on1').checked,
       popular: document.getElementById('pm-popular').checked,

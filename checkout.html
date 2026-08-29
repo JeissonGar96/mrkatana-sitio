@@ -632,8 +632,15 @@ async function loadPlans() {
     html += '<div class="plan-radio-wrap"></div>';
     html += '<div class="plan-info"><div class="plan-name">' + p.name + '</div>';
     html += '<div class="plan-desc">' + (p.description||'') + '</div></div>';
-    html += '<div class="plan-price"><div class="plan-price-main">$' + Number(p.price).toLocaleString() + '</div>';
-    html += '<div class="plan-price-period">' + (p.period||'') + '</div></div>';
+    var noOwnPrice = !p.price || p.price === 0;
+    html += '<div class="plan-price">';
+    if (noOwnPrice && hasVariants) {
+      html += '<div class="plan-price-main" style="font-size:1rem;">Elige tu duración</div>';
+    } else {
+      html += '<div class="plan-price-main">$' + Number(p.price).toLocaleString() + '</div>';
+      html += '<div class="plan-price-period">' + (p.period||'') + '</div>';
+    }
+    html += '</div>';
     html += '</div>'; // .plan-inner
 
     // Sub-selector de variantes (ej. duraciones), genérico para cualquier plan que las tenga

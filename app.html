@@ -3490,8 +3490,8 @@ function openSchModal() {
   // Load students
   var listEl = document.getElementById('sch-modal-list');
   listEl.innerHTML = '<div style="padding:20px;text-align:center;"><span class="spin"></span></div>';
-  sb.from('profiles').select('id, full_name, membership_end').order('full_name').then(function(r) {
-    window._schModalStudents = r.data || [];
+  _fetchAllStudents().then(function(students) {
+    window._schModalStudents = students || [];
     _renderSchModalList(window._schModalStudents);
   });
 }
@@ -3631,11 +3631,11 @@ function _rAdm1on1Rec() {
 
   // Load all students + their recordings
   Promise.all([
-    sb.from('profiles').select('id, full_name').order('full_name'),
-    sb.from('recordings_1on1').select('id, student_id, title, video_url, description, recorded_at').order('recorded_at', { ascending: false })
+    _fetchAllStudents(),
+    sb.from('recordings_1on1').select('id, student_id, title, video_url, description, recorded_at').order('recorded_at', { ascending: false }).then(function(r){ return r.data || []; })
   ]).then(function(res) {
-    var students   = res[0].data || [];
-    var recordings = res[1].data || [];
+    var students   = res[0] || [];
+    var recordings = res[1] || [];
 
     // Index recordings by student
     var byStudent = {};

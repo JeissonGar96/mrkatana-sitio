@@ -1090,7 +1090,7 @@ function loadApp(user) {
     cProfile = r.data;
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
     document.getElementById('uname').textContent = name;
-    if (cProfile && cProfile.role === 'admin') {
+    if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) {
       document.getElementById('adm-lnk').style.display = 'block';
       var mobAdm = document.getElementById('mob-adm-btn');
       if (mobAdm) mobAdm.style.display = 'flex';
@@ -1099,8 +1099,8 @@ function loadApp(user) {
     if (mobNav) mobNav.classList.add('visible');
 
     // ── PURCHASE VERIFICATION ──
-    // Admins bypass all checks
-    if (cProfile && cProfile.role === 'admin') {
+    // Admins y Staff no necesitan haber comprado nada
+    if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) {
       _grantAccess();
       return;
     }
@@ -1161,7 +1161,7 @@ function loadApp(user) {
     }
 
     function _grantAccess() {
-      var isAdmin = cProfile && cProfile.role === 'admin';
+      var isAdmin = cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff');
       var hasClasesAccess = _hasClasesAccess();
       var hasLiveAccess = _hasLiveAccess();
 
@@ -6135,7 +6135,7 @@ function _checkInactivityAndMembership() {
   }
   // 2. Membresía vencida — mostrar pantalla bloqueada sin cerrar sesión
   // (solo si NO tiene ningún acceso válido: ni Clases, ni Live, ni 1-a-1)
-  if (cProfile && cProfile.role !== 'admin') {
+  if (cProfile && cProfile.role !== 'admin' && cProfile.role !== 'staff') {
     var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
     var liveEnd = cProfile.live_end ? new Date(cProfile.live_end) : null;
     var hasClases = end && end > new Date();

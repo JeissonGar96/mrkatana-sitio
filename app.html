@@ -935,16 +935,11 @@ function _renderSection(state) {
   // Always restore amain when navigating away from lesson layout
   if (state.section !== 'clases') _restoreAmain();
   if (state.section === 'dash') {
-    var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-    var isLivePuro = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-    // liveOnly solo si es plan live puro, no si tiene formacion/mentoria + live
-    if (isLivePuro) rDash(true); else rDash();
+    // liveOnly = no tiene acceso a clases (sin importar el nombre del plan)
+    if (!_hasClasesAccess()) rDash(true); else rDash();
   }
   else if (state.section === 'clases') {
-    var planC = cProfile && cProfile.plan ? cProfile.plan : '';
-    var isLiveC = planC === 'live' || planC === 'live-mensual' || planC === 'live-trimestral' || planC === 'live-semestral';
-    var hasLiveOnlyAccess = isLiveC && planC !== 'formacion' && planC !== 'formacion-basico';
-    if (hasLiveOnlyAccess) {
+    if (!_hasClasesAccess()) {
       // Redirigir al dashboard si intenta acceder a clases por URL directa
       history.replaceState({ section: 'dash' }, '', '/app/dash');
       rDash(true);
@@ -961,12 +956,18 @@ function _renderSection(state) {
   else if (state.section === 'admin')     rAdmin();
 }
 
+function _hasClasesAccess() {
+  if (cProfile && cProfile.role === 'admin') return true;
+  return !!(cProfile && cProfile.membership_end && new Date(cProfile.membership_end) > new Date());
+}
+function _hasLiveAccess() {
+  if (cProfile && cProfile.role === 'admin') return true;
+  return !!(cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
+}
+
 function navigateTo(v) {
-  // Usuarios live no pueden acceder a clases
-  var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-  var isLive = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-  var hasLiveAccess = isLive || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
-  if (hasLiveAccess && v === 'clases' && isLive) {
+  // Usuarios sin acceso a clases no pueden entrar a esa sección
+  if (v === 'clases' && !_hasClasesAccess()) {
     toast('Tu plan no incluye acceso a las clases grabadas.', true);
     return;
   }
@@ -1089,7 +1090,7 @@ function loadApp(user) {
     cProfile = r.data;
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
     document.getElementById('uname').textContent = name;
-    if (cProfile && cProfile.role === 'admin') {
+    if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) {
       document.getElementById('adm-lnk').style.display = 'block';
       var mobAdm = document.getElementById('mob-adm-btn');
       if (mobAdm) mobAdm.style.display = 'flex';
@@ -1098,8 +1099,8 @@ function loadApp(user) {
     if (mobNav) mobNav.classList.add('visible');
 
     // ── PURCHASE VERIFICATION ──
-    // Admins bypass all checks
-    if (cProfile && cProfile.role === 'admin') {
+    // Admins y Staff no necesitan haber comprado nada
+    if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) {
       _grantAccess();
       return;
     }
@@ -1135,7 +1136,11 @@ function loadApp(user) {
     function _checkMembershipFallback() {
       var now = new Date();
       var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
-      if (!end || end < now) {
+      var liveEnd = cProfile && cProfile.live_end ? new Date(cProfile.live_end) : null;
+      var hasClases = end && end > now;
+      var hasLive = liveEnd && liveEnd > now;
+      var has1on1 = !!(cProfile && cProfile.access_1on1);
+      if (!hasClases && !hasLive && !has1on1) {
         _showPendingLocked();
         return;
       }
@@ -1156,14 +1161,13 @@ function loadApp(user) {
     }
 
     function _grantAccess() {
-      var plan = cProfile && cProfile.plan ? cProfile.plan : '';
-      var isAdmin = cProfile && cProfile.role === 'admin';
-      var isLivePuro = plan === 'live' || plan === 'live-mensual' || plan === 'live-trimestral' || plan === 'live-semestral';
-      var hasLiveAccess = isLivePuro || (cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
+      var isAdmin = cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff');
+      var hasClasesAccess = _hasClasesAccess();
+      var hasLiveAccess = _hasLiveAccess();
 
       if (!isAdmin) {
-        // Live puro → ocultar Clases y Roadmap
-        if (isLivePuro) {
+        // Sin acceso a clases → ocultar Clases y Roadmap
+        if (!hasClasesAccess) {
           var claseBtn = document.querySelector('.snav[data-v="clases"]');
           if (claseBtn) claseBtn.style.display = 'none';
           var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
@@ -1176,8 +1180,8 @@ function loadApp(user) {
           var mobLiveBtn = document.querySelector('.mob-nav-btn[data-v="sesiones"]');
           if (mobLiveBtn) mobLiveBtn.style.display = 'none';
         }
-        // Solo formacion ($1500) ve Reuniones 1-1
-        if (plan !== 'formacion') {
+        // Solo si el plan incluye 1-a-1
+        if (!cProfile.access_1on1) {
           var r1on1Btn = document.querySelector('.snav[data-v="reuniones"]');
           if (r1on1Btn) r1on1Btn.style.display = 'none';
           var mobR1on1Btn = document.querySelector('.mob-nav-btn[data-v="reuniones"]');
@@ -1187,6 +1191,11 @@ function loadApp(user) {
       // Si no tiene foto, mostrar pantalla para completar perfil
       if (!cProfile.avatar_url && cProfile.role !== 'admin') {
         _showCompleteProfile();
+        return;
+      }
+      // Si no tiene Discord conectado, es obligatorio antes de continuar
+      if (!cProfile.discord_id && cProfile.role !== 'admin') {
+        _showMandatoryDiscord();
         return;
       }
       // Start auto session checker
@@ -1231,6 +1240,43 @@ function loadApp(user) {
           '<button onclick="submitCompleteProfile()" style="background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;padding:12px 28px;border-radius:8px;border:none;font-weight:600;font-size:.86rem;cursor:pointer;width:100%;max-width:340px;">Guardar y continuar →</button>' +
           '<div id="avatar-complete-msg" style="font-size:.78rem;color:#555;margin-top:12px;"></div>' +
         '</div>';
+    }
+
+    function _showMandatoryDiscord() {
+      // Ocultar sidebar y nav mobile y bloquear navegación
+      var aside = document.querySelector('.aside');
+      if (aside) aside.style.display = 'none';
+      var mobNav = document.getElementById('mob-nav');
+      if (mobNav) mobNav.style.display = 'none';
+      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+        b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
+      });
+
+      var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
+      document.getElementById('amain').innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:40px 20px;">' +
+          '<div style="width:64px;height:64px;background:rgba(88,101,242,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">' +
+            '<svg width="34" height="26" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="#5865F2"/></svg>' +
+          '</div>' +
+          '<div style="font-family:sans-serif;font-size:1.5rem;font-weight:800;text-transform:uppercase;color:#f0f0f0;margin-bottom:6px;">¡Ya casi, ' + name + '!</div>' +
+          '<p style="font-size:.84rem;color:#666;max-width:340px;margin:0 auto 28px;">Para acceder a la plataforma necesitas conectar tu cuenta de Discord. Recibirás tu rol de estudiante automáticamente.</p>' +
+          '<button id="btn-mandatory-discord-connect" style="background:#5865F2;border:none;color:#fff;padding:13px 28px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;width:100%;max-width:340px;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+            '<svg width="18" height="14" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="white"/></svg>' +
+            'Conectar con Discord' +
+          '</button>' +
+          '<div style="font-size:.72rem;color:#444;margin-top:16px;max-width:340px;">Este paso es obligatorio solo la primera vez.</div>' +
+        '</div>';
+
+      document.getElementById('btn-mandatory-discord-connect').addEventListener('click', function() {
+        var params = new URLSearchParams({
+          client_id:     '1482794976118046851',
+          redirect_uri:  window.location.origin + '/api/discord-callback',
+          response_type: 'code',
+          scope:         'identify guilds.join',
+          state:         cUser ? cUser.id : '',
+        });
+        window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
+      });
     }
   });
 }
@@ -1288,6 +1334,12 @@ async function submitCompleteProfile() {
   msg.textContent = '✓ Perfil completado';
 
   setTimeout(function() {
+    // Si aún no tiene Discord conectado, ese paso sigue pendiente —
+    // no se restaura la navegación ni se muestra el dashboard todavía.
+    if (!cProfile.discord_id) {
+      loadApp(cUser);
+      return;
+    }
     var aside = document.querySelector('.aside');
     if (aside) aside.style.display = '';
     var mobNav = document.getElementById('mob-nav');
@@ -1335,8 +1387,8 @@ function rDash(liveOnly) {
   var totalWeeks = (start && end) ? Math.ceil((end - start) / (7*86400000)) : 24;
   weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
 
-  // For mentoria (formacion): override weekNum with manual progress
-  if (cProfile && cProfile.plan === 'formacion') {
+  // Roadmap manual: override weekNum with manual progress
+  if (cProfile && cProfile.roadmap_mode === 'manual') {
     sb.from('roadmap_progress').select('week_number').eq('user_id', cUser.id).eq('completed', true).order('week_number', {ascending:false}).limit(1).then(function(rp) {
       var manualWeek = (rp.data && rp.data.length) ? rp.data[0].week_number + 1 : 1;
       weekNum = manualWeek;
@@ -1349,8 +1401,8 @@ function rDash(liveOnly) {
     });
   }
 
-  // For formacion-basico: week based on module completion progress
-  if (cProfile && cProfile.plan === 'formacion-basico') {
+  // Roadmap automático: week based on module completion progress
+  if (cProfile && cProfile.roadmap_mode === 'automatico') {
     // Get all modules from controlled level sorted by unlock_week
     sb.from('course_levels').select('id').eq('is_controlled', true).limit(1).then(function(lv) {
       if (!lv.data || !lv.data.length) return;
@@ -1922,7 +1974,7 @@ function showLessons(mod, level, progress) {
         var isControlledLevel = level.is_controlled;
         var unlockWeek = module.unlock_week;
         var isLocked = false;
-        var isFormacionBasico = cProfile && cProfile.plan === 'formacion-basico';
+        var isFormacionBasico = cProfile && cProfile.roadmap_mode === 'automatico';
 
         if (isControlledLevel && unlockWeek && isFormacionBasico) {
           // Lock if: current week < unlock_week
@@ -2035,7 +2087,7 @@ function showLessons(mod, level, progress) {
     if (allIds.length && cUser && cUser.id !== 'preview') {
       // Get current week for unlock logic
       var currentWeekForUnlock = 1;
-      if (cProfile && cProfile.plan === 'formacion-basico' && cProfile.membership_start) {
+      if (cProfile && cProfile.roadmap_mode === 'automatico' && cProfile.membership_start) {
         currentWeekForUnlock = Math.max(1, Math.ceil((new Date() - new Date(cProfile.membership_start)) / (7*86400000)));
       }
       sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).in('lesson_id', allIds).then(function(pr) {
@@ -2248,9 +2300,6 @@ function rSes() {
   var m = document.getElementById('amain');
   m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
 
-  // Check if user has Discord connected
-  var hasDiscord = cProfile && cProfile.discord_id;
-
   sb.from('live_sessions').select('*').order('scheduled_at').then(function(r) {
     var sessions = r.data || [];
     var now = new Date();
@@ -2368,13 +2417,8 @@ function rSes() {
     if (joinBtn) {
       joinBtn.addEventListener('click', function() {
         var discordUrl = this.getAttribute('data-url');
-        if (hasDiscord) {
-          // Already connected — go straight to Discord
-          if (discordUrl) window.open(discordUrl, '_blank');
-        } else {
-          // Show Discord connect modal
-          showDiscordModal(discordUrl);
-        }
+        // El gate obligatorio del primer login garantiza que ya está conectado
+        if (discordUrl) window.open(discordUrl, '_blank');
       });
     }
   });
@@ -2411,53 +2455,6 @@ function openRecModal(title, date, embedUrl) {
   document.getElementById('rec-modal-close').addEventListener('click', function() {
     overlay.remove();
   });
-  overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) overlay.remove();
-  });
-}
-
-function showDiscordModal(discordUrl) {
-  var existing = document.getElementById('discord-modal');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.id = 'discord-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
-
-  overlay.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:18px;width:100%;max-width:380px;padding:32px 28px;text-align:center;">' +
-      '<div style="width:56px;height:56px;background:rgba(88,101,242,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">' +
-        '<svg width="32" height="24" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="#5865F2"/></svg>' +
-      '</div>' +
-      '<div style="font-size:1.1rem;font-weight:700;color:#f0f0f0;margin-bottom:10px;">Conecta tu Discord</div>' +
-      '<div style="font-size:.82rem;color:#666;line-height:1.7;margin-bottom:22px;">Para unirte a las sesiones en vivo necesitas vincular tu cuenta de Discord. Recibirás el rol de estudiante automáticamente.</div>' +
-      '<button id="btn-discord-connect" style="background:#5865F2;border:none;color:#fff;padding:12px 20px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">' +
-        '<svg width="18" height="14" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="white"/></svg>' +
-        'Conectar con Discord' +
-      '</button>' +
-      '<button id="btn-discord-skip" style="background:none;border:none;color:#444;font-size:.78rem;cursor:pointer;padding:6px;">Ahora no</button>' +
-    '</div>';
-
-  document.body.appendChild(overlay);
-
-  // Connect button — redirect to Discord OAuth
-  document.getElementById('btn-discord-connect').addEventListener('click', function() {
-    var params = new URLSearchParams({
-      client_id:     '1482794976118046851',
-      redirect_uri:  'https://www.mrkatanafx.com/api/discord-callback',
-      response_type: 'code',
-      scope:         'identify guilds.join',
-      state:         cUser ? cUser.id : '',
-    });
-    window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
-  });
-
-  document.getElementById('btn-discord-skip').addEventListener('click', function() {
-    overlay.remove();
-    // If they skip, open Discord URL directly anyway
-    if (discordUrl) window.open(discordUrl, '_blank');
-  });
-
   overlay.addEventListener('click', function(e) {
     if (e.target === overlay) overlay.remove();
   });
@@ -2951,10 +2948,130 @@ async function uploadAvatar(input) {
 function rAdmin() {
   var m = document.getElementById('amain');
   m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
+
+  if (cProfile && cProfile.role === 'staff') {
+    sb.from('staff_permissions').select('*').eq('id', 1).single().then(function(r) {
+      window._staffPerms = r.data || {};
+      _buildAdminTabs();
+    });
+  } else {
+    window._staffPerms = null; // null = sin restricciones (admin ve todo)
+    _buildAdminTabs();
+  }
+}
+
+function _staffCan(key) {
+  // Admin siempre puede todo. Staff depende de la config de staff_permissions.
+  if (!cProfile || cProfile.role !== 'staff') return true;
+  return !!(window._staffPerms && window._staffPerms[key]);
+}
+
+// ── Acceso a "profiles" para staff: pasa por el endpoint seguro (evita RLS
+// directo sobre profiles, que causa recursión). Admin sigue usando Supabase
+// directo, como siempre — sin cambios para esa cuenta.
+async function _authHeader() {
+  var session = await sb.auth.getSession();
+  var token = session && session.data && session.data.session ? session.data.session.access_token : '';
+  return { Authorization: 'Bearer ' + token };
+}
+
+function _fetchWithTimeout(url, opts, ms) {
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, ms || 35000);
+  opts = opts || {};
+  opts.signal = controller.signal;
+  return fetch(url, opts).finally(function(){ clearTimeout(timer); });
+}
+
+async function _fetchAllStudents() {
+  if (cProfile && cProfile.role === 'staff') {
+    try {
+      var headers = await _authHeader();
+      var res = await _fetchWithTimeout('/api/staff-profiles', { headers: headers });
+      var json = await res.json().catch(function(){ return {}; });
+      if (!res.ok) { tst('Error al cargar alumnos: ' + (json.error||res.status), 1); return []; }
+      return json.data || [];
+    } catch (e) {
+      tst(e.name === 'AbortError' ? 'La carga tardó demasiado — intenta de nuevo' : 'Error de conexión al cargar alumnos', 1);
+      return [];
+    }
+  }
+  var r = await sb.from('profiles').select('id, full_name, email, role, plan, live_plan, live_end, membership_start, membership_end, avatar_url, created_at').order('created_at',{ascending:false});
+  return r.data || [];
+}
+
+async function _fetchStudent(id) {
+  if (cProfile && cProfile.role === 'staff') {
+    try {
+      var headers = await _authHeader();
+      var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { headers: headers });
+      var json = await res.json().catch(function(){ return {}; });
+      if (!res.ok) { tst('Error: ' + (json.error||res.status), 1); return null; }
+      return json.data;
+    } catch (e) {
+      tst(e.name === 'AbortError' ? 'La carga tardó demasiado — intenta de nuevo' : 'Error de conexión', 1);
+      return null;
+    }
+  }
+  var r = await sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end, roadmap_mode, access_1on1').eq('id', id).single();
+  return r.data;
+}
+
+async function _updateStudent(id, data) {
+  if (cProfile && cProfile.role === 'staff') {
+    try {
+      var headers = await _authHeader();
+      headers['Content-Type'] = 'application/json';
+      var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { method: 'PATCH', headers: headers, body: JSON.stringify(data) });
+      var json = await res.json().catch(function(){ return {}; });
+      return { error: res.ok ? null : { message: json.error || res.status } };
+    } catch (e) {
+      return { error: { message: e.name === 'AbortError' ? 'timeout' : 'connection_error' } };
+    }
+  }
+  return await sb.from('profiles').update(data).eq('id', id);
+}
+
+async function _deleteStudent(id) {
+  if (cProfile && cProfile.role === 'staff') {
+    try {
+      var headers = await _authHeader();
+      var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { method: 'DELETE', headers: headers });
+      var json = await res.json().catch(function(){ return {}; });
+      return { error: res.ok ? null : { message: json.error || res.status } };
+    } catch (e) {
+      return { error: { message: e.name === 'AbortError' ? 'timeout' : 'connection_error' } };
+    }
+  }
+  return await sb.from('profiles').delete().eq('id', id);
+}
+
+function _buildAdminTabs() {
+  var m = document.getElementById('amain');
   var tabs = document.createElement('div');
   tabs.className = 'admtabs-wrap';
   tabs.style.cssText = 'display:flex;gap:7px;margin-bottom:18px;overflow-x:auto;overflow-y:hidden;padding:6px 18px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pinch-zoom;overscroll-behavior-x:contain;overscroll-behavior-y:none;flex-wrap:nowrap;-ms-overflow-style:none;position:sticky;top:61px;z-index:9;background:linear-gradient(180deg,#111418 92%,transparent);margin-left:-18px;margin-right:-18px;';
-  [['st','Alumnos'],['cl','Clases'],['se','Sesiones'],['1on1','Reuniones 1-1'],['codes','Planes'],['roadmap','Roadmap']].forEach(function(item, i) {
+
+  var allTabs = [
+    ['st','Alumnos','access_students'],
+    ['cl','Clases','access_clases'],
+    ['se','Sesiones','access_sesiones'],
+    ['1on1','Reuniones 1-1','access_students'],
+    ['codes','Planes', ['access_plans','access_discord','access_codes']],
+    ['roadmap','Roadmap','access_roadmap']
+  ];
+  var visibleTabs = allTabs.filter(function(item) {
+    var perm = item[2];
+    if (Array.isArray(perm)) return perm.some(function(k){ return _staffCan(k); });
+    return _staffCan(perm);
+  });
+
+  if (!visibleTabs.length) {
+    m.innerHTML += '<p style="color:#666;font-size:.86rem;padding:20px 0;">Tu cuenta de Staff no tiene ningún permiso habilitado todavía. Pídele al admin que te active alguno en Planes → Permisos de Staff.</p>';
+    return;
+  }
+
+  visibleTabs.forEach(function(item, i) {
     var btn = document.createElement('button');
     btn.className = 'admtab' + (i===0?' on':'');
     btn.textContent = item[1];
@@ -2962,13 +3079,15 @@ function rAdmin() {
     tabs.appendChild(btn);
   });
   m.appendChild(tabs);
-  ['st','cl','se','1on1','codes','roadmap'].forEach(function(s, i) {
+  visibleTabs.forEach(function(item, i) {
     var div = document.createElement('div');
-    div.id = 'a-'+s;
+    div.id = 'a-'+item[0];
     if (i > 0) div.style.display = 'none';
     m.appendChild(div);
   });
-  rAdmSt();
+
+  var first = visibleTabs[0][0];
+  if (first==='cl') rAdmCl(); else if (first==='se') rAdmSe(); else if (first==='codes') rAdmCodes(); else if (first==='roadmap') rAdmRoadmap(); else if (first==='1on1') rAdm1on1(); else rAdmSt();
 }
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
@@ -2976,17 +3095,52 @@ function swA(btn, sec) {
   ['st','cl','se','codes','roadmap','1on1'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
   if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
 }
+// ── PLANES: caché compartida (planes + sus variantes) ──
+function _loadPlansCache(cb) {
+  Promise.all([
+    sb.from('checkout_plans').select('*').order('sort_order'),
+    sb.from('checkout_plan_variants').select('*').order('sort_order')
+  ]).then(function(results) {
+    var plans = results[0].data || [];
+    var variants = results[1].data || [];
+    plans.forEach(function(p) {
+      p.variants = variants.filter(function(v) { return v.plan_id === p.id; });
+    });
+    window._allPlans = plans;
+    if (cb) cb(plans);
+  });
+}
+function _planById(id) {
+  return (window._allPlans || []).find(function(p) { return p.id === id; });
+}
+
+// "Ilimitado" se guarda como una fecha muy lejana (no null), para que todas las
+// comparaciones de fecha que ya existen en la app (>) sigan funcionando sin
+// tener que agregar casos especiales por todos lados.
+var UNLIMITED_ISO = '2099-12-31T00:00:00.000Z';
+function _isUnlimitedDate(dateStr) {
+  if (!dateStr) return false;
+  return new Date(dateStr).getFullYear() >= 2098;
+}
+function _fmtExpiry(dateStr) {
+  if (!dateStr) return '—';
+  if (_isUnlimitedDate(dateStr)) return 'Ilimitado';
+  return new Date(dateStr).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+}
+
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
   c.innerHTML =
     '<div style="margin-bottom:12px;"><input id="st-search" class="ai" placeholder="🔍 Buscar alumno por nombre o email..." oninput="filterStudents(this.value)" style="width:100%;box-sizing:border-box;"></div>' +
     '<div id="st-t"><span class="spin"></span></div>';
-  sb.from('profiles').select('id, full_name, email, role, plan, live_plan, live_end, membership_start, membership_end, avatar_url, created_at').order('created_at',{ascending:false}).then(function(r) {
-    var today = new Date();
-    window._allStudents = r.data || [];
-    var t = document.getElementById('st-t'); if(!t) return;
-    if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos registrados.</p>';return;}
-    _renderStudents(window._allStudents);
+  _loadPlansCache(function() {
+    _fetchAllStudents().then(function(students) {
+      var today = new Date();
+      window._allStudents = students || [];
+      var t = document.getElementById('st-t'); if(!t) return;
+      if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos registrados.</p>';return;}
+      _renderStudents(window._allStudents);
+    });
   });
 }
 
@@ -2999,16 +3153,17 @@ function _renderStudents(data, showAll) {
     var planBadge = function(s) {
       if (s.role === 'admin') return '<span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:rgba(91,127,166,.14);color:var(--sl);border-radius:4px;">admin</span>';
       var plan = s.plan || '';
-      var label = plan === 'formacion' ? 'mentoria' : plan === 'formacion-basico' ? 'formacion' : plan.startsWith('live') ? plan : '—';
-      var color = plan === 'formacion' ? '#c9a84c' : plan === 'formacion-basico' ? 'var(--sl)' : '#9a9a9a';
-      var bg = plan === 'formacion' ? 'rgba(201,168,76,.1)' : plan === 'formacion-basico' ? 'rgba(91,127,166,.14)' : 'rgba(255,255,255,.05)';
-      return '<span onclick="changePlanModal(\''+s.id+'\',\''+plan+'\')" style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+bg+';color:'+color+';border-radius:4px;cursor:pointer;" title="Clic para cambiar plan">'+label+'</span>';
+      var planDef = _planById(plan);
+      var label = planDef ? (planDef.label || planDef.name) : (plan || '—');
+      var color = planDef && planDef.color ? planDef.color : '#9a9a9a';
+      var bg = planDef && planDef.color ? planDef.color + '1a' : 'rgba(255,255,255,.05)'; // color + alpha aprox
+      return '<span style="padding:2px 8px;font-size:.68rem;font-weight:600;background:'+bg+';color:'+color+';border-radius:4px;" title="Administrar desde la ficha del alumno">'+label+'</span>';
     };
     t.innerHTML = '<div class="dtab-wrap"><table class="dtab"><thead><tr><th></th><th>Nombre</th><th>Email</th><th>Etiquetas</th><th>Estado</th></tr></thead><tbody>'+
       visible.map(function(s){
         var en=s.membership_end?new Date(s.membership_end):null, act=en&&en>today;
         var liveEn=s.live_end?new Date(s.live_end):null, liveAct=liveEn&&liveEn>today;
-        var liveTag = liveAct ? '<span onclick="renewLive(\''+s.id+'\')" title="Live vence '+liveEn.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})+'" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(74,222,128,.1);color:#4ade80;border-radius:4px;cursor:pointer;margin-left:4px;">live ✓</span>' : '<span onclick="renewLive(\''+s.id+'\')" title="Sin live activo" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(255,255,255,.04);color:#444;border-radius:4px;cursor:pointer;margin-left:4px;">+ live</span>';
+        var liveTag = liveAct ? '<span title="Live vence '+liveEn.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})+' — administrar desde la ficha del alumno" style="padding:2px 7px;font-size:.66rem;font-weight:600;background:rgba(74,222,128,.1);color:#4ade80;border-radius:4px;margin-left:4px;">live ✓</span>' : '';
         var avatarHtml = s.avatar_url
           ? '<img src="'+s.avatar_url+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;">'
           : '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;">'+((s.full_name||'?')[0].toUpperCase())+'</div>';
@@ -3023,118 +3178,6 @@ function _renderStudents(data, showAll) {
       (!q && data.length > 5 && !showAll ? '<div style="text-align:center;margin-top:12px;"><button onclick="_renderStudents(window._allStudents, true)" style="background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.2);color:var(--sl);padding:7px 20px;border-radius:6px;font-size:.78rem;cursor:pointer;">Ver todos ('+data.length+')</button></div>' : '');
 }
 
-function renewLive(id) {
-  var existing = document.getElementById('live-modal');
-  if (existing) existing.remove();
-  var modal = document.createElement('div');
-  modal.id = 'live-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-  modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Live</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Activa o desactiva el acceso a sesiones en vivo</div>' +
-      '<select id="live-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
-        '<option value="live-mensual|1">Live Mensual (1 mes)</option>' +
-        '<option value="live-trimestral|3">Live Trimestral (3 meses)</option>' +
-        '<option value="live-semestral|6">Live Semestral (6 meses)</option>' +
-      '</select>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="live-plan-btn" style="flex:1;padding:10px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);color:#4ade80;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Activar</button>' +
-        '<button id="live-deact-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Desactivar</button>' +
-        '<button onclick="document.getElementById(\'live-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(modal);
-  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
-  document.getElementById('live-plan-btn').addEventListener('click', function() {
-    var val = document.getElementById('live-plan-sel').value.split('|');
-    var livePlan = val[0];
-    var months = parseInt(val[1]);
-    var liveEnd = new Date();
-    liveEnd.setMonth(liveEnd.getMonth() + months);
-    var btn = this;
-    btn.disabled = true; btn.textContent = 'Activando...';
-    sb.from('profiles').update({ live_plan: livePlan, live_end: liveEnd.toISOString() }).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Live activado — ' + livePlan);
-      rAdmSt();
-    });
-  });
-  document.getElementById('live-deact-btn').addEventListener('click', function() {
-    if (!confirm('¿Desactivar acceso live de este alumno?')) return;
-    sb.from('profiles').update({ live_plan: null, live_end: null }).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Live desactivado');
-      rAdmSt();
-    });
-  });
-}
-
-function changePlanModal(id, currentPlan) {
-  var existing = document.getElementById('plan-modal');
-  if (existing) existing.remove();
-  var modal = document.createElement('div');
-  modal.id = 'plan-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-  modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Gestionar Plan</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Plan actual: <strong style="color:#f0f0f0;">'+(currentPlan||'—')+'</strong></div>' +
-      '<select id="plan-modal-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:12px;">' +
-        '<option value="formacion-basico"'+(currentPlan==='formacion-basico'?' selected':'')+'>Formación ($600)</option>' +
-        '<option value="formacion"'+(currentPlan==='formacion'?' selected':'')+'>Mentoría ($1,500)</option>' +
-      '</select>' +
-      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">' +
-        '<input type="checkbox" id="plan-keep-dates" checked style="width:14px;height:14px;accent-color:var(--sl);">' +
-        '<span style="font-size:.78rem;color:#9a9a9a;">Mantener fechas actuales</span>' +
-      '</label>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="plan-modal-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Cambiar</button>' +
-        '<button id="plan-delete-btn" style="padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:7px;font-size:.84rem;cursor:pointer;">Eliminar</button>' +
-        '<button onclick="document.getElementById(\'plan-modal\').remove();" style="padding:10px 14px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(modal);
-  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
-  document.getElementById('plan-modal-btn').addEventListener('click', function() {
-    var plan = document.getElementById('plan-modal-sel').value;
-    var keepDates = document.getElementById('plan-keep-dates').checked;
-    var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
-    var upd = { plan: plan };
-    if (!keepDates) {
-      var months = 180;
-      var now = new Date(), end = new Date();
-      end.setMonth(end.getMonth() + months);
-      upd.membership_start = now.toISOString();
-      upd.membership_end = end.toISOString();
-    }
-    sb.from('profiles').update(upd).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Plan actualizado');
-      rAdmSt();
-    });
-  });
-  document.getElementById('plan-delete-btn').addEventListener('click', function() {
-    if (!confirm('¿Eliminar la etiqueta de este alumno? Quedará sin plan activo.')) return;
-    sb.from('profiles').update({ plan: null, membership_start: null, membership_end: null }).eq('id', id).then(function(r) {
-      modal.remove();
-      if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Etiqueta eliminada');
-      rAdmSt();
-    });
-  });
-}
-
-function changePlan(id, plan) {
-  sb.from('profiles').update({ plan: plan }).eq('id', id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Plan actualizado — ' + plan);
-    rAdmSt();
-  });
-}
 function filterStudents(query) {
   var q = (query||'').toLowerCase();
   var filtered = (window._allStudents||[]).filter(function(s) {
@@ -3154,20 +3197,23 @@ function openWeekModal(weekNum, studentId) {
       var isAdmin = cProfile && cProfile.role === 'admin';
 
       var ov = document.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+      _injectWhopStyles();
+      ov.className = 'wp-overlay';
       ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
 
       var box = document.createElement('div');
-      box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;';
+      box.className = 'wp-modal';
+      box.style.maxWidth = '500px';
+      box.style.overflowY = 'auto';
       box.innerHTML =
-        '<div style="padding:18px 22px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#1a1a1a;z-index:1;">' +
-          '<div>' +
-            '<div style="font-size:.64rem;color:#555;text-transform:uppercase;letter-spacing:1px;">Semana '+weekNum+'</div>' +
-            '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;margin-top:2px;">'+week.title+'</div>' +
+        '<div class="wp-header" style="padding:20px 24px 4px;">' +
+          '<div style="flex:1;">' +
+            '<div class="wp-subtitle" style="margin:0;">Semana '+weekNum+'</div>' +
+            '<div class="wp-title" style="font-size:1.05rem;margin-top:2px;">'+week.title+'</div>' +
           '</div>' +
-          '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+          '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
         '</div>' +
-        '<div style="padding:20px 22px;">' +
+        '<div class="wp-body" style="padding:12px 24px 24px;">' +
           // Objective
           (week.objective ? '<div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);border-radius:8px;padding:12px 14px;margin-bottom:16px;">' +
             '<div style="font-size:.64rem;color:#c9a84c;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">🎯 Objetivo de la semana</div>' +
@@ -3187,8 +3233,8 @@ function openWeekModal(weekNum, studentId) {
           '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:14px;">' +
             '<div style="font-size:.7rem;color:#555;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">📝 Nota personal</div>' +
             (isAdmin ?
-              '<textarea id="week-note-input" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid var(--br);color:#f0f0f0;border-radius:6px;padding:8px 10px;font-size:.8rem;resize:vertical;min-height:70px;" placeholder="Agregar nota para este alumno en esta semana...">'+note+'</textarea>' +
-              '<button onclick="saveWeekNote('+weekNum+',\''+sid+'\')" style="margin-top:8px;background:var(--st);border:none;color:#fff;padding:7px 14px;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;">Guardar nota</button>'
+              '<textarea id="week-note-input" class="wp-input" style="width:100%;box-sizing:border-box;resize:vertical;min-height:70px;" placeholder="Agregar nota para este alumno en esta semana...">'+note+'</textarea>' +
+              '<button onclick="saveWeekNote('+weekNum+',\''+sid+'\')" class="wp-btn-primary" style="margin-top:10px;padding:9px 16px;width:auto;">Guardar nota</button>'
             :
               '<div style="font-size:.82rem;color:'+(note?'#ccc':'#444')+';">'+( note || 'Sin notas para esta semana.')+'</div>'
             ) +
@@ -3254,25 +3300,29 @@ function rAdmRoadmap() {
 function editRoadmapWeek(weekNum, existing) {
   var acts = existing && Array.isArray(existing.activities) ? existing.activities : (existing ? JSON.parse(existing.activities||'[]') : []);
   var ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.id = 'roadmap-week-modal';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
   var box = document.createElement('div');
-  box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;';
+  box.className = 'wp-modal';
+  box.style.maxWidth = '520px';
+  box.style.overflowY = 'auto';
   box.innerHTML =
-    '<div style="padding:18px 22px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">' +
-      '<div style="font-weight:700;font-size:.95rem;">Editar Semana '+weekNum+'</div>' +
-      '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-header" style="padding:20px 24px 4px;">' +
+      '<div class="wp-title" style="flex:1;font-size:1.05rem;">Editar Semana '+weekNum+'</div>' +
+      '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
     '</div>' +
-    '<div style="padding:20px 22px;">' +
-      '<div style="margin-bottom:12px;"><label class="al">Título de la semana</label><input id="rw-title" class="ai" value="'+(existing?existing.title:'')+'" placeholder="Ej: Fundamentos del mercado"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Objetivo</label><textarea id="rw-obj" class="ai" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="¿Qué debe lograr el alumno esta semana?">'+(existing?existing.objective:'')+'</textarea></div>' +
-      '<div style="margin-bottom:14px;">' +
-        '<label class="al">Actividades (una por línea)</label>' +
-        '<textarea id="rw-acts" class="ai" rows="5" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Actividad 1&#10;Actividad 2&#10;Tarea: ...">' + acts.join('\n') + '</textarea>' +
+    '<div class="wp-body" style="padding:12px 24px 24px;">' +
+      '<div class="wp-field"><label class="wp-label">Título de la semana</label><input id="rw-title" class="wp-input" value="'+(existing?existing.title:'')+'" placeholder="Ej: Fundamentos del mercado"></div>' +
+      '<div class="wp-field"><label class="wp-label">Objetivo</label><textarea id="rw-obj" class="wp-input" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="¿Qué debe lograr el alumno esta semana?">'+(existing?existing.objective:'')+'</textarea></div>' +
+      '<div class="wp-field">' +
+        '<label class="wp-label">Actividades (una por línea)</label>' +
+        '<textarea id="rw-acts" class="wp-input" rows="5" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Actividad 1&#10;Actividad 2&#10;Tarea: ...">' + acts.join('\n') + '</textarea>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button onclick="saveRoadmapWeek('+weekNum+')" class="abtn2" style="flex:1;">Guardar semana</button>' +
-        (existing ? '<button onclick="deleteRoadmapWeek('+weekNum+')" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:8px 14px;border-radius:6px;font-size:.78rem;cursor:pointer;">Eliminar</button>' : '') +
+      '<div class="wp-footer" style="margin-top:6px;">' +
+        '<button onclick="saveRoadmapWeek('+weekNum+')" class="wp-btn-primary">Guardar semana</button>' +
+        (existing ? '<button onclick="deleteRoadmapWeek('+weekNum+')" class="wp-btn-danger">Eliminar</button>' : '') +
       '</div>' +
     '</div>';
   ov.appendChild(box);
@@ -3290,7 +3340,7 @@ function saveRoadmapWeek(weekNum) {
   }, { onConflict: 'week_number' }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Semana ' + weekNum + ' guardada');
-    var ov = document.querySelector('div[style*="z-index:900"]'); if (ov) ov.remove();
+    var ov = document.getElementById('roadmap-week-modal'); if (ov) ov.remove();
     rAdmRoadmap();
   });
 }
@@ -3300,7 +3350,7 @@ function deleteRoadmapWeek(weekNum) {
   sb.from('roadmap_weeks').delete().eq('week_number', weekNum).then(function(r) {
     if (r.error) return tst('Error', 1);
     tst('✓ Semana eliminada');
-    var ov = document.querySelector('div[style*="z-index:900"]'); if (ov) ov.remove();
+    var ov = document.getElementById('roadmap-week-modal'); if (ov) ov.remove();
     rAdmRoadmap();
   });
 }
@@ -3401,37 +3451,36 @@ function openSchModal() {
 
   var ov = document.createElement('div');
   ov.id = 'sch-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">' +
+    '<div class="wp-modal" style="max-width:480px;display:flex;flex-direction:column;overflow:hidden;">' +
       // Header
-      '<div style="padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">' +
-        '<div>' +
-          '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">📅 Programar reunión 1-1</div>' +
-          '<div style="font-size:.72rem;color:#555;margin-top:2px;" id="sch-modal-subtitle">Selecciona un alumno</div>' +
-        '</div>' +
-        '<button onclick="document.getElementById(\'sch-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;padding:2px 8px;">✕</button>' +
+      '<div class="wp-header" style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar reunión 1-1</div><div class="wp-subtitle" id="sch-modal-subtitle">Selecciona un alumno</div></div>' +
+        '<button onclick="document.getElementById(\'sch-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;padding:2px 8px;">✕</button>' +
       '</div>' +
       // Step 1: Student picker
       '<div id="sch-step1" style="display:flex;flex-direction:column;overflow:hidden;flex:1;">' +
-        '<div style="padding:14px 22px 8px;flex-shrink:0;">' +
-          '<input id="sch-modal-search" class="ai" placeholder="🔍 Buscar alumno..." oninput="filterSchModal(this.value)" style="width:100%;box-sizing:border-box;">' +
+        '<div style="padding:14px 24px 8px;flex-shrink:0;">' +
+          '<input id="sch-modal-search" class="wp-input" placeholder="🔍 Buscar alumno..." oninput="filterSchModal(this.value)">' +
         '</div>' +
-        '<div id="sch-modal-list" style="overflow-y:auto;padding:0 22px 18px;flex:1;"></div>' +
+        '<div id="sch-modal-list" style="overflow-y:auto;padding:0 24px 20px;flex:1;"></div>' +
       '</div>' +
       // Step 2: Form (hidden until student selected)
-      '<div id="sch-step2" style="display:none;padding:18px 22px 22px;overflow-y:auto;">' +
-        '<button onclick="schBack()" style="display:flex;align-items:center;gap:5px;background:none;border:none;color:#555;font-size:.75rem;cursor:pointer;padding:0;margin-bottom:14px;">' +
+      '<div id="sch-step2" style="display:none;padding:18px 24px 24px;overflow-y:auto;">' +
+        '<button onclick="schBack()" style="display:flex;align-items:center;gap:5px;background:none;border:none;color:#5c6470;font-size:.75rem;cursor:pointer;padding:0;margin-bottom:14px;">' +
           '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg> Cambiar alumno' +
         '</button>' +
-        '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:8px;margin-bottom:16px;"></div>' +
-        '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-m-title" class="ai" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1" style="box-sizing:border-box;"></div>' +
-        '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-          '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-m-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-          '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-m-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
+        '<div id="sch-selected-student" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.2);border-radius:12px;margin-bottom:16px;"></div>' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="sch-m-title" class="wp-input" placeholder="Sesión 1-1 · Semana X" value="Sesión 1-1"></div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Fecha</label><input type="date" id="sch-m-date" class="wp-input"></div>' +
+          '<div><label class="wp-label">Hora</label><input type="time" id="sch-m-time" class="wp-input"></div>' +
         '</div>' +
-        '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-m-url" class="ai" placeholder="meet.google.com/..." style="box-sizing:border-box;"></div>' +
-        '<button id="sch-m-save" class="abtn2" onclick="saveSchModal()" style="width:100%;padding:11px;margin-top:4px;">Programar sesión</button>' +
+        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="sch-m-url" class="wp-input" placeholder="meet.google.com/..."></div>' +
+        '<button id="sch-m-save" class="wp-btn-primary" onclick="saveSchModal()" style="width:100%;">Programar sesión</button>' +
       '</div>' +
     '</div>';
 
@@ -3441,8 +3490,8 @@ function openSchModal() {
   // Load students
   var listEl = document.getElementById('sch-modal-list');
   listEl.innerHTML = '<div style="padding:20px;text-align:center;"><span class="spin"></span></div>';
-  sb.from('profiles').select('id, full_name, membership_end').order('full_name').then(function(r) {
-    window._schModalStudents = r.data || [];
+  _fetchAllStudents().then(function(students) {
+    window._schModalStudents = students || [];
     _renderSchModalList(window._schModalStudents);
   });
 }
@@ -3534,19 +3583,23 @@ function openEditMtgModal(id, encTitle, encUrl, isoDate) {
 
   var ov = document.createElement('div');
   ov.id = 'edit-mtg-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">✎ Editar reunión</div>' +
-        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-modal" style="max-width:420px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div class="wp-title" style="flex:1;font-size:1rem;">Editar reunión</div>' +
+        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="emtg-title" class="ai" value="' + title.replace(/"/g,"'") + '"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="ai" value="' + dtLocal + '"></div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="emtg-url" class="ai" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
-      '<div style="display:flex;gap:8px;margin-top:4px;">' +
-        '<button id="emtg-save" class="abtn2" onclick="saveEditMtg(\'' + id + '\')" style="flex:1;padding:11px;">Guardar cambios</button>' +
-        '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:11px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="emtg-title" class="wp-input" value="' + title.replace(/"/g,"'") + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="wp-input" value="' + dtLocal + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="emtg-url" class="wp-input" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
+        '<div class="wp-footer">' +
+          '<button id="emtg-save" class="wp-btn-primary" onclick="saveEditMtg(\'' + id + '\')">Guardar cambios</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'edit-mtg-modal\').remove()">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(ov);
@@ -3578,11 +3631,11 @@ function _rAdm1on1Rec() {
 
   // Load all students + their recordings
   Promise.all([
-    sb.from('profiles').select('id, full_name').order('full_name'),
-    sb.from('recordings_1on1').select('id, student_id, title, video_url, description, recorded_at').order('recorded_at', { ascending: false })
+    _fetchAllStudents(),
+    sb.from('recordings_1on1').select('id, student_id, title, video_url, description, recorded_at').order('recorded_at', { ascending: false }).then(function(r){ return r.data || []; })
   ]).then(function(res) {
-    var students   = res[0].data || [];
-    var recordings = res[1].data || [];
+    var students   = res[0] || [];
+    var recordings = res[1] || [];
 
     // Index recordings by student
     var byStudent = {};
@@ -3697,20 +3750,24 @@ function admEditRec(id, encTitle, encUrl, encDesc, dateStr) {
 
   var ov = document.createElement('div');
   ov.id = 'adm-rec-edit-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:440px;padding:24px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">✎ Editar grabación</div>' +
-        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-modal" style="max-width:440px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div class="wp-title" style="flex:1;font-size:1rem;">Editar grabación</div>' +
+        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="aer-title" class="ai" value="' + title.replace(/"/g,"'") + '"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">URL Video</label><input id="aer-url" class="ai" value="' + url.replace(/"/g,"'") + '"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="aer-desc" class="ai" value="' + desc.replace(/"/g,"'") + '" placeholder="Notas de la sesión..."></div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Fecha</label><input type="date" id="aer-date" class="ai" value="' + dateStr + '"></div>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="aer-save" class="abtn2" onclick="admSaveRec(\'' + id + '\')" style="flex:1;padding:11px;">Guardar cambios</button>' +
-        '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:transparent;border:1px solid var(--br);color:#555;padding:11px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;">Cancelar</button>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="aer-title" class="wp-input" value="' + title.replace(/"/g,"'") + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">URL Video</label><input id="aer-url" class="wp-input" value="' + url.replace(/"/g,"'") + '"></div>' +
+        '<div class="wp-field"><label class="wp-label">Descripción (opcional)</label><input id="aer-desc" class="wp-input" value="' + desc.replace(/"/g,"'") + '" placeholder="Notas de la sesión..."></div>' +
+        '<div class="wp-field"><label class="wp-label">Fecha</label><input type="date" id="aer-date" class="wp-input" value="' + dateStr + '"></div>' +
+        '<div class="wp-footer">' +
+          '<button id="aer-save" class="wp-btn-primary" onclick="admSaveRec(\'' + id + '\')">Guardar cambios</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'adm-rec-edit-modal\').remove()">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(ov);
@@ -3750,89 +3807,282 @@ function delAdmMtg(id) {
 }
 
 
+function toggleStudentLive(studentId, enabled) {
+  if (!enabled) {
+    if (!confirm('¿Quitar el acceso a Live de este alumno?')) {
+      var cb = document.getElementById('stud-live-toggle'); if (cb) cb.checked = true;
+      return;
+    }
+    _updateStudent(studentId, { live_plan: null, live_end: null }).then(function(r) {
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Live desactivado');
+      viewStudentProfile(studentId);
+    });
+    return;
+  }
+  openAccessPickerModal(studentId, 'live');
+}
+
+function toggleStudentClases(studentId, enabled) {
+  if (!enabled) {
+    if (!confirm('¿Quitar el acceso a Clases de este alumno?')) {
+      var cb = document.getElementById('stud-clases-toggle'); if (cb) cb.checked = true;
+      return;
+    }
+    _updateStudent(studentId, { membership_start: null, membership_end: null }).then(function(r) {
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Clases desactivadas');
+      viewStudentProfile(studentId);
+    });
+    return;
+  }
+  openAccessPickerModal(studentId, 'clases');
+}
+
+// Modal compartido: elige un plan/variante REAL (filtrado por categoría) y aplica
+// exactamente su duración a Clases o a Live, según cuál toggle lo abrió.
+function openAccessPickerModal(studentId, kind) {
+  var isLive = kind === 'live';
+  var existing = document.getElementById('access-picker-modal');
+  if (existing) existing.remove();
+  _injectWhopStyles();
+
+  var opts = [];
+  (window._allPlans || []).filter(function(p){ return p.active; }).forEach(function(p) {
+    var relevant = isLive ? (p.category === 'live' || p.category === 'ambos') : (p.category === 'clases' || p.category === 'ambos');
+    if (!relevant) return;
+    if (p.variants && p.variants.length) {
+      p.variants.forEach(function(v) {
+        var dur = isLive ? v.duration_live_months : v.duration_clases_months;
+        opts.push({ value: p.id + '|' + v.id, label: p.name + ' — ' + v.name, dur: dur });
+      });
+    } else {
+      var dur = isLive ? p.duration_live_months : p.duration_clases_months;
+      opts.push({ value: p.id + '|', label: p.name, dur: dur });
+    }
+  });
+
+  var modal = document.createElement('div');
+  modal.id = 'access-picker-modal';
+  modal.className = 'wp-overlay';
+  modal.style.zIndex = '10000';
+  modal.innerHTML =
+    '<div class="wp-modal" style="max-width:400px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+(isLive?'📡':'📚')+'</div>' +
+        '<div class="wp-title" style="font-size:1rem;">Activar '+(isLive?'Live':'Clases')+'</div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        (opts.length ?
+          '<div class="wp-field"><label class="wp-label">Plan a asignar</label><select id="ap-sel" class="wp-input">' +
+            opts.map(function(o){ return '<option value="'+o.value+'">'+o.label+(o.dur?' ('+o.dur+' meses)':' (ilimitado)')+'</option>'; }).join('') +
+          '</select></div>'
+        : '<div style="font-size:.8rem;color:#5c6470;">No hay planes activos de categoría "'+(isLive?'Live':'Clases')+'" — créalos primero en Gestión de Planes.</div>'
+        ) +
+        '<div class="wp-footer">' +
+          (opts.length ? '<button id="ap-btn" class="wp-btn-primary">Activar</button>' : '') +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'access-picker-modal\').remove();var cb=document.getElementById(\''+(isLive?'stud-live-toggle':'stud-clases-toggle')+'\');if(cb)cb.checked=false;">Cancelar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){
+    if (e.target === modal) {
+      modal.remove();
+      var cb = document.getElementById(isLive ? 'stud-live-toggle' : 'stud-clases-toggle');
+      if (cb) cb.checked = false;
+    }
+  });
+
+  if (!opts.length) return;
+
+  document.getElementById('ap-btn').addEventListener('click', function() {
+    var val = document.getElementById('ap-sel').value.split('|');
+    var planId = val[0];
+    var variantId = val[1] || null;
+    var chosen = opts.find(function(o){ return o.value === planId + '|' + (variantId||''); });
+    var dur = chosen ? chosen.dur : null;
+    var btn = this; btn.disabled = true; btn.textContent = 'Activando...';
+
+    var upd = {};
+    if (isLive) {
+      upd.live_plan = planId;
+      upd.live_end = dur ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+dur); return e.toISOString(); })() : UNLIMITED_ISO;
+    } else {
+      upd.plan = planId;
+      upd.membership_start = new Date().toISOString();
+      upd.membership_end = dur ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+dur); return e.toISOString(); })() : UNLIMITED_ISO;
+      var planDef = _planById(planId);
+      if (planDef) { upd.access_1on1 = !!planDef.access_1on1; upd.roadmap_mode = planDef.roadmap_mode; }
+    }
+    _updateStudent(studentId, upd).then(function(r) {
+      modal.remove();
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ ' + (isLive?'Live':'Clases') + ' activado');
+      viewStudentProfile(studentId);
+    });
+  });
+}
+
+function toggleStudentStaff(studentId, enabled) {
+  var newRole = enabled ? 'staff' : null;
+  var msg = enabled ? '¿Convertir a esta persona en Staff? Tendrá acceso al panel de admin según los permisos configurados.' : '¿Quitarle el rol de Staff a esta persona?';
+  if (!confirm(msg)) {
+    var cb = document.getElementById('stud-staff-toggle'); if (cb) cb.checked = !enabled;
+    return;
+  }
+  sb.from('profiles').update({ role: newRole }).eq('id', studentId).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst(enabled ? '✓ Ahora es Staff' : '✓ Rol de Staff removido');
+    viewStudentProfile(studentId);
+  });
+}
+
+function toggleStudent1on1(studentId, enabled) {
+  sb.from('profiles').update({ access_1on1: enabled }).eq('id', studentId).then(function(r) {
+    if (r.error) { tst('Error: ' + r.error.message, 1); return; }
+    tst(enabled ? '✓ 1-a-1 activado para este alumno' : '✓ 1-a-1 desactivado para este alumno');
+  });
+}
+
 function viewStudentProfile(id) {
-  sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end').eq('id', id).single().then(function(pr) {
-    if (pr.error || !pr.data) return tst('No se encontró el perfil', 1);
-    var p = pr.data;
+  _injectWhopStyles();
+  var already = document.getElementById('student-profile-modal');
+  if (already) already.remove();
+
+  // Si ya tenemos al alumno en la lista cargada, mostramos algo al instante
+  // (nombre, foto, estado) mientras llega el resto de los datos por detrás —
+  // se siente mucho más rápido aunque el dato completo tarde lo mismo.
+  var cached = (window._allStudents || []).find(function(s){ return s.id === id; });
+  if (cached) {
+    var skel = document.createElement('div');
+    skel.id = 'student-profile-modal';
+    skel.className = 'wp-overlay';
+    skel.onclick = function(e){ if (e.target === skel) skel.remove(); };
+    var skelActive = cached.membership_end && new Date(cached.membership_end) > new Date();
+    skel.innerHTML =
+      '<div class="wp-modal" style="max-width:520px;">' +
+        '<div class="wp-header" style="padding:22px 26px 4px;">' +
+          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">👤</div>' +
+          '<div class="wp-title" style="flex:1;font-size:1.05rem;">Perfil del alumno</div>' +
+          '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
+        '</div>' +
+        '<div class="wp-body" style="padding:12px 26px 26px;">' +
+          '<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">' +
+            '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
+              (cached.avatar_url ? '<img src="'+cached.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (cached.full_name ? cached.full_name[0].toUpperCase() : '?')) +
+            '</div>' +
+            '<div>' +
+              '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">'+(cached.full_name||'Sin nombre')+'</div>' +
+              '<div style="font-size:.78rem;color:#5c6470;margin-top:2px;">'+(cached.email||'')+'</div>' +
+              '<span style="font-size:.68rem;padding:2px 9px;border-radius:20px;background:'+(skelActive?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(skelActive?'#4ade80':'#f87171')+';margin-top:5px;display:inline-block;">'+(skelActive?'● Activo':'○ Inactivo')+'</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:center;padding:30px 0;color:#5c6470;font-size:.82rem;"><span class="spin" style="margin-bottom:10px;display:inline-block;"></span><div>Cargando el resto del perfil...</div></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(skel);
+  }
+
+  _fetchStudent(id).then(function(p) {
+    if (!p) return tst('No se encontró el perfil', 1);
     var endDate = p.membership_end ? new Date(p.membership_end) : null;
     var active  = endDate && endDate > new Date();
     var liveEndDate = p.live_end ? new Date(p.live_end) : null;
     var liveActive = liveEndDate && liveEndDate > new Date();
+    var clasesActive = p.membership_end && new Date(p.membership_end) > new Date();
+
+    // Evita que se abran 2 fichas encimadas si se toca la fila más de una vez
+    // mientras carga (típico en móvil)
+    var existingModal = document.getElementById('student-profile-modal');
+    if (existingModal) existingModal.remove();
 
     var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+    ov.id = 'student-profile-modal';
+    ov.className = 'wp-overlay';
     ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
 
     var box = document.createElement('div');
-    box.style.cssText = 'background:#1a1a1a;border:1px solid var(--bs);border-radius:16px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;';
+    box.className = 'wp-modal';
+    box.style.maxWidth = '520px';
+      box.style.overflowY = 'auto';
     box.innerHTML =
-      '<div style="padding:20px 24px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#1a1a1a;z-index:1;">' +
-        '<div style="font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Perfil del alumno</div>' +
-        '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">✕</button>' +
+      '<div class="wp-header" style="padding:22px 26px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">👤</div>' +
+        '<div class="wp-title" style="flex:1;font-size:1.05rem;">Perfil del alumno</div>' +
+        '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.3rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="padding:24px;">' +
+      '<div class="wp-body" style="padding:12px 26px 26px;">' +
 
         // Avatar + name
-        '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">' +
-          '<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
+        '<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">' +
+          '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;">' +
             (p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (p.full_name ? p.full_name[0].toUpperCase() : '?')) +
           '</div>' +
           '<div>' +
             '<div style="font-size:1rem;font-weight:700;color:#f0f0f0;">'+(p.full_name||'Sin nombre')+'</div>' +
-            '<div style="font-size:.78rem;color:#666;margin-top:2px;">'+(p.email||'')+'</div>' +
-            '<span style="font-size:.68rem;padding:2px 8px;border-radius:10px;background:'+(active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(active?'#4ade80':'#f87171')+';margin-top:4px;display:inline-block;">'+(active?'Activo':'Inactivo')+'</span>' +
+            '<div style="font-size:.78rem;color:#5c6470;margin-top:2px;">'+(p.email||'')+'</div>' +
+            '<span style="font-size:.68rem;padding:2px 9px;border-radius:20px;background:'+(active?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)')+';color:'+(active?'#4ade80':'#f87171')+';margin-top:5px;display:inline-block;">'+(active?'● Activo':'○ Inactivo')+'</span>' +
           '</div>' +
         '</div>' +
 
-        // Info grid
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Edad</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.age || (p.date_of_birth ? (function(){ var b=new Date(p.date_of_birth),t=new Date(),a=t.getFullYear()-b.getFullYear(); if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--; return a; })() : '—'))+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">País</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.country||'—')+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Experiencia</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.trading_experience||'—')+'</div>' +
-          '</div>' +
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Membresía vence</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(endDate ? endDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—')+'</div>' +
-          '</div>' +
-          '<div style="background:'+(liveActive?'rgba(74,222,128,.06)':'rgba(255,255,255,.03)')+';border:1px solid '+(liveActive?'rgba(74,222,128,.2)':'var(--br)')+';border-radius:8px;padding:12px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Live vence</div>' +
-            '<div style="font-size:.88rem;color:'+(liveActive?'#4ade80':'#f87171')+'">'+(liveEndDate ? liveEndDate.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : 'Sin live')+'</div>' +
-          '</div>' +
-        '</div>' +
-
-        // Phone
-        ((p.phone) ?
-          '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
-            '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Teléfono / WhatsApp</div>' +
-            '<div style="font-size:.88rem;color:#f0f0f0;">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</div>' +
+        // Card: rol de la cuenta (Staff) — solo un admin real puede asignarlo/quitarlo
+        (p.role === 'admin' || !cProfile || cProfile.role !== 'admin' ? '' :
+          '<div class="wp-card">' +
+            '<div class="wp-toggle-row">' +
+              '<div><span class="wp-toggle-text">Miembro del Staff</span><div class="wp-toggle-sub">Acceso limitado al admin, según lo configurado en Planes → Permisos de Staff</div></div>' +
+              '<label class="wp-toggle"><input type="checkbox" id="stud-staff-toggle" '+(p.role==='staff'?'checked':'')+' onchange="toggleStudentStaff(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+            '</div>' +
           '</div>'
-        : '') +
+        ) +
 
-        // Week progress
-        '<div id="stud-roadmap-'+p.id+'" style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;">' +
-          '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Progreso del Roadmap</div>' +
-          '<div style="color:#555;font-size:.78rem;">Cargando...</div>' +
+        // Card: datos generales
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">📋</span><span class="wp-card-title">Datos generales</span></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Edad</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.age || (p.date_of_birth ? (function(){ var b=new Date(p.date_of_birth),t=new Date(),a=t.getFullYear()-b.getFullYear(); if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--; return a; })() : '—'))+'</div></div>' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">País</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.country||'—')+'</div></div>' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Experiencia</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.trading_experience||'—')+'</div></div>' +
+            (p.phone ? '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Teléfono</div><div style="font-size:.86rem;color:#e2e5ea;">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</div></div>' : '') +
+          '</div>' +
+        '</div>' +
+
+        // Card: membresía
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">⏳</span><span class="wp-card-title">Membresía</span></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Clases vence</div><div style="font-size:.86rem;color:#e2e5ea;">'+_fmtExpiry(p.membership_end)+'</div></div>' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Live vence</div><div style="font-size:.86rem;color:'+(liveActive?'#4ade80':'#5c6470')+';">'+(p.live_end ? _fmtExpiry(p.live_end) : 'Sin live')+'</div></div>' +
+          '</div>' +
+          '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
+            '<div><span class="wp-toggle-text">Plan de Clases</span><div class="wp-toggle-sub">'+(p.plan?('Actual: '+p.plan):'Sin plan asignado')+'</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="stud-clases-toggle" '+(clasesActive?'checked':'')+' onchange="toggleStudentClases(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-toggle-row">' +
+            '<div><span class="wp-toggle-text">Acceso a Sesiones en Vivo</span><div class="wp-toggle-sub">Independiente del plan — override manual</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="stud-live-toggle" '+(liveActive?'checked':'')+' onchange="toggleStudentLive(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-toggle-row">' +
+            '<div><span class="wp-toggle-text">Reuniones 1-a-1</span><div class="wp-toggle-sub">Independiente del plan — override manual</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="stud-1on1-toggle" '+(p.access_1on1?'checked':'')+' onchange="toggleStudent1on1(\''+p.id+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+        '</div>' +
+
+        // Roadmap
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🗺️</span><span class="wp-card-title">Progreso del Roadmap</span></div>' +
+          '<div id="stud-roadmap-'+p.id+'"><div style="color:#5c6470;font-size:.78rem;">Cargando...</div></div>' +
         '</div>' +
 
         // Bio
-        (p.bio ? '<div style="background:rgba(255,255,255,.03);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:14px;"><div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Bio</div><div style="font-size:.82rem;color:#9a9a9a;line-height:1.6;">'+p.bio+'</div></div>' : '') +
+        (p.bio ? '<div class="wp-card"><div class="wp-card-head"><span class="wp-card-icon">💬</span><span class="wp-card-title">Bio</span></div><div style="font-size:.84rem;color:#c5c9d1;line-height:1.6;">'+p.bio+'</div></div>' : '') +
 
         // Action buttons
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">' +
-          '<button onclick="openScheduleModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="abtn2" style="padding:11px;display:flex;align-items:center;justify-content:center;gap:6px;">📅 Programar sesión</button>' +
-          '<button onclick="openRecordingModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" style="padding:11px;background:rgba(91,127,166,.1);border:1px solid rgba(91,127,166,.25);color:var(--sl);border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">🎥 Subir grabación</button>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">' +
+          '<button onclick="openScheduleModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="wp-btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;">📅 Programar sesión</button>' +
+          '<button onclick="openRecordingModal(\''+p.id+'\',\''+encodeURIComponent(p.full_name||'Alumno')+'\')" class="wp-btn-ghost" style="display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(91,127,166,.25);color:var(--sl);">🎥 Subir grabación</button>' +
         '</div>' +
-        '<div style="margin-top:10px;">' +
-          '<button onclick="if(confirm(\'¿Eliminar este alumno? Esta acción no se puede deshacer.\')){dStudent(\''+p.id+'\');this.closest(\'div[style*=fixed]\').remove();}" style="width:100%;padding:10px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);color:#f87171;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;">🗑 Eliminar alumno</button>' +
-        '</div>' +
+        (_staffCan('delete_students') ? '<button onclick="if(confirm(\'¿Eliminar este alumno? Esta acción no se puede deshacer.\')){dStudent(\''+p.id+'\');this.closest(\'.wp-overlay\').remove();}" class="wp-btn-danger" style="width:100%;margin-top:10px;">🗑 Eliminar alumno</button>' : '') +
 
       '</div>';
 
@@ -3840,15 +4090,15 @@ function viewStudentProfile(id) {
     document.body.appendChild(ov);
 
     // Load roadmap progress async
-    loadStudentRoadmap(p.id, p.plan, p.membership_start);
+    loadStudentRoadmap(p.id, p.roadmap_mode, p.membership_start);
   });
 }
 
-function loadStudentRoadmap(studentId, plan, membershipStart) {
+function loadStudentRoadmap(studentId, roadmapMode, membershipStart) {
   var container = document.getElementById('stud-roadmap-' + studentId);
   if (!container) return;
 
-  var isMentoria = plan === 'formacion';
+  var isMentoria = roadmapMode === 'manual';
 
   // Load roadmap weeks and progress together
   Promise.all([
@@ -3869,7 +4119,7 @@ function loadStudentRoadmap(studentId, plan, membershipStart) {
     weeks.forEach(function(w) { if (completedWeeks[w.week_number]) lastCompleted = w.week_number; });
     var currentWeek = isMentoria ? (lastCompleted + 1) : timeWeek;
 
-    var html = '<div style="font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Progreso del Roadmap ' + (isMentoria ? '· <span style="color:#c9a84c;">Avance manual</span>' : '· <span style="color:var(--sl);">Automático</span>') + '</div>';
+    var html = '<div style="font-size:.7rem;margin-bottom:10px;">' + (isMentoria ? '<span style="color:#c9a84c;">● Avance manual</span>' : '<span style="color:var(--sl);">● Automático</span>') + '</div>';
 
     html += '<div style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;">';
     weeks.forEach(function(w) {
@@ -3922,7 +4172,7 @@ function toggleWeekComplete(studentId, weekNum, completed) {
     if (r.error) { tst('Error: ' + r.error.message, 1); return; }
     tst(completed ? '✓ Semana ' + weekNum + ' completada' : 'Semana ' + weekNum + ' desmarcada');
     // Reload roadmap in card
-    loadStudentRoadmap(studentId, 'formacion', null);
+    loadStudentRoadmap(studentId, 'manual', null);
   });
 }
 
@@ -3933,23 +4183,24 @@ function openScheduleModal(studentId, studentName) {
 
   var ov = document.createElement('div');
   ov.id = 'schedule-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;box-sizing:border-box;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div>' +
-          '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">📅 Programar sesión 1-1</div>' +
-          '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + name + '</div>' +
+    '<div class="wp-modal" style="max-width:440px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar sesión 1-1</div><div class="wp-subtitle">' + name + '</div></div>' +
+        '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="sch-title" class="wp-input" placeholder="Sesión 1-1 · Semana 3"></div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Fecha</label><input type="date" id="sch-date" class="wp-input"></div>' +
+          '<div><label class="wp-label">Hora</label><input type="time" id="sch-time" class="wp-input"></div>' +
         '</div>' +
-        '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="sch-url" class="wp-input" placeholder="https://meet.google.com/..."></div>' +
+        '<button id="sch-save-btn" onclick="saveSchedule(\''+studentId+'\')" class="wp-btn-primary" style="width:100%;">Programar sesión</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="sch-title" class="ai" placeholder="Sesión 1-1 · Semana 3" style="box-sizing:border-box;"></div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-        '<div style="flex:1;min-width:0;"><label class="al">Fecha</label><input type="date" id="sch-date" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-        '<div style="flex:1;min-width:0;"><label class="al">Hora</label><input type="time" id="sch-time" class="ai" style="width:100%;box-sizing:border-box;"></div>' +
-      '</div>' +
-      '<div style="margin-bottom:14px;"><label class="al">Link Google Meet</label><input id="sch-url" class="ai" placeholder="https://meet.google.com/..." style="box-sizing:border-box;"></div>' +
-      '<button id="sch-save-btn" onclick="saveSchedule(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Programar sesión</button>' +
     '</div>';
 
   document.body.appendChild(ov);
@@ -3985,41 +4236,42 @@ function openRecordingModal(studentId, studentName) {
 
   var ov = document.createElement('div');
   ov.id = 'recording-modal';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  ov.className = 'wp-overlay';
   ov.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:420px;padding:24px;box-sizing:border-box;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-        '<div>' +
-          '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;">🎥 Subir grabación</div>' +
-          '<div style="font-size:.72rem;color:#555;margin-top:2px;">' + name + '</div>' +
-        '</div>' +
-        '<button onclick="document.getElementById(\'recording-modal\').remove()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+    '<div class="wp-modal" style="max-width:440px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🎥</div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Subir grabación</div><div class="wp-subtitle">' + name + '</div></div>' +
+        '<button onclick="document.getElementById(\'recording-modal\').remove()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Título</label><input id="rec-title" class="ai" placeholder="Análisis de cuenta · Semana 3" style="box-sizing:border-box;"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">URL Video (Bunny)</label><input id="rec-url" class="ai" placeholder="https://player.mediadelivery.net/embed/..." style="box-sizing:border-box;"></div>' +
-      '<div style="margin-bottom:10px;"><label class="al">Descripción (opcional)</label><input id="rec-desc" class="ai" placeholder="Notas de la sesión" style="box-sizing:border-box;"></div>' +
-      '<div style="margin-bottom:14px;">' +
-        '<label class="al">Fecha</label>' +
-        '<div style="display:flex;gap:6px;">' +
-          (function(){
-            var d='<select id="rec-date-d" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Día</option>';
-            for(var i=1;i<=31;i++) d+='<option value="'+String(i).padStart(2,'0')+'">'+i+'</option>';
-            return d+'</select>';
-          })() +
-          (function(){
-            var ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-            var s='<select id="rec-date-m" class="ai" style="flex:1;min-width:0;box-sizing:border-box;"><option value="">Mes</option>';
-            ms.forEach(function(m,i){ s+='<option value="'+String(i+1).padStart(2,'0')+'">'+m+'</option>'; });
-            return s+'</select>';
-          })() +
-          (function(){
-            var y=new Date().getFullYear(), s='<select id="rec-date-y" class="ai" style="flex:1.4;min-width:0;box-sizing:border-box;"><option value="">Año</option>';
-            for(var i=y;i>=y-10;i--) s+='<option value="'+i+'">'+i+'</option>';
-            return s+'</select>';
-          })() +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="rec-title" class="wp-input" placeholder="Análisis de cuenta · Semana 3"></div>' +
+        '<div class="wp-field"><label class="wp-label">URL Video (Bunny)</label><input id="rec-url" class="wp-input" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
+        '<div class="wp-field"><label class="wp-label">Descripción (opcional)</label><input id="rec-desc" class="wp-input" placeholder="Notas de la sesión"></div>' +
+        '<div class="wp-field">' +
+          '<label class="wp-label">Fecha</label>' +
+          '<div style="display:flex;gap:6px;">' +
+            (function(){
+              var d='<select id="rec-date-d" class="wp-input" style="flex:1;min-width:0;"><option value="">Día</option>';
+              for(var i=1;i<=31;i++) d+='<option value="'+String(i).padStart(2,'0')+'">'+i+'</option>';
+              return d+'</select>';
+            })() +
+            (function(){
+              var ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+              var s='<select id="rec-date-m" class="wp-input" style="flex:1;min-width:0;"><option value="">Mes</option>';
+              ms.forEach(function(m,i){ s+='<option value="'+String(i+1).padStart(2,'0')+'">'+m+'</option>'; });
+              return s+'</select>';
+            })() +
+            (function(){
+              var y=new Date().getFullYear(), s='<select id="rec-date-y" class="wp-input" style="flex:1.4;min-width:0;"><option value="">Año</option>';
+              for(var i=y;i>=y-10;i--) s+='<option value="'+i+'">'+i+'</option>';
+              return s+'</select>';
+            })() +
+          '</div>' +
         '</div>' +
+        '<button id="rec-save-btn" onclick="saveRecording(\''+studentId+'\')" class="wp-btn-primary" style="width:100%;">Guardar grabación</button>' +
       '</div>' +
-      '<button id="rec-save-btn" onclick="saveRecording(\''+studentId+'\')" class="abtn2" style="width:100%;padding:11px;">Guardar grabación</button>' +
     '</div>';
 
   document.body.appendChild(ov);
@@ -4057,7 +4309,7 @@ function saveRecording(studentId) {
 
 function dStudent(id) {
   if (!confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
-  sb.from('profiles').delete().eq('id', id).then(function(r) {
+  _deleteStudent(id).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Perfil eliminado. Recuerda eliminar también en Auth → Users');
     rAdmSt();
@@ -4075,31 +4327,51 @@ function activateMember(id, isActive) {
   }
 
   // Mostrar modal para elegir plan
+  if (!window._allPlans) { _loadPlansCache(function(){ activateMember(id, isActive); }); return; }
   var existing = document.getElementById('activate-modal');
   if (existing) existing.remove();
 
+  var opts = [];
+  (window._allPlans || []).filter(function(p){ return p.active; }).forEach(function(p) {
+    if (p.variants && p.variants.length) {
+      p.variants.forEach(function(v) {
+        opts.push({
+          value: p.id + '|' + v.id,
+          label: (p.label || p.name) + ' — ' + v.name + ' ($' + Number(v.price).toLocaleString() + ')'
+        });
+      });
+    } else {
+      opts.push({ value: p.id + '|', label: p.name + ' ($' + Number(p.price).toLocaleString() + ')' });
+    }
+  });
+  if (!opts.length) opts.push({ value: '|', label: 'Sin planes configurados — ve a Gestión de Planes' });
+
   var modal = document.createElement('div');
   modal.id = 'activate-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  _injectWhopStyles();
+  modal.className = 'wp-overlay';
   modal.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:380px;padding:24px;">' +
-      '<div style="font-family:var(--font-cond);font-size:1.1rem;font-weight:700;text-transform:uppercase;color:#f0f0f0;margin-bottom:4px;">Activar / Cambiar plan</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:18px;">Selecciona el plan a activar manualmente</div>' +
-      '<label style="display:block;font-size:.66rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Plan</label>' +
-      '<select id="act-plan-sel" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#f0f0f0;font-size:.84rem;margin-bottom:14px;">' +
-        '<option value="formacion-basico|180">Formación $600 (6 meses)</option>' +
-        '<option value="formacion|180">Mentoría $1,500 (6 meses)</option>' +
-        '<option value="live-mensual|1">Live Mensual (1 mes)</option>' +
-        '<option value="live-trimestral|3">Live Trimestral (3 meses)</option>' +
-        '<option value="live-semestral|6">Live Semestral (6 meses)</option>' +
-      '</select>' +
-      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;">' +
-        '<input type="checkbox" id="act-keep-dates" style="width:14px;height:14px;accent-color:var(--sl);">' +
-        '<span style="font-size:.78rem;color:#9a9a9a;">Mantener fechas actuales (solo cambiar plan)</span>' +
-      '</label>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="act-plan-btn" style="flex:1;padding:10px;background:var(--st);color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">Aplicar</button>' +
-        '<button onclick="document.getElementById(\'activate-modal\').remove();" style="padding:10px 16px;background:transparent;border:1px solid var(--br);color:#555;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+    '<div class="wp-modal" style="max-width:420px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🎫</div>' +
+        '<div><div class="wp-title" style="font-size:1rem;">Activar / Cambiar plan</div><div class="wp-subtitle">Asignación manual</div></div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Plan</label><select id="act-plan-sel" class="wp-input">' +
+          opts.map(function(o){ return '<option value="'+o.value+'">'+o.label+'</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="wp-toggle-row">' +
+          '<span class="wp-toggle-text">Mantener fechas actuales</span>' +
+          '<label class="wp-toggle"><input type="checkbox" id="act-keep-dates" onchange="document.getElementById(\'act-manual-date-wrap\').style.display=this.checked?\'none\':\'\';"><span class="wp-toggle-track"></span></label>' +
+        '</div>' +
+        '<div id="act-manual-date-wrap" class="wp-field">' +
+          '<label class="wp-label">Fecha de vencimiento manual (opcional — anula la duración del plan)</label>' +
+          '<input type="date" id="act-manual-date" class="wp-input">' +
+        '</div>' +
+        '<div class="wp-footer">' +
+          '<button id="act-plan-btn" class="wp-btn-primary">Aplicar</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'activate-modal\').remove();">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
 
@@ -4109,22 +4381,44 @@ function activateMember(id, isActive) {
   document.getElementById('act-plan-btn').addEventListener('click', function() {
     var val = document.getElementById('act-plan-sel').value.split('|');
     var planId = val[0];
-    var months = parseInt(val[1]);
+    var variantId = val[1] || null;
+    var planDef = _planById(planId);
+    var variantDef = (variantId && planDef && planDef.variants) ? planDef.variants.find(function(v){ return v.id === variantId; }) : null;
     var keepDates = document.getElementById('act-keep-dates').checked;
+    var manualDate = document.getElementById('act-manual-date').value;
     var btn = this;
     btn.disabled = true; btn.textContent = 'Aplicando...';
-    var updateData = { plan: planId };
+
+    var updateData = {
+      plan: planId,
+      access_1on1: planDef ? !!planDef.access_1on1 : false,
+      roadmap_mode: planDef ? planDef.roadmap_mode : null
+    };
     if (!keepDates) {
+      var accessClases = variantDef && variantDef.access_clases !== null ? variantDef.access_clases : (planDef ? planDef.access_clases !== false : true);
+      var durClases = variantDef ? variantDef.duration_clases_months : (planDef ? planDef.duration_clases_months : null);
+      var durLive = variantDef ? variantDef.duration_live_months : (planDef ? planDef.duration_live_months : null);
       var now = new Date();
-      var end = new Date();
-      end.setMonth(end.getMonth() + months);
-      updateData.membership_start = now.toISOString();
-      updateData.membership_end = end.toISOString();
+
+      if (manualDate) {
+        updateData.membership_start = now.toISOString();
+        updateData.membership_end = new Date(manualDate + 'T23:59:59').toISOString();
+      } else if (!accessClases) {
+        updateData.membership_start = null;
+        updateData.membership_end = null;
+      } else {
+        updateData.membership_start = now.toISOString();
+        updateData.membership_end = durClases ? (function(){ var e=new Date(); e.setMonth(e.getMonth()+durClases); return e.toISOString(); })() : UNLIMITED_ISO;
+      }
+      if (durLive) {
+        var liveEnd = new Date(); liveEnd.setMonth(liveEnd.getMonth() + durLive);
+        updateData.live_plan = planId; updateData.live_end = liveEnd.toISOString();
+      }
     }
     sb.from('profiles').update(updateData).eq('id', id).then(function(r) {
       modal.remove();
       if (r.error) return tst('Error: ' + r.error.message, 1);
-      tst('✓ Plan actualizado — ' + planId);
+      tst('✓ Plan actualizado');
       rAdmSt();
     });
   });
@@ -4304,22 +4598,26 @@ function openEditModal(type, data, parentLvId, parentModId) {
 
   var modal = document.createElement('div');
   modal.id = 'edit-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);overflow-y:auto;';
+  _injectWhopStyles();
+  modal.className = 'wp-overlay';
+  modal.style.overflowY = 'auto';
 
   var box = document.createElement('div');
-  box.style.cssText = 'background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:520px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.6);';
+  box.className = 'wp-modal';
+  box.style.maxWidth = '540px';
+  box.style.padding = '4px';
 
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
-    '<div style="font-size:.92rem;font-weight:700;color:#f0f0f0;">'+title+'</div>' +
-    '<button onclick="closeEditModal()" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;padding:0 4px;">✕</button>' +
-    '</div>';
+  var html = '<div class="wp-header" style="padding:22px 24px 4px;">' +
+    '<div class="wp-title" style="flex:1;font-size:1.05rem;">'+title+'</div>' +
+    '<button onclick="closeEditModal()" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;padding:0 4px;">✕</button>' +
+    '</div><div class="wp-body" style="padding:12px 24px 26px;">';
 
   if (type === 'level') {
     html +=
-      '<div style="margin-bottom:12px;"><label class="al">Título del nivel</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: Nivel Básico"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Título del nivel</label><input id="em-title" class="wp-input" value="'+(data?data.title:'')+'" placeholder="Ej: Nivel Básico"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Descripción</label><input id="em-desc" class="wp-input" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
       '<div style="margin-bottom:12px;">' +
-        '<label class="al">Imagen del nivel</label>';
+        '<label class="wp-label">Imagen del nivel</label>';
     if (data && data.thumbnail_url) {
       html += '<div style="margin-bottom:8px;"><img src="'+data.thumbnail_url+'" style="height:70px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>';
     }
@@ -4334,26 +4632,26 @@ function openEditModal(type, data, parentLvId, parentModId) {
         '<div id="em-img-preview" style="margin-top:8px;display:none;"><img id="em-img-prev" style="height:60px;border-radius:6px;border:1px solid var(--br);object-fit:cover;" /></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:10px;margin-bottom:12px;">' +
-        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
+        '<div><label class="wp-label">Orden</label><input id="em-ord" type="number" class="wp-input" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
         '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-pub"'+(data&&data.is_published?' checked':' checked')+'> Publicado</label></div>' +
         '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#c9a84c;cursor:pointer;" title="Los módulos de este nivel se desbloquean semana a semana"><input type="checkbox" id="em-controlled"'+(data&&data.is_controlled?' checked':'')+'> 🔒 Controlado por semana</label></div>' +
       '</div>';
 
   } else if (type === 'module') {
     html +=
-      '<div style="margin-bottom:12px;"><label class="al">Título del módulo</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: Fundamentos de Precio"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Título del módulo</label><input id="em-title" class="wp-input" value="'+(data?data.title:'')+'" placeholder="Ej: Fundamentos de Precio"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Descripción</label><input id="em-desc" class="wp-input" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
       '<div style="display:grid;grid-template-columns:80px 1fr;gap:10px;margin-bottom:12px;">' +
-        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'" style="width:80px;"></div>' +
-        '<div><label class="al" title="Semana del roadmap en que se desbloquea (solo para niveles controlados)">Desbloquear en semana <span style="color:#c9a84c;">🔒</span></label><input id="em-unlock" type="number" class="ai" value="'+(data&&data.unlock_week?data.unlock_week:'')+'" placeholder="Ej: 3 (vacío = siempre visible)" min="1"></div>' +
+        '<div><label class="wp-label">Orden</label><input id="em-ord" type="number" class="wp-input" value="'+(data&&data.sort_order?data.sort_order:1)+'" style="width:80px;"></div>' +
+        '<div><label class="wp-label" title="Semana del roadmap en que se desbloquea (solo para niveles controlados)">Desbloquear en semana <span style="color:#c9a84c;">🔒</span></label><input id="em-unlock" type="number" class="wp-input" value="'+(data&&data.unlock_week?data.unlock_week:'')+'" placeholder="Ej: 3 (vacío = siempre visible)" min="1"></div>' +
       '</div>';
 
   } else if (type === 'lesson') {
     html +=
-      '<div style="margin-bottom:12px;"><label class="al">Título de la clase</label><input id="em-title" class="ai" value="'+(data?data.title:'')+'" placeholder="Ej: ¿Qué es el Order Flow?"></div>' +
-      '<div style="margin-bottom:12px;"><label class="al">URL del video (YouTube / Bunny / Vimeo)</label><input id="em-url" class="ai" value="'+(data&&data.video_url?data.video_url:'')+'" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Título de la clase</label><input id="em-title" class="wp-input" value="'+(data?data.title:'')+'" placeholder="Ej: ¿Qué es el Order Flow?"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">URL del video (YouTube / Bunny / Vimeo)</label><input id="em-url" class="wp-input" value="'+(data&&data.video_url?data.video_url:'')+'" placeholder="https://player.mediadelivery.net/embed/..."></div>' +
       '<div style="margin-bottom:12px;">' +
-        '<label class="al">Miniatura de la clase</label>' +
+        '<label class="wp-label">Miniatura de la clase</label>' +
         (data&&data.thumbnail_url
           ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
               '<img src="'+data.thumbnail_url+'" style="height:56px;width:90px;border-radius:6px;border:1px solid var(--br);object-fit:cover;">' +
@@ -4363,22 +4661,22 @@ function openEditModal(type, data, parentLvId, parentModId) {
               '</div>' +
             '</div>'
           : '') +
-        '<input type="file" id="em-thumb-file" accept="image/*" class="ai" style="font-size:.78rem;padding:6px;">' +
+        '<input type="file" id="em-thumb-file" accept="image/*" class="wp-input" style="font-size:.78rem;padding:6px;">' +
       '</div>' +
-      '<div style="margin-bottom:12px;"><label class="al">Descripción</label><input id="em-desc" class="ai" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
+      '<div style="margin-bottom:12px;"><label class="wp-label">Descripción</label><input id="em-desc" class="wp-input" value="'+(data&&data.description?data.description:'')+'" placeholder="Breve descripción"></div>' +
       '<div style="display:grid;grid-template-columns:80px 80px 1fr;gap:10px;margin-bottom:12px;">' +
-        '<div><label class="al">Duración (min)</label><input id="em-min" type="number" class="ai" value="'+(data&&data.duration_minutes?data.duration_minutes:'')+'" placeholder="15"></div>' +
-        '<div><label class="al">Orden</label><input id="em-ord" type="number" class="ai" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
+        '<div><label class="wp-label">Duración (min)</label><input id="em-min" type="number" class="wp-input" value="'+(data&&data.duration_minutes?data.duration_minutes:'')+'" placeholder="15"></div>' +
+        '<div><label class="wp-label">Orden</label><input id="em-ord" type="number" class="wp-input" value="'+(data&&data.sort_order?data.sort_order:1)+'"></div>' +
         '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-pub"'+(data&&data.is_published?' checked':' checked')+'> Publicado</label></div>' +
       '</div>' +
       '<div style="margin-bottom:12px;"><label style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#9a9a9a;cursor:pointer;"><input type="checkbox" id="em-task"'+(data&&data.has_task?' checked':'')+'> Tiene tarea</label></div>' +
-      '<div id="em-task-wrap" style="'+(data&&data.has_task?'':'display:none;')+'margin-bottom:12px;"><label class="al">Instrucciones de la tarea</label><textarea id="em-task-ins" class="ai" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Describe qué debe hacer el alumno...">'+(data&&data.task_instructions?data.task_instructions:'')+'</textarea></div>';
+      '<div id="em-task-wrap" style="'+(data&&data.has_task?'':'display:none;')+'margin-bottom:12px;"><label class="wp-label">Instrucciones de la tarea</label><textarea id="em-task-ins" class="wp-input" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;" placeholder="Describe qué debe hacer el alumno...">'+(data&&data.task_instructions?data.task_instructions:'')+'</textarea></div>';
   }
 
-  html += '<div style="display:flex;gap:10px;margin-top:6px;">' +
-    '<button id="em-save-btn" style="flex:1;background:var(--st);border:none;color:#fff;padding:10px;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;">'+( isNew ? 'Crear' : 'Guardar cambios')+'</button>' +
-    '<button onclick="closeEditModal()" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 18px;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
-    '</div>';
+  html += '<div class="wp-footer" style="margin-top:10px;">' +
+    '<button id="em-save-btn" class="wp-btn-primary">'+( isNew ? 'Crear' : 'Guardar cambios')+'</button>' +
+    '<button class="wp-btn-ghost" onclick="closeEditModal()">Cancelar</button>' +
+    '</div></div>';
 
   box.innerHTML = html;
   modal.appendChild(box);
@@ -4536,54 +4834,277 @@ function dLesson(id) {
 
 function rAdmCodes() {
   var c = document.getElementById('a-codes'); if (!c) return;
+  _injectWhopStyles();
+
+  var canPlans = _staffCan('access_plans');
+  var canDiscord = _staffCan('access_discord');
+  var canCodes = _staffCan('access_codes');
+  // "Permisos de Staff" es exclusivo de admin, sin importar la config de permisos
+  var canStaffPerms = !cProfile || cProfile.role !== 'staff';
+
+  var subtabDefs = [
+    ['plans', 'Gestionar Plan', canPlans],
+    ['discord', 'Roles de Discord', canDiscord],
+    ['codes', 'Generar código', canCodes],
+    ['staff', 'Permisos de Staff', canStaffPerms]
+  ];
+  var visibleSubtabs = subtabDefs.filter(function(s){ return s[2]; });
+
+  if (!visibleSubtabs.length) {
+    c.innerHTML = '<p style="color:#666;font-size:.86rem;padding:20px 0;">No tienes permisos habilitados para esta sección.</p>';
+    return;
+  }
+
   c.innerHTML =
 
-    // ── SECCIÓN 1: PLANES ──
-    '<div class="aform" style="margin-bottom:22px;">' +
-      '<div style="font-size:.86rem;font-weight:600;margin-bottom:4px;">🛒 Gestión de Planes</div>' +
-      '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Activa o desactiva qué planes aparecen en el checkout público.</div>' +
-      '<div id="plans-admin-list"><span class="spin"></span></div>' +
+    '<div class="wp-subtabs">' +
+      visibleSubtabs.map(function(s, i) {
+        return '<button class="wp-subtab-btn'+(i===0?' active':'')+'" data-subtab="'+s[0]+'" onclick="_switchCodesSubtab(\''+s[0]+'\')">'+s[1]+'</button>';
+      }).join('') +
     '</div>' +
 
-    // ── SEPARADOR ──
-    '<div style="border-top:1px solid rgba(91,127,166,.12);margin:4px 0 22px;"></div>' +
-
-    // ── SECCIÓN 2: CÓDIGOS ──
-    '<div class="aform">' +
-      '<div style="font-size:.86rem;font-weight:600;margin-bottom:14px;">🔑 Generar código de acceso</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:9px;">' +
-        '<div><label class="al">Nota (para quién es)</label><input id="code-note" class="ai" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
-        '<div><label class="al">Plan que activa</label><select id="code-plan" class="ai"><option value="formacion-basico">Formación $600</option><option value="formacion">Mentoría $1,500</option><option value="live">Live Sessions</option></select></div>' +
-        '<div><label class="al">Meses</label><input id="code-months" type="number" class="ai" value="6" min="1" max="24"></div>' +
+    // ── SUB-PESTAÑA: PLANES ──
+    '<div id="codes-subtab-plans" class="codes-subtab-panel" style="display:none;">' +
+      '<div class="aform">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+          '<div style="font-size:.86rem;font-weight:600;">🛒 Gestión de Planes</div>' +
+          '<button onclick="openPlanModal(null)" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:#4ade80;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">+ Crear plan</button>' +
+        '</div>' +
+        '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Crea, edita o elimina planes — precio, duración, accesos y roles de Discord. Se refleja automáticamente en el checkout y en toda la plataforma.</div>' +
+        '<div id="plans-admin-list"><span class="spin"></span></div>' +
       '</div>' +
-      '<button class="abtn2" id="btn-gen-code" style="margin-top:11px;">Generar código</button>' +
     '</div>' +
-    '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>';
+
+    // ── SUB-PESTAÑA: ROLES DE DISCORD ──
+    '<div id="codes-subtab-discord" class="codes-subtab-panel" style="display:none;">' +
+      '<div class="aform">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+          '<div style="font-size:.86rem;font-weight:600;">🎭 Roles de Discord</div>' +
+          '<button id="btn-sync-discord-roles" style="background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.3);color:#8f9aff;padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">Sincronizar desde Discord</button>' +
+        '</div>' +
+        '<div style="font-size:.74rem;color:#666;margin-bottom:14px;">Sincroniza los roles reales de tu servidor. Los que dejes "Disponibles" aparecerán como opción al configurar qué roles otorga cada plan — desactiva los que no quieras ofrecer (ej: Moderador, Bot).</div>' +
+        '<div id="discord-roles-list"><span class="spin"></span></div>' +
+      '</div>' +
+    '</div>' +
+
+    // ── SUB-PESTAÑA: CÓDIGOS ──
+    '<div id="codes-subtab-codes" class="codes-subtab-panel" style="display:none;">' +
+      '<div class="wp-card">' +
+        '<div class="wp-card-head"><span class="wp-card-icon">🔑</span><span class="wp-card-title">Generar código</span></div>' +
+        '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+          '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="free" checked onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Acceso gratis</label>' +
+          '<label class="wp-chip" style="cursor:pointer;"><input type="radio" name="code-type" value="discount" onchange="_toggleCodeType(this.value)" style="width:12px;height:12px;accent-color:var(--sl);"> Descuento</label>' +
+        '</div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Nota (para quién es)</label><input id="code-note" class="wp-input" placeholder="Ej: Juan Pérez - Pago 13/03"></div>' +
+          '<div><label class="wp-label" id="code-plan-label">Plan que activa</label><select id="code-plan" class="wp-input"><option value="">Cargando...</option></select></div>' +
+        '</div>' +
+
+        // Bloque "Acceso gratis"
+        '<div id="code-free-block">' +
+          '<div class="wp-toggle-row" style="margin-top:6px;">' +
+            '<div><span class="wp-toggle-text">Personalizar duración</span><div class="wp-toggle-sub">Si lo dejas apagado, usa la duración normal del plan</div></div>' +
+            '<label class="wp-toggle"><input type="checkbox" id="code-custom-dur" onchange="document.getElementById(\'code-custom-dur-opts\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div id="code-custom-dur-opts" style="display:none;margin-top:10px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;">' +
+            '<div class="wp-toggle-row">' +
+              '<span class="wp-toggle-text">Aplica a Clases</span>' +
+              '<label class="wp-toggle"><input type="checkbox" id="code-applies-clases"><span class="wp-toggle-track"></span></label>' +
+            '</div>' +
+            '<div class="wp-toggle-row">' +
+              '<span class="wp-toggle-text">Aplica a Live</span>' +
+              '<label class="wp-toggle"><input type="checkbox" id="code-applies-live"><span class="wp-toggle-track"></span></label>' +
+            '</div>' +
+            '<div class="wp-field" style="margin-top:12px;"><label class="wp-label">Meses (aplica a lo marcado arriba)</label><input id="code-months" type="number" class="wp-input" value="1" min="1" max="24"></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Bloque "Descuento"
+        '<div id="code-discount-block" style="display:none;">' +
+          '<div class="wp-field wp-grid2" style="margin-top:6px;">' +
+            '<div><label class="wp-label">Tipo</label><select id="code-discount-type" class="wp-input">' +
+              '<option value="percent">Porcentaje (%)</option>' +
+              '<option value="fixed">Monto fijo ($)</option>' +
+            '</select></div>' +
+            '<div><label class="wp-label" id="code-discount-value-label">Valor (%)</label><input id="code-discount-value" type="number" class="wp-input" placeholder="Ej: 20"></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<button class="wp-btn-primary" id="btn-gen-code" style="margin-top:14px;width:100%;">Generar código</button>' +
+      '</div>' +
+      '<div id="codes-list" style="margin-top:20px;"><span class="spin"></span></div>' +
+    '</div>' +
+
+    // ── SUB-PESTAÑA: PERMISOS DE STAFF ──
+    '<div id="codes-subtab-staff" class="codes-subtab-panel" style="display:none;">' +
+      '<div class="wp-card">' +
+        '<div class="wp-card-head"><span class="wp-card-icon">🛡️</span><span class="wp-card-title">Permisos del rol Staff</span></div>' +
+        '<div style="font-size:.74rem;color:#5c6470;margin-bottom:14px;">Define qué puede hacer cualquier cuenta marcada como "staff" (asignas ese rol desde la ficha de cada persona). Cambia esto cuando quieras — se aplica al instante, sin tocar código.</div>' +
+        '<div id="staff-perms-list"><span class="spin"></span></div>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('code-discount-type').addEventListener('change', function() {
+    document.getElementById('code-discount-value-label').textContent = this.value === 'percent' ? 'Valor (%)' : 'Valor ($)';
+  });
 
   document.getElementById('btn-gen-code').addEventListener('click', genCode);
-  loadPlansAdmin();
-  loadCodes();
+  document.getElementById('btn-sync-discord-roles').addEventListener('click', syncDiscordRoles);
+  if (canPlans) loadPlansAdmin();
+  else if (canCodes) _loadCodePlanOptions();
+  if (canDiscord) loadDiscordRoles();
+  if (canCodes) loadCodes();
+  if (canStaffPerms) loadStaffPermissions();
+
+  // Mostrar solo la primera sub-pestaña realmente visible
+  var firstSubtab = visibleSubtabs[0][0];
+  document.getElementById('codes-subtab-' + firstSubtab).style.display = '';
+}
+
+function _switchCodesSubtab(tab) {
+  document.querySelectorAll('.wp-subtab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.subtab === tab);
+  });
+  document.querySelectorAll('.codes-subtab-panel').forEach(function(p) {
+    p.style.display = p.id === 'codes-subtab-' + tab ? '' : 'none';
+  });
+}
+
+var STAFF_PERMS = [
+  { key: 'access_students',  label: 'Ver y administrar Alumnos', sub: 'Planes, live, 1-a-1, sesiones 1-1, grabaciones' },
+  { key: 'access_codes',     label: 'Generar códigos', sub: 'Acceso gratis y descuentos' },
+  { key: 'delete_students',  label: 'Eliminar alumnos', sub: 'Borrar una cuenta por completo' },
+  { key: 'access_plans',     label: 'Gestión de Planes', sub: 'Crear, editar o eliminar planes' },
+  { key: 'access_discord',   label: 'Roles de Discord', sub: 'Sincronizar y activar roles' },
+  { key: 'access_clases',    label: 'Clases', sub: 'Subir/editar contenido de cursos' },
+  { key: 'access_sesiones',  label: 'Sesiones en vivo', sub: 'Programar/editar sesiones' },
+  { key: 'access_roadmap',   label: 'Roadmap', sub: 'Editar contenido de las semanas' }
+];
+
+function loadStaffPermissions() {
+  var c = document.getElementById('staff-perms-list'); if (!c) return;
+  sb.from('staff_permissions').select('*').eq('id', 1).single().then(function(r) {
+    if (r.error || !r.data) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Aún no se ha creado la tabla staff_permissions en Supabase.</p>';
+      return;
+    }
+    var perms = r.data;
+    c.innerHTML = STAFF_PERMS.map(function(p, i) {
+      return '<div class="wp-toggle-row"' + (i>0?' style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);"':'') + '>' +
+        '<div><span class="wp-toggle-text">'+p.label+'</span><div class="wp-toggle-sub">'+p.sub+'</div></div>' +
+        '<label class="wp-toggle"><input type="checkbox" '+(perms[p.key]?'checked':'')+' onchange="toggleStaffPerm(\''+p.key+'\',this.checked)"><span class="wp-toggle-track"></span></label>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function toggleStaffPerm(key, enabled) {
+  var upd = {}; upd[key] = enabled;
+  sb.from('staff_permissions').update(upd).eq('id', 1).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Permiso actualizado');
+  });
+}
+
+function loadDiscordRoles() {
+  var c = document.getElementById('discord-roles-list'); if (!c) return;
+  sb.from('discord_roles').select('*').order('sort_order').then(function(r) {
+    if (r.error) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Aún no se ha creado la tabla discord_roles en Supabase.</p>';
+      return;
+    }
+    if (!r.data || !r.data.length) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin roles sincronizados todavía. Dale clic a "Sincronizar desde Discord".</p>';
+      return;
+    }
+    c.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">' +
+      r.data.map(function(role) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(91,127,166,.12);border-radius:8px;">' +
+          '<div style="display:flex;align-items:center;gap:9px;">' +
+            '<div style="width:9px;height:9px;border-radius:50%;background:' + (role.color || '#5865F2') + ';flex-shrink:0;"></div>' +
+            '<div style="font-size:.83rem;font-weight:600;color:#f0f0f0;">' + role.name + '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (role.active ? 'rgba(74,222,128,.1)' : 'rgba(255,255,255,.05)') + ';color:' + (role.active ? '#4ade80' : '#555') + ';">' + (role.active ? 'Disponible' : 'Oculto') + '</span>' +
+            '<button onclick="toggleDiscordRole(\'' + role.id + '\',' + role.active + ')" style="background:' + (role.active ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)') + ';border:1px solid ' + (role.active ? 'rgba(248,113,113,.25)' : 'rgba(74,222,128,.25)') + ';color:' + (role.active ? '#f87171' : '#4ade80') + ';padding:4px 12px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
+              (role.active ? 'Ocultar' : 'Mostrar') +
+            '</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  });
+}
+
+function toggleDiscordRole(id, currentActive) {
+  sb.from('discord_roles').update({ active: !currentActive }).eq('id', id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Rol ' + (!currentActive ? 'activado' : 'desactivado'));
+    loadDiscordRoles();
+  });
+}
+
+async function syncDiscordRoles() {
+  var btn = document.getElementById('btn-sync-discord-roles');
+  var originalText = btn.textContent;
+  btn.textContent = 'Sincronizando...';
+  btn.disabled = true;
+  try {
+    var session = await sb.auth.getSession();
+    var token = session && session.data && session.data.session ? session.data.session.access_token : '';
+    var res = await fetch('/api/discord-roles', { headers: { Authorization: 'Bearer ' + token } });
+    var data = await res.json();
+    if (!res.ok || data.error) {
+      tst('Error al sincronizar: ' + (data.error || res.status), 1);
+    } else {
+      tst('✓ ' + data.count + ' roles sincronizados desde Discord');
+      loadDiscordRoles();
+    }
+  } catch (e) {
+    tst('Error al sincronizar roles', 1);
+  }
+  btn.textContent = originalText;
+  btn.disabled = false;
+}
+
+// Llena el selector "Plan que activa" del generador de códigos — independiente
+// de si la persona tiene permiso para ver la gestión completa de Planes.
+function _loadCodePlanOptions() {
+  var codeSel = document.getElementById('code-plan');
+  if (!codeSel) return;
+  sb.from('checkout_plans').select('id, name, price').order('sort_order').then(function(r) {
+    var plans = r.data || [];
+    codeSel.innerHTML = plans.map(function(p) { return '<option value="'+p.id+'">'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') || '<option value="">Sin planes creados</option>';
+  });
 }
 
 function loadPlansAdmin() {
   var c = document.getElementById('plans-admin-list'); if (!c) return;
-  sb.from('checkout_plans').select('*').order('sort_order').then(function(r) {
-    if (r.error || !r.data || !r.data.length) {
-      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin planes en base de datos.</p>';
+  _loadPlansCache(function(plans) {
+    // Llenar también el select de "plan que activa" del generador de códigos
+    var codeSel = document.getElementById('code-plan');
+    if (codeSel) {
+      codeSel.innerHTML = plans.map(function(p) { return '<option value="'+p.id+'">'+p.name+' ($'+Number(p.price).toLocaleString()+')</option>'; }).join('') || '<option value="">Sin planes creados</option>';
+    }
+
+    if (!plans.length) {
+      c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin planes en base de datos. Crea el primero con "+ Crear plan".</p>';
       return;
     }
     c.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">' +
-      r.data.map(function(p) {
+      plans.map(function(p) {
+        var variantTxt = p.variants && p.variants.length ? (' · ' + p.variants.length + ' variante' + (p.variants.length>1?'s':'')) : '';
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(91,127,166,.12);border-radius:8px;">' +
-          '<div>' +
+          '<div style="cursor:pointer;" onclick="openPlanModal(\''+p.id+'\')">' +
             '<div style="font-size:.84rem;font-weight:600;color:#f0f0f0;">' + p.name + '</div>' +
-            '<div style="font-size:.72rem;color:#555;margin-top:2px;">$' + Number(p.price).toLocaleString() + ' · ' + p.period + '</div>' +
+            '<div style="font-size:.72rem;color:#555;margin-top:2px;">$' + Number(p.price).toLocaleString() + ' · ' + (p.period||'—') + variantTxt + '</div>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
             '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (p.active ? 'rgba(74,222,128,.1)' : 'rgba(255,255,255,.05)') + ';color:' + (p.active ? '#4ade80' : '#555') + ';">' + (p.active ? 'Visible' : 'Oculto') + '</span>' +
-            '<button onclick="togglePlan(\'' + p.id + '\',' + p.active + ')" style="background:' + (p.active ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)') + ';border:1px solid ' + (p.active ? 'rgba(248,113,113,.25)' : 'rgba(74,222,128,.25)') + ';color:' + (p.active ? '#f87171' : '#4ade80') + ';padding:4px 12px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
+            '<button onclick="togglePlan(\'' + p.id + '\',' + p.active + ')" style="background:' + (p.active ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)') + ';border:1px solid ' + (p.active ? 'rgba(248,113,113,.25)' : 'rgba(74,222,128,.25)') + ';color:' + (p.active ? '#f87171' : '#4ade80') + ';padding:4px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
               (p.active ? 'Ocultar' : 'Publicar') +
             '</button>' +
+            '<button onclick="openPlanModal(\''+p.id+'\')" style="background:rgba(91,127,166,.08);border:1px solid rgba(91,127,166,.25);color:var(--sl);padding:4px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">Editar</button>' +
           '</div>' +
         '</div>';
       }).join('') +
@@ -4599,21 +5120,454 @@ function togglePlan(planId, currentActive) {
   });
 }
 
+// ── MODAL: crear/editar plan ──
+function _injectWhopStyles() {
+  if (document.getElementById('wp-styles')) return;
+  var style = document.createElement('style');
+  style.id = 'wp-styles';
+  style.textContent =
+    '.wp-overlay{position:fixed;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;}' +
+    '.wp-modal{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:85vh;max-height:85dvh;}' +
+    '.wp-modal{background:linear-gradient(180deg,#181b22,#141720);border:1px solid rgba(255,255,255,.08);border-radius:22px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.55);overflow:auto;}' +
+    '.wp-header{position:sticky;top:0;background:linear-gradient(180deg,#181b22 70%,rgba(24,27,34,0));padding:26px 28px 18px;z-index:2;display:flex;align-items:center;gap:12px;}' +
+    '.wp-header-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}' +
+    '.wp-title{font-family:var(--font-cond);font-size:1.15rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#fff;}' +
+    '.wp-subtitle{font-size:.74rem;color:#6b7280;margin-top:2px;}' +
+    '.wp-body{padding:4px 28px 28px;}' +
+    '.wp-card{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;margin-bottom:12px;}' +
+    '.wp-card-head{display:flex;align-items:center;gap:9px;margin-bottom:14px;}' +
+    '.wp-card-icon{width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0;}' +
+    '.wp-card-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8b93a1;}' +
+    '.wp-field{margin-bottom:12px;}' +
+    '.wp-field:last-child{margin-bottom:0;}' +
+    '.wp-label{display:block;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#5c6470;margin-bottom:6px;}' +
+    '.wp-input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:11px 14px;color:#f0f0f0;font-size:.85rem;transition:border-color .15s,background .15s;outline:none;}' +
+    '.wp-input:focus{border-color:var(--sl);background:rgba(255,255,255,.06);}' +
+    '.wp-input:disabled{opacity:.4;}' +
+    '.wp-input::placeholder{color:#4a5058;}' +
+    '.wp-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}' +
+    '.wp-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0;}' +
+    '.wp-toggle-row + .wp-toggle-row{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.05);}' +
+    '.wp-toggle-text{font-size:.8rem;color:#d5d8dd;}' +
+    '.wp-toggle-sub{font-size:.68rem;color:#5c6470;margin-top:1px;}' +
+    '.wp-toggle{position:relative;display:inline-block;width:40px;height:23px;flex-shrink:0;cursor:pointer;}' +
+    '.wp-toggle input{opacity:0;width:0;height:0;}' +
+    '.wp-toggle-track{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:12px;transition:background .2s;}' +
+    '.wp-toggle-track:before{content:"";position:absolute;width:17px;height:17px;left:3px;top:3px;background:#9aa0aa;border-radius:50%;transition:all .2s;}' +
+    '.wp-toggle input:checked + .wp-toggle-track{background:var(--sl);}' +
+    '.wp-toggle input:checked + .wp-toggle-track:before{transform:translateX(17px);background:#fff;}' +
+    '.wp-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:20px;cursor:pointer;font-size:.75rem;color:#d5d8dd;transition:border-color .15s,background .15s;}' +
+    '.wp-chip:has(input:checked){background:rgba(91,127,166,.14);border-color:var(--sl);color:#fff;}' +
+    '.wp-chip input{width:12px;height:12px;accent-color:var(--sl);}' +
+    '.wp-variant-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-top:8px;}' +
+    '.wp-variant-name{font-size:.8rem;color:#f0f0f0;font-weight:500;}' +
+    '.wp-link-btn{background:none;border:none;font-size:.72rem;cursor:pointer;font-weight:600;}' +
+    '.wp-btn-add{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);color:#4ade80;padding:7px 14px;border-radius:10px;font-size:.74rem;font-weight:600;cursor:pointer;}' +
+    '.wp-footer{display:flex;gap:9px;margin-top:22px;}' +
+    '.wp-btn-primary{flex:1;padding:13px;background:linear-gradient(135deg,var(--st),var(--sl));color:#fff;border:none;border-radius:12px;font-size:.86rem;font-weight:700;cursor:pointer;letter-spacing:.2px;}' +
+    '.wp-btn-danger{padding:13px 18px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:#f87171;border-radius:12px;font-size:.85rem;font-weight:600;cursor:pointer;}' +
+    '.wp-btn-ghost{padding:13px 18px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#8b93a1;border-radius:12px;font-size:.85rem;cursor:pointer;}' +
+    '.wp-callout{margin-top:14px;padding:14px 16px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:14px;}' +
+    '.wp-stat{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 12px;}' +
+    '.wp-card + .wp-card{margin-top:2px;}' +
+    '.wp-subtabs{display:flex;gap:4px;margin-bottom:22px;border-bottom:1px solid rgba(255,255,255,.08);overflow-x:auto;}' +
+    '.wp-subtab-btn{background:none;border:none;color:#5c6470;padding:10px 16px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;}' +
+    '.wp-subtab-btn:hover{color:#9aa0aa;}' +
+    '.wp-subtab-btn.active{color:var(--sl);border-bottom-color:var(--sl);}';
+  document.head.appendChild(style);
+
+  // Bloquea el scroll de la página de fondo mientras haya algún modal (.wp-overlay)
+  // abierto — evita el "rebote"/estiramiento de iOS/Safari cuando el modal necesita
+  // scroll interno porque es más alto que la pantalla. Se activa/desactiva solo,
+  // sin tener que tocar cada función de modal individualmente.
+  var _wpScrollY = 0;
+  function _wpLockBody() {
+    _wpScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + _wpScrollY + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  function _wpUnlockBody() {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, _wpScrollY);
+  }
+  var _wpObserver = new MutationObserver(function() {
+    var hasOverlay = !!document.querySelector('.wp-overlay');
+    var isLocked = document.body.style.position === 'fixed';
+    if (hasOverlay && !isLocked) _wpLockBody();
+    else if (!hasOverlay && isLocked) _wpUnlockBody();
+  });
+  _wpObserver.observe(document.body, { childList: true });
+}
+
+function _planSectionHeader(icon, title) {
+  return '<div style="display:flex;align-items:center;gap:7px;margin:20px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(91,127,166,.15);">' +
+    '<span style="font-size:.9rem;">'+icon+'</span>' +
+    '<span style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7a8699;">'+title+'</span>' +
+  '</div>';
+}
+
+function openPlanModal(planId) {
+  var existing = document.getElementById('plan-edit-modal');
+  if (existing) existing.remove();
+  _injectWhopStyles();
+
+  var isNew = !planId;
+  var p = isNew ? {} : (_planById(planId) || {});
+
+  var modal = document.createElement('div');
+  modal.id = 'plan-edit-modal';
+  modal.className = 'wp-overlay';
+  modal.style.overflowY = 'auto';
+  modal.innerHTML =
+    '<div class="wp-modal" style="max-width:540px;overflow-y:auto;">' +
+
+      '<div class="wp-header">' +
+        '<div class="wp-header-icon">' + (isNew ? '✨' : '⚙️') + '</div>' +
+        '<div>' +
+          '<div class="wp-title">' + (isNew ? 'Crear plan' : (p.name || 'Editar plan')) + '</div>' +
+          (isNew ? '<div class="wp-subtitle">Se crea oculto — actívalo cuando esté listo</div>' : '<div class="wp-subtitle">ID: ' + p.id + '</div>') +
+        '</div>' +
+      '</div>' +
+
+      '<div class="wp-body">' +
+
+        // Card: Información general
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">📋</span><span class="wp-card-title">Información general</span></div>' +
+          (isNew ? '<div class="wp-field"><label class="wp-label">ID del plan (único, sin espacios)</label><input id="pm-id" class="wp-input" placeholder="mentoria-vip"></div>' : '') +
+          '<div class="wp-field"><label class="wp-label">Nombre</label><input id="pm-name" class="wp-input" value="'+(p.name||'')+'" placeholder="Ej: Mentoría Premium"></div>' +
+          '<div class="wp-field"><label class="wp-label">Descripción (checkout)</label><input id="pm-desc" class="wp-input" value="'+(p.description||'')+'" placeholder="Ej: Clases grabadas · Sesiones 1-1"></div>' +
+          '<div class="wp-field wp-grid2">' +
+            '<div><label class="wp-label">Precio (USD)</label><input id="pm-price" type="number" class="wp-input" value="'+(p.price||'')+'"></div>' +
+            '<div><label class="wp-label">Periodo</label><input id="pm-period" class="wp-input" value="'+(p.period||'')+'" placeholder="pago único / mes"></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Card: Etiqueta
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🏷️</span><span class="wp-card-title">Etiqueta visual</span></div>' +
+          '<div class="wp-field" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">' +
+            '<div><label class="wp-label">Etiqueta corta (lista de alumnos)</label><input id="pm-label" class="wp-input" value="'+(p.label||'')+'" placeholder="Ej: mentoria"></div>' +
+            '<div><label class="wp-label">Color</label><input id="pm-color" type="color" class="wp-input" value="'+(p.color||'#5b7fa6')+'" style="height:41px;width:52px;padding:4px;"></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Card: Categoría
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🏷️</span><span class="wp-card-title">Categoría del plan</span></div>' +
+          '<div style="font-size:.72rem;color:#5c6470;margin-bottom:10px;">Define qué tipo de acceso ofrece este plan — se usa para saber qué mostrarte al gestionar el plan/Live de un alumno.</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="clases" '+(p.category!=='live'&&p.category!=='ambos'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Clases</label>' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="live" '+(p.category==='live'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Live</label>' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="ambos" '+(p.category==='ambos'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Ambos</label>' +
+          '</div>' +
+        '</div>' +
+
+        // Card: Duración y accesos
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">⏳</span><span class="wp-card-title">Duración y accesos</span></div>' +
+          '<div class="wp-toggle-row">' +
+            '<span class="wp-toggle-text">Incluye acceso a Clases</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-clases" '+(p.access_clases !== false?'checked':'')+' onchange="document.getElementById(\'pm-dur-clases-wrap\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div id="pm-dur-clases-wrap" class="wp-field" style="margin-top:10px;'+(p.access_clases===false?'display:none;':'')+'"><label class="wp-label">Duración Clases (meses)</label><input id="pm-dur-clases" type="number" class="wp-input" value="'+(p.duration_clases_months||'')+'" placeholder="Vacío = ilimitado"></div>' +
+
+          '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
+            '<span class="wp-toggle-text">Incluye Live</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-live" '+(p.duration_live_months?'checked':'')+' onchange="document.getElementById(\'pm-dur-live-wrap\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div id="pm-dur-live-wrap" class="wp-field" style="margin-top:10px;'+(p.duration_live_months?'':'display:none;')+'"><label class="wp-label">Duración Live (meses)</label><input id="pm-dur-live" type="number" class="wp-input" value="'+(p.duration_live_months||'')+'" placeholder="Ej: 1"></div>' +
+
+          '<div class="wp-field" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);"><label class="wp-label">Modo Roadmap</label><select id="pm-roadmap" class="wp-input">' +
+            '<option value="ninguno"'+(p.roadmap_mode==='ninguno'||!p.roadmap_mode?' selected':'')+'>Ninguno</option>' +
+            '<option value="manual"'+(p.roadmap_mode==='manual'?' selected':'')+'>Manual</option>' +
+            '<option value="automatico"'+(p.roadmap_mode==='automatico'?' selected':'')+'>Automático</option>' +
+          '</select></div>' +
+          '<div class="wp-toggle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);">' +
+            '<span class="wp-toggle-text">Incluye sesiones 1-a-1</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-1on1" '+(p.access_1on1?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+          '<div class="wp-toggle-row">' +
+            '<span class="wp-toggle-text">Marcar "Popular" en checkout</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-popular" '+(p.popular?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
+          '</div>' +
+        '</div>' +
+
+        // Card: Discord roles
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-icon">🎭</span><span class="wp-card-title">Roles de Discord que asigna</span></div>' +
+          '<div id="pm-discord-roles" style="display:flex;flex-wrap:wrap;gap:7px;"><span class="spin"></span></div>' +
+        '</div>' +
+
+        // Card: Variantes
+        '<div class="wp-card">' +
+          '<div class="wp-card-head" style="justify-content:space-between;">' +
+            '<div style="display:flex;align-items:center;gap:9px;"><span class="wp-card-icon">🔀</span><span class="wp-card-title">Variantes (ej. duraciones de Live)</span></div>' +
+            (isNew ? '' : '<button class="wp-btn-add" onclick="openVariantModal(\''+p.id+'\',null)">+ Agregar</button>') +
+          '</div>' +
+          (isNew ? '<div style="font-size:.78rem;color:#5c6470;">Guarda el plan primero para poder agregar variantes.</div>' : '') +
+          '<div id="pm-variants-list">' +
+            (isNew ? '' : (p.variants && p.variants.length ? p.variants.map(function(v) {
+              return '<div class="wp-variant-row">' +
+                '<span class="wp-variant-name">'+v.name+' — $'+Number(v.price).toLocaleString()+'</span>' +
+                '<span><button class="wp-link-btn" style="color:var(--sl);margin-right:12px;" onclick="openVariantModal(\''+p.id+'\',\''+v.id+'\')">Editar</button><button class="wp-link-btn" style="color:#f87171;" onclick="deleteVariant(\''+v.id+'\',\''+p.id+'\')">Eliminar</button></span>' +
+              '</div>';
+            }).join('') : '<div style="font-size:.78rem;color:#5c6470;">Sin variantes.</div>')) +
+          '</div>' +
+        '</div>' +
+
+        (isNew ? '' :
+          '<div class="wp-callout">' +
+            '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">' +
+              '<input type="checkbox" id="pm-apply-existing" style="width:14px;height:14px;margin-top:2px;accent-color:#c9a84c;flex-shrink:0;">' +
+              '<span style="font-size:.76rem;color:#c9a84c;line-height:1.5;">Aplicar también estos cambios a los alumnos que ya tienen este plan — 1-a-1/roadmap a todos, y Clases solo a quienes la tengan activa ahora mismo (no reactiva a quien ya venció). Live nunca se toca aquí — se protege siempre, activo o vencido. Sin marcar, solo afecta a quienes lo obtengan de ahora en adelante.</span>' +
+            '</label>' +
+          '</div>'
+        ) +
+
+        '<div class="wp-footer">' +
+          '<button id="pm-save-btn" class="wp-btn-primary">'+(isNew?'Crear plan':'Guardar cambios')+'</button>' +
+          (isNew ? '' : '<button id="pm-delete-btn" class="wp-btn-danger">Eliminar</button>') +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'plan-edit-modal\').remove();">Cancelar</button>' +
+        '</div>' +
+
+      '</div>' + // wp-body
+    '</div>'; // wp-modal
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  // Cargar roles de Discord disponibles como chips (solo los marcados "Disponible",
+  // más cualquiera que este plan ya tuviera asignado aunque después se haya ocultado)
+  var selectedRoles = (p.discord_role_ids || []);
+  sb.from('discord_roles').select('*').order('sort_order').then(function(r) {
+    var wrap = document.getElementById('pm-discord-roles');
+    if (!wrap) return;
+    var allRoles = r.data || [];
+    var roles = allRoles.filter(function(role) { return role.active || selectedRoles.indexOf(role.discord_role_id) >= 0; });
+    if (!allRoles.length) { wrap.innerHTML = '<span style="font-size:.76rem;color:#5c6470;">Sin roles sincronizados — ve a la sección de arriba.</span>'; return; }
+    if (!roles.length) { wrap.innerHTML = '<span style="font-size:.76rem;color:#5c6470;">No hay roles disponibles — todos están ocultos en la sección de arriba.</span>'; return; }
+    wrap.innerHTML = roles.map(function(role) {
+      var checked = selectedRoles.indexOf(role.discord_role_id) >= 0;
+      return '<label class="wp-chip"><input type="checkbox" class="pm-role-cb" value="'+role.discord_role_id+'" '+(checked?'checked':'')+'>' + role.name + '</label>';
+    }).join('');
+  });
+
+
+  document.getElementById('pm-save-btn').addEventListener('click', function() {
+    var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
+    var id = isNew ? document.getElementById('pm-id').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-') : p.id;
+    if (!id) { tst('El ID del plan es obligatorio', 1); btn.disabled = false; btn.textContent = 'Crear plan'; return; }
+    var roleIds = Array.prototype.slice.call(document.querySelectorAll('.pm-role-cb:checked')).map(function(el){ return el.value; });
+    var data = {
+      id: id,
+      name: document.getElementById('pm-name').value.trim(),
+      description: document.getElementById('pm-desc').value.trim(),
+      price: parseFloat(document.getElementById('pm-price').value) || 0,
+      period: document.getElementById('pm-period').value.trim(),
+      label: document.getElementById('pm-label').value.trim(),
+      color: document.getElementById('pm-color').value,
+      duration_clases_months: document.getElementById('pm-dur-clases').value ? parseInt(document.getElementById('pm-dur-clases').value) : null,
+      access_clases: document.getElementById('pm-clases').checked,
+      duration_live_months: document.getElementById('pm-live').checked ? (document.getElementById('pm-dur-live').value ? parseInt(document.getElementById('pm-dur-live').value) : null) : null,
+      category: document.querySelector('input[name="pm-category"]:checked').value,
+      roadmap_mode: document.getElementById('pm-roadmap').value,
+      access_1on1: document.getElementById('pm-1on1').checked,
+      popular: document.getElementById('pm-popular').checked,
+      discord_role_ids: roleIds
+    };
+    if (isNew) { data.active = false; data.sort_order = (window._allPlans || []).length; }
+
+    var op = isNew ? sb.from('checkout_plans').insert(data) : sb.from('checkout_plans').update(data).eq('id', id);
+    op.then(function(r) {
+      if (r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = isNew ? 'Crear plan' : 'Guardar cambios'; return; }
+
+      var applyExisting = !isNew && document.getElementById('pm-apply-existing') && document.getElementById('pm-apply-existing').checked;
+      if (applyExisting) {
+        var nowISO = new Date().toISOString();
+        var promises = [];
+
+        // 1-a-1 y roadmap: a TODOS los alumnos de este plan, sin excepción (no tienen vencimiento)
+        promises.push(sb.from('profiles').update({
+          access_1on1: data.access_1on1,
+          roadmap_mode: data.roadmap_mode
+        }).eq('plan', id));
+
+        // Clases: solo a quienes tienen acceso ACTIVO ahora mismo (no revive a quien ya venció)
+        var clasesUpdate;
+        if (data.access_clases === false) {
+          clasesUpdate = { membership_start: null, membership_end: null };
+        } else {
+          var clasesEnd = data.duration_clases_months
+            ? (function(){ var e = new Date(); e.setMonth(e.getMonth() + data.duration_clases_months); return e.toISOString(); })()
+            : UNLIMITED_ISO;
+          clasesUpdate = { membership_start: new Date().toISOString(), membership_end: clasesEnd };
+        }
+        promises.push(sb.from('profiles').update(clasesUpdate).eq('plan', id).gt('membership_end', nowISO));
+
+        // Live NUNCA se toca aquí — ni activo ni vencido. Es un servicio recurrente con
+        // valor monetario real; extenderlo o reactivarlo sin que el alumno haya pagado
+        // de nuevo no sería justo. Si el plan cambia su duración de Live, eso solo aplica
+        // a quienes lo obtengan de ahora en adelante (compra, código, o asignación manual).
+
+        Promise.all(promises).then(function(results) {
+          modal.remove();
+          var anyError = results.some(function(r){ return r.error; });
+          if (anyError) tst('Plan guardado, pero algo falló al aplicar a alumnos existentes', 1);
+          else tst('✓ Plan actualizado y aplicado a alumnos activos');
+          loadPlansAdmin();
+        });
+      } else {
+        tst(isNew ? '✓ Plan creado (queda oculto — actívalo cuando esté listo)' : '✓ Plan actualizado');
+        modal.remove();
+        loadPlansAdmin();
+      }
+    });
+  });
+
+  if (!isNew) {
+    document.getElementById('pm-delete-btn').addEventListener('click', function() {
+      if (!confirm('¿Eliminar el plan "'+p.name+'"? Esto no afecta a los alumnos que ya lo tienen asignado, solo deja de estar disponible para nuevos.')) return;
+      sb.from('checkout_plans').delete().eq('id', p.id).then(function(r) {
+        if (r.error) return tst('Error: ' + r.error.message, 1);
+        tst('✓ Plan eliminado');
+        modal.remove();
+        loadPlansAdmin();
+      });
+    });
+  }
+}
+
+// ── MODAL: crear/editar variante ──
+function openVariantModal(planId, variantId) {
+  var planEditModal = document.getElementById('plan-edit-modal');
+  var existing = document.getElementById('variant-edit-modal');
+  if (existing) existing.remove();
+  _injectWhopStyles();
+
+  var planDef = _planById(planId);
+  var isNew = !variantId;
+  var v = isNew ? {} : (planDef && planDef.variants ? planDef.variants.find(function(x){ return x.id === variantId; }) : {}) || {};
+
+  var modal = document.createElement('div');
+  modal.id = 'variant-edit-modal';
+  modal.className = 'wp-overlay';
+  modal.style.zIndex = '10000';
+  modal.style.background = 'rgba(4,5,8,.85)';
+  modal.innerHTML =
+    '<div class="wp-modal" style="max-width:400px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🔀</div>' +
+        '<div class="wp-title" style="font-size:1rem;">'+(isNew?'Agregar variante':'Editar variante')+'</div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Nombre (ej: Trimestral)</label><input id="vm-name" class="wp-input" value="'+(v.name||'')+'"></div>' +
+        '<div class="wp-field"><label class="wp-label">Descripción (opcional)</label><input id="vm-desc" class="wp-input" value="'+(v.description||'')+'" placeholder="Ej: Ahorra $50 vs mensual"></div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Precio</label><input id="vm-price" type="number" class="wp-input" value="'+(v.price||'')+'"></div>' +
+          '<div><label class="wp-label">Periodo</label><input id="vm-period" class="wp-input" value="'+(v.period||'')+'" placeholder="/3 meses"></div>' +
+        '</div>' +
+        '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Duración Clases (meses)</label><input id="vm-dur-clases" type="number" class="wp-input" value="'+(v.duration_clases_months||'')+'"></div>' +
+          '<div><label class="wp-label">Duración Live (meses)</label><input id="vm-dur-live" type="number" class="wp-input" value="'+(v.duration_live_months||'')+'"></div>' +
+        '</div>' +
+        '<div class="wp-field"><label class="wp-label">¿Incluye Clases?</label><select id="vm-clases" class="wp-input">' +
+          '<option value="inherit"'+(v.access_clases===null||v.access_clases===undefined?' selected':'')+'>Igual que el plan</option>' +
+          '<option value="yes"'+(v.access_clases===true?' selected':'')+'>Sí</option>' +
+          '<option value="no"'+(v.access_clases===false?' selected':'')+'>No</option>' +
+        '</select></div>' +
+        '<div class="wp-footer">' +
+          '<button id="vm-save-btn" class="wp-btn-primary">Guardar</button>' +
+          '<button class="wp-btn-ghost" onclick="document.getElementById(\'variant-edit-modal\').remove();">Cancelar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  document.getElementById('vm-save-btn').addEventListener('click', function() {
+    var btn = this; btn.disabled = true; btn.textContent = 'Guardando...';
+    var clasesVal = document.getElementById('vm-clases').value;
+    var data = {
+      plan_id: planId,
+      name: document.getElementById('vm-name').value.trim(),
+      description: document.getElementById('vm-desc').value.trim(),
+      price: parseFloat(document.getElementById('vm-price').value) || 0,
+      period: document.getElementById('vm-period').value.trim(),
+      duration_clases_months: document.getElementById('vm-dur-clases').value ? parseInt(document.getElementById('vm-dur-clases').value) : null,
+      duration_live_months: document.getElementById('vm-dur-live').value ? parseInt(document.getElementById('vm-dur-live').value) : null,
+      access_clases: clasesVal === 'inherit' ? null : (clasesVal === 'yes')
+    };
+    var op = isNew ? sb.from('checkout_plan_variants').insert(data) : sb.from('checkout_plan_variants').update(data).eq('id', v.id);
+    op.then(function(r) {
+      if (r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = 'Guardar'; return; }
+      tst('✓ Variante guardada');
+      modal.remove();
+      _loadPlansCache(function() {
+        if (planEditModal) { planEditModal.remove(); openPlanModal(planId); }
+        else loadPlansAdmin();
+      });
+    });
+  });
+}
+
+function deleteVariant(variantId, planId) {
+  if (!confirm('¿Eliminar esta variante?')) return;
+  sb.from('checkout_plan_variants').delete().eq('id', variantId).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst('✓ Variante eliminada');
+    _loadPlansCache(function() {
+      var m = document.getElementById('plan-edit-modal');
+      if (m) { m.remove(); openPlanModal(planId); }
+    });
+  });
+}
+
+
+function _toggleCodeType(type) {
+  document.getElementById('code-free-block').style.display = type === 'free' ? '' : 'none';
+  document.getElementById('code-discount-block').style.display = type === 'discount' ? '' : 'none';
+  document.getElementById('code-plan-label').textContent = type === 'free' ? 'Plan que activa' : 'Plan al que aplica el descuento';
+}
 
 function genCode() {
   var note = document.getElementById('code-note').value.trim();
-  var months = parseInt(document.getElementById('code-months').value) || 6;
-  var plan = document.getElementById('code-plan') ? document.getElementById('code-plan').value : 'formacion';
+  var plan = document.getElementById('code-plan') ? document.getElementById('code-plan').value : '';
+  var codeType = document.querySelector('input[name="code-type"]:checked').value;
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var code = 'KATANA-';
   for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  sb.from('access_codes').insert({
-    code: code,
-    created_by: cUser.id,
-    months: months,
-    plan: plan,
-    notes: note
-  }).then(function(r) {
+
+  var data = { code: code, created_by: cUser.id, plan: plan, notes: note, code_type: codeType };
+
+  if (codeType === 'free') {
+    var customDur = document.getElementById('code-custom-dur').checked;
+    data.custom_duration = customDur;
+    if (customDur) {
+      var appliesClases = document.getElementById('code-applies-clases').checked;
+      var appliesLive = document.getElementById('code-applies-live').checked;
+      var months = parseInt(document.getElementById('code-months').value) || 1;
+      data.applies_clases = appliesClases;
+      data.applies_live = appliesLive;
+      data.months = months; // se guarda igual, para compatibilidad con lecturas existentes
+    } else {
+      data.applies_clases = false;
+      data.applies_live = false;
+      data.months = null;
+    }
+  } else {
+    data.discount_type = document.getElementById('code-discount-type').value;
+    data.discount_value = parseFloat(document.getElementById('code-discount-value').value) || 0;
+  }
+
+  sb.from('access_codes').insert(data).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Código generado: ' + code);
     loadCodes();
@@ -4633,16 +5587,27 @@ function loadCodes() {
   sb.from('access_codes').select('*').order('created_at', {ascending: false}).then(function(r) {
     if (!r.data || !r.data.length) { c.innerHTML = '<p style="color:#555;font-size:.82rem;">Sin códigos generados aún.</p>'; return; }
     var tbl = document.createElement('table'); tbl.className = 'dtab';
-    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Meses</th><th>Estado</th><th>Usado</th><th></th></tr></thead>';
+    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Detalle</th><th>Estado</th><th>Usado</th><th></th></tr></thead>';
     var tb = document.createElement('tbody');
     r.data.forEach(function(cd) {
       var tr = document.createElement('tr');
       var usedDate = cd.used_at ? new Date(cd.used_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '—';
+      var detail;
+      if (cd.code_type === 'discount') {
+        detail = '<span style="color:#c9a84c;">' + (cd.discount_type === 'percent' ? cd.discount_value + '% off' : '$' + cd.discount_value + ' off') + '</span>';
+      } else if (cd.custom_duration) {
+        var parts = [];
+        if (cd.applies_clases) parts.push('Clases');
+        if (cd.applies_live) parts.push('Live');
+        detail = cd.months + ' mes' + (cd.months===1?'':'es') + ' (' + (parts.join(' + ') || '—') + ')';
+      } else {
+        detail = 'Duración del plan';
+      }
       tr.innerHTML =
         '<td><span style="font-family:monospace;font-size:.82rem;color:#f0f0f0;letter-spacing:1px;">' + cd.code + '</span>' +
         '<button onclick="navigator.clipboard.writeText(\'' + cd.code + '\').then(function(){tst(\'✓ Copiado\')})" style="background:none;border:none;color:#555;cursor:pointer;font-size:.7rem;margin-left:6px;padding:2px 5px;border:1px solid var(--br);border-radius:3px;">Copiar</button></td>' +
         '<td style="font-size:.74rem;color:#666;">' + (cd.notes || '—') + '</td>' +
-        '<td style="font-size:.74rem;">' + cd.months + '</td>' +
+        '<td style="font-size:.74rem;">' + detail + '</td>' +
         '<td><span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (cd.is_used ? 'rgba(248,113,113,.1)' : 'rgba(74,222,128,.1)') + ';color:' + (cd.is_used ? '#f87171' : '#4ade80') + ';">' + (cd.is_used ? 'Usado' : 'Disponible') + '</span></td>' +
         '<td style="font-size:.74rem;color:#555;">' + usedDate + '</td>' +
         '<td></td>';
@@ -4820,27 +5785,31 @@ function openEditSe(id) {
 
     var overlay = document.createElement('div');
     overlay.id = 'edit-se-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+    _injectWhopStyles();
+    overlay.className = 'wp-overlay';
     overlay.innerHTML =
-      '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:16px;width:100%;max-width:480px;padding:24px;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
-          '<div style="font-size:.92rem;font-weight:700;">✎ Editar sesión</div>' +
-          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;">✕</button>' +
+      '<div class="wp-modal" style="max-width:480px;">' +
+        '<div class="wp-header" style="padding:22px 24px 4px;">' +
+          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+          '<div class="wp-title" style="flex:1;font-size:1rem;">Editar sesión</div>' +
+          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:#5c6470;font-size:1.2rem;cursor:pointer;">✕</button>' +
         '</div>' +
-        '<div style="margin-bottom:9px;">' +
-          '<label class="al">Título</label><input id="es-t" class="ai" value="' + (s.title||'') + '">' +
-        '</div>' +
-        '<div class="ses-dt-grid" style="margin-bottom:10px;">' +
-          '<div><label class="al">Inicio</label><input id="es-d" type="datetime-local" class="ai ses-dt-input" value="' + localDt + '"></div>' +
-          '<div><label class="al">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="ai ses-dt-input" value="' + localEndDt + '"></div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;">' +
-          '<div><label class="al">Link Discord</label><input id="es-u" class="ai" value="' + (s.discord_url||'') + '"></div>' +
-          '<div><label class="al">Descripción</label><input id="es-desc" class="ai" value="' + (s.description||'') + '"></div>' +
-        '</div>' +
-        '<div style="display:flex;gap:10px;margin-top:6px;">' +
-          '<button id="es-save-btn" onclick="saveSe(this.dataset.id)" data-id="' + s.id + '" class="abtn2" style="flex:1;padding:10px;">Guardar cambios</button>' +
-          '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 16px;border-radius:7px;font-size:.84rem;cursor:pointer;">Cancelar</button>' +
+        '<div class="wp-body" style="padding:16px 24px 24px;">' +
+          '<div class="wp-field">' +
+            '<label class="wp-label">Título</label><input id="es-t" class="wp-input" value="' + (s.title||'') + '">' +
+          '</div>' +
+          '<div class="wp-field wp-grid2">' +
+            '<div><label class="wp-label">Inicio</label><input id="es-d" type="datetime-local" class="wp-input" value="' + localDt + '"></div>' +
+            '<div><label class="wp-label">Fin (auto-desactivar)</label><input id="es-end" type="datetime-local" class="wp-input" value="' + localEndDt + '"></div>' +
+          '</div>' +
+          '<div class="wp-field wp-grid2">' +
+            '<div><label class="wp-label">Link Discord</label><input id="es-u" class="wp-input" value="' + (s.discord_url||'') + '"></div>' +
+            '<div><label class="wp-label">Descripción</label><input id="es-desc" class="wp-input" value="' + (s.description||'') + '"></div>' +
+          '</div>' +
+          '<div class="wp-footer">' +
+            '<button id="es-save-btn" onclick="saveSe(this.dataset.id)" data-id="' + s.id + '" class="wp-btn-primary">Guardar cambios</button>' +
+            '<button class="wp-btn-ghost" onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();">Cancelar</button>' +
+          '</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(overlay);
@@ -5356,9 +6325,14 @@ function _checkInactivityAndMembership() {
     return;
   }
   // 2. Membresía vencida — mostrar pantalla bloqueada sin cerrar sesión
-  if (cProfile && cProfile.role !== 'admin') {
+  // (solo si NO tiene ningún acceso válido: ni Clases, ni Live, ni 1-a-1)
+  if (cProfile && cProfile.role !== 'admin' && cProfile.role !== 'staff') {
     var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
-    if (end && end < new Date()) {
+    var liveEnd = cProfile.live_end ? new Date(cProfile.live_end) : null;
+    var hasClases = end && end > new Date();
+    var hasLive = liveEnd && liveEnd > new Date();
+    var has1on1 = !!cProfile.access_1on1;
+    if (!hasClases && !hasLive && !has1on1) {
       var aside = document.querySelector('.aside');
       if (aside) aside.style.display = 'none';
       var mobNav = document.getElementById('mob-nav');
@@ -5384,16 +6358,21 @@ function editCalReal(name, isoDate, currentVal) {
 
   var overlay = document.createElement('div');
   overlay.id = 'cal-edit-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  _injectWhopStyles();
+  overlay.className = 'wp-overlay';
   overlay.innerHTML =
-    '<div style="background:#1a1e26;border:1px solid rgba(91,127,166,.25);border-radius:14px;width:100%;max-width:360px;padding:24px;">' +
-      '<div style="font-size:.9rem;font-weight:700;color:#f0f0f0;margin-bottom:6px;">✎ Editar valor Real</div>' +
-      '<div style="font-size:.75rem;color:#555;margin-bottom:16px;">' + name + ' · ' + isoDate + '</div>' +
-      '<label class="al">Valor Real</label>' +
-      '<input id="cal-real-input" class="ai" value="' + (currentVal||'') + '" placeholder="Ej: 3.2%" style="margin-bottom:14px;">' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button id="cal-real-save" class="abtn2" style="flex:1;padding:10px;">Guardar</button>' +
-        '<button onclick="var m=document.getElementById(\'cal-edit-modal\');if(m)m.remove();" style="background:transparent;border:1px solid var(--br);color:#555;padding:10px 14px;border-radius:7px;font-size:.82rem;cursor:pointer;">Cancelar</button>' +
+    '<div class="wp-modal" style="max-width:380px;">' +
+      '<div class="wp-header" style="padding:22px 24px 4px;">' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div><div class="wp-title" style="font-size:1rem;">Editar valor Real</div><div class="wp-subtitle">' + name + ' · ' + isoDate + '</div></div>' +
+      '</div>' +
+      '<div class="wp-body" style="padding:16px 24px 24px;">' +
+        '<div class="wp-field"><label class="wp-label">Valor Real</label>' +
+        '<input id="cal-real-input" class="wp-input" value="' + (currentVal||'') + '" placeholder="Ej: 3.2%"></div>' +
+        '<div class="wp-footer">' +
+          '<button id="cal-real-save" class="wp-btn-primary">Guardar</button>' +
+          '<button class="wp-btn-ghost" onclick="var m=document.getElementById(\'cal-edit-modal\');if(m)m.remove();">Cancelar</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   document.body.appendChild(overlay);

@@ -1,16 +1,26 @@
 // api/discord-callback.js
 // Handles Discord OAuth2 callback — exchanges code for token, gets user info,
-// adds user to server and assigns Estudiante role, then saves to Supabase profiles
+// adds user to server and assigns the roles configured for the person's PLAN
+// (checkout_plans.discord_role_ids), then saves to Supabase profiles
+
+const { createClient } = require('@supabase/supabase-js');
 
 const DISCORD_CLIENT_ID     = '1482794976118046851';
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_BOT_TOKEN     = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_SERVER_ID     = '1458313559271276617';
-const DISCORD_ROLE_ID       = '1461911161267032279';
-const REDIRECT_URI          = 'https://www.mrkatanafx.com/api/discord-callback';
+const DISCORD_ROLE_ID       = '1461911161267032279'; // rol de respaldo por si discord_roles aún no está configurada
+
+const sb = createClient(
+  'https://rxyezbyvwqwihggechsc.supabase.co',
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 module.exports = async function handler(req, res) {
   const { code, state } = req.query;
+  // Detecta automáticamente el dominio desde donde llegó la petición
+  // (funciona igual en producción y en cualquier preview de Vercel)
+  const REDIRECT_URI = `https://${req.headers.host}/api/discord-callback`;
 
   if (!code) {
     return res.redirect('/?discord_error=no_code');
@@ -48,7 +58,33 @@ module.exports = async function handler(req, res) {
       return res.redirect('/?discord_error=user_failed');
     }
 
-    // 3. Add user to server (if not already a member)
+    // 3. Determine which roles to assign — los que el PLAN de esta persona tenga
+    //    configurados (checkout_plans.discord_role_ids). Si no tiene plan o no
+    //    tiene roles configurados, se usa el rol fijo de respaldo.
+    let roleIds = [DISCORD_ROLE_ID];
+    try {
+      if (state) {
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('plan')
+          .eq('id', state)
+          .single();
+        if (profile && profile.plan) {
+          const { data: planRow } = await sb
+            .from('checkout_plans')
+            .select('discord_role_ids')
+            .eq('id', profile.plan)
+            .single();
+          if (planRow && planRow.discord_role_ids && planRow.discord_role_ids.length) {
+            roleIds = planRow.discord_role_ids;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('No se pudo leer el plan / sus roles, usando rol de respaldo:', e);
+    }
+
+    // 4. Add user to server with those roles (if not already a member)
     await fetch(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/members/${discordUser.id}`, {
       method: 'PUT',
       headers: {
@@ -57,35 +93,30 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         access_token: accessToken,
-        roles: [DISCORD_ROLE_ID],
+        roles: roleIds,
       }),
     });
 
-    // 4. Assign Estudiante role (in case user was already a member)
-    await fetch(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/members/${discordUser.id}/roles/${DISCORD_ROLE_ID}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // 5. Assign each role individually too (por si el usuario ya era miembro —
+    //    el PUT anterior solo fija roles cuando se une por primera vez)
+    await Promise.all(roleIds.map(function (roleId) {
+      return fetch(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/members/${discordUser.id}/roles/${roleId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
+      });
+    }));
 
-    // 5. Save discord info to Supabase
+    // 6. Save discord info to Supabase
     if (state) {
-      const { createClient } = require('@supabase/supabase-js');
-      const sb = createClient(
-        'https://rxyezbyvwqwihggechsc.supabase.co',
-        process.env.SUPABASE_SERVICE_KEY
-      );
       await sb.from('profiles').update({
         discord_id:       discordUser.id,
         discord_username: discordUser.username,
       }).eq('id', state);
     }
 
-    // 6. Redirect back to app with success
+    // 7. Redirect back to app with success
     const discordTag = encodeURIComponent(discordUser.username);
-    res.redirect(`/app/sesiones?discord_ok=1&discord_user=${discordTag}`);
+    res.redirect(`/app/dash?discord_ok=1&discord_user=${discordTag}`);
 
   } catch (err) {
     console.error('Discord callback error:', err);

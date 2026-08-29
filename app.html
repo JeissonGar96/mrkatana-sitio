@@ -2966,6 +2966,60 @@ function _staffCan(key) {
   return !!(window._staffPerms && window._staffPerms[key]);
 }
 
+// ── Acceso a "profiles" para staff: pasa por el endpoint seguro (evita RLS
+// directo sobre profiles, que causa recursión). Admin sigue usando Supabase
+// directo, como siempre — sin cambios para esa cuenta.
+async function _authHeader() {
+  var session = await sb.auth.getSession();
+  var token = session && session.data && session.data.session ? session.data.session.access_token : '';
+  return { Authorization: 'Bearer ' + token };
+}
+
+async function _fetchAllStudents() {
+  if (cProfile && cProfile.role === 'staff') {
+    var headers = await _authHeader();
+    var res = await fetch('/api/staff-profiles', { headers: headers });
+    var json = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { tst('Error: ' + (json.error||res.status), 1); return []; }
+    return json.data || [];
+  }
+  var r = await sb.from('profiles').select('id, full_name, email, role, plan, live_plan, live_end, membership_start, membership_end, avatar_url, created_at').order('created_at',{ascending:false});
+  return r.data || [];
+}
+
+async function _fetchStudent(id) {
+  if (cProfile && cProfile.role === 'staff') {
+    var headers = await _authHeader();
+    var res = await fetch('/api/staff-profiles?id=' + id, { headers: headers });
+    var json = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { tst('Error: ' + (json.error||res.status), 1); return null; }
+    return json.data;
+  }
+  var r = await sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end, roadmap_mode, access_1on1').eq('id', id).single();
+  return r.data;
+}
+
+async function _updateStudent(id, data) {
+  if (cProfile && cProfile.role === 'staff') {
+    var headers = await _authHeader();
+    headers['Content-Type'] = 'application/json';
+    var res = await fetch('/api/staff-profiles?id=' + id, { method: 'PATCH', headers: headers, body: JSON.stringify(data) });
+    var json = await res.json().catch(function(){ return {}; });
+    return { error: res.ok ? null : { message: json.error || res.status } };
+  }
+  return await sb.from('profiles').update(data).eq('id', id);
+}
+
+async function _deleteStudent(id) {
+  if (cProfile && cProfile.role === 'staff') {
+    var headers = await _authHeader();
+    var res = await fetch('/api/staff-profiles?id=' + id, { method: 'DELETE', headers: headers });
+    var json = await res.json().catch(function(){ return {}; });
+    return { error: res.ok ? null : { message: json.error || res.status } };
+  }
+  return await sb.from('profiles').delete().eq('id', id);
+}
+
 function _buildAdminTabs() {
   var m = document.getElementById('amain');
   var tabs = document.createElement('div');
@@ -3054,9 +3108,9 @@ function rAdmSt() {
     '<div style="margin-bottom:12px;"><input id="st-search" class="ai" placeholder="🔍 Buscar alumno por nombre o email..." oninput="filterStudents(this.value)" style="width:100%;box-sizing:border-box;"></div>' +
     '<div id="st-t"><span class="spin"></span></div>';
   _loadPlansCache(function() {
-    sb.from('profiles').select('id, full_name, email, role, plan, live_plan, live_end, membership_start, membership_end, avatar_url, created_at').order('created_at',{ascending:false}).then(function(r) {
+    _fetchAllStudents().then(function(students) {
       var today = new Date();
-      window._allStudents = r.data || [];
+      window._allStudents = students || [];
       var t = document.getElementById('st-t'); if(!t) return;
       if(!window._allStudents.length){t.innerHTML='<p style="color:#555;padding:14px 0;font-size:.82rem;">Sin alumnos registrados.</p>';return;}
       _renderStudents(window._allStudents);
@@ -3733,7 +3787,7 @@ function toggleStudentLive(studentId, enabled) {
       var cb = document.getElementById('stud-live-toggle'); if (cb) cb.checked = true;
       return;
     }
-    sb.from('profiles').update({ live_plan: null, live_end: null }).eq('id', studentId).then(function(r) {
+    _updateStudent(studentId, { live_plan: null, live_end: null }).then(function(r) {
       if (r.error) return tst('Error: ' + r.error.message, 1);
       tst('✓ Live desactivado');
       viewStudentProfile(studentId);
@@ -3749,7 +3803,7 @@ function toggleStudentClases(studentId, enabled) {
       var cb = document.getElementById('stud-clases-toggle'); if (cb) cb.checked = true;
       return;
     }
-    sb.from('profiles').update({ membership_start: null, membership_end: null }).eq('id', studentId).then(function(r) {
+    _updateStudent(studentId, { membership_start: null, membership_end: null }).then(function(r) {
       if (r.error) return tst('Error: ' + r.error.message, 1);
       tst('✓ Clases desactivadas');
       viewStudentProfile(studentId);
@@ -3835,7 +3889,7 @@ function openAccessPickerModal(studentId, kind) {
       var planDef = _planById(planId);
       if (planDef) { upd.access_1on1 = !!planDef.access_1on1; upd.roadmap_mode = planDef.roadmap_mode; }
     }
-    sb.from('profiles').update(upd).eq('id', studentId).then(function(r) {
+    _updateStudent(studentId, upd).then(function(r) {
       modal.remove();
       if (r.error) return tst('Error: ' + r.error.message, 1);
       tst('✓ ' + (isLive?'Live':'Clases') + ' activado');
@@ -3869,9 +3923,8 @@ function viewStudentProfile(id) {
   _injectWhopStyles();
   var already = document.getElementById('student-profile-modal');
   if (already) already.remove();
-  sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end, roadmap_mode, access_1on1').eq('id', id).single().then(function(pr) {
-    if (pr.error || !pr.data) return tst('No se encontró el perfil', 1);
-    var p = pr.data;
+  _fetchStudent(id).then(function(p) {
+    if (!p) return tst('No se encontró el perfil', 1);
     var endDate = p.membership_end ? new Date(p.membership_end) : null;
     var active  = endDate && endDate > new Date();
     var liveEndDate = p.live_end ? new Date(p.live_end) : null;
@@ -4195,7 +4248,7 @@ function saveRecording(studentId) {
 
 function dStudent(id) {
   if (!confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
-  sb.from('profiles').delete().eq('id', id).then(function(r) {
+  _deleteStudent(id).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Perfil eliminado. Recuerda eliminar también en Auth → Users');
     rAdmSt();

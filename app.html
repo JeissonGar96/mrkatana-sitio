@@ -2975,13 +2975,26 @@ async function _authHeader() {
   return { Authorization: 'Bearer ' + token };
 }
 
+function _fetchWithTimeout(url, opts, ms) {
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, ms || 15000);
+  opts = opts || {};
+  opts.signal = controller.signal;
+  return fetch(url, opts).finally(function(){ clearTimeout(timer); });
+}
+
 async function _fetchAllStudents() {
   if (cProfile && cProfile.role === 'staff') {
-    var headers = await _authHeader();
-    var res = await fetch('/api/staff-profiles', { headers: headers });
-    var json = await res.json().catch(function(){ return {}; });
-    if (!res.ok) { tst('Error: ' + (json.error||res.status), 1); return []; }
-    return json.data || [];
+    try {
+      var headers = await _authHeader();
+      var res = await _fetchWithTimeout('/api/staff-profiles', { headers: headers });
+      var json = await res.json().catch(function(){ return {}; });
+      if (!res.ok) { tst('Error al cargar alumnos: ' + (json.error||res.status), 1); return []; }
+      return json.data || [];
+    } catch (e) {
+      tst(e.name === 'AbortError' ? 'La carga tardó demasiado — intenta de nuevo' : 'Error de conexión al cargar alumnos', 1);
+      return [];
+    }
   }
   var r = await sb.from('profiles').select('id, full_name, email, role, plan, live_plan, live_end, membership_start, membership_end, avatar_url, created_at').order('created_at',{ascending:false});
   return r.data || [];
@@ -2989,11 +3002,16 @@ async function _fetchAllStudents() {
 
 async function _fetchStudent(id) {
   if (cProfile && cProfile.role === 'staff') {
-    var headers = await _authHeader();
-    var res = await fetch('/api/staff-profiles?id=' + id, { headers: headers });
-    var json = await res.json().catch(function(){ return {}; });
-    if (!res.ok) { tst('Error: ' + (json.error||res.status), 1); return null; }
-    return json.data;
+    try {
+      var headers = await _authHeader();
+      var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { headers: headers });
+      var json = await res.json().catch(function(){ return {}; });
+      if (!res.ok) { tst('Error: ' + (json.error||res.status), 1); return null; }
+      return json.data;
+    } catch (e) {
+      tst(e.name === 'AbortError' ? 'La carga tardó demasiado — intenta de nuevo' : 'Error de conexión', 1);
+      return null;
+    }
   }
   var r = await sb.from('profiles').select('id, full_name, email, role, age, date_of_birth, country, phone, phone_prefix, trading_experience, bio, membership_start, membership_end, avatar_url, plan, live_plan, live_end, roadmap_mode, access_1on1').eq('id', id).single();
   return r.data;
@@ -3001,21 +3019,29 @@ async function _fetchStudent(id) {
 
 async function _updateStudent(id, data) {
   if (cProfile && cProfile.role === 'staff') {
-    var headers = await _authHeader();
-    headers['Content-Type'] = 'application/json';
-    var res = await fetch('/api/staff-profiles?id=' + id, { method: 'PATCH', headers: headers, body: JSON.stringify(data) });
-    var json = await res.json().catch(function(){ return {}; });
-    return { error: res.ok ? null : { message: json.error || res.status } };
+    try {
+      var headers = await _authHeader();
+      headers['Content-Type'] = 'application/json';
+      var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { method: 'PATCH', headers: headers, body: JSON.stringify(data) });
+      var json = await res.json().catch(function(){ return {}; });
+      return { error: res.ok ? null : { message: json.error || res.status } };
+    } catch (e) {
+      return { error: { message: e.name === 'AbortError' ? 'timeout' : 'connection_error' } };
+    }
   }
   return await sb.from('profiles').update(data).eq('id', id);
 }
 
 async function _deleteStudent(id) {
   if (cProfile && cProfile.role === 'staff') {
-    var headers = await _authHeader();
-    var res = await fetch('/api/staff-profiles?id=' + id, { method: 'DELETE', headers: headers });
-    var json = await res.json().catch(function(){ return {}; });
-    return { error: res.ok ? null : { message: json.error || res.status } };
+    try {
+      var headers = await _authHeader();
+      var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { method: 'DELETE', headers: headers });
+      var json = await res.json().catch(function(){ return {}; });
+      return { error: res.ok ? null : { message: json.error || res.status } };
+    } catch (e) {
+      return { error: { message: e.name === 'AbortError' ? 'timeout' : 'connection_error' } };
+    }
   }
   return await sb.from('profiles').delete().eq('id', id);
 }

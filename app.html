@@ -2977,7 +2977,7 @@ async function _authHeader() {
 
 function _fetchWithTimeout(url, opts, ms) {
   var controller = new AbortController();
-  var timer = setTimeout(function(){ controller.abort(); }, ms || 15000);
+  var timer = setTimeout(function(){ controller.abort(); }, ms || 35000);
   opts = opts || {};
   opts.signal = controller.signal;
   return fetch(url, opts).finally(function(){ clearTimeout(timer); });

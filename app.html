@@ -86,12 +86,12 @@ body{font-family:sans-serif;background:#06141B;color:#CCD0CF;overflow-x:hidden;}
 .anav{background:rgba(17,17,17,.99);border-bottom:1px solid var(--br);padding:13px 30px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
 .anav img{height:30px;}
 .alay{display:flex;min-height:calc(100vh - 61px);}
-.aside{width:210px;flex-shrink:0;background:var(--bg-surface);border-right:1px solid var(--br);padding:18px 0;}
-.snav{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:2px;color:#9a9a9a;font-size:.83rem;background:transparent;border:none;cursor:pointer;transition:all .2s;margin-bottom:1px;text-align:left;font-family:sans-serif;}
-.snav svg{flex-shrink:0;opacity:.7;transition:opacity .2s;}
+.aside{width:222px;flex-shrink:0;background:var(--bg-surface);border-right:1px solid var(--br);padding:22px 14px;}
+.snav{display:flex;align-items:center;gap:11px;width:100%;padding:10px 13px;border-radius:10px;color:#8a94a0;font-size:.84rem;font-weight:500;background:transparent;border:none;cursor:pointer;transition:all .18s;margin-bottom:3px;text-align:left;font-family:sans-serif;}
+.snav svg{flex-shrink:0;opacity:.75;transition:opacity .18s;}
 .snav:hover svg,.snav.on svg{opacity:1;}
-.snav:hover{background:rgba(255,255,255,.04);color:#CCD0CF;}
-.snav.on{background:rgba(91,127,166,.12);color:var(--sl);}
+.snav:hover{background:rgba(204,208,207,.05);color:#CCD0CF;}
+.snav.on{background:var(--bs);color:#CCD0CF;}
 .amain{flex:1;padding:30px;}
 .atit{font-family:var(--font-cond,sans-serif);font-size:1.7rem;font-weight:800;text-transform:uppercase;margin-bottom:5px;}
 .asub{font-size:.82rem;color:#555;margin-bottom:26px;}
@@ -788,7 +788,7 @@ body{font-family:sans-serif;background:#06141B;color:#CCD0CF;overflow-x:hidden;}
   </nav>
   <div class="alay">
     <aside class="aside">
-      <div style="padding:0 10px;">
+      <div>
         <div style="font-size:.61rem;color:#555;text-transform:uppercase;letter-spacing:1.5px;padding:0 8px;margin-bottom:7px;">Principal</div>
         <button class="snav on" data-v="dash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Dashboard</button>
         <button class="snav" data-v="clases"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10,8 16,12 10,16"/></svg> Curso</button>

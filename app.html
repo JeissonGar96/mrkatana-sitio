@@ -196,7 +196,7 @@ body{font-family:sans-serif;background:var(--c-bg);color:var(--c-text);overflow-
 .lesson-sidebar-header {
   padding: 14px 16px;
   border-bottom: 1px solid var(--br);
-  background: rgba(0,0,0,.2);
+  background: rgba(var(--c-acc),.05);
   position: sticky; top: 0; z-index: 2;
 }
 .lesson-main {
@@ -235,7 +235,7 @@ body{font-family:sans-serif;background:var(--c-bg);color:var(--c-text);overflow-
   text-overflow: ellipsis;
 }
 .ls-mod-meta { font-size: .66rem; color: var(--c-faint); margin-top: 2px; }
-.ls-lessons-wrap { background: rgba(0,0,0,.15); }
+.ls-lessons-wrap { background: rgba(var(--c-ov),.02); }
 
 /* Lesson items in sidebar */
 .ls-lesson-item {
@@ -716,7 +716,7 @@ body{font-family:sans-serif;background:var(--c-bg);color:var(--c-text);overflow-
   grid-column: 1 / -1;
   margin-top: 10px;
   padding: 12px 14px;
-  background: rgba(0,0,0,.25);
+  background: rgba(var(--c-ov),.03);
   border: 1px solid rgba(var(--c-ov),.06);
   border-radius: 8px;
   font-size: .78rem;
@@ -852,6 +852,18 @@ body{background:var(--k-bg);}
 .rp-li .d{width:38px;height:38px;border-radius:10px;background:rgba(var(--c-acc),.12);color:rgb(var(--c-acc));display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;line-height:1;flex-shrink:0;}
 .rp-li .d small{font-size:.55rem;font-weight:600;text-transform:uppercase;margin-top:2px;}
 .rp-li b{display:block;font-weight:600;}.rp-li span{font-size:.72rem;color:var(--c-muted);}
+/* Tarjetas planas (reemplaza el efecto metálico) */
+.acard,.mc,.aform,.lvl-card,.mcard{background:var(--c-card) !important;border:1px solid var(--k-line) !important;box-shadow:0 1px 2px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.07) !important;border-radius:16px;}
+.acard::before{display:none !important;}
+.lvl-card:hover{border-color:rgba(var(--c-acc),.45) !important;}
+.lvl-meta{display:flex;align-items:center;gap:12px;font-weight:600;}
+.lvl-prog{flex:1;display:flex;align-items:center;gap:10px;color:var(--c-muted);font-weight:500;}
+.lvl-bar{flex:1;height:5px;border-radius:5px;background:rgba(var(--c-ov),.08);overflow:hidden;}
+.lvl-bar i{display:block;height:100%;background:rgb(var(--c-acc));border-radius:5px;}
+.course-back{color:rgb(var(--c-acc)) !important;font-weight:700;}
+.lesson-sidebar,.lesson-main{background:var(--c-card) !important;}
+.lesson-sidebar{border-right:1px solid var(--k-line) !important;}
+.lesson-layout{border-radius:16px !important;border:1px solid var(--k-line) !important;box-shadow:none !important;background:var(--c-card) !important;}
 .aside-logo,.aside-foot{display:none;}
 @media(min-width:861px){
   #appdash{padding:22px;overflow:hidden;}
@@ -1998,9 +2010,30 @@ function showLevels() {
   _restoreAmain();
   pushRoute({ section: 'clases' });
   var m = document.getElementById('amain');
-  m.innerHTML = '<div class="atit">Curso Completo</div><div class="asub">Selecciona un módulo para comenzar</div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';
-  sb.from('course_levels').select('*, course_modules(id)').eq('is_published', true).order('sort_order').then(function(r) {
+  m.innerHTML = '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';
+  sb.from('course_levels').select('*, course_modules(id, course_lessons(id, is_published))').eq('is_published', true).order('sort_order').then(function(r) {
     var g = document.getElementById('lvl-grid'); if (!g) return;
+    // Progreso por nivel: clases publicadas vs. completadas por el alumno
+    var lvLessons = {};
+    (r.data || []).forEach(function(lv) {
+      lvLessons[lv.id] = [];
+      (lv.course_modules || []).forEach(function(md) {
+        (md.course_lessons || []).forEach(function(ls) { if (ls.is_published) lvLessons[lv.id].push(ls.id); });
+      });
+    });
+    sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).then(function(pr) {
+      var done = {}; ((pr && pr.data) || []).forEach(function(x){ done[x.lesson_id] = true; });
+      var all = 0, ok = 0;
+      Object.keys(lvLessons).forEach(function(id) {
+        var ids = lvLessons[id], n = ids.filter(function(x){ return done[x]; }).length;
+        all += ids.length; ok += n;
+        var pct = ids.length ? Math.round(n / ids.length * 100) : 0;
+        var el = document.getElementById('lvl-prog-' + id);
+        if (el) el.innerHTML = '<div class="lvl-bar"><i style="width:' + pct + '%"></i></div><span>' + pct + '%</span>';
+      });
+      var tot = document.getElementById('lvl-total');
+      if (tot && all) { var tp = Math.round(ok / all * 100); tot.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--c-muted);margin-bottom:6px;"><span>Progreso total</span><b style="color:rgb(var(--c-acc));">' + tp + '%</b></div><div class="lvl-bar"><i style="width:' + tp + '%"></i></div>'; }
+    });
     if (!r.data || !r.data.length) { g.innerHTML = '<div class="empty-state">Sin contenido publicado aún.</div>'; return; }
     g.innerHTML = '';
     r.data.forEach(function(lv) {
@@ -2012,7 +2045,7 @@ function showLevels() {
         '<div class="lvl-info">' +
           '<div class="lvl-title">' + lv.title + '</div>' +
           '<div class="lvl-desc">' + (lv.description || '') + '</div>' +
-          '<div class="lvl-meta">' + modCount + ' módulo' + (modCount !== 1 ? 's' : '') + '</div>' +
+          '<div class="lvl-meta"><span>' + modCount + ' módulo' + (modCount !== 1 ? 's' : '') + '</span><div class="lvl-prog" id="lvl-prog-' + lv.id + '"></div></div>' +
         '</div>';
       (function(level) {
         card.addEventListener('click', function() { openLevel(level); });
@@ -2049,7 +2082,7 @@ function showLessons(mod, level, progress) {
       '<div class="lesson-sidebar" id="lesson-sidebar">' +
         '<div class="lesson-sidebar-header">' +
           '<div class="course-back" id="back-levels-btn">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ' + level.title +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Volver a ' + level.title +
           '</div>' +
         '</div>' +
         '<div id="lesson-list"><span class="spin"></span></div>' +
@@ -4926,7 +4959,7 @@ function loadAdmLevels() {
           modDiv.style.cssText = 'border-bottom:1px solid rgba(var(--c-ov),.03);';
 
           var modH = document.createElement('div');
-          modH.style.cssText = 'display:flex;align-items:center;padding:9px 14px 9px 30px;cursor:pointer;gap:8px;background:rgba(0,0,0,.1);';
+          modH.style.cssText = 'display:flex;align-items:center;padding:9px 14px 9px 30px;cursor:pointer;gap:8px;background:rgba(var(--c-ov),.03);';
           modH.innerHTML =
             '<div id="arr-mod-'+mod.id+'" style="color:var(--c-faint);font-size:.68rem;transition:.2s;flex-shrink:0;">▶</div>' +
             '<div style="flex:1;min-width:0;">' +
@@ -4950,7 +4983,7 @@ function loadAdmLevels() {
           // Lessons container
           var lessDiv = document.createElement('div');
           lessDiv.id = 'less-'+mod.id;
-          lessDiv.style.cssText = 'display:none;background:rgba(0,0,0,.15);';
+          lessDiv.style.cssText = 'display:none;background:rgba(var(--c-ov),.02);';
 
           modH.addEventListener('click', function() {
             var open = lessDiv.style.display !== 'none';

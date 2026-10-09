@@ -812,6 +812,22 @@ body{background:var(--k-bg);}
 .theme-mob{font-size:.95rem;padding:4px 10px;}
 :root[data-theme="light"] .aside-logo img,:root[data-theme="light"] .anav img{filter:invert(1);}
 @media(min-width:861px){.theme-mob{display:none;}}
+/* Carrusel de anuncios (Dashboard) */
+.mk-ads{position:relative;border-radius:18px;overflow:hidden;margin:4px 0 22px;min-height:170px;background:linear-gradient(115deg,#1b1a15 0%,#3a2f12 50%,rgb(var(--c-acc)) 150%);color:#fff;}
+.mk-ad{display:none;align-items:center;gap:24px;padding:24px 56px;min-height:170px;}
+.mk-ad.on{display:flex;animation:mkAdIn .4s ease;}
+@keyframes mkAdIn{from{opacity:0}to{opacity:1}}
+.mk-ad-tag{display:inline-block;font-size:.66rem;letter-spacing:1.4px;font-weight:700;text-transform:uppercase;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);padding:4px 9px;border-radius:20px;margin-bottom:10px;}
+.mk-ad-tit{font-family:var(--font-cond,sans-serif);font-weight:800;font-size:1.65rem;line-height:1.08;max-width:560px;}
+.mk-ad-sub{font-size:.85rem;opacity:.82;margin-top:6px;max-width:520px;}
+.mk-ad-cta{margin-top:14px;display:inline-flex;align-items:center;gap:8px;background:#f3d68a;color:#1b1606;font-weight:700;font-size:.8rem;border-radius:30px;padding:9px 16px;text-decoration:none;}
+.mk-ad-logo{margin-left:auto;width:170px;height:104px;border-radius:16px;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+.mk-ad-logo img{max-width:82%;max-height:76%;object-fit:contain;}
+.mk-ad-arr{position:absolute;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;border:none;font-size:1.1rem;cursor:pointer;z-index:2;}
+.mk-ad-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;}
+.mk-ad-dots button{width:7px;height:7px;border-radius:7px;border:none;background:rgba(255,255,255,.35);cursor:pointer;padding:0;}
+.mk-ad-dots button.on{width:22px;background:#f3d68a;}
+@media(max-width:600px){.mk-ad{padding:20px 40px 30px;}.mk-ad-logo{display:none;}.mk-ad-tit{font-size:1.3rem;}}
 .aside-logo,.aside-foot{display:none;}
 @media(min-width:861px){
   #appdash{padding:22px;overflow:hidden;}
@@ -1585,6 +1601,8 @@ function rDash(liveOnly) {
     '<div class="atit">Mi Dashboard</div>' +
     '<div class="asub">' + (liveOnly ? 'Sesiones en Vivo · Bienvenido' : 'Semana ' + weekNum + ' de ' + totalWeeks + ' · ' + (dL !== '—' && dL > 0 ? dL+' días restantes' : 'Bienvenido')) + '</div>' +
 
+    '<div id="mk-ads"></div>' +
+
     // Live banner
     '<div id="lbanner" style="display:none;background:rgba(var(--c-ok),.07);border:1px solid rgba(var(--c-ok),.18);border-radius:8px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
       '<div style="width:8px;height:8px;border-radius:50%;background:rgb(var(--c-ok));flex-shrink:0;animation:pulse 1.5s infinite;"></div>' +
@@ -1681,6 +1699,7 @@ function rDash(liveOnly) {
 
     '<div class="sec" style="margin-top:28px;">Calendario económico <span style="font-size:.6rem;color:var(--c-faint);font-weight:400;letter-spacing:.5px;text-transform:none;">· Solo USD · Horario Ecuador (UTC-5)</span></div>' +
     '<div id="econ-cal"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>';
+  _mkRenderAds();
 
     // Week navigator state
   var _viewWeek = weekNum;
@@ -3148,6 +3167,7 @@ function _buildAdminTabs() {
     ['1on1','Reuniones 1-1','access_students'],
     ['codes','Planes', ['access_plans','access_discord','access_codes']],
     ['roadmap','Roadmap','access_roadmap'],
+    ['ads','Anuncios','__admin_only'],
     ['apar','Apariencia','__admin_only']
   ];
   var visibleTabs = allTabs.filter(function(item) {
@@ -3178,6 +3198,127 @@ function _buildAdminTabs() {
 
   var first = visibleTabs[0][0];
   if (first==='cl') rAdmCl(); else if (first==='se') rAdmSe(); else if (first==='codes') rAdmCodes(); else if (first==='roadmap') rAdmRoadmap(); else if (first==='1on1') rAdm1on1(); else rAdmSt();
+}
+// ── ANUNCIOS: carrusel de brokers / empresas de fondeo en el Dashboard (tabla ads) ──
+var _mkAdTimer = null;
+function _mkEsc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function _mkSafeUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : '#'; }
+function _mkRenderAds() {
+  var box = document.getElementById('mk-ads');
+  if (!box) return;
+  if (_mkAdTimer) { clearInterval(_mkAdTimer); _mkAdTimer = null; }
+  sb.from('ads').select('*').eq('active', true).order('sort_order').then(function(r) {
+    var ads = (r && !r.error && r.data) || [];
+    box = document.getElementById('mk-ads');
+    if (!box || !ads.length) { if (box) box.innerHTML = ''; return; }
+    var html = '<div class="mk-ads">';
+    ads.forEach(function(a, i) {
+      html += '<div class="mk-ad' + (i === 0 ? ' on' : '') + '">' +
+        '<div style="flex:1;min-width:0;">' +
+          (a.tag ? '<span class="mk-ad-tag">' + _mkEsc(a.tag) + '</span>' : '') +
+          '<div class="mk-ad-tit">' + _mkEsc(a.title) + '</div>' +
+          (a.subtitle ? '<div class="mk-ad-sub">' + _mkEsc(a.subtitle) + '</div>' : '') +
+          '<a class="mk-ad-cta" href="' + _mkEsc(_mkSafeUrl(a.url)) + '" target="_blank" rel="noopener sponsored" data-ad="' + a.id + '">' + _mkEsc(a.cta_text || 'Abrir cuenta') + ' →</a>' +
+        '</div>' +
+        (a.image_url ? '<div class="mk-ad-logo"><img src="' + _mkEsc(a.image_url) + '" alt=""></div>' : '') +
+      '</div>';
+    });
+    if (ads.length > 1) {
+      html += '<button class="mk-ad-arr" style="left:10px" data-dir="-1">‹</button><button class="mk-ad-arr" style="right:10px" data-dir="1">›</button>';
+      html += '<div class="mk-ad-dots">' + ads.map(function(_, i){ return '<button class="' + (i === 0 ? 'on' : '') + '" data-i="' + i + '"></button>'; }).join('') + '</div>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
+    var cur = 0, slides = box.querySelectorAll('.mk-ad'), dots = box.querySelectorAll('.mk-ad-dots button');
+    function go(i) {
+      cur = (i + slides.length) % slides.length;
+      slides.forEach(function(s, k){ s.classList.toggle('on', k === cur); });
+      dots.forEach(function(d, k){ d.classList.toggle('on', k === cur); });
+    }
+    box.querySelectorAll('.mk-ad-arr').forEach(function(b){ b.addEventListener('click', function(){ go(cur + Number(b.dataset.dir)); }); });
+    dots.forEach(function(d){ d.addEventListener('click', function(){ go(Number(d.dataset.i)); }); });
+    box.querySelectorAll('.mk-ad-cta').forEach(function(a){ a.addEventListener('click', function(){ sb.rpc('ad_click', { p_id: Number(a.dataset.ad) }).then(function(){}); }); });
+    if (slides.length > 1) _mkAdTimer = setInterval(function(){
+      if (!document.getElementById('mk-ads') || !document.body.contains(slides[0])) { clearInterval(_mkAdTimer); _mkAdTimer = null; return; }
+      go(cur + 1);
+    }, 7000);
+  });
+}
+function rAdmAds() {
+  var c = document.getElementById('a-ads');
+  if (!c) return;
+  c.innerHTML = '<div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div>';
+  sb.from('ads').select('*').order('sort_order').then(function(r) {
+    if (r.error) {
+      c.innerHTML = '<p style="color:var(--c-muted);font-size:.85rem;">Aún no se ha creado la tabla de anuncios en Supabase (ads_setup.sql).</p>';
+      return;
+    }
+    var ads = r.data || [];
+    var list = ads.length ? ads.map(function(a) {
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--c-line);">' +
+        '<div style="width:64px;height:40px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + (a.image_url ? '<img src="' + _mkEsc(a.image_url) + '" style="max-width:90%;max-height:80%;object-fit:contain;">' : '') + '</div>' +
+        '<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.88rem;">' + _mkEsc(a.title) + '</div>' +
+        '<div style="font-size:.75rem;color:var(--c-muted);">' + _mkEsc(a.tag || '') + ' · ' + (a.clicks || 0) + ' clics · orden ' + (a.sort_order || 0) + '</div></div>' +
+        '<button class="abtn2" data-act="toggle" data-id="' + a.id + '" style="padding:6px 12px;font-size:.72rem;' + (a.active ? '' : 'background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;') + '">' + (a.active ? 'Activo' : 'Pausado') + '</button>' +
+        '<button class="abtn2" data-act="edit" data-id="' + a.id + '" style="padding:6px 12px;font-size:.72rem;background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;">Editar</button>' +
+        '<button class="abtn2" data-act="del" data-id="' + a.id + '" style="padding:6px 12px;font-size:.72rem;background:transparent !important;color:rgb(var(--c-bad)) !important;border:1px solid var(--c-line) !important;">Eliminar</button>' +
+      '</div>';
+    }).join('') : '<p style="color:var(--c-muted);font-size:.85rem;padding:10px 0;">Todavía no hay anuncios. Crea el primero abajo.</p>';
+    c.innerHTML = '<p style="font-size:.85rem;color:var(--c-text2);margin-bottom:10px;">Los anuncios activos se muestran en el carrusel de arriba del Dashboard de cada alumno.</p>' +
+      '<div style="background:var(--c-card);border:1px solid var(--c-line);border-radius:14px;padding:6px 18px;margin-bottom:18px;">' + list + '</div>' +
+      '<div id="ad-form" style="background:var(--c-card);border:1px solid var(--c-line);border-radius:14px;padding:18px;"></div>';
+    c.querySelectorAll('button[data-act]').forEach(function(b) {
+      var a = ads.filter(function(x){ return String(x.id) === b.dataset.id; })[0];
+      b.addEventListener('click', function() {
+        if (b.dataset.act === 'toggle') sb.from('ads').update({ active: !a.active }).eq('id', a.id).then(rAdmAds);
+        else if (b.dataset.act === 'del') { if (confirm('¿Eliminar el anuncio "' + a.title + '"?')) sb.from('ads').delete().eq('id', a.id).then(rAdmAds); }
+        else _mkAdForm(a);
+      });
+    });
+    _mkAdForm(null);
+  });
+}
+function _mkAdForm(a) {
+  var f = document.getElementById('ad-form');
+  if (!f) return;
+  a = a || {};
+  var tags = ['Broker recomendado', 'Empresa de fondeo', 'Promoción'];
+  function fld(lbl, inner) { return '<label style="display:block;font-size:.72rem;color:var(--c-muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:1px;">' + lbl + '</label>' + inner; }
+  f.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + (a.id ? 'Editar anuncio' : 'Nuevo anuncio') + '</div>' +
+    fld('Tipo', '<select class="fi" id="ad-tag">' + tags.map(function(t){ return '<option' + (a.tag === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select>') +
+    fld('Título', '<input class="fi" id="ad-title" maxlength="90" placeholder="Abre tu cuenta con ... y opera desde $0 de comisión" value="' + _mkEsc(a.title || '') + '">') +
+    fld('Texto corto (opcional)', '<input class="fi" id="ad-sub" maxlength="140" placeholder="Bono exclusivo para alumnos de Mr Katana" value="' + _mkEsc(a.subtitle || '') + '">') +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;"><div style="flex:1;min-width:200px;">' + fld('Texto del botón', '<input class="fi" id="ad-cta" maxlength="30" value="' + _mkEsc(a.cta_text || 'Abrir cuenta') + '">') + '</div>' +
+    '<div style="width:110px;">' + fld('Orden', '<input class="fi" id="ad-order" type="number" value="' + (a.sort_order || 0) + '">') + '</div></div>' +
+    fld('Enlace (tu link de afiliado)', '<input class="fi" id="ad-url" placeholder="https://..." value="' + _mkEsc(a.url || '') + '">') +
+    fld('Logo de la empresa', (a.image_url ? '<img src="' + _mkEsc(a.image_url) + '" style="height:36px;background:#fff;border-radius:6px;padding:4px;margin-bottom:6px;display:block;">' : '') + '<input type="file" id="ad-img" accept="image/*" style="font-size:.8rem;color:var(--c-text2);">') +
+    '<div style="display:flex;gap:10px;margin-top:16px;"><button class="abtn2" id="ad-save">' + (a.id ? 'Guardar cambios' : 'Crear anuncio') + '</button>' +
+    (a.id ? '<button class="abtn2" id="ad-cancel" style="background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;">Cancelar</button>' : '') + '</div>';
+  if (a.id) { document.getElementById('ad-cancel').addEventListener('click', function(){ _mkAdForm(null); }); f.scrollIntoView({ behavior: 'smooth' }); }
+  document.getElementById('ad-save').addEventListener('click', async function() {
+    var btn = this;
+    var title = document.getElementById('ad-title').value.trim();
+    var url = document.getElementById('ad-url').value.trim();
+    if (!title) { tst('El título es requerido', 1); return; }
+    if (!/^https?:\/\//i.test(url)) { tst('El enlace debe empezar con https://', 1); return; }
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    var imageUrl = a.image_url || null;
+    var file = document.getElementById('ad-img').files[0];
+    if (file) {
+      var path = 'ads/' + Date.now() + '.' + file.name.split('.').pop();
+      var up = await sb.storage.from('course-images').upload(path, file, { upsert: true });
+      if (up.error) { tst('Error al subir el logo: ' + up.error.message, 1); btn.disabled = false; btn.textContent = 'Guardar'; return; }
+      imageUrl = sb.storage.from('course-images').getPublicUrl(path).data.publicUrl;
+    }
+    var payload = { tag: document.getElementById('ad-tag').value, title: title, subtitle: document.getElementById('ad-sub').value.trim() || null,
+      cta_text: document.getElementById('ad-cta').value.trim() || 'Abrir cuenta', url: url, image_url: imageUrl,
+      sort_order: parseInt(document.getElementById('ad-order').value, 10) || 0 };
+    var q = a.id ? sb.from('ads').update(payload).eq('id', a.id) : sb.from('ads').insert(Object.assign({ active: true }, payload));
+    var r = await q;
+    if (r.error) { tst('No se pudo guardar: ' + r.error.message, 1); btn.disabled = false; btn.textContent = 'Guardar'; return; }
+    tst(a.id ? 'Anuncio actualizado' : 'Anuncio creado');
+    rAdmAds();
+  });
 }
 // ── APARIENCIA: colores del panel editables por el admin (tabla site_settings, fila id=1) ──
 var MK_THEME_DEFAULT = {
@@ -3275,8 +3416,8 @@ function rAdmApar() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes','roadmap','1on1','apar'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='apar') rAdmApar(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+  ['st','cl','se','codes','roadmap','1on1','ads','apar'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='ads') rAdmAds(); else if(sec==='apar') rAdmApar(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
 }
 // ── PLANES: caché compartida (planes + sus variantes) ──
 function _loadPlansCache(cb) {

@@ -793,10 +793,10 @@ body{background:var(--k-bg);}
 .abtn2:hover,.mbtnn:hover{background:var(--k-gold2) !important;transform:none;}
 .aside-logo,.aside-foot{display:none;}
 @media(min-width:861px){
-  #appdash{padding:22px;}
+  #appdash{padding:22px;overflow:hidden;}
   .anav{display:none !important;}
-  .alay{min-height:calc(100vh - 44px);background:var(--k-frame);border:1px solid var(--k-line);border-radius:22px;overflow:hidden;}
-  .aside{width:232px;display:flex;flex-direction:column;position:sticky;top:0;align-self:flex-start;height:calc(100vh - 44px);overflow-y:auto;scrollbar-width:none;padding:24px 8px 18px;}
+  .alay{height:calc(100vh - 44px);min-height:0;background:var(--k-frame);border:1px solid var(--k-line);border-radius:22px;overflow:hidden;}
+  .aside{width:232px;display:flex;flex-direction:column;height:100%;overflow-y:auto;scrollbar-width:none;padding:24px 8px 18px;}
   .aside-logo{display:block;padding:0 18px 24px;}
   .aside-logo img{width:160px;height:auto;display:block;}
   .aside-foot{display:block;margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--k-line);}
@@ -804,7 +804,7 @@ body{background:var(--k-bg);}
   .aside-user strong{color:var(--k-text);}
   .snav-out{color:#f87171 !important;}
   .snav-out:hover{background:rgba(248,113,113,.08) !important;}
-  .amain{background:var(--k-bg);}
+  .amain{background:var(--k-bg);height:100%;overflow-y:auto;scrollbar-width:thin;}
 }
 
 </style>
@@ -973,6 +973,8 @@ function _renderSection(state) {
   // Reset scroll to top on every section change
   var appdash = document.getElementById('appdash');
   if (appdash) appdash.scrollTop = 0;
+  var amainEl = document.getElementById('amain');
+  if (amainEl) amainEl.scrollTop = 0;
   // Always restore amain when navigating away from lesson layout
   if (state.section !== 'clases') _restoreAmain();
   if (state.section === 'dash') {

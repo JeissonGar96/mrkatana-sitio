@@ -832,6 +832,7 @@ body{background:var(--k-bg);}
 <script>
 // Tema Dark/Light guardado en este navegador
 try { var _t = localStorage.getItem('mk-theme'); if (_t === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
+try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write('<style id="mk-custom-theme">' + _css + '</style>'); } catch (e) {}
 function mkSetTheme(t) {
   if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
   else document.documentElement.removeAttribute('data-theme');
@@ -1177,6 +1178,7 @@ function loadApp(user) {
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
     document.getElementById('uname').textContent = name;
     var uname2 = document.getElementById('uname2'); if (uname2) uname2.textContent = name;
+    _mkLoadSiteTheme();
     if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) {
       document.getElementById('adm-lnk').style.display = 'block';
       var mobAdm = document.getElementById('mob-adm-btn');
@@ -3145,7 +3147,8 @@ function _buildAdminTabs() {
     ['se','Sesiones','access_sesiones'],
     ['1on1','Reuniones 1-1','access_students'],
     ['codes','Planes', ['access_plans','access_discord','access_codes']],
-    ['roadmap','Roadmap','access_roadmap']
+    ['roadmap','Roadmap','access_roadmap'],
+    ['apar','Apariencia','__admin_only']
   ];
   var visibleTabs = allTabs.filter(function(item) {
     var perm = item[2];
@@ -3176,11 +3179,104 @@ function _buildAdminTabs() {
   var first = visibleTabs[0][0];
   if (first==='cl') rAdmCl(); else if (first==='se') rAdmSe(); else if (first==='codes') rAdmCodes(); else if (first==='roadmap') rAdmRoadmap(); else if (first==='1on1') rAdm1on1(); else rAdmSt();
 }
+// ── APARIENCIA: colores del panel editables por el admin (tabla site_settings, fila id=1) ──
+var MK_THEME_DEFAULT = {
+  dark:  { acc:'#c9a84c', bg:'#0e0e10', card:'#1c1c20', text:'#f0f0f0' },
+  light: { acc:'#a8822b', bg:'#f4f2ec', card:'#ffffff', text:'#18181b' }
+};
+function _mkHexRgb(h) {
+  h = String(h || '').replace('#','');
+  if (h.length === 3) h = h.replace(/./g, function(c){ return c + c; });
+  var n = parseInt(h, 16);
+  if (isNaN(n) || h.length !== 6) return [0,0,0];
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+function _mkMix(a, b, t) {
+  var x = _mkHexRgb(a), y = _mkHexRgb(b);
+  return '#' + [0,1,2].map(function(i){ var v = Math.round(x[i] + (y[i]-x[i])*t); return ('0'+v.toString(16)).slice(-2); }).join('');
+}
+function _mkTrip(h) { return _mkHexRgb(h).join(','); }
+function _mkOnColor(h) {
+  var c = _mkHexRgb(h);
+  return (0.299*c[0] + 0.587*c[1] + 0.114*c[2]) > 150 ? '#151309' : '#ffffff';
+}
+function _mkThemeCss(cfg) {
+  var d = Object.assign({}, MK_THEME_DEFAULT.dark, (cfg && cfg.dark) || {});
+  var l = Object.assign({}, MK_THEME_DEFAULT.light, (cfg && cfg.light) || {});
+  return ':root{' +
+    '--c-acc:' + _mkTrip(d.acc) + ';--c-acc2:' + _mkTrip(_mkMix(d.acc,'#ffffff',.25)) + ';--c-accd:' + _mkTrip(_mkMix(d.acc,'#000000',.2)) + ';--c-ongold:' + _mkOnColor(d.acc) + ';' +
+    '--c-bg:' + d.bg + ';--c-page:' + _mkMix(d.bg,'#000000',.3) + ';--c-panel:' + _mkMix(d.bg,d.card,.4) + ';--c-card:' + d.card + ';--c-line:' + _mkMix(d.card,'#ffffff',.08) + ';--c-bgrgb:' + _mkTrip(d.card) + ';' +
+    '--c-text:' + d.text + ';--c-text2:' + _mkMix(d.text,d.bg,.4) + ';--c-muted:' + _mkMix(d.text,d.bg,.6) + ';--c-faint:' + _mkMix(d.text,d.bg,.75) + ';}' +
+    ':root[data-theme="light"]{' +
+    '--c-acc:' + _mkTrip(l.acc) + ';--c-acc2:' + _mkTrip(_mkMix(l.acc,'#000000',.17)) + ';--c-accd:' + _mkTrip(_mkMix(l.acc,'#000000',.3)) + ';--c-ongold:' + _mkOnColor(l.acc) + ';' +
+    '--c-bg:' + l.bg + ';--c-page:' + _mkMix(l.bg,'#000000',.06) + ';--c-panel:' + l.card + ';--c-card:' + l.card + ';--c-line:' + _mkMix(l.card,'#000000',.1) + ';--c-bgrgb:' + _mkTrip(l.card) + ';' +
+    '--c-text:' + l.text + ';--c-text2:' + _mkMix(l.text,l.bg,.3) + ';--c-muted:' + _mkMix(l.text,l.bg,.5) + ';--c-faint:' + _mkMix(l.text,l.bg,.72) + ';}';
+}
+function _mkApplyThemeCss(css, previewOnly) {
+  var el = document.getElementById('mk-custom-theme');
+  if (!css) { if (el) el.remove(); try { localStorage.removeItem('mk-theme-css'); } catch (e) {} return; }
+  if (!el) { el = document.createElement('style'); el.id = 'mk-custom-theme'; document.head.appendChild(el); }
+  el.textContent = css;
+  if (!previewOnly) { try { localStorage.setItem('mk-theme-css', css); } catch (e) {} }
+}
+function _mkLoadSiteTheme() {
+  sb.from('site_settings').select('theme').eq('id', 1).maybeSingle().then(function(r) {
+    if (r.error) return; // la tabla aún no existe: se usan los colores originales
+    window._mkSiteTheme = (r.data && r.data.theme) || null;
+    _mkApplyThemeCss(window._mkSiteTheme ? _mkThemeCss(window._mkSiteTheme) : '');
+  });
+}
+function rAdmApar() {
+  var c = document.getElementById('a-apar');
+  if (!c) return;
+  var cur = JSON.parse(JSON.stringify(MK_THEME_DEFAULT));
+  var saved = window._mkSiteTheme;
+  if (saved) ['dark','light'].forEach(function(t){ Object.assign(cur[t], saved[t] || {}); });
+  var labels = [['acc','Color principal (botones y acentos)'],['bg','Fondo'],['card','Tarjetas y menú'],['text','Texto']];
+  function col(t, title) {
+    return '<div style="flex:1;min-width:260px;background:var(--c-card);border:1px solid var(--c-line);border-radius:14px;padding:18px;">' +
+      '<div style="font-weight:700;margin-bottom:12px;">' + title + '</div>' +
+      labels.map(function(l){
+        return '<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--c-line);font-size:.85rem;color:var(--c-text2);">' + l[1] +
+          '<input type="color" data-t="' + t + '" data-k="' + l[0] + '" value="' + cur[t][l[0]] + '" style="width:46px;height:30px;border:none;background:none;cursor:pointer;"></label>';
+      }).join('') + '</div>';
+  }
+  c.innerHTML = '<p style="font-size:.85rem;color:var(--c-text2);margin-bottom:14px;">Cambia los colores del panel para todos los alumnos. Lo que cambies se ve al instante aquí; los alumnos lo verán al darle a <b>Guardar</b>.</p>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;">' + col('dark','Modo Dark') + col('light','Modo Light') + '</div>' +
+    '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">' +
+      '<button class="abtn2" id="apar-save">Guardar</button>' +
+      '<button class="abtn2" id="apar-reset" style="background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;">Restaurar colores originales</button>' +
+    '</div><p id="apar-msg" style="font-size:.8rem;color:var(--c-text2);margin-top:10px;"></p>';
+  c.querySelectorAll('input[type=color]').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      cur[inp.dataset.t][inp.dataset.k] = inp.value;
+      _mkApplyThemeCss(_mkThemeCss(cur), true);
+    });
+  });
+  var msg = document.getElementById('apar-msg');
+  function save(theme) {
+    msg.textContent = 'Guardando...';
+    sb.from('site_settings').upsert({ id: 1, theme: theme, updated_at: new Date().toISOString() }).then(function(r) {
+      if (r.error) {
+        msg.innerHTML = '<span style="color:rgb(var(--c-bad))">No se pudo guardar. ¿Ya se creó la tabla site_settings en Supabase? (' + (r.error.message || '') + ')</span>';
+        return;
+      }
+      window._mkSiteTheme = theme;
+      _mkApplyThemeCss(theme ? _mkThemeCss(theme) : '');
+      msg.textContent = theme ? 'Colores guardados. Los alumnos los verán la próxima vez que entren.' : 'Se restauraron los colores originales.';
+      if (!theme) rAdmApar();
+    });
+  }
+  document.getElementById('apar-save').addEventListener('click', function(){ save(cur); });
+  document.getElementById('apar-reset').addEventListener('click', function(){
+    if (confirm('¿Volver a los colores originales de Mr Katana?')) save(null);
+  });
+}
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes','roadmap','1on1'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+  ['st','cl','se','codes','roadmap','1on1','apar'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='apar') rAdmApar(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
 }
 // ── PLANES: caché compartida (planes + sus variantes) ──
 function _loadPlansCache(cb) {

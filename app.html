@@ -865,6 +865,152 @@ body{background:var(--k-bg);}
 .lesson-sidebar{border-right:1px solid var(--k-line) !important;}
 .lesson-layout{border-radius:16px !important;border:1px solid var(--k-line) !important;box-shadow:none !important;background:var(--c-card) !important;}
 .aside-logo,.aside-foot{display:none;}
+/* ══ Paso 7: igual a las maquetas (letra, menú, buscador, panel derecho) ══ */
+body,button,input,select,textarea{font-family:'Barlow',sans-serif;}
+.snav{font-family:'Barlow',sans-serif !important;}
+.atit{font-family:'Barlow Condensed',sans-serif !important;text-transform:none !important;font-size:2.15rem !important;font-weight:700 !important;letter-spacing:.2px;line-height:1.1;}
+.asub{font-size:.92rem !important;color:var(--c-text2) !important;}
+.snav-sec{font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:2px;font-weight:600;padding:0 12px;margin:20px 0 8px;}
+.snav{font-size:1rem !important;padding:11px 14px !important;gap:13px !important;}
+.snav svg{width:19px;height:19px;}
+a.snav{text-decoration:none;}
+.snav-live{margin-left:auto;background:rgb(var(--c-bad));color:#fff;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.5px;}
+.atop{display:none;}
+.atop-s{flex:1;position:relative;}
+.atop-s>svg{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:var(--c-muted);pointer-events:none;}
+.atop-s input{width:100%;background:var(--c-panel);border:1px solid var(--k-line);border-radius:14px;padding:14px 16px 14px 46px;color:var(--c-text);font-size:.92rem;outline:none;-webkit-appearance:none;}
+.atop-s input::placeholder{color:var(--c-muted);}
+.atop-s input:focus{border-color:rgba(var(--c-acc),.5);}
+.atop-b{width:50px;height:50px;border-radius:14px;border:1px solid var(--k-line);background:var(--c-panel);color:var(--c-text2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;}
+.atop-b:hover{color:rgb(var(--c-acc));}
+.atop-b .dot{position:absolute;top:12px;right:13px;width:8px;height:8px;border-radius:50%;background:rgb(var(--c-bad));display:none;}
+.atop-dd{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--c-card);border:1px solid var(--k-line);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.35);z-index:60;max-height:380px;overflow-y:auto;padding:6px;display:none;text-align:left;cursor:default;}
+.atop-dd.on{display:block;}
+.atop-b .atop-dd{left:auto;right:0;width:330px;}
+.atop-dd .it{display:flex;width:100%;text-align:left;gap:12px;align-items:center;background:none;border:none;color:var(--c-text);font-size:.88rem;padding:10px 12px;border-radius:10px;cursor:pointer;}
+.atop-dd .it:hover{background:rgba(var(--c-acc),.1);}
+.atop-dd .it small{display:block;color:var(--c-muted);font-size:.74rem;margin-top:1px;}
+.atop-dd .em{padding:14px;color:var(--c-muted);font-size:.84rem;}
+.mk-ic{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(var(--c-acc),.13);color:rgb(var(--c-acc));}
+.mk-ic.r{background:rgba(var(--c-bad),.12);color:rgb(var(--c-bad));}
+.mk-ic.g{background:rgba(var(--c-ok),.12);color:rgb(var(--c-ok));}
+.mk-ic.b{background:rgba(96,140,200,.14);color:#6f9ad6;}
+@media(min-width:861px){
+  .acol{flex:1;min-width:0;display:flex;flex-direction:column;height:100%;background:var(--c-bg);}
+  .acol .amain{flex:1;min-height:0;height:auto !important;}
+  .atop{display:flex;gap:12px;align-items:center;padding:26px 30px 4px;}
+  .aside{width:250px !important;padding:28px 10px 18px !important;}
+}
+@media(max-width:860px){.acol{display:contents;}}
+/* Admin como la maqueta */
+.mk-stats4{grid-template-columns:repeat(4,minmax(0,1fr)) !important;margin:6px 0 22px !important;}
+@media(max-width:1100px){.mk-stats4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}}
+.admtabs-wrap{padding:2px 0 12px !important;gap:10px !important;margin:0 0 18px !important;}
+@media(min-width:861px){.admtabs-wrap{flex-wrap:wrap !important;overflow:visible !important;}}
+.mk-stats4 .mk-stat{padding:16px;gap:12px;}.mk-stats4 .mk-ic{width:42px !important;height:42px !important;}
+@media(max-width:860px){.mk-stat{padding:12px 14px;}.mk-stat .mk-ic{width:40px;height:40px;}}
+.admtab{border-radius:30px !important;padding:10px 20px !important;font-size:.92rem !important;font-family:'Barlow',sans-serif !important;font-weight:600 !important;background:var(--c-card) !important;border:1px solid var(--k-line) !important;color:var(--c-text2) !important;}
+.admtab:hover{color:var(--c-text) !important;}
+.admtab.on{background:rgb(var(--c-acc)) !important;border-color:transparent !important;color:var(--c-ongold) !important;}
+.mk-pf{display:grid;grid-template-columns:.8fr 1.4fr;gap:18px;align-items:start;}
+.mk-pf2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;align-items:start;}
+.mk-pf-me{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:30px;}
+.mk-pf-me .mk-li{text-align:left;}
+.mk-pf-name{font-size:1.25rem;font-weight:700;margin-top:14px;color:var(--c-text);}
+#avatar-wrap{background:rgba(var(--c-ov),.14) !important;color:var(--c-text) !important;}
+.mk-card .ai{background:var(--c-bg) !important;border:1px solid var(--k-line) !important;border-radius:12px !important;padding:12px 14px !important;font-size:.92rem !important;color:var(--c-text) !important;}
+.mk-card .al{font-size:.8rem !important;text-transform:none !important;letter-spacing:0 !important;color:var(--c-text2) !important;font-weight:600;}
+@media(max-width:1000px){.mk-pf,.mk-pf2{grid-template-columns:1fr;}}
+.rpanel>*{flex-shrink:0;}
+.mk-count{white-space:nowrap;font-size:clamp(1.6rem,2.3vw,2.3rem);}
+.mk-next{display:flex;align-items:center;gap:18px;}
+.mk-ic.big{width:66px;height:66px;}
+.mk-lbl{font-size:.74rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--c-text2);}
+.mk-count{font-family:'Barlow Condensed',sans-serif;font-size:2.3rem;font-weight:700;color:var(--c-text);line-height:1.1;}
+.mk-tbl-wrap{padding:8px 24px;overflow-x:auto;}
+.mk-tbl{width:100%;border-collapse:collapse;font-size:.92rem;}
+.mk-tbl th{text-align:left;font-size:.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--c-muted);padding:14px 10px;border-bottom:1px solid var(--k-line);}
+.mk-tbl td{padding:14px 10px;border-bottom:1px solid var(--k-line);color:var(--c-text);vertical-align:middle;}
+.mk-tbl tr:last-child td{border-bottom:none;}
+@media(max-width:600px){.mk-next{flex-wrap:wrap;}.mk-tbl th:nth-child(3),.mk-tbl td:nth-child(3){display:none;}.mk-tbl-wrap{padding:4px 12px;}}
+/* En vivo y Reuniones como la maqueta */
+.mk-row2{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;}
+.mk-card{background:var(--c-card);border:1px solid var(--k-line);border-radius:20px;padding:22px 24px;}
+.mk-ct{font-size:1.2rem;font-weight:600;margin-bottom:10px;}
+.mk-live{display:flex;gap:20px;align-items:center;padding:20px;}
+.mk-live-th{position:relative;flex:1.1;aspect-ratio:16/8;border-radius:14px;background:linear-gradient(135deg,#2b2412,#15161a);min-width:0;}
+.mk-live-pill{position:absolute;left:12px;top:10px;font-size:.66rem;color:#fff;opacity:.85;letter-spacing:1px;}
+.mk-live-tx{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px;}
+.mk-live-tit{font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;font-weight:700;line-height:1.1;color:var(--c-text);}
+.mk-live-sub{font-size:.88rem;color:var(--c-text2);line-height:1.45;}
+.mk-pill{font-size:.66rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:4px 10px;border-radius:20px;background:rgba(var(--c-acc),.13);color:rgb(var(--c-acc));}
+.mk-pill.r{background:rgba(var(--c-bad),.13);color:rgb(var(--c-bad));}
+.mk-pill.g{background:rgba(var(--c-ok),.13);color:rgb(var(--c-ok));}
+.mk-pill.b{background:rgba(96,140,200,.15);color:#7fa5dc;}
+.mk-btn{display:inline-flex;align-items:center;gap:6px;border:none;background:rgb(var(--c-acc));color:var(--c-ongold);font-weight:700;font-size:.86rem;padding:10px 18px;border-radius:30px;cursor:pointer;text-decoration:none;margin-top:4px;}
+.mk-btn:hover{background:rgb(var(--c-acc2));}
+.mk-btn.ghost{background:rgba(var(--c-acc),.14);color:rgb(var(--c-acc));}
+.mk-li{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--k-line);}
+.mk-li:last-child{border-bottom:none;}
+.mk-li b{display:block;font-size:.92rem;font-weight:600;color:var(--c-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mk-li span{font-size:.8rem;color:var(--c-muted);}
+.mk-chip{font-size:.76rem;font-weight:700;color:rgb(var(--c-acc));background:rgba(var(--c-acc),.13);padding:7px 13px;border-radius:20px;text-decoration:none;white-space:nowrap;border:none;cursor:pointer;}
+.mk-link{font-size:.88rem;font-weight:600;color:rgb(var(--c-acc));text-decoration:none;}
+.mk-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+.cw-tag.b{background:rgba(96,140,200,.15);color:#7fa5dc;}
+@media(max-width:1000px){.mk-row2{grid-template-columns:1fr;}.mk-grid3{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:600px){.mk-live{flex-direction:column;align-items:stretch;}.mk-grid3{grid-template-columns:1fr;}}
+/* Curso como la maqueta */
+.lvl-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:20px !important;}
+.lvl-card{border-radius:20px !important;}
+.lvl-card:hover{transform:none !important;}
+.lvl-thumb{height:200px !important;background-color:#1d1a12;background-image:linear-gradient(135deg,#2b2412,#15161a);}
+.lvl-overlay{background:linear-gradient(to bottom,transparent 55%,rgba(0,0,0,.35)) !important;}
+.lvl-info{padding:22px 26px 24px !important;}
+.lvl-title{font-family:'Barlow Condensed',sans-serif !important;font-size:1.65rem !important;letter-spacing:.5px !important;margin-bottom:6px !important;}
+.lvl-desc{font-size:.92rem !important;color:var(--c-text2) !important;margin-bottom:18px !important;min-height:2.8em;}
+.lvl-meta{font-size:.88rem !important;color:rgb(var(--c-acc)) !important;}
+.lvl-prog span{font-size:.85rem;}
+@media(max-width:700px){.lvl-grid{grid-template-columns:1fr !important;}.lvl-thumb{height:160px !important;}}
+/* Dashboard como la maqueta */
+.mk-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:30px;}
+.mk-stat{display:flex;align-items:center;gap:14px;background:var(--c-card);border:1px solid var(--k-line);border-radius:18px;padding:18px 20px;cursor:pointer;transition:border-color .2s;}
+.mk-stat:hover{border-color:rgba(var(--c-acc),.4);}
+.mk-stat .mk-ic{width:50px;height:50px;}
+.mk-stat>div>span{display:block;font-size:.82rem;color:var(--c-text2);}
+.mk-stat b{display:block;font-size:1.08rem;font-weight:700;color:var(--c-text);margin-top:2px;}
+.mk-sh{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 16px;}
+.mk-sh h3{font-size:1.3rem;font-weight:600;color:var(--c-text);}
+.mk-note{font-size:.78rem;color:var(--c-muted);}
+.mk-arr{display:flex;align-items:center;gap:8px;}
+.mk-arr button{width:36px;height:36px;border-radius:50%;border:1px solid var(--k-line);background:transparent;color:var(--c-text2);font-size:1.1rem;cursor:pointer;}
+.mk-arr button:hover{color:rgb(var(--c-acc));border-color:rgba(var(--c-acc),.4);}
+.mk-cw{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 32px) / 3);gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin-bottom:34px;}
+.mk-cw::-webkit-scrollbar{display:none;}
+.cw-card{scroll-snap-align:start;background:var(--c-card);border:1px solid var(--k-line);border-radius:18px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:border-color .2s;}
+.cw-card:hover{border-color:rgba(var(--c-acc),.45);}
+.cw-th{position:relative;aspect-ratio:16/8.5;border-radius:12px;background:linear-gradient(135deg,#2a2412,#15161a) center/cover no-repeat;}
+.cw-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.95rem;padding-left:3px;}
+.cw-dur{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.7);color:#fff;font-size:.72rem;padding:3px 8px;border-radius:6px;}
+.cw-tag{align-self:flex-start;font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgb(var(--c-acc));background:rgba(var(--c-acc),.12);padding:4px 10px;border-radius:7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cw-tit{font-size:1rem;font-weight:600;line-height:1.35;color:var(--c-text);min-height:2.7em;}
+.cw-ft{display:flex;justify-content:space-between;font-size:.78rem;color:var(--c-muted);}
+.mk-empty{grid-column:1/-1;background:var(--c-card);border:1px dashed var(--k-line);border-radius:16px;padding:22px;text-align:center;color:var(--c-muted);font-size:.88rem;}
+.mk-ad-tit{font-family:'Barlow Condensed',sans-serif !important;font-weight:700 !important;font-size:2.1rem !important;line-height:1.05 !important;}
+@media(min-width:861px){.acol .amain{padding-top:22px !important;}}
+@media(max-width:860px){.mk-cw{grid-auto-columns:78%;}.mk-stats{grid-template-columns:1fr;gap:10px;}.mk-sh h3{font-size:1.12rem;}}
+.rp-qa{gap:14px !important;}
+.rp-qa a{width:46px;height:46px;padding:0 !important;border-radius:50% !important;justify-content:center;}
+.rp-ava{width:118px !important;height:118px !important;}
+.rp-ava .face{inset:10px !important;background:rgba(var(--c-ov),.16) !important;color:var(--c-text) !important;font-size:2.2rem !important;}
+.rp-hi b{font-size:1.12rem !important;}.rp-hi p{font-size:.86rem !important;}
+.rp-li{cursor:pointer;padding:13px 0 !important;gap:14px !important;}
+.rp-li b{font-size:.92rem;}.rp-li span{font-size:.8rem !important;}
+.rp-chart{height:120px !important;}
+.rp-all{width:100%;border:none;border-radius:14px;background:rgba(var(--c-acc),.13);color:rgb(var(--c-acc));font-weight:700;font-size:.92rem;padding:13px;cursor:pointer;flex-shrink:0;}
+.rp-all:hover{background:rgba(var(--c-acc),.2);}
+@media(min-width:1200px){.alay.with-rp .rpanel{width:300px !important;padding:28px 24px !important;}}
+@media(min-width:1500px){.alay.with-rp .rpanel{width:340px !important;}}
 @media(min-width:861px){
   #appdash{padding:22px;overflow:hidden;}
   .anav{display:none !important;}
@@ -912,23 +1058,32 @@ function mkToggleTheme() {
     <aside class="aside">
       <div class="aside-logo"></div>
       <div style="padding:0 10px;">
-        <div style="font-size:.61rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1.5px;padding:0 8px;margin-bottom:7px;">Principal</div>
+        <div class="snav-sec" style="margin-top:0;">Principal</div>
         <button class="snav on" data-v="dash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Dashboard</button>
         <button class="snav" data-v="clases"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10,8 16,12 10,16"/></svg> Curso</button>
-        <button class="snav" data-v="sesiones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg> En vivo</button>
+        <button class="snav" data-v="sesiones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg> En vivo<span class="snav-live" id="snav-live" style="display:none;">LIVE</span></button>
         <button class="snav" data-v="reuniones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Reuniones 1-1</button>
         <button class="snav" data-v="perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Mi Perfil</button>
-        <div id="adm-lnk" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--br);">
+        <div id="adm-lnk" style="display:none;"><div class="snav-sec">Gestión</div>
           <button class="snav" data-v="admin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg> Admin</button>
         </div>
+        <div class="snav-sec">Comunidad</div>
+        <a class="snav" href="https://discord.com/app" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7.5c2.3-.7 4.7-.7 7 0M7 16.5c3.2 1.2 6.8 1.2 10 0"/><path d="M15.5 17.5l1 2c2-.6 3.700-1.600 5-3 .3-3.900-.5-7.500-2.500-10.500-1.300-.6-2.700-1-4-1.200l-.7 1.400M8.500 17.500l-1 2c-2-.6-3.700-1.600-5-3-.3-3.900.5-7.500 2.500-10.500 1.300-.6 2.700-1 4-1.200l.7 1.400"/><circle cx="9" cy="12.5" r="1.2"/><circle cx="15" cy="12.5" r="1.2"/></svg> Discord</a>
+        <a class="snav" href="https://wa.me/593995014247" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5l1.300-4.100A8.500 8.500 0 1 1 7.600 19.300z"/><path d="M9 8.500c0 3.500 3 6.500 6.500 6.500l1-1.600-2-1-1 1c-1.200-.5-2.300-1.600-2.800-2.800l1-1-1-2z"/></svg> WhatsApp</a>
       </div>
       <div class="aside-foot">
-        <div class="theme-tgl"><button onclick="mkSetTheme('dark')" class="tg-dark">● Dark</button><button onclick="mkSetTheme('light')" class="tg-light">○ Light</button></div>
-        <div class="aside-user">Hola, <strong id="uname2">Alumno</strong></div>
+        <div class="snav-sec" style="margin-top:4px;">Apariencia</div><div class="theme-tgl"><button onclick="mkSetTheme('dark')" class="tg-dark">● Dark</button><button onclick="mkSetTheme('light')" class="tg-light">○ Light</button></div>
+        <div class="aside-user" style="display:none;">Hola, <strong id="uname2">Alumno</strong></div>
         <button class="snav snav-out" onclick="document.getElementById('btn-out').click()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg> Cerrar sesión</button>
       </div>
     </aside>
-    <main class="amain" id="amain"></main>
+    <div class="acol">
+      <div class="atop">
+        <div class="atop-s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="mk-q" type="search" autocomplete="off" placeholder="Buscar clases, módulos o lecciones..." oninput="_mkSearch(this.value)" onfocus="_mkSearch(this.value)"><div class="atop-dd" id="mk-q-dd"></div></div>
+        <button class="atop-b" id="mk-bell" onclick="_mkBell(event)" aria-label="Próximas actividades"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i class="dot" id="mk-bell-dot"></i><div class="atop-dd" id="mk-bell-dd"></div></button>
+      </div>
+      <main class="amain" id="amain"></main>
+    </div>
     <aside class="rpanel" id="rpanel"></aside>
   </div>
 
@@ -1060,7 +1215,11 @@ function _restoreAmain() {
 function _renderSection(state) {
   _activateNav(state.section);
   var _alay = document.querySelector('.alay');
-  if (_alay) _alay.classList.toggle('with-rp', state.section === 'dash');
+  // Panel derecho "Tu perfil" en todas las pestañas del alumno (no en Admin ni dentro de una clase)
+  var _rpOn = state.section !== 'admin' && !(state.section === 'clases' && (state.levelId || state.moduleId || state.lessonId));
+  if (_alay) _alay.classList.toggle('with-rp', _rpOn);
+  if (_rpOn) _mkRenderRPanel(!_hasClasesAccess());
+  else if (state.section === 'admin' && cProfile && cProfile.role === 'admin') { if (_alay) _alay.classList.add('with-rp'); _mkRenderAdminRP(); }
   // Reset scroll to top on every section change
   var appdash = document.getElementById('appdash');
   if (appdash) appdash.scrollTop = 0;
@@ -1200,7 +1359,7 @@ window.onload = function() {
   };
 
   // Bind sidebar + mobile nav to global navigateTo
-  document.querySelectorAll('.snav').forEach(function(b) {
+  document.querySelectorAll('.snav[data-v]').forEach(function(b) {
     b.onclick = function() { navigateTo(this.getAttribute('data-v')); };
   });
   document.querySelectorAll('.mob-nav-btn').forEach(function(b) {
@@ -1298,7 +1457,7 @@ function loadApp(user) {
       var mobNav = document.getElementById('mob-nav');
       if (mobNav) mobNav.style.display = 'none';
       // Bloquear toda navegacion
-      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+      document.querySelectorAll('.snav[data-v], .mob-nav-btn').forEach(function(b) {
         b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
       });
       showPending();
@@ -1357,7 +1516,7 @@ function loadApp(user) {
       if (aside) aside.style.display = 'none';
       var mobNav = document.getElementById('mob-nav');
       if (mobNav) mobNav.style.display = 'none';
-      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+      document.querySelectorAll('.snav[data-v], .mob-nav-btn').forEach(function(b) {
         b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
       });
 
@@ -1392,7 +1551,7 @@ function loadApp(user) {
       if (aside) aside.style.display = 'none';
       var mobNav = document.getElementById('mob-nav');
       if (mobNav) mobNav.style.display = 'none';
-      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+      document.querySelectorAll('.snav[data-v], .mob-nav-btn').forEach(function(b) {
         b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
       });
 
@@ -1637,107 +1796,33 @@ function rDash(liveOnly) {
   var daysGroup = nextGroup ? Math.max(0, Math.ceil((nextGroup - today)/86400000)) : null;
 
   document.getElementById('amain').innerHTML =
-    '<div class="atit">Mi Dashboard</div>' +
-    '<div class="asub">' + (liveOnly ? 'Sesiones en Vivo · Bienvenido' : 'Semana ' + weekNum + ' de ' + totalWeeks + ' · ' + (dL !== '—' && dL > 0 ? dL+' días restantes' : 'Bienvenido')) + '</div>' +
-
     '<div id="mk-ads"></div>' +
 
-    // Live banner
-    '<div id="lbanner" style="display:none;background:rgba(var(--c-ok),.07);border:1px solid rgba(var(--c-ok),.18);border-radius:8px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
+    // En vivo ahora (aparece solo si hay una sesión activa)
+    '<div id="lbanner" style="display:none;background:rgba(var(--c-ok),.07);border:1px solid rgba(var(--c-ok),.18);border-radius:16px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
       '<div style="width:8px;height:8px;border-radius:50%;background:rgb(var(--c-ok));flex-shrink:0;animation:pulse 1.5s infinite;"></div>' +
-      '<div style="flex:1;"><div id="ltit" style="font-weight:600;font-size:.86rem;"></div><div style="font-size:.73rem;color:var(--c-muted);">Sesión en curso</div></div>' +
-      '<a id="llnk" href="#" target="_blank" style="background:rgb(var(--c-ok));color:var(--c-bg);padding:7px 13px;border-radius:6px;font-weight:700;font-size:.76rem;text-decoration:none;">Unirme →</a>' +
+      '<div style="flex:1;"><div id="ltit" style="font-weight:600;font-size:.92rem;"></div><div style="font-size:.78rem;color:var(--c-muted);">Sesión en curso</div></div>' +
+      '<a id="llnk" href="#" target="_blank" style="background:rgb(var(--c-ok));color:#08130c;padding:8px 15px;border-radius:20px;font-weight:700;font-size:.8rem;text-decoration:none;">Unirme →</a>' +
     '</div>' +
 
-    // Top row: circular progress + week calendar + 1-1 countdown
-    '<div id="dash-top" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;' + (liveOnly ? 'display:none;' : '') + '">' +
-
-      // 1. Circular course progress
-      '<div class="acard" id="card-progress" style="display:flex;flex-direction:column;align-items:center;padding:20px 14px;cursor:pointer;" onclick="goToLastLesson()">' +
-        '<div style="position:relative;width:90px;height:90px;margin-bottom:10px;">' +
-          '<svg width="90" height="90" viewBox="0 0 90 90">' +
-            '<circle cx="45" cy="45" r="38" fill="none" stroke="rgba(var(--c-ov),.06)" stroke-width="8"/>' +
-            '<circle id="prog-circle" cx="45" cy="45" r="38" fill="none" stroke="url(#pg)" stroke-width="8" stroke-linecap="round" stroke-dasharray="239" stroke-dashoffset="239" transform="rotate(-90 45 45)" style="transition:stroke-dashoffset 1s ease;"/>' +
-            '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:var(--st)"/><stop offset="100%" style="stop-color:var(--sl)"/></linearGradient></defs>' +
-          '</svg>' +
-          '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
-            '<div id="prog-pct" style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.3rem;font-weight:800;color:var(--c-text);">0%</div>' +
-          '</div>' +
-        '</div>' +
-        '<div style="font-size:.72rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:.8px;">Progreso del curso</div>' +
-        '<div id="prog-sub" style="font-size:.7rem;color:var(--c-faint);margin-top:2px;">Cargando...</div>' +
-        '<div style="margin-top:10px;font-size:.66rem;color:var(--sl);display:flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>Continuar</div>' +
-      '</div>' +
-
-      // 2. Week navigator
-      '<div class="acard wk-card" id="card-week" style="padding:16px 14px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:160px;">' +
-        '<div style="font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Tu progreso semanal</div>' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:8px;">' +
-          '<button onclick="navWeek(-1)" class="wk-arrow" style="background:none;border:none;color:var(--c-faint);width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">‹</button>' +
-          '<div style="text-align:center;flex:1;">' +
-            '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.6rem;font-weight:800;color:var(--sl);line-height:1;" id="wk-label">Semana ' + weekNum + '</div>' +
-            '<div style="font-size:.62rem;margin-top:3px;min-height:14px;" id="wk-status"><span style="color:rgb(var(--c-acc));">&#9654; Est&aacute;s aqu&iacute;</span></div>' +
-          '</div>' +
-          '<button onclick="navWeek(1)" class="wk-arrow" style="background:none;border:none;color:var(--c-faint);width:26px;height:26px;cursor:pointer;font-size:1.3rem;transition:.2s;flex-shrink:0;opacity:.5;">›</button>' +
-        '</div>' +
-        '<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;" id="week-dots"></div>' +
-        '<div style="font-size:.67rem;color:var(--c-faint);text-align:center;" id="wk-total">de ' + totalWeeks + ' semanas · ' + (weekNum > 1 ? (weekNum-1) + ' completadas' : 'comenzando') + '</div>' +
-      '</div>' +
-
-      // 3. Next 1-1 countdown
-      '<div class="acard" id="card-1on1" style="border-top-color:rgb(var(--c-acc));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 14px;text-align:center;cursor:pointer;" onclick="navigateTo(\'reuniones\')">' +
-        (days1on1 !== null ?
-          '<div style="font-size:.62rem;color:rgb(var(--c-accd));text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Próxima sesión 1-1</div>' +
-          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:2rem;font-weight:800;color:rgb(var(--c-acc2));line-height:1;text-shadow:0 0 20px rgba(var(--c-acc),.4);" id="cntd-days">' +
-            (days1on1 === 0 ? '¡HOY!' : days1on1 + 'd') +
-          '</div>' +
-          '<div id="cntd-time" style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.1rem;font-weight:700;color:rgb(var(--c-acc));letter-spacing:2px;margin:4px 0;"></div>' +
-          '<div style="font-size:.68rem;color:rgb(var(--c-accd));line-height:1.4;">' + date1on1S + '</div>' +
-          '<div style="font-size:.6rem;color:rgb(var(--c-accd));margin-top:8px;padding:2px 8px;background:rgba(var(--c-acc),.07);border-radius:20px;border:1px solid rgba(var(--c-acc),.12);">Toca para ver reuniones</div>'
-        :
-          '<div style="font-size:1.4rem;color:var(--c-faint);">📅</div>' +
-          '<div style="font-size:.72rem;color:var(--c-muted);margin-top:6px;">Sin sesión 1-1<br>agendada</div>' +
-          '<div style="font-size:.6rem;color:rgb(var(--c-accd));margin-top:8px;padding:2px 8px;background:rgba(var(--c-acc),.07);border-radius:20px;border:1px solid rgba(var(--c-acc),.12);">Toca para ver reuniones</div>'
-        ) +
-      '</div>' +
-
+    // Tres tarjetas: progreso, próxima sesión grupal, próxima 1-1
+    '<div class="mk-stats">' +
+      (liveOnly ? '' : '<div class="mk-stat" onclick="goToLastLesson()"><div class="mk-ic">' + MK_IC.chart + '</div><div><span>Progreso del curso</span><b><span id="prog-pct">0%</span> · <span id="prog-sub">…</span></b></div></div>') +
+      '<div class="mk-stat" onclick="navigateTo(\'sesiones\')"><div class="mk-ic b">' + MK_IC.live + '</div><div><span>Próxima sesión grupal</span><b id="st-group">Sin agendar</b></div></div>' +
+      '<div class="mk-stat" id="card-1on1" onclick="navigateTo(\'reuniones\')"><div class="mk-ic g">' + MK_IC.cal + '</div><div><span>Próxima sesión 1-1</span><b id="st-1on1">Sin agendar</b></div></div>' +
     '</div>' +
 
-    // Week timeline bar
-    '<div style="margin-bottom:20px;' + (liveOnly ? 'display:none;' : '') + '">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-        '<div style="font-size:.7rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:.8px;">Línea de tiempo</div>' +
-        '<div style="font-size:.7rem;color:var(--c-muted);">' + (start ? start.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '') + ' → ' + endS + '</div>' +
-      '</div>' +
-      '<div style="height:6px;background:rgba(var(--c-ov),.04);border-radius:10px;overflow:hidden;">' +
-        '<div id="timeline-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--st),rgb(var(--c-acc)));border-radius:10px;transition:width 1s ease;"></div>' +
-      '</div>' +
-    '</div>' +
+    (liveOnly ? '' :
+      '<div class="mk-sh"><h3>Continuar viendo</h3><div class="mk-arr"><button onclick="document.getElementById(\'mk-cw\').scrollBy({left:-320,behavior:\'smooth\'})">‹</button><button onclick="document.getElementById(\'mk-cw\').scrollBy({left:320,behavior:\'smooth\'})">›</button></div></div>' +
+      '<div class="mk-cw" id="mk-cw"><div style="color:var(--c-muted);font-size:.85rem;"><span class="spin"></span> Cargando...</div></div>') +
 
-    // Next group session
-    (daysGroup !== null ?
-      '<div style="background:rgba(74,158,255,.05);border:1px solid rgba(74,158,255,.12);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">' +
-        '<div style="width:36px;height:36px;border-radius:8px;background:rgba(74,158,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="2"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>' +
-        '</div>' +
-        '<div style="flex:1;">' +
-          '<div style="font-size:.78rem;font-weight:600;color:var(--c-text);">Próxima sesión grupal</div>' +
-          '<div style="font-size:.72rem;color:var(--c-muted);margin-top:1px;">' + nextGroup.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'}) + ' · ' + nextGroup.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
-        '</div>' +
-        '<div style="text-align:right;">' +
-          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:1.3rem;font-weight:800;color:#4a9eff;">' + (daysGroup === 0 ? 'HOY' : daysGroup+'d') + '</div>' +
-        '</div>' +
-      '</div>'
-    : '') +
+    '<div class="mk-sh"><h3>Calendario económico</h3><span class="mk-note">Solo USD · Horario Ecuador (UTC-5)</span></div>' +
+    '<div id="econ-cal"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>' +
 
-    '<div class="sec" style="' + (liveOnly ? 'display:none;' : '') + '">Semana en detalle</div>' +
-    '<div id="week-info" style="margin-bottom:20px;' + (liveOnly ? 'display:none;' : '') + '"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
-
-    '<div class="sec">Próximas actividades</div>' +
-    '<div id="upcoming"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>' +
-
-    '<div class="sec" style="margin-top:28px;">Calendario económico <span style="font-size:.6rem;color:var(--c-faint);font-weight:400;letter-spacing:.5px;text-transform:none;">· Solo USD · Horario Ecuador (UTC-5)</span></div>' +
-    '<div id="econ-cal"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>';
+    (liveOnly ? '' :
+      '<div class="mk-sh"><h3>Plan de la semana</h3><div class="mk-arr"><span id="wk-label" style="font-size:.85rem;color:var(--c-text2);margin-right:6px;">Semana ' + weekNum + '</span><button onclick="navWeek(-1)">‹</button><button onclick="navWeek(1)">›</button></div></div>' +
+      '<div id="week-info" style="margin-bottom:20px;"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>');
+  _mkRenderDashExtras(liveOnly, p);
   _mkRenderAds();
 
     // Week navigator state
@@ -1831,24 +1916,8 @@ function rDash(liveOnly) {
     if (tb) tb.style.width = timelinePct.toFixed(1) + '%';
   }, 100);
 
-  // Load course progress
-  sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).then(function(pr) {
-    var completed = pr.data ? pr.data.length : 0;
-    sb.from('course_lessons').select('id', {count:'exact'}).eq('is_published', true).then(function(tot) {
-      var total = tot.count || 0;
-      var pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-      var circle = document.getElementById('prog-circle');
-      var pctEl = document.getElementById('prog-pct');
-      var subEl = document.getElementById('prog-sub');
-      if (circle) circle.style.strokeDashoffset = 239 - (239 * pct / 100);
-      if (pctEl) pctEl.textContent = pct + '%';
-      if (subEl) subEl.textContent = completed + ' de ' + total + ' clases';
-      _mkRPanelProgress(pct);
-    });
-  });
 
   chkLive(); loadUp(); loadCalendar();
-  _mkRenderRPanel(liveOnly);
 
   // Load next 1-1 from meetings table and update card
   sb.from('meetings_1on1').select('*')
@@ -1857,45 +1926,9 @@ function rDash(liveOnly) {
     .order('scheduled_at')
     .limit(1)
     .then(function(mr) {
-      var card = document.getElementById('card-1on1');
-      if (!card) return;
-      if (!mr.data || !mr.data.length) {
-        card.innerHTML =
-          '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px 0;">' +
-            '<div style="font-size:1.5rem;margin-bottom:8px;">📅</div>' +
-            '<div style="font-size:.65rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;">PRÓXIMA SESIÓN 1-1</div>' +
-            '<div style="font-size:.72rem;color:var(--c-faint);margin-top:4px;">Sin sesión programada</div>' +
-          '</div>';
-        return;
-      }
-      var mt = mr.data[0];
-      var n1 = new Date(mt.scheduled_at);
-      var diff = n1 - new Date();
-      var days = Math.floor(diff / 86400000);
-      var hrs  = Math.floor((diff % 86400000) / 3600000);
-      var mins = Math.floor((diff % 3600000) / 60000);
-      var secs = Math.floor((diff % 60000) / 1000);
-      var dateS = n1.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'});
-      var timeS = n1.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-      var countId = 'cntd-1on1-' + Date.now();
-      card.innerHTML =
-        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:10px 0;cursor:pointer;" onclick="navigateTo(\'reuniones\')">' +
-          '<div style="font-size:.62rem;color:rgb(var(--c-acc));text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;font-weight:700;">PRÓXIMA SESIÓN 1-1</div>' +
-          '<div style="font-family:var(--font-cond,sans-serif);font-size:2rem;font-weight:800;color:rgb(var(--c-acc));line-height:1;" id="' + countId + '">' +
-            (days > 0 ? days+'d ' : '') + String(hrs).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0') +
-          '</div>' +
-          '<div style="font-size:.68rem;color:var(--c-muted);margin-top:5px;">' + dateS + ' · ' + timeS + '</div>' +
-          (mt.title ? '<div style="font-size:.7rem;color:var(--c-text2);margin-top:2px;">' + mt.title + '</div>' : '') +
-          '<button style="margin-top:8px;font-size:.66rem;color:var(--sl);background:rgba(var(--c-acc),.1);border:1px solid rgba(var(--c-acc),.25);padding:3px 10px;border-radius:4px;cursor:pointer;">Toca para ver reuniones</button>' +
-        '</div>';
-      var cntdInt = setInterval(function() {
-        var el = document.getElementById(countId);
-        if (!el) { clearInterval(cntdInt); return; }
-        var d2 = n1 - new Date();
-        if (d2 <= 0) { clearInterval(cntdInt); el.textContent = '¡Ahora!'; return; }
-        var d=Math.floor(d2/86400000), h=Math.floor((d2%86400000)/3600000), m=Math.floor((d2%3600000)/60000), s=Math.floor((d2%60000)/1000);
-        el.textContent = (d>0?d+'d ':'') + String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-      }, 1000);
+      var el = document.getElementById('st-1on1');
+      if (!el) return;
+      el.textContent = (mr.data && mr.data.length) ? _mkWhen(mr.data[0].scheduled_at) : 'Sin agendar';
     });
 
   // Countdown timer for 1-1 session
@@ -2008,9 +2041,10 @@ function goToLastLesson() {
 
 function showLevels() {
   _restoreAmain();
+  _mkRP(true);
   pushRoute({ section: 'clases' });
   var m = document.getElementById('amain');
-  m.innerHTML = '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';
+  m.innerHTML = '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub" id="lvl-sub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';
   sb.from('course_levels').select('*, course_modules(id, course_lessons(id, is_published))').eq('is_published', true).order('sort_order').then(function(r) {
     var g = document.getElementById('lvl-grid'); if (!g) return;
     // Progreso por nivel: clases publicadas vs. completadas por el alumno
@@ -2032,6 +2066,7 @@ function showLevels() {
         if (el) el.innerHTML = '<div class="lvl-bar"><i style="width:' + pct + '%"></i></div><span>' + pct + '%</span>';
       });
       var tot = document.getElementById('lvl-total');
+      var lsub = document.getElementById('lvl-sub'); if (lsub && all) lsub.textContent = 'Selecciona un módulo para comenzar · ' + ok + ' de ' + all + ' clases completadas';
       if (tot && all) { var tp = Math.round(ok / all * 100); tot.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--c-muted);margin-bottom:6px;"><span>Progreso total</span><b style="color:rgb(var(--c-acc));">' + tp + '%</b></div><div class="lvl-bar"><i style="width:' + tp + '%"></i></div>'; }
     });
     if (!r.data || !r.data.length) { g.innerHTML = '<div class="empty-state">Sin contenido publicado aún.</div>'; return; }
@@ -2041,7 +2076,7 @@ function showLevels() {
       card.className = 'lvl-card';
       var modCount = lv.course_modules ? lv.course_modules.length : 0;
       card.innerHTML =
-        '<div class="lvl-thumb" style="background-image:url(' + (lv.thumbnail_url || '') + ')"><div class="lvl-overlay"></div></div>' +
+        '<div class="lvl-thumb"' + (lv.thumbnail_url ? ' style="background-image:url(\'' + lv.thumbnail_url + '\')"' : '') + '><div class="lvl-overlay"></div></div>' +
         '<div class="lvl-info">' +
           '<div class="lvl-title">' + lv.title + '</div>' +
           '<div class="lvl-desc">' + (lv.description || '') + '</div>' +
@@ -2071,6 +2106,7 @@ function openLevel(level) {
 
 
 function showLessons(mod, level, progress) {
+  _mkRP(false);
   courseState.moduleId = mod ? mod.id : null;
   pushRoute({ section: 'clases', levelId: level.id, moduleId: mod ? mod.id : null });
 
@@ -2479,108 +2515,53 @@ function rSes() {
     var upcoming = sessions.filter(function(s){ return !s.is_active && new Date(s.scheduled_at) > now; }).sort(function(a,b){ return new Date(a.scheduled_at)-new Date(b.scheduled_at); });
     var past     = sessions.filter(function(s){ return !s.is_active && s.recording_url; }).sort(function(a,b){ return new Date(b.scheduled_at)-new Date(a.scheduled_at); });
 
-    var html = '<div class="atit">En Vivo</div>';
-
-    // ── SESIÓN ACTIVA ──
-    if (active.length) {
-      var s = active[0];
-      html +=
-        '<div style="background:linear-gradient(135deg,rgba(74,158,255,.08),rgba(74,158,255,.03));border:1px solid rgba(74,158,255,.25);border-radius:14px;padding:22px;margin-bottom:22px;">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
-            '<div style="width:8px;height:8px;border-radius:50%;background:#4a9eff;animation:live-pulse 1.5s infinite;"></div>' +
-            '<span style="font-size:.68rem;color:#4a9eff;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;">En vivo ahora</span>' +
-          '</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--c-text);margin-bottom:4px;">' + s.title + '</div>' +
-          (s.description ? '<div style="font-size:.78rem;color:var(--c-muted);margin-bottom:14px;">' + s.description + '</div>' : '<div style="margin-bottom:14px;"></div>') +
-          '<button class="abtn2" id="btn-join-live" style="width:100%;padding:12px;font-size:.88rem;" data-url="' + (s.discord_url||'') + '">Unirme a la sesión →</button>' +
-        '</div>';
+    var html = '<div class="mk-row2">';
+    // ── EN VIVO AHORA (o la siguiente sesión) ──
+    var hero = active[0] || upcoming[0] || null;
+    if (hero) {
+      var isLive = !!active.length;
+      var hd = new Date(hero.scheduled_at);
+      html += '<div class="mk-card mk-live">' +
+        '<div class="mk-live-th">' + (isLive ? '<span class="mk-live-pill">● LIVE</span>' : '') + '<span class="cw-play">▶</span>' + (isLive ? '<span class="cw-dur">EN VIVO</span>' : '') + '</div>' +
+        '<div class="mk-live-tx">' +
+          (isLive ? '<span class="mk-pill r">● En vivo ahora</span>' : '<span class="mk-pill">Próxima sesión</span>') +
+          '<div class="mk-live-tit">' + _mkEsc(hero.title) + '</div>' +
+          '<div class="mk-live-sub">' + (hero.description ? _mkEsc(hero.description) : (isLive ? 'Con Jeisson · en curso' : _mkWhen(hero.scheduled_at))) + '</div>' +
+          (isLive
+            ? '<button class="mk-btn" id="btn-join-live" data-url="' + _mkEsc(hero.discord_url || '') + '">Unirme a la sesión →</button>'
+            : '<a class="mk-btn ghost" href="' + _mkCalLink(hero) + '" target="_blank" rel="noopener">Recordarme →</a>') +
+        '</div></div>';
     } else {
-      html +=
-        '<div style="background:rgba(var(--c-ov),.02);border:1px dashed rgba(var(--c-ov),.08);border-radius:14px;padding:22px;margin-bottom:22px;text-align:center;">' +
-          '<div style="font-size:1.5rem;margin-bottom:8px;">📡</div>' +
-          '<div style="font-size:.84rem;color:var(--c-muted);">No hay sesión en vivo en este momento</div>' +
-        '</div>';
+      html += '<div class="mk-card mk-live" style="justify-content:center;text-align:center;flex-direction:column;"><div style="font-size:1.6rem;">📡</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div></div>';
     }
-
     // ── PRÓXIMAS SESIONES ──
-    if (upcoming.length) {
-      html += '<div class="sec" style="margin-bottom:12px;">Próximas sesiones</div>';
-      upcoming.forEach(function(s) {
-        var d = new Date(s.scheduled_at);
-        html +=
-          '<div class="mc" style="margin-bottom:8px;">' +
-            '<div class="md"><div class="md-d">' + d.getDate() + '</div><div class="md-m">' + d.toLocaleDateString('es-ES',{month:'short'}) + '</div></div>' +
-            '<div style="flex:1;">' +
-              '<div style="font-size:.85rem;font-weight:600;">' + s.title + '</div>' +
-              '<div style="font-size:.73rem;color:var(--c-muted);margin-top:2px;">' + d.toLocaleDateString('es-ES',{weekday:'long'}) + ' · ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
-            '</div>' +
-            '<span style="font-size:.68rem;padding:2px 9px;border-radius:4px;background:rgba(74,158,255,.1);color:#4a9eff;">Grupal</span>' +
-          '</div>';
-      });
-    }
+    var nexts = upcoming.filter(function(x){ return x !== hero; }).slice(0, 4);
+    html += '<div class="mk-card"><h3 class="mk-ct">Próximas sesiones</h3>' +
+      (nexts.length ? nexts.map(function(x) {
+        return '<div class="mk-li"><div class="mk-ic b">' + MK_IC.cal + '</div><div style="flex:1;min-width:0;"><b>' + _mkEsc(x.title) + '</b><span>' + _mkWhen(x.scheduled_at) + '</span></div>' +
+          '<a class="mk-chip" href="' + _mkCalLink(x) + '" target="_blank" rel="noopener">Recordar</a></div>';
+      }).join('') : '<div style="color:var(--c-muted);font-size:.86rem;padding:8px 0;">No hay más sesiones programadas.</div>') +
+    '</div></div>';
 
-    // ── SESIONES GRABADAS ──
-    if (past.length) {
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px;">' +
-        '<div class="sec" style="margin:0;">Sesiones grabadas</div>' +
-        '<div class="rec-view-toggle" style="display:flex;gap:4px;">' +
-          '<button id="ses-tog-list" onclick="setSesView(\'list\')" title="Vista lista" style="background:rgba(var(--c-acc),.15);border:1px solid rgba(var(--c-acc),.3);color:var(--sl);width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' +
-          '</button>' +
-          '<button id="ses-tog-grid" onclick="setSesView(\'grid\')" title="Vista cuadrícula" style="background:transparent;border:1px solid rgba(var(--c-ov),.08);color:var(--c-muted);width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
-          '</button>' +
-        '</div>' +
-      '</div>';
-
-      // List view (default)
-      html += '<div id="ses-rec-list" style="background:rgba(var(--c-ov),.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:420px;padding:8px;">';
-      past.forEach(function(s) {
-        var d = new Date(s.scheduled_at);
-        var embedUrl = toEmbedUrl(s.recording_url||'');
-        html +=
-          '<div onclick="openRecModal(this.dataset.title, this.dataset.date, this.dataset.url)" ' +
-               'data-title="' + s.title.replace(/"/g,"'") + '" ' +
-               'data-date="' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '" ' +
-               'data-url="' + embedUrl + '" ' +
-               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(var(--c-ov),.04);transition:background .15s;" onmouseover="this.style.background=\'rgba(var(--c-ov),.03)\'" onmouseout="this.style.background=\'transparent\'">' +
-            '<div style="width:36px;height:36px;border-radius:6px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-              '<svg width="12" height="12" viewBox="0 0 24 24" fill="#4a9eff"><polygon points="5,3 19,12 5,21"/></svg>' +
-            '</div>' +
-            '<div style="flex:1;min-width:0;">' +
-              '<div style="font-size:.84rem;font-weight:600;color:var(--c-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.title + '</div>' +
-              '<div style="font-size:.71rem;color:var(--c-muted);margin-top:2px;">' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '</div>' +
-            '</div>' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
-          '</div>';
-      });
-      html += '</div>';
-
-      // Grid view (hidden by default, only shown on desktop)
-      html += '<div id="ses-rec-grid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">';
-      past.forEach(function(s) {
-        var d = new Date(s.scheduled_at);
-        var embedUrl = toEmbedUrl(s.recording_url||'');
-        html +=
-          '<div onclick="openRecModal(this.dataset.title, this.dataset.date, this.dataset.url)" ' +
-               'data-title="' + s.title.replace(/"/g,"'") + '" ' +
-               'data-date="' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) + '" ' +
-               'data-url="' + embedUrl + '" ' +
-               'style="background:linear-gradient(160deg,rgba(var(--c-ov),.05),rgba(var(--c-bgrgb),.9));border:1px solid rgba(var(--c-acc),.18);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;" onmouseover="this.style.borderColor=\'rgba(var(--c-acc),.4)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'rgba(var(--c-acc),.18)\';this.style.transform=\'none\'">' +
-            '<div style="aspect-ratio:16/9;background:rgba(74,158,255,.07);border-bottom:1px solid rgba(var(--c-ov),.05);display:flex;align-items:center;justify-content:center;">' +
-              '<svg width="28" height="28" viewBox="0 0 24 24" fill="rgba(74,158,255,.6)"><polygon points="5,3 19,12 5,21"/></svg>' +
-            '</div>' +
-            '<div style="padding:10px 12px;">' +
-              '<div style="font-size:.82rem;font-weight:600;color:var(--c-text);line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + s.title + '</div>' +
-              '<div style="font-size:.68rem;color:var(--c-muted);">' + d.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) + '</div>' +
-            '</div>' +
-          '</div>';
-      });
-      html += '</div>';
+    // ── GRABACIONES RECIENTES ──
+    html += '<div class="mk-sh" style="margin-top:28px;"><h3>Grabaciones recientes</h3>' + (past.length > 6 ? '<a class="mk-link" href="#" onclick="document.querySelectorAll(\'.rec-more\').forEach(function(e){e.style.display=\'\'});this.remove();return false;">Ver todas →</a>' : '') + '</div>';
+    if (!past.length) {
+      html += '<div class="mk-empty">Todavía no hay grabaciones.</div>';
+    } else {
+      html += '<div class="mk-grid3">' + past.map(function(x, i) {
+        var d = new Date(x.scheduled_at);
+        var th = _mkThumb({ video_url: x.recording_url || '' });
+        var tag = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '').replace(',', '');
+        return '<div class="cw-card' + (i >= 6 ? ' rec-more' : '') + '"' + (i >= 6 ? ' style="display:none"' : '') + ' onclick="openRecModal(this.dataset.title, this.dataset.date, this.dataset.url)" ' +
+          'data-title="' + _mkEsc(x.title) + '" data-date="' + d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) + '" data-url="' + _mkEsc(toEmbedUrl(x.recording_url || '')) + '">' +
+          '<div class="cw-th"' + (th ? ' style="background-image:url(\'' + _mkEsc(th) + '\')"' : '') + '><span class="cw-play">▶</span></div>' +
+          '<span class="cw-tag b">' + _mkEsc(tag) + '</span>' +
+          '<div class="cw-tit">' + _mkEsc(x.title) + '</div>' +
+        '</div>';
+      }).join('') + '</div>';
     }
 
     m.innerHTML = html;
-    restoreSesView();
 
     // ── Bind join button ──
     var joinBtn = document.getElementById('btn-join-live');
@@ -2650,120 +2631,62 @@ function rReun() {
     var upcoming = meetings.filter(function(m){ return new Date(m.scheduled_at) >= new Date(now.getTime() - 1800000); });
     var past     = meetings.filter(function(m){ return new Date(m.scheduled_at) < new Date(now.getTime() - 1800000); });
 
-    var html = '<div class="atit">Reuniones 1-1</div>';
-    html += '<div class="asub" style="margin-bottom:24px;">Sesiones privadas con Jeisson</div>';
-
-    // ── PRÓXIMA REUNIÓN ──
+    var html = '<div class="mk-row2" style="grid-template-columns:1.2fr 1fr;">';
+    // ── PRÓXIMA SESIÓN 1-1 (cuenta regresiva) ──
     if (upcoming.length) {
       var next = upcoming[0];
-      var d = new Date(next.scheduled_at);
-      var dateStr = d.toLocaleDateString("es-ES", {weekday:"long", day:"2-digit", month:"long", year:"numeric"});
-      var timeStr = d.toLocaleTimeString("es-ES", {hour:"2-digit", minute:"2-digit"});
-
-      // Countdown
-      var diff = d - now;
-      var days = Math.floor(diff / 86400000);
-      var hrs  = Math.floor((diff % 86400000) / 3600000);
-      var mins = Math.floor((diff % 3600000) / 60000);
-      var countdownStr = days > 0 ? days + 'd ' + hrs + 'h ' + mins + 'm' : hrs + 'h ' + mins + 'm';
-
-      html +=
-        '<div style="background:linear-gradient(135deg,rgba(var(--c-acc),.1),rgba(var(--c-acc),.04));border:1px solid rgba(var(--c-acc),.25);border-radius:14px;padding:22px;margin-bottom:24px;">' +
-          '<div style="font-size:.65rem;color:var(--sl);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:10px;">📅 Próxima sesión</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--c-text);margin-bottom:4px;">' + (next.title || 'Sesión 1-1') + '</div>' +
-          '<div style="font-size:.8rem;color:var(--c-text2);margin-bottom:4px;">' + dateStr + '</div>' +
-          '<div style="font-size:.8rem;color:var(--c-text2);margin-bottom:14px;">' + timeStr + ' · En ' + countdownStr + '</div>' +
-          (next.notes ? '<div style="font-size:.78rem;color:var(--c-muted);margin-bottom:14px;padding:10px;background:rgba(var(--c-ov),.03);border-radius:8px;">' + next.notes + '</div>' : '') +
-          (next.meet_url
-            ? '<a href="' + next.meet_url + '" target="_blank" class="abtn2" style="display:block;text-align:center;padding:12px;text-decoration:none;">▶ Entrar a la sesión</a>'
-            : '<div style="text-align:center;padding:12px;background:rgba(var(--c-ov),.03);border-radius:8px;font-size:.78rem;color:var(--c-muted);">Link de reunión pendiente</div>') +
-        '</div>';
-
-      // Other upcoming
-      if (upcoming.length > 1) {
-        html += '<div class="sec" style="margin-bottom:12px;">Próximas sesiones</div>';
-        upcoming.slice(1).forEach(function(mt) {
-          var dd = new Date(mt.scheduled_at);
-          html +=
-            '<div class="mc" style="margin-bottom:8px;">' +
-              '<div class="md"><div class="md-d">' + dd.getDate() + '</div><div class="md-m">' + dd.toLocaleDateString("es-ES",{month:"short"}) + '</div></div>' +
-              '<div style="flex:1;"><div style="font-size:.84rem;font-weight:600;">' + (mt.title||"Sesión 1-1") + '</div>' +
-              '<div style="font-size:.72rem;color:var(--c-muted);margin-top:2px;">' + dd.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}) + '</div></div>' +
-              (mt.meet_url ? '<a href="' + mt.meet_url + '" target="_blank" style="font-size:.7rem;color:var(--sl);padding:4px 10px;border:1px solid rgba(var(--c-acc),.25);border-radius:5px;text-decoration:none;">Entrar</a>' : '') +
-            '</div>';
-        });
-      }
-    } else {
-      html +=
-        '<div style="background:rgba(var(--c-ov),.02);border:1px dashed rgba(var(--c-ov),.08);border-radius:14px;padding:24px;text-align:center;margin-bottom:24px;">' +
-          '<div style="font-size:1.4rem;margin-bottom:8px;">📅</div>' +
-          '<div style="font-size:.84rem;color:var(--c-muted);">Sin sesiones programadas próximamente</div>' +
-        '</div>';
-    }
-
-    // ── GRABACIONES PERSONALIZADAS ──
-    if (recordings.length) {
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 12px;">' +
-        '<div class="sec" style="margin:0;">Grabaciones de tus sesiones</div>' +
-        '<div class="rec-view-toggle" style="display:flex;gap:4px;">' +
-          '<button id="reu-tog-list" onclick="setReuView(\'list\')" title="Vista lista" style="background:rgba(var(--c-acc),.15);border:1px solid rgba(var(--c-acc),.3);color:var(--sl);width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>' +
-          '</button>' +
-          '<button id="reu-tog-grid" onclick="setReuView(\'grid\')" title="Vista cuadrícula" style="background:transparent;border:1px solid rgba(var(--c-ov),.08);color:var(--c-muted);width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
-          '</button>' +
-        '</div>' +
+      var nd = new Date(next.scheduled_at);
+      html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal.replace(/18/g, '26') + '</div>' +
+        '<div style="flex:1;min-width:0;"><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-count" id="reu-count">—</div>' +
+        '<div class="mk-live-sub">' + _mkEsc(next.title || 'Sesión 1-1') + ' · ' + nd.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + nd.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</div></div>' +
+        (next.meet_url ? '<a class="mk-btn" href="' + _mkEsc(_mkSafeUrl(next.meet_url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span class="mk-chip" style="cursor:default;" title="Jeisson te enviará el link">Link pendiente</span>') +
       '</div>';
+      setTimeout(function tick() {
+        var el = document.getElementById('reu-count'); if (!el) return;
+        var df = nd - new Date();
+        if (df <= 0) { el.textContent = '¡Ahora!'; return; }
+        var D = Math.floor(df / 86400000), H = Math.floor(df % 86400000 / 3600000), M = Math.floor(df % 3600000 / 60000);
+        el.textContent = D + 'd : ' + String(H).padStart(2, '0') + 'h : ' + String(M).padStart(2, '0') + 'm';
+        setTimeout(tick, 30000);
+      }, 0);
+    } else {
+      html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal.replace(/18/g, '26') + '</div><div><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-live-sub" style="margin-top:6px;">Sin sesiones programadas. Escríbele a Jeisson para agendar.</div></div></div>';
+    }
+    // ── TU PLAN 1-1 ──
+    var doneN = past.length, totN = past.length + upcoming.length;
+    var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
+    var endS = !end ? '—' : end.getFullYear() >= 2099 ? 'Ilimitado' : end.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    html += '<div class="mk-card"><div class="mk-lbl">Tu plan 1-1</div>' +
+      '<div class="mk-count" style="font-size:1.9rem;margin:4px 0 10px;">' + doneN + ' de ' + totN + ' sesiones</div>' +
+      '<div class="lvl-bar"><i style="width:' + (totN ? Math.round(doneN / totN * 100) : 0) + '%"></i></div>' +
+      '<div class="cw-ft" style="margin-top:8px;"><span>' + upcoming.length + ' programada' + (upcoming.length === 1 ? '' : 's') + '</span><span>Vence: ' + endS + '</span></div></div>';
+    html += '</div>';
 
-      // List view (default)
-      html += '<div id="reu-rec-list" style="background:rgba(var(--c-ov),.02);border:1px solid var(--br);border-radius:12px;overflow-y:auto;max-height:400px;padding:8px;">';
-      recordings.forEach(function(r) {
-        var rd = new Date(r.recorded_at);
-        var embedUrl = toEmbedUrl(r.video_url);
-        html +=
-          '<div onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" ' +
-               'data-title="' + (r.title||'').replace(/"/g,"'") + '" ' +
-               'data-date="' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"}) + '" ' +
-               'data-url="' + embedUrl + '" ' +
-               'style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:8px;border-bottom:1px solid rgba(var(--c-ov),.04);transition:background .15s;" onmouseover="this.style.background=\'rgba(var(--c-ov),.03)\'" onmouseout="this.style.background=\'transparent\'">' +
-            '<div style="width:36px;height:36px;border-radius:6px;background:rgba(var(--c-acc),.12);border:1px solid rgba(var(--c-acc),.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-              '<svg width="12" height="12" viewBox="0 0 24 24" fill="var(--sl)"><polygon points="5,3 19,12 5,21"/></svg>' +
-            '</div>' +
-            '<div style="flex:1;min-width:0;">' +
-              '<div style="font-size:.84rem;font-weight:600;color:var(--c-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.title||'Grabación') + '</div>' +
-              (r.description ? '<div style="font-size:.71rem;color:var(--c-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.description + '</div>' : '') +
-              '<div style="font-size:.68rem;color:var(--c-faint);margin-top:1px;">' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"}) + '</div>' +
-            '</div>' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
-          '</div>';
-      });
-      html += '</div>';
-
-      // Grid view (hidden by default, only shown on desktop)
-      html += '<div id="reu-rec-grid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;">';
-      recordings.forEach(function(r) {
-        var rd = new Date(r.recorded_at);
-        var embedUrl = toEmbedUrl(r.video_url);
-        html +=
-          '<div onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" ' +
-               'data-title="' + (r.title||'').replace(/"/g,"'") + '" ' +
-               'data-date="' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"}) + '" ' +
-               'data-url="' + embedUrl + '" ' +
-               'style="background:linear-gradient(160deg,rgba(var(--c-ov),.05),rgba(var(--c-bgrgb),.9));border:1px solid rgba(var(--c-acc),.18);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;" onmouseover="this.style.borderColor=\'rgba(var(--c-acc),.4)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.borderColor=\'rgba(var(--c-acc),.18)\';this.style.transform=\'none\'">' +
-            '<div style="aspect-ratio:16/9;background:rgba(var(--c-acc),.07);border-bottom:1px solid rgba(var(--c-ov),.05);display:flex;align-items:center;justify-content:center;">' +
-              '<svg width="28" height="28" viewBox="0 0 24 24" fill="rgba(var(--c-acc2),.5)"><polygon points="5,3 19,12 5,21"/></svg>' +
-            '</div>' +
-            '<div style="padding:10px 12px;">' +
-              '<div style="font-size:.82rem;font-weight:600;color:var(--c-text);line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + (r.title||'Grabación') + '</div>' +
-              '<div style="font-size:.68rem;color:var(--c-muted);">' + rd.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"}) + '</div>' +
-            '</div>' +
-          '</div>';
-      });
-      html += '</div>';
+    // ── TABLA: reuniones + grabaciones ──
+    var recUsed = {};
+    var rows = meetings.slice().sort(function(x, y){ return new Date(y.scheduled_at) - new Date(x.scheduled_at); }).map(function(mt) {
+      var md = new Date(mt.scheduled_at), key = md.toDateString();
+      var rec = recordings.find(function(r){ return !recUsed[r.id] && r.recorded_at && new Date(r.recorded_at).toDateString() === key; });
+      if (rec) recUsed[rec.id] = true;
+      return { d: md, t: mt.title || 'Sesión 1-1', future: md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url };
+    });
+    recordings.forEach(function(r){ if (!recUsed[r.id]) rows.push({ d: new Date(r.recorded_at), t: r.title || 'Grabación', future: false, rec: r }); });
+    rows.sort(function(x, y){ return y.d - x.d; });
+    html += '<div class="mk-sh" style="margin-top:28px;"><h3>Mis reuniones y grabaciones</h3><a class="mk-link" href="https://wa.me/593995014247?text=' + encodeURIComponent('Hola Jeisson, quiero agendar una sesión 1-1') + '" target="_blank" rel="noopener">Agendar nueva →</a></div>';
+    if (!rows.length) {
+      html += '<div class="mk-empty">Aún no tienes reuniones ni grabaciones.</div>';
+    } else {
+      html += '<div class="mk-card mk-tbl-wrap"><table class="mk-tbl"><thead><tr><th>Fecha</th><th>Tema</th><th>Estado</th><th>Grabación</th></tr></thead><tbody>' +
+        rows.map(function(x) {
+          var recBtn = x.rec
+            ? '<button class="mk-chip" onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" data-title="' + _mkEsc(x.rec.title || x.t) + '" data-date="' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) + '" data-url="' + _mkEsc(toEmbedUrl(x.rec.video_url || '')) + '">▶ Ver grabación</button>'
+            : (x.future && x.url ? '<a class="mk-chip" href="' + _mkEsc(_mkSafeUrl(x.url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span style="color:var(--c-muted);">' + (x.future ? 'Disponible luego' : '—') + '</span>');
+          return '<tr><td>' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + '</td><td>' + _mkEsc(x.t) + '</td>' +
+            '<td><span class="mk-pill ' + (x.future ? 'b' : 'g') + '">' + (x.future ? 'Programada' : 'Completada') + '</span></td><td>' + recBtn + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
     }
 
     m.innerHTML = html;
-    restoreReuView();
   });
 }
 
@@ -2805,10 +2728,25 @@ function rPerfil() {
   var p = cProfile || {};
   var m = document.getElementById('amain');
 
-  var avatarHtml =
-    '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">' +
+  var since = p.membership_start || p.created_at;
+  var sinceS = since ? new Date(since).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) : '';
+  var endD = p.membership_end ? new Date(p.membership_end) : null;
+  var active = endD && endD > new Date();
+  var endS = !endD ? 'Sin plan activo' : endD.getFullYear() >= 2099 ? 'Acceso ilimitado' : (active ? 'Vence el ' : 'Venció el ') + endD.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+  var perks = [];
+  if (_hasClasesAccess()) perks.push('Clases grabadas');
+  if (_hasLiveAccess()) perks.push('En vivo');
+  if (p.access_1on1) perks.push('Sesiones 1-1');
+
+  m.innerHTML =
+    '<div class="atit">Mi Perfil</div>' +
+    '<div class="asub" style="margin-bottom:22px;">Personaliza tu cuenta</div>' +
+
+    '<div class="mk-pf">' +
+      // Tarjeta izquierda: foto, nombre y Discord
+      '<div class="mk-card mk-pf-me">' +
       '<div id="avatar-wrap" onclick="document.getElementById(\'avatar-input\').click()" ' +
-           'style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:700;color:#fff;margin-bottom:10px;overflow:hidden;cursor:pointer;position:relative;box-shadow:0 0 0 3px rgba(var(--c-acc),.25),0 8px 24px rgba(0,0,0,.4);">' +
+           'style="width:132px;height:132px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:700;color:#fff;margin-bottom:10px;overflow:hidden;cursor:pointer;position:relative;box-shadow:0 0 0 3px rgba(var(--c-acc),.25),0 8px 24px rgba(0,0,0,.4);">' +
         (p.avatar_url
           ? '<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">'
           : '<span>'+(p.full_name ? p.full_name[0].toUpperCase() : '?')+'</span>') +
@@ -2818,27 +2756,18 @@ function rPerfil() {
         '</div>' +
       '</div>' +
       '<input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">' +
-      '<div style="font-size:.72rem;color:var(--c-muted);">Clic para cambiar foto</div>' +
-      (p.full_name ? '<div style="font-size:.95rem;font-weight:700;color:var(--c-text);margin-top:6px;">' + p.full_name + '</div>' : '') +
-      (cUser ? '<div style="font-size:.74rem;color:var(--c-muted);margin-top:2px;">' + cUser.email + '</div>' : '') +
-    '</div>';
-
-  m.innerHTML =
-    '<div class="atit">Mi Perfil</div>' +
-    '<div class="asub" style="margin-bottom:24px;">Personaliza tu cuenta</div>' +
-
-    // Avatar centrado encima
-    avatarHtml +
-
-    // Grid 2 columnas: Info personal | Seguridad
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">' +
-
-      // Col 1: Información personal
-      '<div class="aform">' +
-        '<div style="font-size:.84rem;font-weight:700;color:var(--c-text);margin-bottom:16px;display:flex;align-items:center;gap:7px;">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>' +
-          'Información personal' +
+        '<div class="mk-pf-name">' + _mkEsc(p.full_name || 'Alumno') + '</div>' +
+        (sinceS ? '<div class="mk-live-sub">Alumno desde ' + sinceS + '</div>' : '') +
+        '<button class="mk-chip" style="margin-top:12px;" onclick="document.getElementById(\'avatar-input\').click()">Cambiar foto</button>' +
+        '<div class="mk-li" style="width:100%;margin-top:18px;border-top:1px solid var(--k-line);border-bottom:none;padding-top:16px;">' +
+          '<div class="mk-ic b">' + MK_IC.discord + '</div><div style="flex:1;min-width:0;"><b>Discord</b><span>' + (p.discord_id ? 'Cuenta vinculada' : 'Sin conectar') + '</span></div>' +
+          '<span class="mk-pill ' + (p.discord_id ? 'g' : 'r') + '">' + (p.discord_id ? 'Conectado' : 'Pendiente') + '</span>' +
         '</div>' +
+      '</div>' +
+
+      // Datos personales + apariencia
+      '<div class="mk-card">' +
+        '<div class="mk-sh" style="margin:0 0 16px;"><h3 style="font-size:1.2rem;">Datos personales</h3><button class="mk-btn" style="margin:0;" onclick="savePerfil()">Guardar cambios</button></div>' +
         '<div style="margin-bottom:10px;">' +
           '<label class="al">Nombre completo</label>' +
           '<input id="pf-name" class="ai" value="'+(p.full_name||'')+'" placeholder="Tu nombre completo" style="box-sizing:border-box;">' +
@@ -2913,39 +2842,53 @@ function rPerfil() {
         '<div style="margin-bottom:16px;"><label class="al">Bio / Presentación</label>' +
           '<textarea id="pf-bio" class="ai" rows="3" placeholder="Cuéntanos sobre ti y tus metas en trading..." style="width:100%;box-sizing:border-box;resize:vertical;">'+(p.bio||'')+'</textarea>' +
         '</div>' +
-        '<button class="abtn2" onclick="savePerfil()" style="width:100%;padding:11px;">Guardar cambios</button>' +
+        '<h3 class="mk-ct" style="margin-top:20px;">Apariencia</h3>' +
+        '<div class="theme-tgl" style="max-width:320px;margin:0;"><button onclick="mkSetTheme(\'dark\')" class="tg-dark">● Dark</button><button onclick="mkSetTheme(\'light\')" class="tg-light">○ Light</button></div>' +
       '</div>' +
+    '</div>' +
 
-      // Col 2: Seguridad
-      '<div style="display:flex;flex-direction:column;gap:16px;">' +
+    // Mi plan + historial de pagos
+    '<div class="mk-pf2">' +
+      '<div class="mk-card"><div class="mk-sh" style="margin:0 0 8px;"><h3 class="mk-ct" style="margin:0;">Mi plan</h3><span class="mk-pill ' + (active ? 'g' : 'r') + '">' + (active ? 'Activo' : 'Inactivo') + '</span></div>' +
+        '<div class="mk-count" id="pf-plan-name" style="font-size:2rem;">' + _mkEsc(p.plan || (active ? 'Plan activo' : 'Sin plan')) + '</div>' +
+        '<div class="mk-live-sub" style="margin-top:6px;">' + (perks.length ? perks.join(' · ') + ' · ' : '') + endS + '</div></div>' +
+      '<div class="mk-card"><h3 class="mk-ct">Historial de pagos</h3><div id="pf-pays"><div style="color:var(--c-muted);font-size:.85rem;">Cargando...</div></div></div>' +
+    '</div>' +
 
-        // Cambiar contraseña
-        '<div class="aform">' +
-          '<div style="font-size:.84rem;font-weight:700;color:var(--c-text);margin-bottom:16px;display:flex;align-items:center;gap:7px;">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>' +
-            'Cambiar contraseña' +
-          '</div>' +
+    // Seguridad
+    '<div class="mk-pf2">' +
+      '<div class="mk-card"><h3 class="mk-ct">Cambiar contraseña</h3>' +
           '<div style="margin-bottom:10px;"><label class="al">Nueva contraseña</label><input id="pf-pw1" type="password" class="ai" placeholder="Mínimo 6 caracteres"></div>' +
           '<div style="margin-bottom:16px;"><label class="al">Confirmar contraseña</label><input id="pf-pw2" type="password" class="ai" placeholder="Repite la contraseña"></div>' +
-          '<button class="abtn2" onclick="savePw()" style="width:100%;padding:11px;">Cambiar contraseña</button>' +
-        '</div>' +
-
-        // Cambiar email
-        '<div class="aform">' +
-          '<div style="font-size:.84rem;font-weight:700;color:var(--c-text);margin-bottom:16px;display:flex;align-items:center;gap:7px;">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
-            'Cambiar email' +
-          '</div>' +
+          '<button class="mk-btn" onclick="savePw()">Cambiar contraseña</button>' +
+      '</div>' +
+      '<div class="mk-card"><h3 class="mk-ct">Cambiar email</h3>' +
           '<div style="margin-bottom:10px;">' +
             '<label class="al">Email actual</label>' +
             '<div style="font-size:.82rem;color:var(--c-text2);padding:9px 11px;background:rgba(var(--c-ov),.03);border:1px solid rgba(var(--c-ov),.06);border-radius:2px;">'+(cUser ? cUser.email : '—')+'</div>' +
           '</div>' +
           '<div style="margin-bottom:16px;"><label class="al">Nuevo email</label><input id="pf-email" type="email" class="ai" placeholder="nuevo@email.com"></div>' +
-          '<button class="abtn2" onclick="saveEmail()" style="width:100%;padding:11px;">Cambiar email</button>' +
-        '</div>' +
+          '<button class="mk-btn" onclick="saveEmail()">Cambiar email</button>' +
+      '</div>' +
+    '</div>';
 
-      '</div>' + // end col 2
-    '</div>';   // end grid
+  // Nombre del plan e historial de pagos (tabla purchases)
+  Promise.all([
+    sb.from('purchases').select('plan_id, amount, currency, payment_method, status, created_at').eq('user_id', cUser.id).order('created_at', { ascending: false }).limit(6),
+    sb.from('checkout_plans').select('id, name')
+  ]).then(function(res) {
+    var names = {};
+    ((res[1] && res[1].data) || []).forEach(function(x){ names[x.id] = x.name; });
+    var pays = (res[0] && res[0].data) || [];
+    var pn = document.getElementById('pf-plan-name');
+    if (pn && pays.length && names[pays[0].plan_id] && !p.plan) pn.textContent = names[pays[0].plan_id];
+    if (pn && p.plan && names[p.plan]) pn.textContent = names[p.plan];
+    var box = document.getElementById('pf-pays'); if (!box) return;
+    box.innerHTML = pays.length ? pays.map(function(x) {
+      return '<div class="mk-li"><div class="mk-ic g">' + MK_IC.chart + '</div><div style="flex:1;min-width:0;"><b>' + _mkEsc(names[x.plan_id] || x.plan_id || 'Compra') + '</b><span>' + _mkEsc(x.payment_method === 'paypal' ? 'PayPal' : (x.payment_method || 'Pago')) + ' · ' + new Date(x.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + '</span></div>' +
+        '<b style="font-size:.95rem;">' + (x.amount != null ? '$' + Number(x.amount).toFixed(0) + ' ' : '') + _mkEsc(x.currency || 'USD') + '</b></div>';
+    }).join('') : '<div style="color:var(--c-muted);font-size:.86rem;padding:6px 0;">No hay pagos registrados.</div>';
+  });
 }
 
 function _phonePrefix(selected) {
@@ -3117,7 +3060,9 @@ async function uploadAvatar(input) {
 // ── ADMIN ──
 function rAdmin() {
   var m = document.getElementById('amain');
-  m.innerHTML = '<div class="atit">Panel Admin ⚙️</div><div class="asub">Gestiona alumnos, clases y sesiones</div>';
+  m.innerHTML = '<div class="atit">Panel Admin</div><div class="asub">Gestiona alumnos, clases, sesiones y anuncios</div>' +
+    (cProfile && cProfile.role === 'admin' ? '<div class="mk-stats mk-stats4" id="adm-stats"></div>' : '');
+  if (cProfile && cProfile.role === 'admin') _mkAdminStats();
 
   if (cProfile && cProfile.role === 'staff') {
     sb.from('staff_permissions').select('*').eq('id', 1).single().then(function(r) {
@@ -3262,6 +3207,225 @@ function _buildAdminTabs() {
   if (first==='cl') rAdmCl(); else if (first==='se') rAdmSe(); else if (first==='codes') rAdmCodes(); else if (first==='roadmap') rAdmRoadmap(); else if (first==='1on1') rAdm1on1(); else rAdmSt();
 }
 // ── PANEL DERECHO "Tu perfil" (solo Dashboard, pantallas anchas) ──
+// Íconos pequeños del rediseño
+var MK_IC = {
+  live: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5"/></svg>',
+  cal: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  play: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><polygon points="10,8.5 15.5,12 10,15.5" fill="currentColor"/></svg>',
+  chart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20h16M7 16v-4M11 16V8M15 16v-6M19 16V6"/></svg>',
+  bell: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+  discord: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.3 5.3A16.6 16.6 0 0 0 15.2 4l-.5 1a15.4 15.4 0 0 0-5.4 0l-.5-1a16.5 16.5 0 0 0-4.1 1.3C2.1 9.200 1.400 13 1.700 16.700A16.700 16.700 0 0 0 6.800 19.300l1-1.700a10.800 10.800 0 0 1-1.700-.8l.4-.3a11.900 11.900 0 0 0 11 0l.4.3c-.5.3-1.100.6-1.700.8l1 1.700a16.600 16.600 0 0 0 5.100-2.600c.4-4.300-.7-8.100-3-11.400zM8.700 14.400c-1 0-1.800-.9-1.800-2s.8-2 1.800-2 1.800.9 1.800 2-.8 2-1.800 2zm6.600 0c-1 0-1.800-.9-1.800-2s.8-2 1.800-2 1.800.9 1.800 2-.8 2-1.800 2z"/></svg>',
+  wa: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5l1.3-4.1A8.5 8.5 0 1 1 7.6 19.3z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 1c-1.2-.5-2.3-1.6-2.8-2.8l1-1-1-2z"/></svg>'
+};
+// "Hoy · 8:00 PM", "Mañana · 3:00 PM", "Jue 16 · 3:00 PM"
+function _mkWhen(iso) {
+  var d = new Date(iso), t0 = new Date(); t0.setHours(0,0,0,0);
+  var d0 = new Date(d); d0.setHours(0,0,0,0);
+  var diff = Math.round((d0 - t0) / 86400000);
+  var day = diff === 0 ? 'Hoy' : diff === 1 ? 'Mañana' : d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).replace('.', '');
+  day = day.charAt(0).toUpperCase() + day.slice(1);
+  var h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0');
+  return day + ' · ' + ((h % 12) || 12) + ':' + m + ' ' + (h < 12 ? 'AM' : 'PM');
+}
+function _mkThumb(l) {
+  if (l && l.thumbnail_url) return l.thumbnail_url;
+  var u = (l && l.video_url) || '', id = '';
+  if (u.indexOf('embed/') > -1) id = u.split('embed/')[1].split('?')[0];
+  else if (u.indexOf('watch?v=') > -1) id = u.split('watch?v=')[1].split('&')[0];
+  else if (u.indexOf('youtu.be/') > -1) id = u.split('youtu.be/')[1].split('?')[0];
+  if (id) return 'https://img.youtube.com/vi/' + id + '/mqdefault.jpg';
+  if (u.indexOf('mediadelivery.net') !== -1 || u.indexOf('bunny.net') !== -1) {
+    var p = u.split('/'), vid = p[p.length - 1].split('?')[0], lib = p[p.length - 2];
+    if (lib && vid) return 'https://vz-' + lib + '.b-cdn.net/' + vid + '/thumbnail.jpg';
+  }
+  return '';
+}
+// Abre una clase directamente (desde el buscador o "Continuar viendo")
+function _mkOpenLesson(id) {
+  if (!_hasClasesAccess()) { toast('Tu plan no incluye acceso a las clases grabadas.', true); return; }
+  var st = { section: 'clases', lessonId: id };
+  pushRoute(st);
+  _renderSection(st);
+}
+// Muestra u oculta el panel derecho (se oculta dentro del reproductor y en Admin)
+function _mkRP(on) {
+  var a = document.querySelector('.alay');
+  if (a) a.classList.toggle('with-rp', !!on);
+  var rp = document.getElementById('rpanel');
+  if (on && rp && !rp.innerHTML) _mkRenderRPanel(!_hasClasesAccess());
+}
+// Curso completo del alumno: clases en orden + cuáles terminó (se guarda 1 minuto)
+var _mkCourseCache = null;
+function _mkCourse(cb, fresh) {
+  if (!fresh && _mkCourseCache && Date.now() - _mkCourseCache.at < 60000) { cb(_mkCourseCache); return; }
+  sb.from('course_levels').select('id, title, sort_order, course_modules(id, title, sort_order, is_published, course_lessons(id, title, sort_order, is_published, video_url, thumbnail_url, duration_minutes))').eq('is_published', true).order('sort_order').then(function(r) {
+    var list = [];
+    ((r && r.data) || []).forEach(function(lv) {
+      (lv.course_modules || []).filter(function(m){ return m.is_published !== false; }).sort(function(a, b){ return (a.sort_order || 0) - (b.sort_order || 0); }).forEach(function(md, mi) {
+        var ls = (md.course_lessons || []).filter(function(l){ return l.is_published; }).sort(function(a, b){ return (a.sort_order || 0) - (b.sort_order || 0); });
+        ls.forEach(function(l, li) { list.push({ lesson: l, mod: md, level: lv, modIdx: mi + 1, idx: li + 1, of: ls.length }); });
+      });
+    });
+    sb.from('lesson_progress').select('lesson_id').eq('user_id', cUser.id).eq('completed', true).then(function(pr) {
+      var done = {};
+      ((pr && pr.data) || []).forEach(function(x){ done[x.lesson_id] = true; });
+      var ok = list.filter(function(x){ return done[x.lesson.id]; }).length;
+      _mkCourseCache = { at: Date.now(), list: list, done: done, ok: ok, pct: list.length ? Math.round(ok / list.length * 100) : 0 };
+      cb(_mkCourseCache);
+    });
+  });
+}
+// Próximas actividades (en vivo + reuniones 1-1), se usa en el panel derecho y en la campana
+function _mkUpcoming(cb) {
+  var now = new Date().toISOString();
+  Promise.all([
+    sb.from('live_sessions').select('title, scheduled_at, is_active').gte('scheduled_at', now).order('scheduled_at').limit(3),
+    sb.from('meetings_1on1').select('title, scheduled_at').eq('student_id', cUser.id).gte('scheduled_at', now).order('scheduled_at').limit(2),
+    sb.from('live_sessions').select('title, discord_url').eq('is_active', true).limit(1)
+  ]).then(function(res) {
+    var items = [];
+    var live = (res[2] && res[2].data && res[2].data[0]) || null;
+    if (live) items.push({ t: live.title || 'Sesión en vivo', w: 'En vivo ahora', ic: 'live', c: 'r', go: 'sesiones', now: true });
+    ((res[0] && res[0].data) || []).forEach(function(x){ items.push({ t: x.title || 'Sesión en vivo', d: x.scheduled_at, ic: 'live', c: 'r', go: 'sesiones' }); });
+    ((res[1] && res[1].data) || []).forEach(function(x){ items.push({ t: x.title || 'Reunión 1-1', d: x.scheduled_at, ic: 'cal', c: '', go: 'reuniones' }); });
+    items.sort(function(a, b){ return a.now ? -1 : b.now ? 1 : new Date(a.d) - new Date(b.d); });
+    var lv = document.getElementById('snav-live'); if (lv) lv.style.display = live ? '' : 'none';
+    var soon = items.some(function(x){ return x.now || (new Date(x.d) - new Date() < 86400000); });
+    var dot = document.getElementById('mk-bell-dot'); if (dot) dot.style.display = soon ? 'block' : 'none';
+    cb(items);
+  });
+}
+function _mkItemHtml(x, tag) {
+  tag = tag || 'div';
+  return '<' + tag + ' class="' + (tag === 'button' ? 'it' : 'rp-li') + '" onclick="navigateTo(\'' + x.go + '\')"><div class="mk-ic ' + x.c + '">' + MK_IC[x.ic] + '</div>' +
+    '<div style="min-width:0;"><b>' + _mkEsc(x.t) + '</b><' + (tag === 'button' ? 'small' : 'span') + '>' + (x.w || _mkWhen(x.d)) + '</' + (tag === 'button' ? 'small' : 'span') + '></div></' + tag + '>';
+}
+// Campana de la barra de arriba
+function _mkBell(e) {
+  if (e) e.stopPropagation();
+  var dd = document.getElementById('mk-bell-dd'); if (!dd) return;
+  if (dd.classList.contains('on')) { dd.classList.remove('on'); return; }
+  dd.classList.add('on');
+  dd.innerHTML = '<div class="em">Cargando...</div>';
+  _mkUpcoming(function(items) {
+    dd.innerHTML = items.length ? items.slice(0, 6).map(function(x){ return _mkItemHtml(x, 'button'); }).join('') : '<div class="em">No tienes actividades próximas.</div>';
+  });
+}
+// Buscador de la barra de arriba (clases y módulos)
+var _mkQTimer = null;
+function _mkSearch(q) {
+  var dd = document.getElementById('mk-q-dd'); if (!dd) return;
+  q = String(q || '').trim().toLowerCase();
+  clearTimeout(_mkQTimer);
+  if (q.length < 2) { dd.classList.remove('on'); return; }
+  if (!_hasClasesAccess()) { dd.innerHTML = '<div class="em">Tu plan no incluye las clases grabadas.</div>'; dd.classList.add('on'); return; }
+  _mkQTimer = setTimeout(function() {
+    _mkCourse(function(c) {
+      var norm = function(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+      var nq = norm(q);
+      var hits = c.list.filter(function(x){ return norm(x.lesson.title).indexOf(nq) > -1 || norm(x.mod.title).indexOf(nq) > -1 || norm(x.level.title).indexOf(nq) > -1; }).slice(0, 8);
+      dd.innerHTML = hits.length ? hits.map(function(x) {
+        return '<button class="it" onclick="document.getElementById(\'mk-q-dd\').classList.remove(\'on\');document.getElementById(\'mk-q\').value=\'\';_mkOpenLesson(\'' + x.lesson.id + '\')"><div class="mk-ic">' + MK_IC.play + '</div><div style="min-width:0;">' + _mkEsc(x.lesson.title) +
+          '<small>' + _mkEsc(x.level.title) + ' · ' + _mkEsc(x.mod.title) + (c.done[x.lesson.id] ? ' · ✓ Vista' : '') + '</small></div></button>';
+      }).join('') : '<div class="em">No encontré clases con "' + _mkEsc(q) + '".</div>';
+      dd.classList.add('on');
+    });
+  }, 220);
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest || !e.target.closest('.atop-s')) { var a = document.getElementById('mk-q-dd'); if (a) a.classList.remove('on'); }
+  if (!e.target.closest || !e.target.closest('#mk-bell')) { var b = document.getElementById('mk-bell-dd'); if (b) b.classList.remove('on'); }
+});
+// Enlace "Recordar": crea el evento en Google Calendar (1 hora)
+function _mkCalLink(x) {
+  var d = new Date(x.scheduled_at), e = new Date(d.getTime() + 3600000);
+  var f = function(t){ return t.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); };
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('Mr Katana · ' + (x.title || 'Sesión en vivo')) + '&dates=' + f(d) + '/' + f(e) + '&details=' + encodeURIComponent('Sesión en vivo de Mr Katana FX. Entra desde ' + location.origin + '/app/sesiones');
+}
+// Admin: 4 tarjetas de resumen arriba
+function _mkAdminStats() {
+  var box = document.getElementById('adm-stats'); if (!box) return;
+  var card = function(id, ic, c, lbl) { return '<div class="mk-stat" style="cursor:default;"><div class="mk-ic ' + c + '">' + ic + '</div><div><span>' + lbl + '</span><b id="' + id + '">…</b></div></div>'; };
+  box.innerHTML = card('as-st', '', '', 'Alumnos activos') + card('as-sales', MK_IC.chart, 'g', 'Ventas del mes') + card('as-1on1', MK_IC.cal, 'b', '1-1 esta semana') + card('as-ads', MK_IC.live, 'r', 'Clics en anuncios');
+  box.querySelector('.mk-ic').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.2.6 3.5 2.6 3.5 6"/></svg>';
+  var set = function(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+  var nowIso = new Date().toISOString();
+  var m0 = new Date(); m0.setDate(1); m0.setHours(0,0,0,0);
+  var w0 = new Date(); w0.setHours(0,0,0,0); w0.setDate(w0.getDate() - ((w0.getDay() + 6) % 7));
+  var w1 = new Date(w0.getTime() + 7 * 86400000);
+  sb.from('profiles').select('id', { count: 'exact', head: true }).gt('membership_end', nowIso).then(function(r){ set('as-st', r && !r.error ? (r.count || 0) : '—'); });
+  sb.from('purchases').select('id', { count: 'exact', head: true }).in('status', ['paid', 'active', 'completed']).gte('created_at', m0.toISOString()).then(function(r){ set('as-sales', r && !r.error ? (r.count || 0) + ' compras' : '—'); });
+  sb.from('meetings_1on1').select('id', { count: 'exact', head: true }).gte('scheduled_at', w0.toISOString()).lt('scheduled_at', w1.toISOString()).then(function(r){ set('as-1on1', r && !r.error ? (r.count || 0) + ' reuniones' : '—'); });
+  sb.from('ads').select('clicks').then(function(r){ set('as-ads', r && !r.error ? ((r.data || []).reduce(function(t, a){ return t + (a.clicks || 0); }, 0)) : '—'); });
+}
+// Admin: panel derecho con los anuncios y las ventas por semana
+function _mkRenderAdminRP() {
+  var rp = document.getElementById('rpanel'); if (!rp) return;
+  rp.innerHTML = '<div class="rp-h" style="font-size:1.1rem;">Anuncios del carrusel</div>' +
+    '<div style="font-size:.84rem;color:var(--c-text2);margin-top:-10px;">Se muestran arriba en el Dashboard de cada alumno</div>' +
+    '<div id="arp-ads"><div style="font-size:.8rem;color:var(--c-muted);">Cargando...</div></div>' +
+    '<button class="rp-all" onclick="_mkAdminTab(\'ads\')">+ Nuevo anuncio</button>' +
+    '<div class="rp-h" style="font-size:1.1rem;">Ventas por semana</div>' +
+    '<div class="rp-chart" id="arp-sales"></div>';
+  sb.from('ads').select('id, title, tag, clicks, active').order('sort_order').then(function(r) {
+    var box = document.getElementById('arp-ads'); if (!box) return;
+    if (r.error) { box.innerHTML = '<div style="font-size:.8rem;color:var(--c-muted);">Falta crear la tabla de anuncios (rediseno_setup.sql).</div>'; return; }
+    var ads = r.data || [];
+    box.innerHTML = ads.length ? ads.map(function(a) {
+      return '<div class="rp-li" onclick="_mkAdminTab(\'ads\')"><div class="mk-ic">' + MK_IC.bell + '</div><div style="flex:1;min-width:0;"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _mkEsc(a.title) + '</b><span>' + _mkEsc(a.tag || 'Anuncio') + ' · ' + (a.clicks || 0) + ' clics</span></div>' +
+        '<span class="mk-pill ' + (a.active ? 'g' : '') + '" style="font-size:.6rem;">' + (a.active ? 'Activo' : 'Pausado') + '</span></div>';
+    }).join('') : '<div style="font-size:.8rem;color:var(--c-muted);">Aún no hay anuncios.</div>';
+  });
+  var w0 = new Date(); w0.setHours(0,0,0,0); w0.setDate(w0.getDate() - ((w0.getDay() + 6) % 7) - 42);
+  sb.from('purchases').select('created_at, status').gte('created_at', w0.toISOString()).then(function(r) {
+    var ch = document.getElementById('arp-sales'); if (!ch) return;
+    var cnt = [0,0,0,0,0,0,0];
+    ((r && r.data) || []).forEach(function(x) {
+      if (['paid', 'active', 'completed'].indexOf(x.status) === -1) return;
+      var i = Math.floor((new Date(x.created_at) - w0) / (7 * 86400000));
+      if (i >= 0 && i < 7) cnt[i]++;
+    });
+    var max = Math.max.apply(null, cnt.concat([1]));
+    ch.innerHTML = cnt.map(function(n, i){ return '<div title="' + n + ' ventas"><i class="' + (i === 6 ? 'on' : '') + '" style="height:' + Math.max(6, Math.round(n / max * 100)) + '%"></i><span>S' + (i + 1) + '</span></div>'; }).join('');
+  });
+}
+function _mkAdminTab(k) {
+  var btns = document.querySelectorAll('.admtab');
+  var names = { ads: 'Anuncios', apar: 'Apariencia' };
+  for (var i = 0; i < btns.length; i++) if (btns[i].textContent === names[k]) { btns[i].click(); return; }
+}
+// Dashboard: próxima sesión grupal y "Continuar viendo"
+function _mkRenderDashExtras(liveOnly, prof) {
+  sb.from('live_sessions').select('scheduled_at').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(1).then(function(r) {
+    var el = document.getElementById('st-group'); if (!el) return;
+    var d = (r && r.data && r.data[0] && r.data[0].scheduled_at) || (prof && prof.next_group_meeting && new Date(prof.next_group_meeting) > new Date() ? prof.next_group_meeting : null);
+    el.textContent = d ? _mkWhen(d) : 'Sin agendar';
+  });
+  if (liveOnly) return;
+  _mkCourse(function(c) {
+    var pe = document.getElementById('prog-pct'); if (pe) pe.textContent = c.pct + '%';
+    var se = document.getElementById('prog-sub'); if (se) se.textContent = c.ok + ' de ' + c.list.length + ' clases';
+    _mkRPanelProgress(c.pct);
+    var box = document.getElementById('mk-cw'); if (!box) return;
+    var next = c.list.filter(function(x){ return !c.done[x.lesson.id]; }).slice(0, 6);
+    if (!c.list.length) { box.innerHTML = '<div class="mk-empty">Aún no hay clases publicadas.</div>'; return; }
+    if (!next.length) { box.innerHTML = '<div class="mk-empty">🎉 ¡Completaste todas las clases del curso!</div>'; return; }
+    box.innerHTML = next.map(function(x) {
+      var modLs = c.list.filter(function(y){ return y.mod.id === x.mod.id; });
+      var modOk = modLs.filter(function(y){ return c.done[y.lesson.id]; }).length;
+      var pct = modLs.length ? Math.round(modOk / modLs.length * 100) : 0;
+      var th = _mkThumb(x.lesson);
+      return '<div class="cw-card" onclick="_mkOpenLesson(\'' + x.lesson.id + '\')">' +
+        '<div class="cw-th"' + (th ? ' style="background-image:url(\'' + _mkEsc(th) + '\')"' : '') + '><span class="cw-play">▶</span>' +
+          (x.lesson.duration_minutes ? '<span class="cw-dur">' + x.lesson.duration_minutes + ' min</span>' : '') + '</div>' +
+        '<span class="cw-tag">' + _mkEsc(x.level.title) + ' · ' + _mkEsc(x.mod.title) + '</span>' +
+        '<div class="cw-tit">' + _mkEsc(x.lesson.title) + '</div>' +
+        '<div class="lvl-bar"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="cw-ft"><span>Lección ' + x.idx + ' de ' + x.of + '</span><span>' + pct + '%</span></div>' +
+      '</div>';
+    }).join('');
+  });
+}
 function _mkRPanelProgress(pct) {
   var ring = document.getElementById('rp-ring');
   if (ring) ring.style.strokeDashoffset = 276 - (276 * pct / 100);
@@ -3274,22 +3438,24 @@ function _mkRenderRPanel(liveOnly) {
   var first = (cProfile.full_name || 'Alumno').split(' ')[0];
   var h = new Date().getHours();
   var hi = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
-  var initial = _mkEsc(first.charAt(0).toUpperCase());
-  var face = cProfile.avatar_url ? '<img src="' + _mkEsc(cProfile.avatar_url) + '" alt="">' : initial;
+  var ini = (cProfile.full_name || 'A').split(' ').filter(Boolean).slice(0, 2).map(function(w){ return w.charAt(0).toUpperCase(); }).join('');
+  var face = cProfile.avatar_url ? '<img src="' + _mkEsc(cProfile.avatar_url) + '" alt="">' : _mkEsc(ini);
   var days = ['L','M','M','J','V','S','D'];
   rp.innerHTML =
-    '<div class="rp-h">Tu perfil</div>' +
-    '<div class="rp-ava"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="5"/>' +
-      '<circle id="rp-ring" cx="48" cy="48" r="44" fill="none" stroke="rgb(var(--c-acc))" stroke-width="5" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset .8s ease;"/></svg>' +
+    '<div class="rp-h" style="font-size:1.1rem;">Tu perfil</div>' +
+    '<div class="rp-ava"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="4"/>' +
+      '<circle id="rp-ring" cx="48" cy="48" r="44" fill="none" stroke="rgb(var(--c-acc))" stroke-width="4" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset .8s ease;"/></svg>' +
       '<div class="face">' + face + '</div></div>' +
     '<div class="rp-hi"><b>' + hi + ', ' + _mkEsc(first) + '</b><p id="rp-pct">' + (liveOnly ? 'Bienvenido a las sesiones en vivo' : 'Cargando tu progreso...') + '</p></div>' +
     '<div class="rp-qa">' +
-      (liveOnly ? '' : '<a href="#" onclick="goToLastLesson();return false;">▶ Continuar</a>') +
-      '<a href="https://wa.me/593995014247" target="_blank" rel="noopener">WhatsApp</a>' +
+      '<a href="#" title="Próximas actividades" onclick="_mkBell(event);return false;">' + MK_IC.bell + '</a>' +
+      '<a href="https://discord.com/app" target="_blank" rel="noopener" title="Discord">' + MK_IC.discord + '</a>' +
+      '<a href="https://wa.me/593995014247" target="_blank" rel="noopener" title="WhatsApp">' + MK_IC.wa + '</a>' +
     '</div>' +
-    (liveOnly ? '' : '<div class="rp-h">Tu actividad esta semana <span style="font-size:.66rem;color:var(--c-muted);font-weight:400;">clases vistas</span></div>' +
+    (liveOnly ? '' : '<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span style="font-size:.78rem;color:var(--c-muted);font-weight:400;">lecciones</span></div>' +
       '<div class="rp-chart" id="rp-chart">' + days.map(function(d){ return '<div><i style="height:4%"></i><span>' + d + '</span></div>'; }).join('') + '</div>') +
-    '<div class="rp-h">Próximas actividades</div><div id="rp-up"><div style="font-size:.78rem;color:var(--c-muted);">Cargando...</div></div>';
+    '<div class="rp-h" style="font-size:1.1rem;">Próximas actividades</div><div id="rp-up"><div style="font-size:.8rem;color:var(--c-muted);">Cargando...</div></div>' +
+    '<button class="rp-all" onclick="navigateTo(\'sesiones\')">Ver todo</button>';
 
   if (!liveOnly) {
     // Clases completadas por día (lunes a domingo de esta semana)
@@ -3300,28 +3466,29 @@ function _mkRenderRPanel(liveOnly) {
       var max = Math.max.apply(null, cnt.concat([1]));
       var today = (new Date().getDay() + 6) % 7;
       var ch = document.getElementById('rp-chart');
-      if (ch) ch.innerHTML = cnt.map(function(n, i){ return '<div title="' + n + ' clases"><i class="' + (i === today ? 'on' : '') + '" style="height:' + Math.max(4, Math.round(n / max * 100)) + '%"></i><span>' + days[i] + '</span></div>'; }).join('');
+      if (ch) ch.innerHTML = cnt.map(function(n, i){ return '<div title="' + n + ' clases"><i class="' + (i === today ? 'on' : '') + '" style="height:' + Math.max(6, Math.round(n / max * 100)) + '%"></i><span>' + days[i] + '</span></div>'; }).join('');
     });
   }
 
-  // Próximas sesiones en vivo y reuniones 1-1
-  var now = new Date().toISOString();
-  Promise.all([
-    sb.from('live_sessions').select('title, scheduled_at').gte('scheduled_at', now).order('scheduled_at').limit(3),
-    sb.from('meetings_1on1').select('title, scheduled_at').eq('student_id', cUser.id).gte('scheduled_at', now).order('scheduled_at').limit(2)
-  ]).then(function(res) {
-    var items = [];
-    ((res[0] && res[0].data) || []).forEach(function(x){ items.push({ t: x.title || 'Sesión en vivo', d: x.scheduled_at, k: 'En vivo' }); });
-    ((res[1] && res[1].data) || []).forEach(function(x){ items.push({ t: x.title || 'Reunión 1-1', d: x.scheduled_at, k: 'Reunión 1-1' }); });
-    items.sort(function(a, b){ return new Date(a.d) - new Date(b.d); });
+  _mkUpcoming(function(items) {
     var box = document.getElementById('rp-up');
     if (!box) return;
-    if (!items.length) { box.innerHTML = '<div style="font-size:.78rem;color:var(--c-muted);">Sin actividades próximas</div>'; return; }
-    box.innerHTML = items.slice(0, 4).map(function(x) {
-      var d = new Date(x.d);
-      return '<div class="rp-li"><div class="d">' + d.getDate() + '<small>' + d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '') + '</small></div>' +
-        '<div style="min-width:0;"><b>' + _mkEsc(x.t) + '</b><span>' + x.k + ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</span></div></div>';
-    }).join('');
+    var paint = function(extra) {
+      var all = items.slice(0, extra ? 3 : 4);
+      if (extra) all.push(extra);
+      box.innerHTML = all.length ? all.map(function(x){ return _mkItemHtml(x); }).join('') : '<div style="font-size:.8rem;color:var(--c-muted);">Sin actividades próximas</div>';
+    };
+    paint(null);
+    if (liveOnly) return;
+    // Siguiente clase pendiente + progreso del curso
+    _mkCourse(function(c) {
+      _mkRPanelProgress(c.pct);
+      var nx = c.list.find(function(x){ return !c.done[x.lesson.id]; });
+      if (!nx) return;
+      paint({ t: 'Lección: ' + nx.lesson.title, w: 'Pendiente · ' + nx.mod.title, ic: 'play', c: 'b', go: 'clases', lesson: nx.lesson.id });
+      var last = box.lastElementChild;
+      if (last) last.setAttribute('onclick', '_mkOpenLesson(\'' + nx.lesson.id + '\')');
+    });
   });
 }
 // ── ANUNCIOS: carrusel de brokers / empresas de fondeo en el Dashboard (tabla ads) ──
@@ -6786,7 +6953,7 @@ function _checkInactivityAndMembership() {
       if (aside) aside.style.display = 'none';
       var mobNav = document.getElementById('mob-nav');
       if (mobNav) mobNav.style.display = 'none';
-      document.querySelectorAll('.snav, .mob-nav-btn').forEach(function(b) {
+      document.querySelectorAll('.snav[data-v], .mob-nav-btn').forEach(function(b) {
         b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
       });
       showPending();

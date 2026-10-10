@@ -1123,6 +1123,11 @@ a.snav{text-decoration:none;}
 .mk-ad.mk-ad-img.on{display:block;}
 .mk-ad.mk-ad-img img{display:block;width:100%;height:auto;}
 .mk-ads:has(.mk-ad-img.on){min-height:0 !important;background:transparent;}
+.mk-wk-btn{width:100%;border:1px solid rgba(var(--c-acc),.3);background:rgba(var(--c-acc),.08);color:rgb(var(--c-acc));font-weight:600;font-size:.8rem;border-radius:10px;padding:9px 12px;cursor:pointer;font-family:inherit;}
+.mk-wk-btn:hover{background:rgba(var(--c-acc),.16);}
+.mk-modal{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;animation:mkAdIn .2s ease;}
+.mk-modal-box{position:relative;background:var(--c-card);color:var(--c-text);border:1px solid var(--c-line);border-radius:18px;padding:24px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.4);}
+.mk-modal-x{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid var(--c-line);background:transparent;color:var(--c-text2);font-size:1.2rem;line-height:1;cursor:pointer;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -1990,16 +1995,9 @@ function rDash(liveOnly) {
         html += '</div>';
       }
       if (acts.length) {
-        html += '<div style="padding:14px 18px;">';
-        html += '<div style="font-size:.62rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Actividades</div>';
-        html += '<div style="display:flex;flex-direction:column;gap:7px;">';
-        acts.forEach(function(a) {
-          html += '<div style="display:flex;align-items:flex-start;gap:9px;">';
-          html += '<div style="width:18px;height:18px;border-radius:50%;background:rgba(var(--c-acc),.15);border:1px solid rgba(var(--c-acc),.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--sl)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>';
-          html += '<div style="font-size:.82rem;color:var(--c-text2);line-height:1.5;">' + a + '</div>';
-          html += '</div>';
-        });
-        html += '</div></div>';
+        // Las actividades se ven en una ventana aparte para que el plan ocupe poco espacio
+        window._mkWkData = { wk: wk, title: w.title || '', acts: acts };
+        html += '<div style="padding:12px 18px;"><button class="mk-wk-btn" onclick="_mkWkModal()">📋 Ver actividades (' + acts.length + ')</button></div>';
       }
       html += '</div>';
       c.innerHTML = html;
@@ -3554,6 +3552,30 @@ function _mkPlaceWk() {
   else if (wk.previousSibling !== home) home.parentNode.insertBefore(wk, home.nextSibling);
 }
 window.addEventListener('resize', _mkPlaceWk);
+
+function _mkWkModal() {
+  var d = window._mkWkData;
+  if (!d) return;
+  var old = document.getElementById('mk-wk-modal');
+  if (old) old.remove();
+  var m = document.createElement('div');
+  m.id = 'mk-wk-modal';
+  m.className = 'mk-modal';
+  m.innerHTML = '<div class="mk-modal-box" role="dialog" aria-modal="true">' +
+    '<button class="mk-modal-x" aria-label="Cerrar">×</button>' +
+    '<div style="font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Semana ' + d.wk + '</div>' +
+    '<div style="font-size:1.15rem;font-weight:700;margin-bottom:16px;padding-right:30px;">' + _mkEsc(d.title) + '</div>' +
+    '<div style="font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Actividades</div>' +
+    '<div style="display:flex;flex-direction:column;gap:10px;">' + d.acts.map(function(a) {
+      return '<div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:20px;height:20px;border-radius:50%;background:rgba(var(--c-acc),.15);border:1px solid rgba(var(--c-acc),.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--c-acc))" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+        '<div style="font-size:.9rem;color:var(--c-text2);line-height:1.55;">' + a + '</div></div>';
+    }).join('') + '</div></div>';
+  function close() { m.remove(); document.removeEventListener('keydown', esc); }
+  function esc(e) { if (e.key === 'Escape') close(); }
+  m.addEventListener('click', function(e) { if (e.target === m || e.target.classList.contains('mk-modal-x')) close(); });
+  document.addEventListener('keydown', esc);
+  document.body.appendChild(m);
+}
 
 function _mkRenderRPanel(liveOnly) {
   var rp = document.getElementById('rpanel');

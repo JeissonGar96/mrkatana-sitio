@@ -1102,6 +1102,11 @@ a.snav{text-decoration:none;}
 #a-st .dtab td{padding:11px 8px !important;font-size:.84rem !important;border-bottom:1px solid var(--k-line) !important;}
 #a-st .dtab tr:last-child td{border-bottom:none !important;}
 #a-st .dtab tbody tr:hover td{background:rgba(var(--c-acc),.04);}
+/* Escala general: igual a ver la página con Chrome al 90% (solo computador) */
+@media(min-width:861px){
+  #appdash{zoom:.9;}
+  .alay{height:calc(100vh / .9 - 44px) !important;}
+}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -1292,7 +1297,7 @@ function _renderSection(state) {
   _activateNav(state.section);
   var _alay = document.querySelector('.alay');
   // Panel derecho "Tu perfil" en todas las pestañas del alumno (no en Admin ni dentro de una clase)
-  var _rpOn = state.section !== 'admin' && !(state.section === 'clases' && (state.levelId || state.moduleId || state.lessonId));
+  var _rpOn = state.section !== 'admin' && state.section !== 'clases';
   if (_alay) _alay.classList.toggle('with-rp', _rpOn);
   if (_rpOn) _mkRenderRPanel(!_hasClasesAccess());
   else if (state.section === 'admin' && cProfile && cProfile.role === 'admin') { if (_alay) _alay.classList.add('with-rp'); _mkRenderAdminRP(); }
@@ -2119,7 +2124,7 @@ function goToLastLesson() {
 
 function showLevels() {
   _restoreAmain();
-  _mkRP(true);
+  _mkRP(false);
   pushRoute({ section: 'clases' });
   var m = document.getElementById('amain');
   m.innerHTML = '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub" id="lvl-sub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';

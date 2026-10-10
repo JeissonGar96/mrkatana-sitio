@@ -1119,6 +1119,10 @@ a.snav{text-decoration:none;}
 #mk-wk.in-rp #week-info>div>div{padding:12px 14px !important;}
 #mk-wk.in-rp #week-info [style*="font-size:.84rem"],#mk-wk.in-rp #week-info [style*="font-size:.82rem"]{font-size:.78rem !important;}
 #mk-wk.in-rp #week-info [style*="font-size:1rem"]{font-size:.9rem !important;}
+.mk-ad.mk-ad-img{padding:0 !important;min-height:0 !important;display:none;}
+.mk-ad.mk-ad-img.on{display:block;}
+.mk-ad.mk-ad-img img{display:block;width:100%;height:auto;}
+.mk-ads:has(.mk-ad-img.on){min-height:0 !important;background:transparent;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3624,6 +3628,12 @@ function _mkRenderAds() {
     if (!box || !ads.length) { if (box) box.innerHTML = ''; return; }
     var html = '<div class="mk-ads">';
     ads.forEach(function(a, i) {
+      if (a.banner_url) {
+        // Banner de solo imagen: toda la imagen es el enlace
+        html += '<a class="mk-ad mk-ad-img' + (i === 0 ? ' on' : '') + '" href="' + _mkEsc(_mkSafeUrl(a.url)) + '" target="_blank" rel="noopener sponsored" data-ad="' + a.id + '">' +
+          '<img src="' + _mkEsc(a.banner_url) + '" alt="' + _mkEsc(a.title || '') + '"></a>';
+        return;
+      }
       html += '<div class="mk-ad' + (i === 0 ? ' on' : '') + '">' +
         '<div style="flex:1;min-width:0;">' +
           (a.tag ? '<span class="mk-ad-tag">' + _mkEsc(a.tag) + '</span>' : '') +
@@ -3648,7 +3658,7 @@ function _mkRenderAds() {
     }
     box.querySelectorAll('.mk-ad-arr').forEach(function(b){ b.addEventListener('click', function(){ go(cur + Number(b.dataset.dir)); }); });
     dots.forEach(function(d){ d.addEventListener('click', function(){ go(Number(d.dataset.i)); }); });
-    box.querySelectorAll('.mk-ad-cta').forEach(function(a){ a.addEventListener('click', function(){ sb.rpc('ad_click', { p_id: Number(a.dataset.ad) }).then(function(){}); }); });
+    box.querySelectorAll('[data-ad]').forEach(function(a){ a.addEventListener('click', function(){ sb.rpc('ad_click', { p_id: Number(a.dataset.ad) }).then(function(){}); }); });
     if (slides.length > 1) _mkAdTimer = setInterval(function(){
       if (!document.getElementById('mk-ads') || !document.body.contains(slides[0])) { clearInterval(_mkAdTimer); _mkAdTimer = null; return; }
       go(cur + 1);
@@ -3667,7 +3677,7 @@ function rAdmAds() {
     var ads = r.data || [];
     var list = ads.length ? ads.map(function(a) {
       return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--c-line);">' +
-        '<div style="width:64px;height:40px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + (a.image_url ? '<img src="' + _mkEsc(a.image_url) + '" style="max-width:90%;max-height:80%;object-fit:contain;">' : '') + '</div>' +
+        '<div style="width:64px;height:40px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + (a.banner_url ? '<img src="' + _mkEsc(a.banner_url) + '" style="width:100%;height:100%;object-fit:cover;">' : a.image_url ? '<img src="' + _mkEsc(a.image_url) + '" style="max-width:90%;max-height:80%;object-fit:contain;">' : '') + '</div>' +
         '<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.88rem;">' + _mkEsc(a.title) + '</div>' +
         '<div style="font-size:.75rem;color:var(--c-muted);">' + _mkEsc(a.tag || '') + ' · ' + (a.clicks || 0) + ' clics · orden ' + (a.sort_order || 0) + '</div></div>' +
         '<button class="abtn2" data-act="toggle" data-id="' + a.id + '" style="padding:6px 12px;font-size:.72rem;' + (a.active ? '' : 'background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;') + '">' + (a.active ? 'Activo' : 'Pausado') + '</button>' +
@@ -3695,21 +3705,60 @@ function _mkAdForm(a) {
   a = a || {};
   var tags = ['Broker recomendado', 'Empresa de fondeo', 'Promoción'];
   function fld(lbl, inner) { return '<label style="display:block;font-size:.72rem;color:var(--c-muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:1px;">' + lbl + '</label>' + inner; }
+  var isImg = !!a.banner_url;
   f.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + (a.id ? 'Editar anuncio' : 'Nuevo anuncio') + '</div>' +
+    fld('Formato', '<select class="fi" id="ad-mode"><option value="text"' + (isImg ? '' : ' selected') + '>Texto con botón (lo arma la página)</option><option value="img"' + (isImg ? ' selected' : '') + '>Solo imagen (subes el banner completo)</option></select>') +
+    '<div id="ad-only-img">' +
+      fld('¿Te dieron un código HTML? (Exness, fondeo...) Pégalo aquí', '<textarea class="fi" id="ad-code" rows="3" placeholder="<a href=&quot;https://...&quot;><img src=&quot;https://...&quot;></a>" style="font-family:monospace;font-size:.75rem;"></textarea>' +
+        '<div id="ad-code-msg" style="font-size:.75rem;color:var(--c-muted);margin-top:4px;">Sacamos de ahí el enlace y la imagen automáticamente. También puedes subir tu propia imagen abajo.</div>') +
+      fld('Imagen del banner (recomendado 1200 × 300 px)', '<img id="ad-ban-prev" src="' + _mkEsc(a.banner_url || '') + '" style="max-width:100%;max-height:110px;border-radius:8px;margin-bottom:6px;display:' + (a.banner_url ? 'block' : 'none') + ';">' +
+        '<input type="file" id="ad-ban" accept="image/*" style="font-size:.8rem;color:var(--c-text2);">') +
+    '</div>' +
     fld('Tipo', '<select class="fi" id="ad-tag">' + tags.map(function(t){ return '<option' + (a.tag === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select>') +
-    fld('Título', '<input class="fi" id="ad-title" maxlength="90" placeholder="Abre tu cuenta con ... y opera desde $0 de comisión" value="' + _mkEsc(a.title || '') + '">') +
-    fld('Texto corto (opcional)', '<input class="fi" id="ad-sub" maxlength="140" placeholder="Bono exclusivo para alumnos de Mr Katana" value="' + _mkEsc(a.subtitle || '') + '">') +
-    '<div style="display:flex;gap:12px;flex-wrap:wrap;"><div style="flex:1;min-width:200px;">' + fld('Texto del botón', '<input class="fi" id="ad-cta" maxlength="30" value="' + _mkEsc(a.cta_text || 'Abrir cuenta') + '">') + '</div>' +
+    fld('Título / nombre', '<input class="fi" id="ad-title" maxlength="90" placeholder="Abre tu cuenta con ... y opera desde $0 de comisión" value="' + _mkEsc(a.title || '') + '">') +
+    '<div class="ad-txtf">' + fld('Texto corto (opcional)', '<input class="fi" id="ad-sub" maxlength="140" placeholder="Bono exclusivo para alumnos de Mr Katana" value="' + _mkEsc(a.subtitle || '') + '">') + '</div>' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;"><div class="ad-txtf" style="flex:1;min-width:200px;">' + fld('Texto del botón', '<input class="fi" id="ad-cta" maxlength="30" value="' + _mkEsc(a.cta_text || 'Abrir cuenta') + '">') + '</div>' +
     '<div style="width:110px;">' + fld('Orden', '<input class="fi" id="ad-order" type="number" value="' + (a.sort_order || 0) + '">') + '</div></div>' +
     fld('Enlace (tu link de afiliado)', '<input class="fi" id="ad-url" placeholder="https://..." value="' + _mkEsc(a.url || '') + '">') +
-    fld('Logo de la empresa', (a.image_url ? '<img src="' + _mkEsc(a.image_url) + '" style="height:36px;background:#fff;border-radius:6px;padding:4px;margin-bottom:6px;display:block;">' : '') + '<input type="file" id="ad-img" accept="image/*" style="font-size:.8rem;color:var(--c-text2);">') +
+    '<div class="ad-txtf">' + fld('Logo de la empresa', (a.image_url ? '<img src="' + _mkEsc(a.image_url) + '" style="height:36px;background:#fff;border-radius:6px;padding:4px;margin-bottom:6px;display:block;">' : '') + '<input type="file" id="ad-img" accept="image/*" style="font-size:.8rem;color:var(--c-text2);">') + '</div>' +
     '<div style="display:flex;gap:10px;margin-top:16px;"><button class="abtn2" id="ad-save">' + (a.id ? 'Guardar cambios' : 'Crear anuncio') + '</button>' +
     (a.id ? '<button class="abtn2" id="ad-cancel" style="background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;">Cancelar</button>' : '') + '</div>';
   if (a.id) { document.getElementById('ad-cancel').addEventListener('click', function(){ _mkAdForm(null); }); f.scrollIntoView({ behavior: 'smooth' }); }
+  var codeBanner = null;
+  function syncMode() {
+    var img = document.getElementById('ad-mode').value === 'img';
+    document.getElementById('ad-only-img').style.display = img ? '' : 'none';
+    ['ad-sub', 'ad-cta', 'ad-img'].forEach(function(id){ var w = document.getElementById(id).closest('.ad-txtf'); if (w) w.style.display = img ? 'none' : ''; });
+    document.getElementById('ad-title').placeholder = img ? 'Nombre interno, ej. Exness terminal (opcional)' : 'Abre tu cuenta con ... y opera desde $0 de comisión';
+  }
+  document.getElementById('ad-mode').addEventListener('change', syncMode);
+  document.getElementById('ad-ban').addEventListener('change', function() {
+    var pv = document.getElementById('ad-ban-prev');
+    if (this.files[0]) { pv.src = URL.createObjectURL(this.files[0]); pv.style.display = 'block'; }
+  });
+  // Lee el código del socio sin ejecutarlo: solo toma el primer enlace y la primera imagen
+  document.getElementById('ad-code').addEventListener('input', function() {
+    var msg = document.getElementById('ad-code-msg'), code = this.value.trim();
+    if (!code) return;
+    var doc = new DOMParser().parseFromString(code, 'text/html');
+    var lk = doc.querySelector('a[href]'), im = doc.querySelector('img[src]');
+    var href = lk && /^https?:\/\//i.test(lk.getAttribute('href')) ? lk.getAttribute('href') : '';
+    var src = im && /^https:\/\//i.test(im.getAttribute('src')) ? im.getAttribute('src') : '';
+    if (href) document.getElementById('ad-url').value = href;
+    if (src) { codeBanner = src; var pv = document.getElementById('ad-ban-prev'); pv.src = src; pv.style.display = 'block'; }
+    if (href && src) { msg.style.color = 'rgb(var(--c-ok))'; msg.textContent = '✓ Listo: encontramos el enlace y la imagen. Revisa la vista previa y guarda.'; }
+    else { msg.style.color = 'rgb(var(--c-bad))'; msg.textContent = 'No encontramos ' + (!href && !src ? 'ni el enlace ni la imagen' : !href ? 'el enlace' : 'la imagen') + ' en ese código. Si es un código con "script" o "iframe", pide al socio la versión de imagen, o sube tú la imagen y pega el enlace abajo.'; }
+  });
+  syncMode();
   document.getElementById('ad-save').addEventListener('click', async function() {
     var btn = this;
     var title = document.getElementById('ad-title').value.trim();
     var url = document.getElementById('ad-url').value.trim();
+    var imgMode = document.getElementById('ad-mode').value === 'img';
+    var banFile = document.getElementById('ad-ban').files[0];
+    var bannerUrl = imgMode ? (codeBanner || a.banner_url || null) : null;
+    if (imgMode && !banFile && !bannerUrl) { tst('Sube la imagen del banner o pega el código', 1); return; }
+    if (imgMode && !title) title = 'Banner ' + document.getElementById('ad-tag').value;
     if (!title) { tst('El título es requerido', 1); return; }
     if (!/^https?:\/\//i.test(url)) { tst('El enlace debe empezar con https://', 1); return; }
     btn.disabled = true; btn.textContent = 'Guardando...';
@@ -3721,8 +3770,14 @@ function _mkAdForm(a) {
       if (up.error) { tst('Error al subir el logo: ' + up.error.message, 1); btn.disabled = false; btn.textContent = 'Guardar'; return; }
       imageUrl = sb.storage.from('course-images').getPublicUrl(path).data.publicUrl;
     }
+    if (imgMode && banFile) {
+      var bpath = 'ads/banner-' + Date.now() + '.' + banFile.name.split('.').pop();
+      var bup = await sb.storage.from('course-images').upload(bpath, banFile, { upsert: true });
+      if (bup.error) { tst('Error al subir el banner: ' + bup.error.message, 1); btn.disabled = false; btn.textContent = 'Guardar'; return; }
+      bannerUrl = sb.storage.from('course-images').getPublicUrl(bpath).data.publicUrl;
+    }
     var payload = { tag: document.getElementById('ad-tag').value, title: title, subtitle: document.getElementById('ad-sub').value.trim() || null,
-      cta_text: document.getElementById('ad-cta').value.trim() || 'Abrir cuenta', url: url, image_url: imageUrl,
+      cta_text: document.getElementById('ad-cta').value.trim() || 'Abrir cuenta', url: url, image_url: imageUrl, banner_url: bannerUrl,
       sort_order: parseInt(document.getElementById('ad-order').value, 10) || 0 };
     var q = a.id ? sb.from('ads').update(payload).eq('id', a.id) : sb.from('ads').insert(Object.assign({ active: true }, payload));
     var r = await q;

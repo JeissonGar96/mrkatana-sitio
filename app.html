@@ -1107,6 +1107,18 @@ a.snav{text-decoration:none;}
   #appdash{zoom:.9;}
   .alay{height:calc(100vh / .9 - 44px) !important;}
 }
+#mk-wk.in-rp{flex-shrink:0;}
+#mk-wk.in-rp .mk-sh{margin:0 0 10px !important;}
+#mk-wk.in-rp .mk-sh h3{font-size:.95rem !important;}
+#mk-wk.in-rp #week-info{margin-bottom:0 !important;}
+#mk-wk.in-rp .mk-sh h3{white-space:nowrap;}
+#mk-wk.in-rp #wk-label{display:none;}
+#mk-wk.in-rp .mk-arr button{width:28px !important;height:28px !important;}
+#mk-wk.in-rp #week-info>div>div:first-child{gap:8px;}
+#mk-wk.in-rp #week-info>div>div:first-child>span{white-space:nowrap;flex-shrink:0;}
+#mk-wk.in-rp #week-info>div>div{padding:12px 14px !important;}
+#mk-wk.in-rp #week-info [style*="font-size:.84rem"],#mk-wk.in-rp #week-info [style*="font-size:.82rem"]{font-size:.78rem !important;}
+#mk-wk.in-rp #week-info [style*="font-size:1rem"]{font-size:.9rem !important;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -1903,10 +1915,11 @@ function rDash(liveOnly) {
     '<div id="econ-cal"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>' +
 
     (liveOnly ? '' :
-      '<div class="mk-sh"><h3>Plan de la semana</h3><div class="mk-arr"><span id="wk-label" style="font-size:.85rem;color:var(--c-text2);margin-right:6px;">Semana ' + weekNum + '</span><button onclick="navWeek(-1)">‹</button><button onclick="navWeek(1)">›</button></div></div>' +
-      '<div id="week-info" style="margin-bottom:20px;"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div></div>');
+      '<div id="mk-wk-home"></div><div id="mk-wk"><div class="mk-sh"><h3>Plan de la semana</h3><div class="mk-arr"><span id="wk-label" style="font-size:.85rem;color:var(--c-text2);margin-right:6px;">Semana ' + weekNum + '</span><button onclick="navWeek(-1)">‹</button><button onclick="navWeek(1)">›</button></div></div>' +
+      '<div id="week-info" style="margin-bottom:20px;"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div></div></div>');
   _mkRenderDashExtras(liveOnly, p);
   _mkRenderAds();
+  _mkPlaceWk();
 
     // Week navigator state
   var _viewWeek = weekNum;
@@ -3526,6 +3539,18 @@ function _mkRPanelProgress(pct) {
   var t = document.getElementById('rp-pct');
   if (t) t.textContent = 'Llevas ' + pct + '% del curso. ¡Sigue así!';
 }
+// En computador grande, "Plan de la semana" del Dashboard va en la columna derecha (debajo del progreso semanal)
+function _mkPlaceWk() {
+  var wk = document.getElementById('mk-wk'), home = document.getElementById('mk-wk-home');
+  if (!wk || !home) return;
+  var rp = document.getElementById('rpanel'), up = document.getElementById('rp-up-h');
+  var side = !!(rp && up && window.matchMedia('(min-width:1200px)').matches);
+  wk.classList.toggle('in-rp', side);
+  if (side) { if (wk.parentNode !== rp) rp.insertBefore(wk, up); }
+  else if (wk.previousSibling !== home) home.parentNode.insertBefore(wk, home.nextSibling);
+}
+window.addEventListener('resize', _mkPlaceWk);
+
 function _mkRenderRPanel(liveOnly) {
   var rp = document.getElementById('rpanel');
   if (!rp || !cProfile) return;
@@ -3548,7 +3573,7 @@ function _mkRenderRPanel(liveOnly) {
     '</div>' +
     (liveOnly ? '' : '<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span style="font-size:.78rem;color:var(--c-muted);font-weight:400;">lecciones</span></div>' +
       '<div class="rp-chart" id="rp-chart">' + days.map(function(d){ return '<div><i style="height:4%"></i><span>' + d + '</span></div>'; }).join('') + '</div>') +
-    '<div class="rp-h" style="font-size:1.1rem;">Próximas actividades</div><div id="rp-up"><div style="font-size:.8rem;color:var(--c-muted);">Cargando...</div></div>' +
+    '<div class="rp-h" id="rp-up-h" style="font-size:1.1rem;">Próximas actividades</div><div id="rp-up"><div style="font-size:.8rem;color:var(--c-muted);">Cargando...</div></div>' +
     '<button class="rp-all" onclick="navigateTo(\'sesiones\')">Ver todo</button>';
 
   if (!liveOnly) {

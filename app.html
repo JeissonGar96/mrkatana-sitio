@@ -1128,6 +1128,41 @@ a.snav{text-decoration:none;}
 .mk-modal{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;animation:mkAdIn .2s ease;}
 .mk-modal-box{position:relative;background:var(--c-card);color:var(--c-text);border:1px solid var(--c-line);border-radius:18px;padding:24px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.4);}
 .mk-modal-x{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid var(--c-line);background:transparent;color:var(--c-text2);font-size:1.2rem;line-height:1;cursor:pointer;}
+/* ── Paso 13: pulido "premium" (profundidad, jerarquía, movimiento) ── */
+:root{--k-sh:inset 0 1px 0 rgba(255,255,255,.045),0 1px 2px rgba(0,0,0,.35),0 12px 32px -16px rgba(0,0,0,.7);--k-sh-hi:inset 0 1px 0 rgba(255,255,255,.06),0 2px 4px rgba(0,0,0,.35),0 22px 44px -18px rgba(0,0,0,.85);--k-sheen:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,0) 60%);}
+:root[data-theme="light"]{--k-sh:0 1px 2px rgba(40,30,10,.05),0 10px 28px -14px rgba(40,30,10,.16);--k-sh-hi:0 2px 4px rgba(40,30,10,.06),0 20px 40px -16px rgba(40,30,10,.24);--k-sheen:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 60%);}
+.acol{background-image:radial-gradient(1100px 460px at 0% -10%,rgba(var(--c-acc),.08),transparent 60%);}
+@media(min-width:861px){.acol .amain{background:transparent !important;}}
+.mk-stat,.cw-card,.mk-card,#week-info>div,.rp-qa a{box-shadow:var(--k-sh);background-image:var(--k-sheen);}
+.mk-stat,.cw-card{transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s,border-color .25s !important;}
+.mk-stat:hover,.cw-card:hover{transform:translateY(-3px);box-shadow:var(--k-sh-hi);}
+.mk-ads{box-shadow:var(--k-sh);}
+.mk-sh h3{font-weight:700 !important;letter-spacing:-.01em;}
+.mk-stat>div>span{text-transform:uppercase;letter-spacing:.9px;font-size:.66rem !important;color:var(--c-muted) !important;font-weight:600;}
+.mk-stat b{font-size:1.12rem !important;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:4px !important;}
+#prog-pct{font-family:'Barlow Condensed',sans-serif;font-size:1.75rem;font-weight:700;line-height:1;color:rgb(var(--c-acc));}
+#prog-sub{font-size:.78rem;font-weight:500;color:var(--c-text2);margin-left:8px;}
+.mk-stat-bar{height:4px;border-radius:4px;background:rgba(var(--c-ov),.08);margin-top:8px;overflow:hidden;}
+.mk-stat-bar i{display:block;height:100%;width:0;border-radius:4px;background:linear-gradient(90deg,rgb(var(--c-accd)),rgb(var(--c-acc2)));transition:width .8s ease;}
+.mk-ic{box-shadow:inset 0 0 0 1px rgba(var(--c-acc),.18);}
+.mk-ic.b{box-shadow:inset 0 0 0 1px rgba(96,140,200,.22);}
+.mk-ic.g{box-shadow:inset 0 0 0 1px rgba(var(--c-ok),.2);}
+.cw-th{overflow:hidden;background-size:cover !important;transition:background-size .5s ease;}
+.cw-th::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.35));pointer-events:none;}
+.cw-play{z-index:1;background:rgba(255,255,255,.16) !important;border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .25s,background .25s;}
+.cw-card:hover .cw-play{transform:translate(-50%,-50%) scale(1.1);background:rgb(var(--c-acc)) !important;color:var(--c-ongold,#151309);border-color:transparent;}
+.cw-dur{z-index:1;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+.mk-skel{background:linear-gradient(90deg,rgba(var(--c-ov),.05) 0%,rgba(var(--c-ov),.11) 50%,rgba(var(--c-ov),.05) 100%);background-size:200% 100%;animation:mkSkel 1.3s ease-in-out infinite;border-radius:6px;}
+.mk-skel-card{cursor:default;pointer-events:none;}
+@keyframes mkSkel{from{background-position:200% 0}to{background-position:-200% 0}}
+.rp-chart{position:relative;}
+.rp-chart.is-empty::after{content:'Completa una clase y aquí verás tu avance del día';position:absolute;left:0;right:0;top:28%;text-align:center;font-size:.72rem;color:var(--c-muted);padding:0 10px;}
+.rp-qa a{transition:transform .2s,box-shadow .2s;}
+.rp-qa a:hover{transform:translateY(-2px);box-shadow:var(--k-sh-hi);}
+.rp-all,.mk-wk-btn{transition:background .2s,transform .2s;}
+.rp-all:hover,.mk-wk-btn:hover{transform:translateY(-1px);}
+.snav{transition:background .2s,color .2s;}
+@media(prefers-reduced-motion:reduce){.mk-stat,.cw-card,.mk-skel,.rp-qa a{transition:none !important;animation:none !important;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -1911,14 +1946,14 @@ function rDash(liveOnly) {
 
     // Tres tarjetas: progreso, próxima sesión grupal, próxima 1-1
     '<div class="mk-stats">' +
-      (liveOnly ? '' : '<div class="mk-stat" onclick="goToLastLesson()"><div class="mk-ic">' + MK_IC.chart + '</div><div><span>Progreso del curso</span><b><span id="prog-pct">0%</span> · <span id="prog-sub">…</span></b></div></div>') +
+      (liveOnly ? '' : '<div class="mk-stat" onclick="goToLastLesson()"><div class="mk-ic">' + MK_IC.chart + '</div><div style="flex:1;min-width:0;"><span>Progreso del curso</span><b><span id="prog-pct">0%</span><small id="prog-sub">…</small></b><div class="mk-stat-bar"><i id="prog-bar"></i></div></div></div>') +
       '<div class="mk-stat" onclick="navigateTo(\'sesiones\')"><div class="mk-ic b">' + MK_IC.live + '</div><div><span>Próxima sesión grupal</span><b id="st-group">Sin agendar</b></div></div>' +
       '<div class="mk-stat" id="card-1on1" onclick="navigateTo(\'reuniones\')"><div class="mk-ic g">' + MK_IC.cal + '</div><div><span>Próxima sesión 1-1</span><b id="st-1on1">Sin agendar</b></div></div>' +
     '</div>' +
 
     (liveOnly ? '' :
       '<div class="mk-sh"><h3>Continuar viendo</h3><div class="mk-arr"><button onclick="document.getElementById(\'mk-cw\').scrollBy({left:-320,behavior:\'smooth\'})">‹</button><button onclick="document.getElementById(\'mk-cw\').scrollBy({left:320,behavior:\'smooth\'})">›</button></div></div>' +
-      '<div class="mk-cw" id="mk-cw"><div style="color:var(--c-muted);font-size:.85rem;"><span class="spin"></span> Cargando...</div></div>') +
+      '<div class="mk-cw" id="mk-cw">' + [0,1,2].map(function(){ return '<div class="cw-card mk-skel-card"><div class="mk-skel" style="aspect-ratio:16/8.5;border-radius:12px;"></div><div class="mk-skel" style="height:12px;width:55%;"></div><div class="mk-skel" style="height:14px;width:85%;"></div><div class="mk-skel" style="height:10px;width:40%;"></div></div>'; }).join('') + '</div>') +
 
     '<div class="mk-sh"><h3>Calendario económico</h3><span class="mk-note">Solo USD · Horario Ecuador (UTC-5)</span></div>' +
     '<div id="econ-cal"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>' +
@@ -1968,7 +2003,7 @@ function rDash(liveOnly) {
   function loadWeekInfo(wk) {
     var c = document.getElementById('week-info');
     if (!c) return;
-    c.innerHTML = '<div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div>';
+    c.innerHTML = '<div class="mk-skel" style="height:150px;border-radius:14px;"></div>';
     sb.from('roadmap_weeks').select('*').eq('week_number', wk).single().then(function(r) {
       if (!r.data) {
         c.innerHTML = '<div style="background:rgba(var(--c-ov),.03);border:1px dashed rgba(var(--c-ov),.07);border-radius:10px;padding:20px;text-align:center;color:var(--c-faint);font-size:.82rem;">Esta semana aún no tiene contenido cargado.</div>';
@@ -1990,14 +2025,14 @@ function rDash(liveOnly) {
       html += badgeHtml + '</div>';
       if (w.objective) {
         html += '<div style="padding:14px 18px;background:rgba(var(--c-acc),.04);border-bottom:1px solid var(--br);">';
-        html += '<div style="font-size:.62rem;color:rgb(var(--c-acc));text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">🎯 Objetivo</div>';
+        html += '<div style="font-size:.62rem;color:rgb(var(--c-acc));text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Objetivo</div>';
         html += '<div style="font-size:.84rem;color:rgb(var(--c-acc2));line-height:1.65;">' + w.objective + '</div>';
         html += '</div>';
       }
       if (acts.length) {
         // Las actividades se ven en una ventana aparte para que el plan ocupe poco espacio
         window._mkWkData = { wk: wk, title: w.title || '', acts: acts };
-        html += '<div style="padding:12px 18px;"><button class="mk-wk-btn" onclick="_mkWkModal()">📋 Ver actividades (' + acts.length + ')</button></div>';
+        html += '<div style="padding:12px 18px;"><button class="mk-wk-btn" onclick="_mkWkModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>Ver actividades (' + acts.length + ')</button></div>';
       }
       html += '</div>';
       c.innerHTML = html;
@@ -3514,6 +3549,7 @@ function _mkRenderDashExtras(liveOnly, prof) {
   _mkCourse(function(c) {
     var pe = document.getElementById('prog-pct'); if (pe) pe.textContent = c.pct + '%';
     var se = document.getElementById('prog-sub'); if (se) se.textContent = c.ok + ' de ' + c.list.length + ' clases';
+    var pb = document.getElementById('prog-bar'); if (pb) pb.style.width = c.pct + '%';
     _mkRPanelProgress(c.pct);
     var box = document.getElementById('mk-cw'); if (!box) return;
     var next = c.list.filter(function(x){ return !c.done[x.lesson.id]; }).slice(0, 6);
@@ -3565,7 +3601,7 @@ function _mkWkModal() {
     '<button class="mk-modal-x" aria-label="Cerrar">×</button>' +
     '<div style="font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Semana ' + d.wk + '</div>' +
     '<div style="font-size:1.15rem;font-weight:700;margin-bottom:16px;padding-right:30px;">' + _mkEsc(d.title) + '</div>' +
-    '<div style="font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📋 Actividades</div>' +
+    '<div style="font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>Actividades</div>' +
     '<div style="display:flex;flex-direction:column;gap:10px;">' + d.acts.map(function(a) {
       return '<div style="display:flex;align-items:flex-start;gap:10px;"><div style="width:20px;height:20px;border-radius:50%;background:rgba(var(--c-acc),.15);border:1px solid rgba(var(--c-acc),.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--c-acc))" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>' +
         '<div style="font-size:.9rem;color:var(--c-text2);line-height:1.55;">' + a + '</div></div>';
@@ -3611,6 +3647,7 @@ function _mkRenderRPanel(liveOnly) {
       var max = Math.max.apply(null, cnt.concat([1]));
       var today = (new Date().getDay() + 6) % 7;
       var ch = document.getElementById('rp-chart');
+      if (ch) ch.classList.toggle('is-empty', !cnt.some(function(n){ return n > 0; }));
       if (ch) ch.innerHTML = cnt.map(function(n, i){ return '<div title="' + n + ' clases"><i class="' + (i === today ? 'on' : '') + '" style="height:' + Math.max(6, Math.round(n / max * 100)) + '%"></i><span>' + days[i] + '</span></div>'; }).join('');
     });
   }

@@ -1196,6 +1196,35 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 #mk-wk.in-rp .mk-wk2-ft{border-top:none;padding-top:0;margin-top:8px;}
 #mk-wk.in-rp,#rpanel #rp-up-h{border-top:1px solid var(--k-line);padding-top:18px;}
 .mk-wk2-tit{transition:color .2s;}
+/* Paso 18: pulido premium En vivo, Reuniones, Perfil y Admin */
+.wp-header-icon svg{width:16px;height:16px;color:var(--c-ongold);}
+.mk-card{transition:box-shadow .25s,border-color .25s;}
+.mk-card .mk-li{transition:background .2s;border-radius:10px;}
+.mk-card .mk-li:hover{background:rgba(var(--c-ov),.04);padding-left:10px;padding-right:10px;margin:0 -10px;}
+.mk-tbl tbody tr td{transition:background .2s;}
+.mk-tbl tbody tr:hover td{background:rgba(var(--c-ov),.035);}
+.mk-btn{transition:transform .2s,box-shadow .2s,background .2s;box-shadow:0 4px 14px rgba(var(--c-acc),.22);}
+.mk-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(var(--c-acc),.32);}
+.mk-btn.ghost{box-shadow:none;}
+.mk-btn.ghost:hover{background:rgba(var(--c-acc),.22);box-shadow:none;}
+.mk-chip{transition:background .2s,transform .2s;}
+.mk-chip:hover{background:rgba(var(--c-acc),.22);transform:translateY(-1px);}
+.mk-live{box-shadow:var(--k-sh-hi) !important;}
+.mk-live-th{box-shadow:inset 0 0 0 1px rgba(var(--c-ov),.06),0 10px 30px rgba(0,0,0,.25);overflow:hidden;}
+.mk-live-th::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 20% 0%,rgba(var(--c-acc),.22),transparent 60%);pointer-events:none;}
+.mk-count{color:rgb(var(--c-acc)) !important;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+#a-st .dtab-wrap{box-shadow:var(--k-sh);}
+.lvl-card{box-shadow:var(--k-sh) !important;}
+.lvl-card:hover{box-shadow:var(--k-sh-hi) !important;}
+#avatar-wrap{box-shadow:0 0 0 4px var(--c-card),0 0 0 5px rgba(var(--c-acc),.35),0 12px 30px rgba(0,0,0,.25);}
+.mk-card .ai{transition:border-color .2s,box-shadow .2s;}
+.mk-card .ai:focus{border-color:rgba(var(--c-acc),.6) !important;box-shadow:0 0 0 3px rgba(var(--c-acc),.15);outline:none;}
+.admtab{transition:background .2s,color .2s,transform .2s,box-shadow .2s;}
+.admtab:hover{transform:translateY(-1px);}
+.admtab.on{box-shadow:0 6px 18px rgba(var(--c-acc),.28) !important;}
+.mk-emp-ic{display:inline-flex;width:54px;height:54px;border-radius:16px;align-items:center;justify-content:center;background:rgba(var(--c-acc),.12);color:rgb(var(--c-acc));margin-bottom:12px;}
+.mk-emp-ic svg{width:24px;height:24px;}
+@media (prefers-reduced-motion:reduce){.mk-btn:hover,.mk-chip:hover,.admtab:hover{transform:none;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2388,7 +2417,7 @@ function showLessons(mod, level, progress) {
         } else {
 
         modHeader.addEventListener('click', function() {
-          if (isLocked) { tst('🔒 Este módulo se desbloquea en la semana ' + unlockWeek, 1); return; }
+          if (isLocked) { tst('Este módulo se desbloquea en la semana ' + unlockWeek, 1); return; }
           var open = lessonsDiv.style.display !== 'none';
           lessonsDiv.style.display = open ? 'none' : 'block';
           var arr = document.getElementById('ls-arr-' + module.id);
@@ -2507,7 +2536,7 @@ function openMobilePlayer(lesson, allLessons, progress, level, module) {
       (lesson.description ? '<div style="font-size:.82rem;color:var(--c-muted);line-height:1.7;margin-bottom:14px;">' + lesson.description + '</div>' : '') +
       (lesson.has_task && lesson.task_instructions
         ? '<div style="background:rgba(var(--c-acc),.05);border:1px solid rgba(var(--c-acc),.18);border-radius:10px;padding:14px;margin-bottom:14px;">' +
-            '<div style="font-size:.68rem;font-weight:700;color:rgb(var(--c-acc));text-transform:uppercase;margin-bottom:6px;">📝 Tarea</div>' +
+            '<div style="font-size:.68rem;font-weight:700;color:rgb(var(--c-acc));text-transform:uppercase;margin-bottom:6px;">Tarea</div>' +
             '<div style="font-size:.8rem;color:var(--c-text2);line-height:1.6;">' + lesson.task_instructions + '</div>' +
             (!done ? '<textarea id="mob-task-input" class="ai" placeholder="Escribe tu respuesta..." rows="3" style="margin-top:10px;width:100%;box-sizing:border-box;font-size:16px;resize:vertical;"></textarea>' : '') +
           '</div>'
@@ -2661,9 +2690,13 @@ function markDone(lessonId, isMobile) {
 var vM = null;
 
 // ── SESIONES ──
+function _mkSkelTab() {
+  return '<div class="mk-skel" style="height:220px;border-radius:20px;margin-bottom:18px;"></div>' +
+    '<div class="mk-row2"><div class="mk-skel" style="height:260px;border-radius:20px;"></div><div class="mk-skel" style="height:260px;border-radius:20px;"></div></div>';
+}
 function rSes() {
   var m = document.getElementById('amain');
-  m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
+  m.innerHTML = _mkSkelTab();
 
   sb.from('live_sessions').select('*').order('scheduled_at').then(function(r) {
     var sessions = r.data || [];
@@ -2691,7 +2724,7 @@ function rSes() {
             : '<a class="mk-btn ghost" href="' + _mkCalLink(hero) + '" target="_blank" rel="noopener">Recordarme →</a>') +
         '</div></div>';
     } else {
-      html += '<div class="mk-card mk-live" style="justify-content:center;text-align:center;flex-direction:column;"><div style="font-size:1.6rem;">📡</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div></div>';
+      html += '<div class="mk-card mk-live" style="justify-content:center;text-align:center;flex-direction:column;"><div class="mk-emp-ic">' + MK_IC.live + '</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div></div>';
     }
     // ── PRÓXIMAS SESIONES ──
     var nexts = upcoming.filter(function(x){ return x !== hero; }).slice(0, 4);
@@ -2775,7 +2808,7 @@ function openRecModal(title, date, embedUrl) {
 // ── REUNIONES ──
 function rReun() {
   var m = document.getElementById('amain');
-  m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
+  m.innerHTML = _mkSkelTab();
 
   var now = new Date();
 
@@ -3011,7 +3044,7 @@ function rPerfil() {
       '<div class="mk-card"><div class="mk-sh" style="margin:0 0 8px;"><h3 class="mk-ct" style="margin:0;">Mi plan</h3><span class="mk-pill ' + (active ? 'g' : 'r') + '">' + (active ? 'Activo' : 'Inactivo') + '</span></div>' +
         '<div class="mk-count" id="pf-plan-name" style="font-size:2rem;">' + _mkEsc(p.plan || (active ? 'Plan activo' : 'Sin plan')) + '</div>' +
         '<div class="mk-live-sub" style="margin-top:6px;">' + (perks.length ? perks.join(' · ') + ' · ' : '') + endS + '</div></div>' +
-      '<div class="mk-card"><h3 class="mk-ct">Historial de pagos</h3><div id="pf-pays"><div style="color:var(--c-muted);font-size:.85rem;">Cargando...</div></div></div>' +
+      '<div class="mk-card"><h3 class="mk-ct">Historial de pagos</h3><div id="pf-pays"><div class="mk-skel" style="height:46px;border-radius:12px;margin-bottom:8px;"></div><div class="mk-skel" style="height:46px;border-radius:12px;"></div></div></div>' +
     '</div>' +
 
     // Seguridad
@@ -3368,6 +3401,14 @@ function _buildAdminTabs() {
 // ── PANEL DERECHO "Tu perfil" (solo Dashboard, pantallas anchas) ──
 // Íconos pequeños del rediseño
 var MK_IC = {
+  user: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+  video: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3z"/></svg>',
+  ticket: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg>',
+  book: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>',
+  shuffle: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+  edit: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  plus: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  gear: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   flag: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/></svg>',
   live: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5"/></svg>',
   cal: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
@@ -3581,7 +3622,7 @@ function _mkRenderDashExtras(liveOnly, prof) {
     var box = document.getElementById('mk-cw'); if (!box) return;
     var next = c.list.filter(function(x){ return !c.done[x.lesson.id]; }).slice(0, 6);
     if (!c.list.length) { box.innerHTML = '<div class="mk-empty">Aún no hay clases publicadas.</div>'; return; }
-    if (!next.length) { box.innerHTML = '<div class="mk-empty">🎉 ¡Completaste todas las clases del curso!</div>'; return; }
+    if (!next.length) { box.innerHTML = '<div class="mk-empty">¡Completaste todas las clases del curso!</div>'; return; }
     box.innerHTML = next.map(function(x) {
       var modLs = c.list.filter(function(y){ return y.mod.id === x.mod.id; });
       var modOk = modLs.filter(function(y){ return c.done[y.lesson.id]; }).length;
@@ -4007,7 +4048,7 @@ function _fmtExpiry(dateStr) {
 function rAdmSt() {
   var c = document.getElementById('a-st'); if(!c) return;
   c.innerHTML =
-    '<div style="margin-bottom:12px;"><input id="st-search" class="ai" placeholder="🔍 Buscar alumno por nombre o email..." oninput="filterStudents(this.value)" style="width:100%;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:12px;"><input id="st-search" class="ai" placeholder="Buscar alumno por nombre o email..." oninput="filterStudents(this.value)" style="width:100%;box-sizing:border-box;"></div>' +
     '<div id="st-t"><span class="spin"></span></div>';
   _loadPlansCache(function() {
     _fetchAllStudents().then(function(students) {
@@ -4334,14 +4375,14 @@ function openSchModal() {
     '<div class="wp-modal" style="max-width:480px;display:flex;flex-direction:column;overflow:hidden;">' +
       // Header
       '<div class="wp-header" style="padding:20px 24px;border-bottom:1px solid rgba(var(--c-ov),.06);flex-shrink:0;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.cal+'</div>' +
         '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar reunión 1-1</div><div class="wp-subtitle" id="sch-modal-subtitle">Selecciona un alumno</div></div>' +
         '<button onclick="document.getElementById(\'sch-modal\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;padding:2px 8px;">✕</button>' +
       '</div>' +
       // Step 1: Student picker
       '<div id="sch-step1" style="display:flex;flex-direction:column;overflow:hidden;flex:1;">' +
         '<div style="padding:14px 24px 8px;flex-shrink:0;">' +
-          '<input id="sch-modal-search" class="wp-input" placeholder="🔍 Buscar alumno..." oninput="filterSchModal(this.value)">' +
+          '<input id="sch-modal-search" class="wp-input" placeholder="Buscar alumno..." oninput="filterSchModal(this.value)">' +
         '</div>' +
         '<div id="sch-modal-list" style="overflow-y:auto;padding:0 24px 20px;flex:1;"></div>' +
       '</div>' +
@@ -4465,7 +4506,7 @@ function openEditMtgModal(id, encTitle, encUrl, isoDate) {
   ov.innerHTML =
     '<div class="wp-modal" style="max-width:420px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.edit+'</div>' +
         '<div class="wp-title" style="flex:1;font-size:1rem;">Editar reunión</div>' +
         '<button onclick="document.getElementById(\'edit-mtg-modal\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
@@ -4523,7 +4564,7 @@ function _rAdm1on1Rec() {
 
     // Buscador + lista de alumnos
     var html = '<div style="margin-bottom:14px;position:relative;">' +
-      '<input id="rec-stu-search" class="ai" placeholder="🔍 Buscar alumno..." oninput="filterRecStudents(this.value)" style="width:100%;box-sizing:border-box;padding-left:12px;">' +
+      '<input id="rec-stu-search" class="ai" placeholder="Buscar alumno..." oninput="filterRecStudents(this.value)" style="width:100%;box-sizing:border-box;padding-left:12px;">' +
     '</div>' +
     '<div id="rec-stu-list">';
 
@@ -4632,7 +4673,7 @@ function admEditRec(id, encTitle, encUrl, encDesc, dateStr) {
   ov.innerHTML =
     '<div class="wp-modal" style="max-width:440px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.edit+'</div>' +
         '<div class="wp-title" style="flex:1;font-size:1rem;">Editar grabación</div>' +
         '<button onclick="document.getElementById(\'adm-rec-edit-modal\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
@@ -4746,7 +4787,7 @@ function openAccessPickerModal(studentId, kind) {
   modal.innerHTML =
     '<div class="wp-modal" style="max-width:400px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+(isLive?'📡':'📚')+'</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+(isLive?MK_IC.live:MK_IC.book)+'</div>' +
         '<div class="wp-title" style="font-size:1rem;">Activar '+(isLive?'Live':'Clases')+'</div>' +
       '</div>' +
       '<div class="wp-body" style="padding:16px 24px 24px;">' +
@@ -4840,7 +4881,7 @@ function viewStudentProfile(id) {
     skel.innerHTML =
       '<div class="wp-modal" style="max-width:520px;">' +
         '<div class="wp-header" style="padding:22px 26px 4px;">' +
-          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">👤</div>' +
+          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">'+MK_IC.user+'</div>' +
           '<div class="wp-title" style="flex:1;font-size:1.05rem;">Perfil del alumno</div>' +
           '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.3rem;cursor:pointer;">✕</button>' +
         '</div>' +
@@ -4885,7 +4926,7 @@ function viewStudentProfile(id) {
       box.style.overflowY = 'auto';
     box.innerHTML =
       '<div class="wp-header" style="padding:22px 26px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">👤</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.9rem;">'+MK_IC.user+'</div>' +
         '<div class="wp-title" style="flex:1;font-size:1.05rem;">Perfil del alumno</div>' +
         '<button onclick="this.closest(\'.wp-overlay\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.3rem;cursor:pointer;">✕</button>' +
       '</div>' +
@@ -5065,7 +5106,7 @@ function openScheduleModal(studentId, studentName) {
   ov.innerHTML =
     '<div class="wp-modal" style="max-width:440px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">📅</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.cal+'</div>' +
         '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar sesión 1-1</div><div class="wp-subtitle">' + name + '</div></div>' +
         '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
@@ -5118,7 +5159,7 @@ function openRecordingModal(studentId, studentName) {
   ov.innerHTML =
     '<div class="wp-modal" style="max-width:440px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🎥</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.video+'</div>' +
         '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Subir grabación</div><div class="wp-subtitle">' + name + '</div></div>' +
         '<button onclick="document.getElementById(\'recording-modal\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
@@ -5230,7 +5271,7 @@ function activateMember(id, isActive) {
   modal.innerHTML =
     '<div class="wp-modal" style="max-width:420px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🎫</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.ticket+'</div>' +
         '<div><div class="wp-title" style="font-size:1rem;">Activar / Cambiar plan</div><div class="wp-subtitle">Asignación manual</div></div>' +
       '</div>' +
       '<div class="wp-body" style="padding:16px 24px 24px;">' +
@@ -6106,7 +6147,7 @@ function openPlanModal(planId) {
     '<div class="wp-modal" style="max-width:540px;overflow-y:auto;">' +
 
       '<div class="wp-header">' +
-        '<div class="wp-header-icon">' + (isNew ? '✨' : '⚙️') + '</div>' +
+        '<div class="wp-header-icon">' + (isNew ? MK_IC.plus : MK_IC.gear) + '</div>' +
         '<div>' +
           '<div class="wp-title">' + (isNew ? 'Crear plan' : (p.name || 'Editar plan')) + '</div>' +
           (isNew ? '<div class="wp-subtitle">Se crea oculto — actívalo cuando esté listo</div>' : '<div class="wp-subtitle">ID: ' + p.id + '</div>') +
@@ -6341,7 +6382,7 @@ function openVariantModal(planId, variantId) {
   modal.innerHTML =
     '<div class="wp-modal" style="max-width:400px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">🔀</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.shuffle+'</div>' +
         '<div class="wp-title" style="font-size:1rem;">'+(isNew?'Agregar variante':'Editar variante')+'</div>' +
       '</div>' +
       '<div class="wp-body" style="padding:16px 24px 24px;">' +
@@ -6667,7 +6708,7 @@ function openEditSe(id) {
     overlay.innerHTML =
       '<div class="wp-modal" style="max-width:480px;">' +
         '<div class="wp-header" style="padding:22px 24px 4px;">' +
-          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+          '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.edit+'</div>' +
           '<div class="wp-title" style="flex:1;font-size:1rem;">Editar sesión</div>' +
           '<button onclick="var m=document.getElementById(\'edit-se-modal\');if(m)m.remove();" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;">✕</button>' +
         '</div>' +
@@ -7240,7 +7281,7 @@ function editCalReal(name, isoDate, currentVal) {
   overlay.innerHTML =
     '<div class="wp-modal" style="max-width:380px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
-        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">✎</div>' +
+        '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.edit+'</div>' +
         '<div><div class="wp-title" style="font-size:1rem;">Editar valor Real</div><div class="wp-subtitle">' + name + ' · ' + isoDate + '</div></div>' +
       '</div>' +
       '<div class="wp-body" style="padding:16px 24px 24px;">' +

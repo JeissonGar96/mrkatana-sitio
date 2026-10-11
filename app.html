@@ -1189,6 +1189,13 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .mk-wk2-ft{margin-top:10px;padding-top:10px;border-top:1px solid var(--k-line);font-size:.72rem;color:var(--c-muted);}
 /* Continuar viendo: espacio para que la tarjeta suba sin cortarse */
 .mk-cw{padding:8px 12px 30px !important;margin:-8px -12px 0 !important;scroll-padding:0 12px;}
+/* Columna derecha: plan sin caja y líneas sutiles entre secciones */
+#mk-wk.in-rp .mk-wk2{border:none;background:transparent;padding:0;border-radius:0;}
+#mk-wk.in-rp .mk-wk2.click:hover{background:transparent;}
+#mk-wk.in-rp .mk-wk2.click:hover .mk-wk2-tit{color:rgb(var(--c-acc));}
+#mk-wk.in-rp .mk-wk2-ft{border-top:none;padding-top:0;margin-top:8px;}
+#mk-wk.in-rp,#rpanel #rp-up-h{border-top:1px solid var(--k-line);padding-top:18px;}
+.mk-wk2-tit{transition:color .2s;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador

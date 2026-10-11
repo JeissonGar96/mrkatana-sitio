@@ -1173,6 +1173,10 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .mk-live-tit{font-size:1.4rem !important;letter-spacing:-.02em;}
 #prog-pct{font-size:1.55rem !important;font-weight:800 !important;letter-spacing:-.03em;}
 .mk-stat b{font-size:1.02rem !important;}
+.mk-wk-card{cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s;}
+.mk-wk-card:hover{border-color:rgba(var(--c-acc),.5) !important;transform:translateY(-2px);box-shadow:var(--k-sh-hi) !important;}
+#week-info>div>div:first-child>div:first-child>span:last-child{white-space:nowrap;flex-shrink:0;}
+@media(min-width:861px){html{font-size:15px;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2028,21 +2032,17 @@ function rDash(liveOnly) {
         : isPast
         ? '<span style="font-size:.64rem;background:rgba(var(--c-ok),.08);border:1px solid rgba(var(--c-ok),.2);color:rgb(var(--c-ok));padding:2px 9px;border-radius:20px;">✓ Completada</span>'
         : '<span style="font-size:.64rem;background:rgba(var(--c-ov),.04);border:1px solid rgba(var(--c-ov),.07);color:var(--c-muted);padding:2px 9px;border-radius:20px;">Por venir</span>';
-      var html = '<div style="background:var(--bc);border:1px solid rgba(var(--c-acc),.2);border-radius:14px;overflow:hidden;">';
-      html += '<div style="padding:16px 18px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;">';
-      html += '<div><div style="font-size:.62rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Semana ' + wk + '</div>';
+      // Toda la caja abre las actividades (si hay)
+      if (acts.length) window._mkWkData = { wk: wk, title: w.title || '', acts: acts };
+      var html = '<div' + (acts.length ? ' class="mk-wk-card" onclick="_mkWkModal()" title="Ver actividades"' : '') + ' style="background:var(--bc);border:1px solid rgba(var(--c-acc),.2);border-radius:14px;overflow:hidden;">';
+      html += '<div style="padding:16px 18px;border-bottom:1px solid var(--br);">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:.62rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;">Semana ' + wk + '</span>' + badgeHtml + '</div>';
       html += '<div style="font-size:1rem;font-weight:700;color:var(--c-text);">' + (w.title || 'Sin título') + '</div></div>';
-      html += badgeHtml + '</div>';
       if (w.objective) {
         html += '<div style="padding:14px 18px;background:rgba(var(--c-acc),.04);border-bottom:1px solid var(--br);">';
         html += '<div style="font-size:.62rem;color:rgb(var(--c-acc));text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Objetivo</div>';
         html += '<div style="font-size:.84rem;color:rgb(var(--c-acc2));line-height:1.65;">' + w.objective + '</div>';
         html += '</div>';
-      }
-      if (acts.length) {
-        // Las actividades se ven en una ventana aparte para que el plan ocupe poco espacio
-        window._mkWkData = { wk: wk, title: w.title || '', acts: acts };
-        html += '<div style="padding:12px 18px;"><button class="mk-wk-btn" onclick="_mkWkModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>Ver actividades (' + acts.length + ')</button></div>';
       }
       html += '</div>';
       c.innerHTML = html;

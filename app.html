@@ -1114,11 +1114,6 @@ a.snav{text-decoration:none;}
 #mk-wk.in-rp .mk-sh h3{white-space:nowrap;}
 #mk-wk.in-rp #wk-label{display:none;}
 #mk-wk.in-rp .mk-arr button{width:28px !important;height:28px !important;}
-#mk-wk.in-rp #week-info>div>div:first-child{gap:8px;}
-#mk-wk.in-rp #week-info>div>div:first-child>span{white-space:nowrap;flex-shrink:0;}
-#mk-wk.in-rp #week-info>div>div{padding:12px 14px !important;}
-#mk-wk.in-rp #week-info [style*="font-size:.84rem"],#mk-wk.in-rp #week-info [style*="font-size:.82rem"]{font-size:.78rem !important;}
-#mk-wk.in-rp #week-info [style*="font-size:1rem"]{font-size:.9rem !important;}
 .mk-ad.mk-ad-img{padding:0 !important;min-height:0 !important;display:none;}
 .mk-ad.mk-ad-img.on{display:block;}
 .mk-ad.mk-ad-img img{display:block;width:100%;height:auto;}
@@ -1133,7 +1128,7 @@ a.snav{text-decoration:none;}
 :root[data-theme="light"]{--k-sh:0 1px 2px rgba(40,30,10,.05),0 10px 28px -14px rgba(40,30,10,.16);--k-sh-hi:0 2px 4px rgba(40,30,10,.06),0 20px 40px -16px rgba(40,30,10,.24);--k-sheen:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 60%);}
 .acol{background-image:radial-gradient(1100px 460px at 0% -10%,rgba(var(--c-acc),.08),transparent 60%);}
 @media(min-width:861px){.acol .amain{background:transparent !important;}}
-.mk-stat,.cw-card,.mk-card,#week-info>div,.rp-qa a{box-shadow:var(--k-sh);background-image:var(--k-sheen);}
+.mk-stat,.cw-card,.mk-card,.rp-qa a{box-shadow:var(--k-sh);background-image:var(--k-sheen);}
 .mk-stat,.cw-card{transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s,border-color .25s !important;}
 .mk-stat:hover,.cw-card:hover{transform:translateY(-3px);box-shadow:var(--k-sh-hi);}
 .mk-ads{box-shadow:var(--k-sh);}
@@ -1175,8 +1170,25 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .mk-stat b{font-size:1.02rem !important;}
 .mk-wk-card{cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s;}
 .mk-wk-card:hover{border-color:rgba(var(--c-acc),.5) !important;transform:translateY(-2px);box-shadow:var(--k-sh-hi) !important;}
-#week-info>div>div:first-child>div:first-child>span:last-child{white-space:nowrap;flex-shrink:0;}
 @media(min-width:861px){html{font-size:15px;}}
+/* Plan de la semana: mismo estilo que los items de la columna */
+.mk-wk2{border:1px solid var(--k-line);border-radius:14px;padding:12px 14px;background:rgba(var(--c-ov),.025);}
+.mk-wk2.click{cursor:pointer;transition:border-color .2s,background .2s;}
+.mk-wk2.click:hover{border-color:rgba(var(--c-acc),.45);background:rgba(var(--c-acc),.05);}
+.mk-wk2-top{display:flex;align-items:center;gap:12px;}
+.mk-wk2-top .mk-ic{width:38px !important;height:38px !important;}
+.mk-wk2-meta{display:flex;align-items:center;gap:8px;font-size:.66rem;text-transform:uppercase;letter-spacing:.9px;color:var(--c-muted);font-weight:600;margin-bottom:2px;}
+.mk-wk2-meta i{font-style:normal;text-transform:none;letter-spacing:0;font-size:.7rem;}
+.mk-wk2-meta i.acc{color:rgb(var(--c-acc));}.mk-wk2-meta i.ok{color:rgb(var(--c-ok));}.mk-wk2-meta i.mut{color:var(--c-muted);}
+.mk-wk2-tit{display:block;font-size:.92rem;font-weight:700;color:var(--c-text);line-height:1.35;margin-top:8px;}
+.mk-wk2-ic{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--c-acc),.13);color:rgb(var(--c-acc));}
+.mk-wk2-ic svg{width:12px;height:12px;}
+.mk-wk2-go{margin-left:auto;font-size:1.2rem;line-height:1;color:var(--c-muted);transition:transform .2s,color .2s;}
+.mk-wk2.click:hover .mk-wk2-go{transform:translateX(3px);color:rgb(var(--c-acc));}
+.mk-wk2-obj{font-size:.78rem;color:var(--c-text2);line-height:1.55;margin:10px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.mk-wk2-ft{margin-top:10px;padding-top:10px;border-top:1px solid var(--k-line);font-size:.72rem;color:var(--c-muted);}
+/* Continuar viendo: espacio para que la tarjeta suba sin cortarse */
+.mk-cw{padding:8px 12px 30px !important;margin:-8px -12px 0 !important;scroll-padding:0 12px;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2032,18 +2044,15 @@ function rDash(liveOnly) {
         : isPast
         ? '<span style="font-size:.64rem;background:rgba(var(--c-ok),.08);border:1px solid rgba(var(--c-ok),.2);color:rgb(var(--c-ok));padding:2px 9px;border-radius:20px;">✓ Completada</span>'
         : '<span style="font-size:.64rem;background:rgba(var(--c-ov),.04);border:1px solid rgba(var(--c-ov),.07);color:var(--c-muted);padding:2px 9px;border-radius:20px;">Por venir</span>';
-      // Toda la caja abre las actividades (si hay)
+      // Tarjeta de la semana con el mismo estilo de la columna; toda la tarjeta abre las actividades
       if (acts.length) window._mkWkData = { wk: wk, title: w.title || '', acts: acts };
-      var html = '<div' + (acts.length ? ' class="mk-wk-card" onclick="_mkWkModal()" title="Ver actividades"' : '') + ' style="background:var(--bc);border:1px solid rgba(var(--c-acc),.2);border-radius:14px;overflow:hidden;">';
-      html += '<div style="padding:16px 18px;border-bottom:1px solid var(--br);">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:.62rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;">Semana ' + wk + '</span>' + badgeHtml + '</div>';
-      html += '<div style="font-size:1rem;font-weight:700;color:var(--c-text);">' + (w.title || 'Sin título') + '</div></div>';
-      if (w.objective) {
-        html += '<div style="padding:14px 18px;background:rgba(var(--c-acc),.04);border-bottom:1px solid var(--br);">';
-        html += '<div style="font-size:.62rem;color:rgb(var(--c-acc));text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px;"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Objetivo</div>';
-        html += '<div style="font-size:.84rem;color:rgb(var(--c-acc2));line-height:1.65;">' + w.objective + '</div>';
-        html += '</div>';
-      }
+      var st = isCurrent ? ['Actual', 'acc'] : isPast ? ['Completada', 'ok'] : ['Por venir', 'mut'];
+      var html = '<div class="mk-wk2' + (acts.length ? ' click" onclick="_mkWkModal()" title="Ver actividades' : '') + '">' +
+        '<span class="mk-wk2-meta"><span class="mk-wk2-ic">' + MK_IC.flag + '</span>Semana ' + wk + ' <i class="' + st[1] + '">● ' + st[0] + '</i>' +
+          (acts.length ? '<span class="mk-wk2-go">›</span>' : '') + '</span>' +
+        '<b class="mk-wk2-tit">' + (w.title || 'Sin título') + '</b>' +
+        (w.objective ? '<p class="mk-wk2-obj">' + w.objective + '</p>' : '') +
+        (acts.length ? '<div class="mk-wk2-ft">' + acts.length + (acts.length === 1 ? ' actividad' : ' actividades') + ' esta semana</div>' : '');
       html += '</div>';
       c.innerHTML = html;
     });
@@ -3352,6 +3361,7 @@ function _buildAdminTabs() {
 // ── PANEL DERECHO "Tu perfil" (solo Dashboard, pantallas anchas) ──
 // Íconos pequeños del rediseño
 var MK_IC = {
+  flag: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/></svg>',
   live: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5"/></svg>',
   cal: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
   play: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><polygon points="10,8.5 15.5,12 10,15.5" fill="currentColor"/></svg>',

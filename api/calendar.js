@@ -81,12 +81,23 @@ module.exports = async function handler(req, res) {
     // así que los pedimos a JB News (mismo calendario de ForexFactory) si hay llave.
     const jbKey = process.env.JBNEWS_API_KEY;
     let jbStatus = jbKey ? 'sin respuesta' : 'sin llave';
+    let jbRaw = '';
+    const jbGet = (path) => fetch('https://www.jblanked.com/news/api/forex-factory/calendar/' + path, {
+        headers: { 'Authorization': 'Api-Key ' + jbKey.trim(), 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(d => {
+          if (Array.isArray(d)) return d;
+          if (d && Array.isArray(d.data)) return d.data;
+          jbRaw = JSON.stringify(d).slice(0, 200); // respuesta inesperada: la mostramos para revisarla
+          return [];
+        });
+    // Pedimos la semana completa sin filtros (filtramos aquí); si viene vacía, probamos por rango de fechas
     const jbPromise = jbKey
-      ? fetch('https://www.jblanked.com/news/api/forex-factory/calendar/week/?currency=USD&impact=High', {
-          headers: { 'Authorization': 'Api-Key ' + jbKey.trim(), 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(8000),
-        }).then(r => { jbStatus = 'HTTP ' + r.status; return r.ok ? r.json() : []; })
-          .then(d => { if (Array.isArray(d)) jbStatus = 'ok (' + d.length + ' noticias)'; return d; })
+      ? jbGet('week/')
+          .then(d => { jbStatus = 'week: ' + d.length; if (d.length) return d;
+            return new Promise(ok => setTimeout(ok, 1100)).then(() => jbGet('range/?from=' + thisMon + '&to=' + new Date(new Date(thisMon).getTime() + 6*86400000).toISOString().slice(0,10))
+              .then(d2 => { jbStatus += ', range: ' + d2.length; return d2; })); })
           .catch(e => { jbStatus = 'error: ' + (e && e.message); return []; })
       : Promise.resolve([]);
 
@@ -130,6 +141,7 @@ module.exports = async function handler(req, res) {
     const norm = t => String(t||'').toLowerCase().replace(/\s+/g, ' ').trim();
     const jbActual = {};
     (Array.isArray(jbList) ? jbList : []).forEach(j => {
+      if (j.Currency && j.Currency !== 'USD') return;
       const day = String(j.Date || '').slice(0, 10).replace(/\./g, '-');
       if (j.Actual === null || j.Actual === undefined || j.Actual === '') return;
       jbActual[day + '|' + norm(j.Name)] = j.Actual;
@@ -178,7 +190,7 @@ module.exports = async function handler(req, res) {
       timezone: 'UTC-5 (Ecuador)',
       today:    todayStr,
       events:   final,
-      jbnews:   jbStatus, // para revisar en /api/calendar si JB News responde
+      jbnews:   jbStatus + (jbRaw ? ' · ' + jbRaw : ''), // para revisar en /api/calendar si JB News responde
     };
     res.status(200).json(lastGood);
 

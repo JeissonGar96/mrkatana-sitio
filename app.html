@@ -1539,16 +1539,11 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
   .acol .atop,.acol .amain{padding-left:max(26px,calc((100% - 1440px) / 2)) !important;padding-right:max(26px,calc((100% - 1440px) / 2)) !important;}
   .alay.with-rp .acol .atop,.alay.with-rp .acol .amain{padding-left:max(26px,calc((100% - 1280px) / 2)) !important;padding-right:max(26px,calc((100% - 1280px) / 2)) !important;}
 }
-/* ══ Aviso "En vivo ahora" del Dashboard ══ */
-.mk-livebar{align-items:center;gap:16px;margin-bottom:20px;padding:16px 18px;border-radius:18px;background:var(--c-card);background-image:linear-gradient(100deg,rgba(var(--c-bad),.10),rgba(var(--c-bad),0) 55%);border:1px solid rgba(var(--c-bad),.28);box-shadow:var(--k-sh);}
-.mk-livebar-ic{position:relative;width:46px;height:46px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-bad),.13);color:rgb(var(--c-bad));}
-.mk-livebar-ic svg{width:20px;height:20px;}
-.mk-livebar-dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:rgb(var(--c-bad));border:2px solid var(--c-card);animation:pulse 1.5s infinite;}
-.mk-livebar-tx{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;}
-.mk-livebar-tit{font-weight:700;font-size:1rem;color:var(--c-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.mk-livebar-sub{font-size:.8rem;color:var(--c-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.mk-livebar .mk-btn{flex-shrink:0;}
-@media(max-width:600px){.mk-livebar{flex-wrap:wrap;}.mk-livebar .mk-btn{width:100%;}}
+/* ══ Tarjeta "Próxima sesión grupal" cuando hay un en vivo ══ */
+#st-group-card.is-live{border-color:rgba(var(--c-bad),.35) !important;background-image:linear-gradient(100deg,rgba(var(--c-bad),.10),rgba(var(--c-bad),0) 60%);}
+#st-group-card.is-live .mk-ic{background:rgba(var(--c-bad),.14) !important;color:rgb(var(--c-bad)) !important;animation:pulse 1.5s infinite;}
+#st-group-card.is-live #st-group-lbl{color:rgb(var(--c-bad)) !important;}
+#st-group-card.is-live #st-group{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2327,16 +2322,10 @@ function rDash(liveOnly) {
     '<div id="mk-ads"></div>' +
 
     // En vivo ahora (aparece solo si hay una sesión activa)
-    '<div id="lbanner" class="mk-livebar" style="display:none;">' +
-      '<div class="mk-livebar-ic">' + MK_IC.live + '<span class="mk-livebar-dot"></span></div>' +
-      '<div class="mk-livebar-tx"><span class="mk-pill r">● En vivo ahora</span><div id="ltit" class="mk-livebar-tit"></div><div id="lsub" class="mk-livebar-sub">Sesión en curso</div></div>' +
-      '<button id="llnk" class="mk-btn">Unirme a la sesión →</button>' +
-    '</div>' +
-
     // Tres tarjetas: progreso, próxima sesión grupal, próxima 1-1
     '<div class="mk-stats">' +
       (liveOnly ? '' : '<div class="mk-stat" onclick="goToLastLesson()"><div class="mk-ic">' + MK_IC.chart + '</div><div style="flex:1;min-width:0;"><span>Progreso del curso</span><b><span id="prog-pct">0%</span><small id="prog-sub">…</small></b><div class="mk-stat-bar"><i id="prog-bar"></i></div></div></div>') +
-      '<div class="mk-stat" onclick="navigateTo(\'sesiones\')"><div class="mk-ic b">' + MK_IC.live + '</div><div><span>Próxima sesión grupal</span><b id="st-group">Sin agendar</b></div></div>' +
+      '<div class="mk-stat" id="st-group-card" onclick="navigateTo(\'sesiones\')"><div class="mk-ic b">' + MK_IC.live + '</div><div style="min-width:0;"><span id="st-group-lbl">Próxima sesión grupal</span><b id="st-group">Sin agendar</b></div></div>' +
       '<div class="mk-stat" id="card-1on1" onclick="navigateTo(\'reuniones\')"><div class="mk-ic g">' + MK_IC.cal + '</div><div><span>Próxima sesión 1-1</span><b id="st-1on1">Sin agendar</b></div></div>' +
     '</div>' +
 
@@ -2469,14 +2458,15 @@ function rDash(liveOnly) {
 function chkLive() {
   sb.from('live_sessions').select('*').eq('is_active',true).limit(1).then(function(r) {
     if (r.data && r.data.length) {
-      var b = document.getElementById('lbanner');
-      if (b) {
+      // La tarjeta "Próxima sesión grupal" pasa a "En vivo ahora" y al tocarla entra directo a la llamada
+      var cd = document.getElementById('st-group-card');
+      if (cd) {
         var ls = r.data[0];
-        b.style.display = 'flex';
-        document.getElementById('ltit').textContent = ls.title || 'Sesión en vivo';
-        if (ls.description) document.getElementById('lsub').textContent = ls.description;
-        document.getElementById('llnk').onclick = function() {
-          // Sala en la plataforma: entra directo a la llamada; link externo: lo abre
+        cd.classList.add('is-live');
+        document.getElementById('st-group-lbl').textContent = '● En vivo ahora';
+        document.getElementById('st-group').textContent = ls.title || 'Sesión en vivo';
+        cd.title = 'Unirme a la sesión';
+        cd.onclick = function() {
           if (_isJitsi(ls.discord_url) && _hasLiveAccess()) { _lvAutoJoin = { id: ls.id, title: ls.title }; navigateTo('sesiones'); }
           else if (!_isJitsi(ls.discord_url) && ls.discord_url && _hasLiveAccess()) window.open(ls.discord_url, '_blank');
           else navigateTo('sesiones');
@@ -4380,6 +4370,7 @@ function _mkAdminTab(k) {
 function _mkRenderDashExtras(liveOnly, prof) {
   sb.from('live_sessions').select('scheduled_at').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(1).then(function(r) {
     var el = document.getElementById('st-group'); if (!el) return;
+    var cd = document.getElementById('st-group-card'); if (cd && cd.classList.contains('is-live')) return;
     var d = (r && r.data && r.data[0] && r.data[0].scheduled_at) || (prof && prof.next_group_meeting && new Date(prof.next_group_meeting) > new Date() ? prof.next_group_meeting : null);
     el.textContent = d ? _mkWhen(d) : 'Sin agendar';
   });

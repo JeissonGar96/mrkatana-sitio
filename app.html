@@ -1461,6 +1461,45 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .lp-crumbs a:hover{opacity:.8;}
 @media(hover:none){.lvl-card:hover,.ce-new:hover,.lp-next:hover{transform:none !important;}.lvl-thumb::after{display:none;}.lp2 .ls-lesson-item:hover{transform:none;}}
 @media(prefers-reduced-motion:reduce){.lvl-card,.lvl-thumb::before,.lp2 .ls-lesson-item,.lp-next{transition:none !important;}}
+/* En vivo: edición desde la pestaña */
+.lv-x{background:none;border:none;color:var(--c-muted);font-size:1.1rem;cursor:pointer;}
+.lv-modal .wp-title{color:var(--c-text) !important;font-family:inherit !important;text-transform:none !important;font-size:1.15rem !important;}
+.lv-modal .wp-header-icon{background:rgba(var(--c-acc),.14) !important;color:rgb(var(--c-acc));}
+.lv-modal .wp-header-icon svg{width:18px;height:18px;}
+.lv-modal textarea.wp-input{resize:vertical;font-family:inherit;line-height:1.45;}
+.lv-opt{font-style:normal;text-transform:none;letter-spacing:0;font-weight:500;color:var(--c-muted);opacity:.8;margin-left:4px;}
+.lv-durs{display:flex;flex-wrap:wrap;gap:8px;}
+.lv-dur{border:1px solid var(--k-line);background:transparent;color:var(--c-text2);font:inherit;font-size:.8rem;font-weight:600;padding:8px 14px;border-radius:30px;cursor:pointer;transition:all .2s;}
+.lv-dur:hover{border-color:rgba(var(--c-acc),.5);color:rgb(var(--c-acc));}
+.lv-dur.on{background:rgb(var(--c-acc));border-color:rgb(var(--c-acc));color:var(--c-ongold);}
+.lv-endrow{margin-top:12px;max-width:50%;}
+.lv-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+.lv-cols .wp-card{margin-bottom:12px;}
+.lv-rec{flex-direction:column;align-items:stretch !important;}
+.lv-rec-th{width:100% !important;height:auto !important;aspect-ratio:16/9;}
+.lv-modal .wp-body{padding-bottom:22px;}
+.lv-hint{font-size:.72rem;color:var(--c-muted);margin-top:10px;}
+.lv-rec{display:flex;gap:14px;align-items:flex-end;}
+.lv-rec-th{width:120px;height:68px;flex-shrink:0;border-radius:10px;background:linear-gradient(135deg,#2b2412,#15161a);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:.68rem;color:rgba(255,255,255,.45);}
+.lv-foot{display:flex;align-items:center;gap:10px;margin-top:6px;}
+.lv-foot .wp-btn-primary,.lv-foot .wp-btn-ghost{width:auto !important;flex:none !important;padding:11px 20px !important;margin:0 !important;}
+.lv-del{background:none;border:none;color:rgb(var(--c-bad));font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;padding:8px 4px;}
+.lv-del:hover{text-decoration:underline;}
+.lv-hero-ed{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.lv-on-btn{background:rgb(var(--c-bad)) !important;color:#fff !important;box-shadow:0 6px 18px rgba(var(--c-bad),.3) !important;}
+.mk-live{position:relative;}
+.lv-ct{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.lv-li-tools{display:flex;gap:6px;opacity:0;transition:opacity .2s;}
+.mk-li:hover .lv-li-tools{opacity:1;}
+.lv-rec-miss{position:absolute;left:12px;top:12px;font-size:.66rem;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(var(--c-bad),.9);color:#fff;z-index:2;}
+.cw-card{position:relative;}
+.cw-card .ce-tools{top:20px;right:20px;opacity:0;transition:opacity .2s;}
+.cw-card:hover .ce-tools{opacity:1;}
+.lv-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed rgba(var(--c-acc),.4);border-radius:16px;min-height:150px;color:rgb(var(--c-acc));font-weight:700;font-size:.85rem;background:rgba(var(--c-acc),.04);cursor:pointer;transition:background .25s,transform .35s cubic-bezier(.2,.8,.2,1);}
+.lv-add:hover{background:rgba(var(--c-acc),.09);transform:translateY(-3px);}
+@media(hover:none){.lv-li-tools,.cw-card .ce-tools{opacity:1;}}
+@media(max-width:760px){.lv-cols{grid-template-columns:1fr;}}
+@media(max-width:600px){.lv-endrow{max-width:none;}.lv-rec{flex-direction:column;align-items:stretch;}.lv-rec-th{width:100%;height:150px;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3064,11 +3103,12 @@ function rSes() {
   sb.from('live_sessions').select('*').order('scheduled_at').then(function(r) {
     var sessions = r.data || [];
     var now = new Date();
+    var ed = _canEditLive();
 
     // Separate active, upcoming, past
     var active   = sessions.filter(function(s){ return s.is_active; });
     var upcoming = sessions.filter(function(s){ return !s.is_active && new Date(s.scheduled_at) > now; }).sort(function(a,b){ return new Date(a.scheduled_at)-new Date(b.scheduled_at); });
-    var past     = sessions.filter(function(s){ return !s.is_active && s.recording_url; }).sort(function(a,b){ return new Date(b.scheduled_at)-new Date(a.scheduled_at); });
+    var past     = sessions.filter(function(s){ return !s.is_active && (s.recording_url || (ed && new Date(s.scheduled_at) <= now)); }).sort(function(a,b){ return new Date(b.scheduled_at)-new Date(a.scheduled_at); });
 
     var html = '<div class="mk-row2">';
     // ── EN VIVO AHORA (o la siguiente sesión) ──
@@ -3077,6 +3117,7 @@ function rSes() {
       var isLive = !!active.length;
       var hd = new Date(hero.scheduled_at);
       html += '<div class="mk-card mk-live">' +
+        (ed ? '<div class="ce-tools"><button class="ce-ic sm" title="Editar sesión" data-lv="edit" data-id="' + hero.id + '">' + CE_IC.edit + '</button><button class="ce-ic sm r" title="Eliminar sesión" data-lv="del" data-id="' + hero.id + '">' + CE_IC.del + '</button></div>' : '') +
         '<div class="mk-live-th">' + (isLive ? '<span class="mk-live-pill">● LIVE</span>' : '') + '<span class="cw-play">▶</span>' + (isLive ? '<span class="cw-dur">EN VIVO</span>' : '') + '</div>' +
         '<div class="mk-live-tx">' +
           (isLive ? '<span class="mk-pill r">● En vivo ahora</span>' : '<span class="mk-pill">Próxima sesión</span>') +
@@ -3085,38 +3126,55 @@ function rSes() {
           (isLive
             ? '<button class="mk-btn" id="btn-join-live" data-url="' + _mkEsc(hero.discord_url || '') + '">Unirme a la sesión →</button>'
             : '<a class="mk-btn ghost" href="' + _mkCalLink(hero) + '" target="_blank" rel="noopener">Recordarme →</a>') +
+          (ed ? '<div class="lv-hero-ed">' + (isLive
+            ? '<button class="mk-btn lv-on-btn" data-lv="off" data-id="' + hero.id + '">■ Terminar en vivo</button>'
+            : '<button class="mk-chip" data-lv="on" data-id="' + hero.id + '">● Iniciar en vivo ahora</button>') + '</div>' : '') +
         '</div></div>';
     } else {
-      html += '<div class="mk-card mk-live" style="justify-content:center;text-align:center;flex-direction:column;"><div class="mk-emp-ic">' + MK_IC.live + '</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div></div>';
+      html += '<div class="mk-card mk-live" style="justify-content:center;text-align:center;flex-direction:column;"><div class="mk-emp-ic">' + MK_IC.live + '</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div>' + (ed ? '<button class="ce-btn" data-lv="new" style="margin-top:14px;">' + CE_IC.plus + ' Programar sesión</button>' : '') + '</div>';
     }
     // ── PRÓXIMAS SESIONES ──
-    var nexts = upcoming.filter(function(x){ return x !== hero; }).slice(0, 4);
-    html += '<div class="mk-card"><h3 class="mk-ct">Próximas sesiones</h3>' +
+    var nexts = upcoming.filter(function(x){ return x !== hero; }).slice(0, ed ? 8 : 4);
+    html += '<div class="mk-card"><h3 class="mk-ct lv-ct">Próximas sesiones' + (ed ? '<button class="ce-btn" data-lv="new">' + CE_IC.plus + ' Programar</button>' : '') + '</h3>' +
       (nexts.length ? nexts.map(function(x) {
         return '<div class="mk-li"><div class="mk-ic b">' + MK_IC.cal + '</div><div style="flex:1;min-width:0;"><b>' + _mkEsc(x.title) + '</b><span>' + _mkWhen(x.scheduled_at) + '</span></div>' +
-          '<a class="mk-chip" href="' + _mkCalLink(x) + '" target="_blank" rel="noopener">Recordar</a></div>';
+          (ed ? '<div class="lv-li-tools"><button class="ce-ic sm" title="Editar" data-lv="edit" data-id="' + x.id + '">' + CE_IC.edit + '</button><button class="ce-ic sm r" title="Eliminar" data-lv="del" data-id="' + x.id + '">' + CE_IC.del + '</button></div>'
+              : '<a class="mk-chip" href="' + _mkCalLink(x) + '" target="_blank" rel="noopener">Recordar</a>') + '</div>';
       }).join('') : '<div style="color:var(--c-muted);font-size:.86rem;padding:8px 0;">No hay más sesiones programadas.</div>') +
     '</div></div>';
 
     // ── GRABACIONES RECIENTES ──
     html += '<div class="mk-sh" style="margin-top:28px;"><h3>Grabaciones recientes</h3>' + (past.length > 6 ? '<a class="mk-link" href="#" onclick="document.querySelectorAll(\'.rec-more\').forEach(function(e){e.style.display=\'\'});this.remove();return false;">Ver todas →</a>' : '') + '</div>';
-    if (!past.length) {
+    if (!past.length && !ed) {
       html += '<div class="mk-empty">Todavía no hay grabaciones.</div>';
     } else {
       html += '<div class="mk-grid3">' + past.map(function(x, i) {
         var d = new Date(x.scheduled_at);
         var th = _mkThumb({ video_url: x.recording_url || '' });
         var tag = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '').replace(',', '');
-        return '<div class="cw-card' + (i >= 6 ? ' rec-more' : '') + '"' + (i >= 6 ? ' style="display:none"' : '') + ' onclick="openRecModal(this.dataset.title, this.dataset.date, this.dataset.url)" ' +
+        return '<div class="cw-card' + (i >= 6 ? ' rec-more' : '') + '"' + (i >= 6 ? ' style="display:none"' : '') + (ed && !x.recording_url ? ' onclick="openLiveModal(this.dataset.id)" data-id="' + x.id + '" ' : ' onclick="openRecModal(this.dataset.title, this.dataset.date, this.dataset.url)" ') +
           'data-title="' + _mkEsc(x.title) + '" data-date="' + d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) + '" data-url="' + _mkEsc(toEmbedUrl(x.recording_url || '')) + '">' +
           '<div class="cw-th"' + (th ? ' style="background-image:url(\'' + _mkEsc(th) + '\')"' : '') + '><span class="cw-play">▶</span></div>' +
+          (ed && !x.recording_url ? '<span class="lv-rec-miss">Falta grabación</span>' : '') +
+          (ed ? '<div class="ce-tools"><button class="ce-ic" title="Editar" data-lv="edit" data-id="' + x.id + '">' + CE_IC.edit + '</button><button class="ce-ic r" title="Eliminar" data-lv="del" data-id="' + x.id + '">' + CE_IC.del + '</button></div>' : '') +
           '<span class="cw-tag b">' + _mkEsc(tag) + '</span>' +
           '<div class="cw-tit">' + _mkEsc(x.title) + '</div>' +
         '</div>';
-      }).join('') + '</div>';
+      }).join('') + (ed ? '<div class="lv-add" data-lv="rec">' + CE_IC.plus + '<span>Agregar grabación</span></div>' : '') + '</div>';
     }
 
     m.innerHTML = html;
+    if (ed && !m._lvBound) m._lvBound = true, m.addEventListener('click', function(e) {
+      var b = e.target.closest('[data-lv]'); if (!b || !m.contains(b)) return;
+      e.preventDefault(); e.stopPropagation();
+      var a = b.dataset.lv, id = b.dataset.id;
+      if (a === 'edit') openLiveModal(id);
+      else if (a === 'del') _liveDel(id);
+      else if (a === 'on') _liveToggle(id, true);
+      else if (a === 'off') _liveToggle(id, false);
+      else if (a === 'new') openLiveModal(null);
+      else if (a === 'rec') { var d = new Date(); d.setHours(d.getHours() - 2, 0, 0, 0); openLiveModal(null, { scheduled_at: d.toISOString(), end_time: new Date(d.getTime() + 36e5).toISOString() }); }
+    }, true);
 
     // ── Bind join button ──
     var joinBtn = document.getElementById('btn-join-live');
@@ -3127,6 +3185,140 @@ function rSes() {
         if (discordUrl) window.open(discordUrl, '_blank');
       });
     }
+  });
+}
+
+// ── Edición de sesiones en vivo desde la pestaña En vivo ──
+function _canEditLive() {
+  if (!cProfile) return false;
+  if (cProfile.role === 'admin') return true;
+  return cProfile.role === 'staff' && _staffCan('access_sesiones');
+}
+function _afterLiveEdit() {
+  var cur = history.state;
+  if (document.getElementById('a-se') && typeof rAdmSe === 'function') rAdmSe();
+  if (cur && cur.section === 'sesiones') rSes();
+}
+function _liveToggle(id, v) {
+  sb.from('live_sessions').update({ is_active: v, manually_deactivated: !v }).eq('id', id).then(function(r) {
+    if (r && r.error) return tst('Error: ' + r.error.message, 1);
+    tst(v ? '✓ Estás en vivo' : 'En vivo terminado');
+    _afterLiveEdit();
+  });
+}
+function _liveDel(id) {
+  if (!confirm('¿Eliminar esta sesión?')) return;
+  sb.from('live_sessions').delete().eq('id', id).then(function(r) {
+    if (r && r.error) return tst('Error: ' + r.error.message, 1);
+    var m = document.getElementById('live-modal'); if (m) m.remove();
+    tst('Sesión eliminada'); _afterLiveEdit();
+  });
+}
+var _LIVE_DUR = [[30,'30 min'],[60,'1 h'],[90,'1 h 30'],[120,'2 h'],[0,'Otra']];
+function openLiveModal(id, preset) {
+  if (id) {
+    sb.from('live_sessions').select('*').eq('id', id).single().then(function(r) { if (r.data) _liveModal(r.data); });
+  } else {
+    _liveModal(preset || {});
+  }
+}
+function _liveModal(s) {
+  var old = document.getElementById('live-modal'); if (old) old.remove();
+  _injectWhopStyles();
+  var pad = function(n){ return String(n).padStart(2,'0'); };
+  var isNew = !s.id;
+  var st = s.scheduled_at ? new Date(s.scheduled_at) : (function(){ var d = new Date(); d.setDate(d.getDate()+1); d.setHours(9,30,0,0); return d; })();
+  var dV = st.getFullYear() + '-' + pad(st.getMonth()+1) + '-' + pad(st.getDate());
+  var tV = pad(st.getHours()) + ':' + pad(st.getMinutes());
+  var mins = s.end_time ? Math.round((new Date(s.end_time) - st) / 60000) : (isNew ? 60 : 0);
+  var durSel = _LIVE_DUR.some(function(x){ return x[0] === mins; }) ? mins : (s.end_time ? -1 : 0);
+  var en = s.end_time ? new Date(s.end_time) : null;
+  var eV = en ? pad(en.getHours()) + ':' + pad(en.getMinutes()) : '';
+  var th = s.recording_url ? _mkThumb({ video_url: s.recording_url }) : '';
+  var ov = document.createElement('div');
+  ov.id = 'live-modal'; ov.className = 'wp-overlay';
+  ov.innerHTML =
+    '<div class="wp-modal lv-modal" style="max-width:820px;">' +
+      '<div class="wp-header">' +
+        '<div class="wp-header-icon">' + MK_IC.live + '</div>' +
+        '<div style="flex:1;min-width:0;"><div class="wp-title">' + (isNew ? 'Programar sesión' : 'Editar sesión') + '</div><div class="wp-subtitle">Los alumnos la verán en la pestaña En vivo</div></div>' +
+        '<button class="lv-x" data-x>✕</button>' +
+      '</div>' +
+      '<div class="wp-body"><div class="lv-cols"><div>' +
+        '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Información</div></div>' +
+          '<div class="wp-field"><label class="wp-label">Título</label><input id="lv-t" class="wp-input" placeholder="Ej: Análisis pre-mercado MNQ" value="' + _mkEsc(s.title || '') + '"></div>' +
+          '<div class="wp-field"><label class="wp-label">Descripción <i class="lv-opt">opcional</i></label><textarea id="lv-desc" class="wp-input" rows="2" placeholder="De qué trata la sesión">' + _mkEsc(s.description || '') + '</textarea></div>' +
+        '</div>' +
+        '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Cuándo</div></div>' +
+          '<div class="wp-field wp-grid2"><div><label class="wp-label">Día</label><input id="lv-d" type="date" class="wp-input" value="' + dV + '"></div><div><label class="wp-label">Hora de inicio</label><input id="lv-h" type="time" class="wp-input" value="' + tV + '"></div></div>' +
+          '<div class="wp-field"><label class="wp-label">Duración</label><div class="lv-durs">' +
+            _LIVE_DUR.map(function(x){ var on = durSel === x[0] || (durSel === -1 && x[0] === 0); return '<button type="button" class="lv-dur' + (on ? ' on' : '') + '" data-m="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+          '</div>' +
+          '<div class="lv-endrow"' + (durSel <= 0 ? '' : ' style="display:none"') + '><label class="wp-label">Termina a las</label><input id="lv-e" type="time" class="wp-input" value="' + eV + '"></div>' +
+          '<div class="lv-hint">Se activa sola a la hora de inicio y se apaga al terminar.</div></div>' +
+        '</div></div><div>' +
+        '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Dónde</div></div>' +
+          '<div class="wp-field"><label class="wp-label">Link para unirse</label><input id="lv-u" class="wp-input" placeholder="https://discord.com/channels/..." value="' + _mkEsc(s.discord_url || '') + '"></div>' +
+          '<div class="wp-toggle-row"><div><div class="wp-toggle-text">Encender ahora</div><div class="wp-toggle-sub">Muestra la sesión como EN VIVO aunque no sea la hora</div></div>' +
+            '<label class="wp-toggle"><input id="lv-act" type="checkbox"' + (s.is_active ? ' checked' : '') + '><span class="wp-toggle-track"></span></label></div>' +
+        '</div>' +
+        '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Grabación</div></div>' +
+          '<div class="lv-rec"><div class="lv-rec-th" id="lv-rec-th"' + (th ? ' style="background-image:url(\'' + _mkEsc(th) + '\')"' : '') + '>' + (th ? '' : '<span>Sin video</span>') + '</div>' +
+          '<div style="flex:1;min-width:0;"><label class="wp-label">Link del video <i class="lv-opt">YouTube o Bunny</i></label><input id="lv-rec" class="wp-input" placeholder="Pégalo cuando termine el en vivo" value="' + _mkEsc(s.recording_url || '') + '"></div></div>' +
+        '</div>' +
+        '</div></div>' +
+        '<div class="lv-foot">' +
+          (isNew ? '' : '<button class="lv-del" data-del>Eliminar</button>') +
+          '<span style="flex:1"></span>' +
+          '<button class="wp-btn-ghost" data-x>Cancelar</button>' +
+          '<button class="wp-btn-primary" id="lv-save">' + (isNew ? 'Programar' : 'Guardar cambios') + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  var close = function(){ ov.remove(); };
+  ov.addEventListener('click', function(e){ if (e.target === ov || e.target.closest('[data-x]')) close(); });
+  var endRow = ov.querySelector('.lv-endrow');
+  ov.querySelectorAll('.lv-dur').forEach(function(b) {
+    b.addEventListener('click', function() {
+      ov.querySelectorAll('.lv-dur').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      endRow.style.display = b.dataset.m === '0' ? '' : 'none';
+    });
+  });
+  var recIn = ov.querySelector('#lv-rec');
+  recIn.addEventListener('input', function() {
+    var t = _mkThumb({ video_url: recIn.value.trim() }), box = ov.querySelector('#lv-rec-th');
+    box.style.backgroundImage = t ? 'url("' + t + '")' : '';
+    box.innerHTML = t ? '' : '<span>Sin video</span>';
+  });
+  var del = ov.querySelector('[data-del]'); if (del) del.addEventListener('click', function(){ _liveDel(s.id); });
+  ov.querySelector('#lv-save').addEventListener('click', function() {
+    var btn = this;
+    var t = ov.querySelector('#lv-t').value.trim(), d = ov.querySelector('#lv-d').value, h = ov.querySelector('#lv-h').value;
+    if (!t || !d || !h) return tst('Pon título, día y hora', 1);
+    var start = new Date(d + 'T' + h);
+    var on = ov.querySelector('.lv-dur.on'), m = on ? +on.dataset.m : 0, end = null;
+    if (m > 0) end = new Date(start.getTime() + m * 60000);
+    else { var e = ov.querySelector('#lv-e').value; if (e) { end = new Date(d + 'T' + e); if (end <= start) end.setDate(end.getDate() + 1); } }
+    var act = ov.querySelector('#lv-act').checked;
+    var row = {
+      title: t,
+      description: ov.querySelector('#lv-desc').value.trim(),
+      scheduled_at: start.toISOString(),
+      end_time: end ? end.toISOString() : null,
+      discord_url: ov.querySelector('#lv-u').value.trim(),
+      recording_url: recIn.value.trim() || null,
+      is_active: act
+    };
+    if (act !== !!s.is_active) row.manually_deactivated = !act;
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    var q = isNew ? sb.from('live_sessions').insert(row) : sb.from('live_sessions').update(row).eq('id', s.id);
+    q.then(function(r) {
+      if (r && r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = isNew ? 'Programar' : 'Guardar cambios'; return; }
+      tst(isNew ? '✓ Sesión programada' : '✓ Sesión actualizada');
+      close(); _afterLiveEdit();
+    });
   });
 }
 

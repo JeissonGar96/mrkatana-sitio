@@ -7014,7 +7014,7 @@ function tst(m, err) {
 function _calDayEs(d) {
   var D = {Sun:'Domingo',Mon:'Lunes',Tue:'Martes',Wed:'Miércoles',Thu:'Jueves',Fri:'Viernes',Sat:'Sábado'};
   var M = {Jan:'ene',Feb:'feb',Mar:'mar',Apr:'abr',May:'may',Jun:'jun',Jul:'jul',Aug:'ago',Sep:'sept',Oct:'oct',Nov:'nov',Dec:'dic'};
-  var p = String(d).trim().split(/\s+/);
+  var p = String(d).replace(/,/g, ' ').trim().split(/\s+/);
   if (p.length === 3 && D[p[0]] && M[p[1]]) return D[p[0]] + ' ' + p[2] + ' ' + M[p[1]];
   return d;
 }
@@ -7022,7 +7022,7 @@ function _calDayEs(d) {
 function _calDayTile(d, isToday) {
   var D = {Sun:'Dom',Mon:'Lun',Tue:'Mar',Wed:'Mié',Thu:'Jue',Fri:'Vie',Sat:'Sáb'};
   var M = {Jan:'ene',Feb:'feb',Mar:'mar',Apr:'abr',May:'may',Jun:'jun',Jul:'jul',Aug:'ago',Sep:'sept',Oct:'oct',Nov:'nov',Dec:'dic'};
-  var p = String(d).trim().split(/\s+/);
+  var p = String(d).replace(/,/g, ' ').trim().split(/\s+/);
   if (!(p.length === 3 && D[p[0]] && M[p[1]])) return '<div class="cal-day-tile"><span>' + d + '</span>' + (isToday ? '<i>Hoy</i>' : '') + '</div>';
   return '<div class="cal-day-tile"><span>' + D[p[0]] + '</span><b>' + p[2] + '</b><small>' + M[p[1]] + '</small>' + (isToday ? '<i>Hoy</i>' : '') + '</div>';
 }

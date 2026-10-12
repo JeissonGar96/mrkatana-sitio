@@ -4,6 +4,8 @@
 // Última respuesta buena: si ForexFactory nos limita o falla, devolvemos esta copia
 // en lugar de un error (vive mientras la función siga "caliente" en Vercel).
 let lastGood = null;
+// Resultados ya conseguidos de JB News (cada consulta a JB News cuesta 1 crédito)
+const jbFound = {};
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -93,7 +95,7 @@ module.exports = async function handler(req, res) {
           return [];
         });
     // Pedimos la semana completa sin filtros (filtramos aquí); si viene vacía, probamos por rango de fechas
-    const jbPromise = jbKey
+    const jbFetch = () => jbKey
       ? jbGet('week/')
           .then(d => { jbStatus = 'week: ' + d.length; if (d.length) return d;
             return new Promise(ok => setTimeout(ok, 1100)).then(() => jbGet('range/?from=' + thisMon + '&to=' + new Date(new Date(thisMon).getTime() + 6*86400000).toISOString().slice(0,10))
@@ -143,7 +145,16 @@ module.exports = async function handler(req, res) {
     const s = v => (v!=null && String(v).trim()!=='') ? String(v).trim() : '—';
 
     // Índice de resultados de JB News por día + nombre del evento
-    const jbList = await jbPromise;
+    // Solo gastamos un crédito de JB News si hay una noticia que ya salió (últimas 3 h)
+    // y todavía no tenemos su resultado.
+    const nowMs0 = Date.now();
+    const keyOf = e => toIsoDate(e.date) + '|' + String(e.title||'').toLowerCase().replace(/\s+/g, ' ').trim();
+    const needJb = display.some(e => {
+      const t = toSortKey(e.date);
+      return t <= nowMs0 && nowMs0 - t < 3 * 3600000 && s(e.actual) === '—' && jbFound[keyOf(e)] === undefined;
+    });
+    if (!needJb && jbKey) jbStatus = 'en espera (no hay noticias pendientes de resultado)';
+    const jbList = needJb ? await jbFetch() : [];
     const norm = t => String(t||'').toLowerCase().replace(/\s+/g, ' ').trim();
     const jbActual = {};
     (Array.isArray(jbList) ? jbList : []).forEach(j => {
@@ -151,6 +162,7 @@ module.exports = async function handler(req, res) {
       const day = String(j.Date || '').slice(0, 10).replace(/\./g, '-');
       if (j.Actual === null || j.Actual === undefined || j.Actual === '') return;
       jbActual[day + '|' + norm(j.Name)] = j.Actual;
+      jbFound[day + '|' + norm(j.Name)] = j.Actual;
     });
     // Le pone al número el mismo sufijo que usa ForexFactory (%, K, M, B)
     const withUnit = (val, like) => {
@@ -174,7 +186,8 @@ module.exports = async function handler(req, res) {
         if (own !== '—') return own;
         // Solo si la noticia ya salió (evita mostrar un 0 antes de tiempo)
         if (toSortKey(e.date) > nowMs) return own;
-        const v = jbActual[toIsoDate(e.date) + '|' + norm(e.title)];
+        const k = toIsoDate(e.date) + '|' + norm(e.title);
+        const v = jbActual[k] !== undefined ? jbActual[k] : jbFound[k];
         return (v === undefined) ? own : withUnit(v, e.forecast || e.previous);
       })(),
     }))

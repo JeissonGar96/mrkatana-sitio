@@ -50,9 +50,14 @@ module.exports = async function handler(req, res) {
       global: { headers: { Authorization: 'Bearer ' + token } },
       auth: { persistSession: false, autoRefreshToken: false }
     });
-    const { data: userData, error: userErr } = await sb.auth.getUser(token);
-    if (userErr || !userData || !userData.user) return res.status(401).json({ error: 'invalid_token', detail: userErr ? userErr.message : '' });
-    const user = userData.user;
+    // Leemos quién es desde su token. No hace falta confiar en esto a ciegas:
+    // Supabase rechaza la consulta de su perfil si el token es falso o venció.
+    let claims = null;
+    try { claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')); } catch (e) {}
+    if (!claims || !claims.sub || (claims.exp && claims.exp * 1000 < Date.now())) {
+      return res.status(401).json({ error: 'invalid_token', detail: 'Vuelve a iniciar sesión' });
+    }
+    const user = { id: claims.sub };
 
     const sessionId = String((req.query && req.query.session) || '');
     if (!/^[\w-]{1,64}$/.test(sessionId)) return res.status(400).json({ error: 'bad_session' });
@@ -64,6 +69,7 @@ module.exports = async function handler(req, res) {
     ]);
     const p = profileR.data;
     const s = sessionR.data;
+    if (profileR.error && /jwt|token|auth/i.test(profileR.error.message || '')) return res.status(401).json({ error: 'invalid_token', detail: profileR.error.message });
     if (!p) return res.status(403).json({ error: 'no_profile', detail: profileR.error ? profileR.error.message : '' });
     if (!s) return res.status(404).json({ error: 'no_session' });
 

@@ -1534,17 +1534,11 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 *::-webkit-scrollbar-thumb{background:rgba(var(--c-ov),.13);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
 *::-webkit-scrollbar-thumb:hover{background:rgba(var(--c-ov),.26);border:2px solid transparent;background-clip:padding-box;}
 @supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.3) transparent;}}
-/* ══ Pantallas grandes: las tarjetas guardan el tamaño de la laptop y entran más por fila ══ */
-@media(min-width:861px){ .acol .amain{container-type:inline-size;} }
-@container (min-width:1304px){ .mk-cw{grid-auto-columns:calc((100% - 48px) / 4) !important;} }
-@container (min-width:1634px){ .mk-cw{grid-auto-columns:calc((100% - 64px) / 5) !important;} }
-@container (min-width:1964px){ .mk-cw{grid-auto-columns:calc((100% - 80px) / 6) !important;} }
-@container (min-width:1720px){ .lvl-grid{grid-template-columns:repeat(4,minmax(0,1fr)) !important;} }
-@container (min-width:2150px){ .lvl-grid{grid-template-columns:repeat(5,minmax(0,1fr)) !important;} }
-/* Banner de imagen: mismo alto que en la laptop; a los lados, la misma imagen difuminada */
-.mk-ad.mk-ad-img{position:relative;overflow:hidden;}
-.mk-ad.mk-ad-img img{position:relative;max-width:1000px;margin:0 auto;}
-.mk-ad.mk-ad-img img.mk-ad-bg{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;filter:blur(32px) brightness(.5);transform:scale(1.2);}
+/* ══ Pantallas grandes: el contenido no crece más que en un portátil ══ */
+@media(min-width:861px){
+  .acol .atop,.acol .amain{padding-left:max(26px,calc((100% - 1440px) / 2)) !important;padding-right:max(26px,calc((100% - 1440px) / 2)) !important;}
+  .alay.with-rp .acol .atop,.alay.with-rp .acol .amain{padding-left:max(26px,calc((100% - 1280px) / 2)) !important;padding-right:max(26px,calc((100% - 1280px) / 2)) !important;}
+}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -4509,7 +4503,7 @@ function _mkRenderAds() {
       if (a.banner_url) {
         // Banner de solo imagen: toda la imagen es el enlace
         html += '<a class="mk-ad mk-ad-img' + (i === 0 ? ' on' : '') + '" href="' + _mkEsc(_mkSafeUrl(a.url)) + '" target="_blank" rel="noopener sponsored" data-ad="' + a.id + '">' +
-          '<img class="mk-ad-bg" src="' + _mkEsc(a.banner_url) + '" alt="" aria-hidden="true"><img src="' + _mkEsc(a.banner_url) + '" alt="' + _mkEsc(a.title || '') + '"></a>';
+          '<img src="' + _mkEsc(a.banner_url) + '" alt="' + _mkEsc(a.title || '') + '"></a>';
         return;
       }
       html += '<div class="mk-ad' + (i === 0 ? ' on' : '') + '">' +

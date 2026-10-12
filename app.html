@@ -3509,8 +3509,8 @@ function _lvJoinRoom(sessionId, title) {
         prejoinPageEnabled: false,
         prejoinConfig: { enabled: false },
         defaultLanguage: 'es',
-        startWithAudioMuted: !j.moderator,
-        startWithVideoMuted: !j.moderator,
+        startWithAudioMuted: true,
+        startWithVideoMuted: true,
         disableDeepLinking: true,
         subject: title || 'Sesión en vivo'
       }

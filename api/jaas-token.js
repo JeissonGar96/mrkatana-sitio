@@ -22,8 +22,17 @@ function b64url(x) {
     .toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
+// Acepta la llave pegada en Vercel tal cual, con \n escritos o toda en una sola línea
+function normalizeKey(raw) {
+  let k = String(raw || '').replace(/\\n/g, '\n').replace(/\r/g, '').trim().replace(/^["']|["']$/g, '');
+  const m = k.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
+  if (!m) return k;
+  const body = m[2].replace(/\s+/g, '');
+  return '-----BEGIN ' + m[1] + '-----\n' + body.match(/.{1,64}/g).join('\n') + '\n-----END ' + m[1] + '-----\n';
+}
+
 function signJwt(payload) {
-  const key = String(process.env.JAAS_PRIVATE_KEY || '').replace(/\\n/g, '\n').trim();
+  const key = normalizeKey(process.env.JAAS_PRIVATE_KEY);
   const head = b64url({ alg: 'RS256', kid: KEY_ID, typ: 'JWT' });
   const body = b64url(payload);
   const sig = crypto.createSign('RSA-SHA256').update(head + '.' + body).sign(key)

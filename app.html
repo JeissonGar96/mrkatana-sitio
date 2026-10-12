@@ -3451,9 +3451,13 @@ function _lvJoinRoom(sessionId, title) {
     var tk = r && r.data && r.data.session ? r.data.session.access_token : '';
     return fetch('/api/jaas-token?session=' + encodeURIComponent(sessionId), { headers: { Authorization: 'Bearer ' + tk } });
   }).then(function(res) {
-    return res.json().then(function(j) { if (!res.ok) throw new Error(j.error || 'error'); return j; });
+    return res.text().then(function(t) {
+      var j; try { j = JSON.parse(t); } catch (e) { throw new Error('http_' + res.status); }
+      if (!res.ok) { var er = new Error(j.error || ('http_' + res.status)); er.detail = j.detail || ''; throw er; }
+      return j;
+    });
   }).then(function(j) {
-    return _lvLoadJitsi(j.appId).then(function() { return j; });
+    return _lvLoadJitsi(j.appId).then(function() { return j; }, function() { throw new Error('jitsi_script'); });
   }).then(function(j) {
     var box = document.getElementById('lv-room-box'); if (!box) return;
     box.innerHTML = '';
@@ -3475,7 +3479,10 @@ function _lvJoinRoom(sessionId, title) {
     _lvApi.addListener('readyToClose', _lvLeaveRoom);
   }).catch(function(e) {
     var box = document.getElementById('lv-room-box');
-    if (box) box.innerHTML = '<div class="lv-room-wait">' + _mkEsc(msgs[e && e.message] || 'No se pudo abrir la sesión. Intenta de nuevo en un momento.') + '</div>';
+    console.error('[En vivo] no se pudo abrir la sala:', e);
+    var code = (e && e.message) || 'desconocido';
+    if (box) box.innerHTML = '<div class="lv-room-wait" style="flex-direction:column;">' + _mkEsc(msgs[code] || 'No se pudo abrir la sesión. Intenta de nuevo en un momento.') +
+      (msgs[code] ? '' : '<small style="opacity:.55;font-size:.72rem;">Código: ' + _mkEsc(code + (e && e.detail ? ' · ' + e.detail : '')) + '</small>') + '</div>';
   });
 }
 

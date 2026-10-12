@@ -1382,7 +1382,7 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .lp2.lesson-layout-mobile .lesson-sidebar{border-radius:20px !important;}
 @media(max-width:860px){.lp-next-th{width:84px;height:50px;}.lp-next .lp-nav{display:none;}}
 /* Volver: ruta "‹ Curso / Nivel" */
-.lp-crumbs{display:flex;align-items:center;gap:6px;font-size:.76rem;margin-bottom:8px;min-width:0;}
+.lp-crumbs{display:flex;align-items:center;gap:6px;font-size:.76rem;margin-bottom:14px;min-width:0;}
 .lp-crumbs a{display:inline-flex;align-items:center;gap:3px;color:rgb(var(--c-acc));font-weight:600;cursor:pointer;text-decoration:none;flex-shrink:0;}
 .lp-crumbs a:hover{text-decoration:underline;}
 .lp-crumbs i{font-style:normal;color:var(--c-muted);}
@@ -2506,22 +2506,7 @@ function showLessons(mod, level, progress) {
     var allIds = [];
     mr.data.forEach(function(mm) { (mm.course_lessons||[]).forEach(function(l){ allIds.push(l.id); }); });
 
-    function getThumb(videoUrl) {
-      if (!videoUrl) return '';
-      var u = videoUrl, vidId = '';
-      if (u.indexOf('embed/') > -1) vidId = u.split('embed/')[1].split('?')[0];
-      else if (u.indexOf('watch?v=') > -1) vidId = u.split('watch?v=')[1].split('&')[0];
-      else if (u.indexOf('youtu.be/') > -1) vidId = u.split('youtu.be/')[1].split('?')[0];
-      if (vidId) return 'https://img.youtube.com/vi/' + vidId + '/mqdefault.jpg';
-      // Bunny.net thumbnail
-      if (u.indexOf('mediadelivery.net') !== -1 || u.indexOf('bunny.net') !== -1) {
-        var bparts = u.split('/');
-        var bVideoId = bparts[bparts.length - 1].split('?')[0];
-        var bLibId   = bparts[bparts.length - 2];
-        if (bLibId && bVideoId) return 'https://vz-' + bLibId + '.b-cdn.net/' + bVideoId + '/thumbnail.jpg';
-      }
-      return '';
-    }
+    function getThumb(videoUrl) { return _mkThumb({ video_url: videoUrl }); }
 
     function buildSidebar(prog, currentWeek) {
       list.innerHTML = '';
@@ -3669,17 +3654,21 @@ function _mkWhen(iso) {
   var h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0');
   return day + ' · ' + ((h % 12) || 12) + ':' + m + ' ' + (h < 12 ? 'AM' : 'PM');
 }
+// CDN de la librería de Bunny Stream (Bunny → Stream → tu librería → API → "CDN Hostname").
+// Sin esto Bunny no permite armar la miniatura a partir del video.
+var MK_BUNNY_CDN = '';
 function _mkThumb(l) {
   if (l && l.thumbnail_url) return l.thumbnail_url;
   var u = (l && l.video_url) || '', id = '';
-  if (u.indexOf('embed/') > -1) id = u.split('embed/')[1].split('?')[0];
+  // Bunny primero: sus links también traen "embed/" y no son de YouTube
+  if (u.indexOf('mediadelivery.net') !== -1 || u.indexOf('bunny.net') !== -1) {
+    var p = u.split('?')[0].split('/'), vid = p[p.length - 1];
+    return (MK_BUNNY_CDN && vid) ? 'https://' + MK_BUNNY_CDN + '/' + vid + '/thumbnail.jpg' : '';
+  }
+  if (u.indexOf('youtube.com/embed/') > -1) id = u.split('embed/')[1].split('?')[0];
   else if (u.indexOf('watch?v=') > -1) id = u.split('watch?v=')[1].split('&')[0];
   else if (u.indexOf('youtu.be/') > -1) id = u.split('youtu.be/')[1].split('?')[0];
   if (id) return 'https://img.youtube.com/vi/' + id + '/mqdefault.jpg';
-  if (u.indexOf('mediadelivery.net') !== -1 || u.indexOf('bunny.net') !== -1) {
-    var p = u.split('/'), vid = p[p.length - 1].split('?')[0], lib = p[p.length - 2];
-    if (lib && vid) return 'https://vz-' + lib + '.b-cdn.net/' + vid + '/thumbnail.jpg';
-  }
   return '';
 }
 // Abre una clase directamente (desde el buscador o "Continuar viendo")

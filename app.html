@@ -1519,6 +1519,12 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .lv-room-box{height:min(78vh,780px);border-radius:20px;overflow:hidden;background:#0d0e11;border:1px solid var(--k-line);box-shadow:var(--k-sh-hi);}
 .lv-room-wait{height:100%;display:flex;align-items:center;justify-content:center;gap:10px;color:#cfcfcf;font-size:.9rem;text-align:center;padding:20px;}
 @media(max-width:700px){.lv-room-bar b{display:none;}.lv-room-box{height:calc(100dvh - 170px);border-radius:14px;}}
+.lv-go{cursor:pointer;transition:border-color .3s,transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,background .3s;border:1px dashed rgba(var(--c-acc),.35) !important;}
+.lv-go:hover{transform:translateY(-3px);border-color:rgba(var(--c-acc),.8) !important;background:rgba(var(--c-acc),.05) !important;}
+.lv-go:hover .mk-emp-ic{color:rgb(var(--c-acc));transform:scale(1.08);}
+.lv-go .mk-emp-ic{transition:transform .3s,color .3s;}
+.lv-go-tx{margin-top:8px;font-size:.8rem;font-weight:700;color:rgb(var(--c-acc));}
+.lv-start{background:rgb(var(--c-bad)) !important;color:#fff !important;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3131,7 +3137,8 @@ function rSes() {
 
     var html = '<div class="mk-row2">';
     // ── EN VIVO AHORA (o la siguiente sesión) ──
-    var hero = active[0] || upcoming[0] || null;
+    // Para quien edita, si nada está en vivo el recuadro grande sirve para iniciar uno al momento
+    var hero = active[0] || (ed ? null : upcoming[0]) || null;
     if (hero) {
       var isLive = !!active.length;
       var hd = new Date(hero.scheduled_at);
@@ -3153,7 +3160,7 @@ function rSes() {
               (_isJitsi(hero.discord_url) ? '<button class="mk-chip" data-room="' + hero.id + '">Entrar a la sala antes</button>' : '')) + '</div>' : '') +
         '</div></div>';
     } else {
-      html += '<div class="mk-card mk-live" style="justify-content:center;text-align:center;flex-direction:column;"><div class="mk-emp-ic">' + MK_IC.live + '</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div>' + (ed ? '<button class="ce-btn" data-lv="new" style="margin-top:14px;">' + CE_IC.plus + ' Programar sesión</button>' : '') + '</div>';
+      html += '<div class="mk-card mk-live' + (ed ? ' lv-go' : '') + '"' + (ed ? ' data-lv="go" title="Iniciar un en vivo ahora"' : '') + ' style="justify-content:center;text-align:center;flex-direction:column;"><div class="mk-emp-ic">' + MK_IC.live + '</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div>' + (ed ? '<div class="lv-go-tx">Toca aquí para iniciar un en vivo ahora</div>' : '') + '</div>';
     }
     // ── PRÓXIMAS SESIONES ──
     var nexts = upcoming.filter(function(x){ return x !== hero; }).slice(0, ed ? 8 : 4);
@@ -3195,6 +3202,7 @@ function rSes() {
       else if (a === 'on') _liveToggle(id, true);
       else if (a === 'off') _liveToggle(id, false);
       else if (a === 'new') openLiveModal(null);
+      else if (a === 'go') _lvQuickStart();
       else if (a === 'rec') { var d = new Date(); d.setHours(d.getHours() - 2, 0, 0, 0); openLiveModal(null, { scheduled_at: d.toISOString(), end_time: new Date(d.getTime() + 36e5).toISOString() }); }
     }, true);
 
@@ -3358,6 +3366,61 @@ function _liveModal(s) {
       if (r && r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = isNew ? 'Programar' : 'Guardar cambios'; return; }
       tst(isNew ? '✓ Sesión programada' : '✓ Sesión actualizada');
       close(); _afterLiveEdit();
+    });
+  });
+}
+
+// Iniciar un en vivo al momento, sin programarlo
+function _lvQuickStart() {
+  var old = document.getElementById('live-modal'); if (old) old.remove();
+  _injectWhopStyles();
+  var ov = document.createElement('div');
+  ov.id = 'live-modal'; ov.className = 'wp-overlay';
+  ov.innerHTML =
+    '<div class="wp-modal lv-modal" style="max-width:460px;">' +
+      '<div class="wp-header">' +
+        '<div class="wp-header-icon">' + MK_IC.live + '</div>' +
+        '<div style="flex:1;min-width:0;"><div class="wp-title">Iniciar en vivo ahora</div><div class="wp-subtitle">Tus alumnos lo verán al instante en la pestaña En vivo</div></div>' +
+        '<button class="lv-x" data-x>✕</button>' +
+      '</div>' +
+      '<div class="wp-body">' +
+        '<div class="wp-field"><label class="wp-label">Título</label><input id="lv-qt" class="wp-input" placeholder="Ej: Análisis en vivo de MNQ"></div>' +
+        '<div class="wp-field"><label class="wp-label">Descripción <i class="lv-opt">opcional</i></label><input id="lv-qd" class="wp-input" placeholder="De qué trata"></div>' +
+        '<div class="wp-field"><label class="wp-label">Duración aproximada</label><div class="lv-durs">' +
+          _LIVE_DUR.filter(function(x){ return x[0]; }).map(function(x){ return '<button type="button" class="lv-dur' + (x[0] === 60 ? ' on' : '') + '" data-m="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+        '</div><div class="lv-hint">Se apaga sola al terminar; también puedes terminarla antes.</div></div>' +
+        '<div class="lv-foot" style="margin-top:18px;"><span style="flex:1"></span><button class="wp-btn-ghost" data-x>Cancelar</button><button class="wp-btn-primary lv-start" id="lv-qgo">● Iniciar en vivo</button></div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  var close = function(){ ov.remove(); };
+  ov.addEventListener('click', function(e){ if (e.target === ov || e.target.closest('[data-x]')) close(); });
+  ov.querySelectorAll('.lv-dur').forEach(function(b) {
+    b.addEventListener('click', function() {
+      ov.querySelectorAll('.lv-dur').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+    });
+  });
+  var tIn = ov.querySelector('#lv-qt'); setTimeout(function(){ tIn.focus(); }, 50);
+  ov.querySelector('#lv-qgo').addEventListener('click', function() {
+    var btn = this, t = tIn.value.trim();
+    if (!t) { tIn.focus(); return tst('Ponle un título a tu en vivo', 1); }
+    var on = ov.querySelector('.lv-dur.on'), mins = on ? +on.dataset.m : 60;
+    var now = new Date();
+    btn.disabled = true; btn.textContent = 'Iniciando...';
+    sb.from('live_sessions').insert({
+      title: t,
+      description: ov.querySelector('#lv-qd').value.trim(),
+      scheduled_at: now.toISOString(),
+      end_time: new Date(now.getTime() + mins * 60000).toISOString(),
+      discord_url: 'jitsi',
+      recording_url: null,
+      is_active: true,
+      manually_deactivated: false
+    }).select().single().then(function(r) {
+      if (r.error || !r.data) { tst('Error: ' + (r.error ? r.error.message : 'no se pudo crear'), 1); btn.disabled = false; btn.textContent = '● Iniciar en vivo'; return; }
+      close();
+      _lvJoinRoom(r.data.id, t);
     });
   });
 }

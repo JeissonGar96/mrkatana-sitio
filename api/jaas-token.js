@@ -12,10 +12,10 @@ const { createClient } = require('@supabase/supabase-js');
 const APP_ID = process.env.JAAS_APP_ID || 'vpaas-magic-cookie-8f0a17dbb6394df09a3b30a85c948987';
 const KEY_ID = process.env.JAAS_KEY_ID || 'vpaas-magic-cookie-8f0a17dbb6394df09a3b30a85c948987/5cd518';
 
-const sb = createClient(
-  'https://rxyezbyvwqwihggechsc.supabase.co',
-  process.env.SUPABASE_SERVICE_KEY
-);
+// Se consulta Supabase con la sesión del propio usuario (llave pública + su token),
+// igual que hace la app. Así no depende de la service key.
+const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4eWV6Ynl2d3F3aWhnZ2VjaHNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzA3NDEsImV4cCI6MjA4ODk0Njc0MX0.1JSsDMb08NiHwrRtzgp46UZ5pqTuUTGTkpKIOmm9WRc';
 
 function b64url(x) {
   return Buffer.from(typeof x === 'string' ? x : JSON.stringify(x))
@@ -46,8 +46,12 @@ module.exports = async function handler(req, res) {
 
     const token = (req.headers.authorization || '').replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'no_token' });
+    const sb = createClient(SB_URL, SB_ANON, {
+      global: { headers: { Authorization: 'Bearer ' + token } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
     const { data: userData, error: userErr } = await sb.auth.getUser(token);
-    if (userErr || !userData || !userData.user) return res.status(401).json({ error: 'invalid_token' });
+    if (userErr || !userData || !userData.user) return res.status(401).json({ error: 'invalid_token', detail: userErr ? userErr.message : '' });
     const user = userData.user;
 
     const sessionId = String((req.query && req.query.session) || '');
@@ -60,7 +64,7 @@ module.exports = async function handler(req, res) {
     ]);
     const p = profileR.data;
     const s = sessionR.data;
-    if (!p) return res.status(403).json({ error: 'no_profile' });
+    if (!p) return res.status(403).json({ error: 'no_profile', detail: profileR.error ? profileR.error.message : '' });
     if (!s) return res.status(404).json({ error: 'no_session' });
 
     const isMod = p.role === 'admin' || (p.role === 'staff' && !!(permsR.data && permsR.data.access_sesiones));

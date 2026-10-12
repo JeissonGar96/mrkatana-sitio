@@ -1278,6 +1278,30 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 #econ-cal .cal-day-group{padding:16px 0 8px;}
 #econ-cal .cal-time{background:var(--c-card);}
 @media(max-width:860px){#econ-cal .cal-event{margin:0 0 8px;padding:10px 12px;}}
+/* Paso 19c: día a la izquierda y noticias en filas con líneas finas (sin cajas) */
+#econ-cal .cal-day-group{display:grid;grid-template-columns:62px 1fr;gap:0 20px;padding:16px 0;}
+#econ-cal .cal-day-tile{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;line-height:1.1;}
+#econ-cal .cal-day-tile span{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--c-muted);}
+#econ-cal .cal-day-tile b{font-size:1.7rem;font-weight:800;color:var(--c-text);margin:4px 0 2px;}
+#econ-cal .cal-day-tile small{font-size:.72rem;color:var(--c-muted);}
+#econ-cal .cal-day-tile i{font-style:normal;margin-top:8px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;background:rgb(var(--c-acc));color:var(--c-ongold);}
+#econ-cal .is-today .cal-day-tile b{color:rgb(var(--c-acc));}
+#econ-cal .cal-day-list{border-left:1px solid var(--k-line);padding-left:20px;min-width:0;}
+#econ-cal .cal-event{background:transparent;border:none;border-radius:0;margin:0;padding:14px 4px;}
+#econ-cal .cal-event+.cal-event{border-top:1px solid var(--k-line);}
+#econ-cal .cal-event:hover{background:transparent;border:none;}
+#econ-cal .cal-event+.cal-event:hover{border-top:1px solid var(--k-line);}
+#econ-cal .cal-event:hover .cal-name{color:rgb(var(--c-acc));}
+#econ-cal .cal-name{transition:color .2s;}
+#econ-cal .cal-time{background:transparent;padding:0;text-align:left;font-size:.92rem;font-weight:700;}
+#econ-cal .cal-released .cal-time{background:transparent;}
+#econ-cal .cal-event{grid-template-columns:66px 28px 1fr auto;}
+@media(max-width:860px){
+  #econ-cal .cal-day-group{grid-template-columns:44px 1fr;gap:0 12px;}
+  #econ-cal .cal-day-list{padding-left:12px;}
+  #econ-cal .cal-event{grid-template-columns:56px 24px 1fr;padding:12px 0;margin:0;}
+  #econ-cal .cal-values{padding-left:0;}
+}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -6994,6 +7018,14 @@ function _calDayEs(d) {
   if (p.length === 3 && D[p[0]] && M[p[1]]) return D[p[0]] + ' ' + p[2] + ' ' + M[p[1]];
   return d;
 }
+// Bloque del día a la izquierda: "LUN / 12 / oct"
+function _calDayTile(d, isToday) {
+  var D = {Sun:'Dom',Mon:'Lun',Tue:'Mar',Wed:'Mié',Thu:'Jue',Fri:'Vie',Sat:'Sáb'};
+  var M = {Jan:'ene',Feb:'feb',Mar:'mar',Apr:'abr',May:'may',Jun:'jun',Jul:'jul',Aug:'ago',Sep:'sept',Oct:'oct',Nov:'nov',Dec:'dic'};
+  var p = String(d).trim().split(/\s+/);
+  if (!(p.length === 3 && D[p[0]] && M[p[1]])) return '<div class="cal-day-tile"><span>' + d + '</span>' + (isToday ? '<i>Hoy</i>' : '') + '</div>';
+  return '<div class="cal-day-tile"><span>' + D[p[0]] + '</span><b>' + p[2] + '</b><small>' + M[p[1]] + '</small>' + (isToday ? '<i>Hoy</i>' : '') + '</div>';
+}
 // Cambia los emojis de la explicación por flechas de color
 function _calTx(t) {
   return String(t).replace(/📈\s?/g, '<b class="cx up">▲</b> ').replace(/📉\s?/g, '<b class="cx dn">▼</b> ').replace(/➡️\s?/g, '');
@@ -7169,10 +7201,8 @@ function loadCalendar() {
       var html = '';
       order.forEach(function(date) {
         var isToday = date.indexOf(todayDow) === 0;
-        html += '<div class="cal-day-group">';
-        html += '<div class="cal-day-header"><span class="cal-day-name">' + _calDayEs(date) + '</span>';
-        if (isToday) html += '<span class="cal-day-today">Hoy</span>';
-        html += '</div>';
+        html += '<div class="cal-day-group' + (isToday ? ' is-today' : '') + '">';
+        html += _calDayTile(date, isToday) + '<div class="cal-day-list">';
 
         groups[date].forEach(function(ev, idx) {
           var curr     = ev.currency || '';
@@ -7239,7 +7269,7 @@ function loadCalendar() {
 
           html += '</div>'; // .cal-event
         });
-        html += '</div>'; // .cal-day-group
+        html += '</div></div>'; // .cal-day-list .cal-day-group
       });
 
       html += '<div class="cal-foot">';

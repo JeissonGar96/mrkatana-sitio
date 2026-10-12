@@ -1473,8 +1473,17 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .lv-dur:hover{border-color:rgba(var(--c-acc),.5);color:rgb(var(--c-acc));}
 .lv-dur.on{background:rgb(var(--c-acc));border-color:rgb(var(--c-acc));color:var(--c-ongold);}
 .lv-endrow{margin-top:12px;max-width:50%;}
-.lv-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
-.lv-cols .wp-card{margin-bottom:12px;}
+.lv-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;margin-bottom:18px;}
+.lv-cols .wp-card{margin:0 !important;display:flex;flex-direction:column;}
+.lv-seg{display:flex;padding:4px;border-radius:30px;background:rgba(var(--c-ov),.05);border:1px solid var(--k-line);}
+.lv-seg button{flex:1;border:none;background:transparent;color:var(--c-text2);font:inherit;font-size:.8rem;font-weight:600;padding:8px 10px;border-radius:30px;cursor:pointer;transition:all .2s;}
+.lv-seg button:hover{color:rgb(var(--c-acc));}
+.lv-seg button.on{background:rgb(var(--c-acc));color:var(--c-ongold);box-shadow:0 4px 12px rgba(var(--c-acc),.25);}
+.lv-cols .wp-toggle-row{margin-top:auto;padding-top:12px;}
+.lv-cols .wp-card > .wp-field:has(#lv-desc){flex:1;display:flex;flex-direction:column;}
+.lv-cols #lv-desc{flex:1;min-height:74px;}
+.lv-modal .lv-rec-th{aspect-ratio:auto !important;height:118px !important;}
+.lv-modal .wp-header{padding:22px 28px 14px !important;}
 .lv-rec{flex-direction:column;align-items:stretch !important;}
 .lv-rec-th{width:100% !important;height:auto !important;aspect-ratio:16/9;}
 .lv-modal .wp-body{padding-bottom:22px;}
@@ -3215,6 +3224,7 @@ function _liveDel(id) {
   });
 }
 var _LIVE_DUR = [[30,'30 min'],[60,'1 h'],[90,'1 h 30'],[120,'2 h'],[0,'Otra']];
+function _isYtUrl(u) { return /(^|\/\/|\.)(youtube\.com|youtu\.be)\//i.test(String(u || '')); }
 function openLiveModal(id, preset) {
   if (id) {
     sb.from('live_sessions').select('*').eq('id', id).single().then(function(r) { if (r.data) _liveModal(r.data); });
@@ -3235,6 +3245,7 @@ function _liveModal(s) {
   var en = s.end_time ? new Date(s.end_time) : null;
   var eV = en ? pad(en.getHours()) + ':' + pad(en.getMinutes()) : '';
   var th = s.recording_url ? _mkThumb({ video_url: s.recording_url }) : '';
+  var kind = (isNew || _isYtUrl(s.discord_url)) ? 'in' : 'out';
   var ov = document.createElement('div');
   ov.id = 'live-modal'; ov.className = 'wp-overlay';
   ov.innerHTML =
@@ -3244,10 +3255,20 @@ function _liveModal(s) {
         '<div style="flex:1;min-width:0;"><div class="wp-title">' + (isNew ? 'Programar sesión' : 'Editar sesión') + '</div><div class="wp-subtitle">Los alumnos la verán en la pestaña En vivo</div></div>' +
         '<button class="lv-x" data-x>✕</button>' +
       '</div>' +
-      '<div class="wp-body"><div class="lv-cols"><div>' +
+      '<div class="wp-body"><div class="lv-cols">' +
         '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Información</div></div>' +
           '<div class="wp-field"><label class="wp-label">Título</label><input id="lv-t" class="wp-input" placeholder="Ej: Análisis pre-mercado MNQ" value="' + _mkEsc(s.title || '') + '"></div>' +
           '<div class="wp-field"><label class="wp-label">Descripción <i class="lv-opt">opcional</i></label><textarea id="lv-desc" class="wp-input" rows="2" placeholder="De qué trata la sesión">' + _mkEsc(s.description || '') + '</textarea></div>' +
+        '</div>' +
+        '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Dónde</div></div>' +
+          '<div class="wp-field"><label class="wp-label">Tipo de sesión</label><div class="lv-seg">' +
+            '<button type="button" data-k="in"' + (kind === 'in' ? ' class="on"' : '') + '>En la plataforma</button>' +
+            '<button type="button" data-k="out"' + (kind === 'out' ? ' class="on"' : '') + '>Otra plataforma</button>' +
+          '</div></div>' +
+          '<div class="wp-field lv-k" data-k="in"' + (kind === 'in' ? '' : ' style="display:none"') + '><label class="wp-label">Link de tu transmisión en YouTube</label><input id="lv-yt" class="wp-input" placeholder="https://youtube.com/live/..." value="' + (kind === 'in' ? _mkEsc(s.discord_url || '') : '') + '"><div class="lv-hint">Tus alumnos la ven aquí mismo, en la pestaña En vivo, con chat. No salen de la plataforma.</div></div>' +
+          '<div class="wp-field lv-k" data-k="out"' + (kind === 'out' ? '' : ' style="display:none"') + '><label class="wp-label">Link para unirse</label><input id="lv-u" class="wp-input" placeholder="Discord, Zoom, Google Meet..." value="' + (kind === 'out' ? _mkEsc(s.discord_url || '') : '') + '"><div class="lv-hint">Tus alumnos verán un botón "Unirme" que abre este link.</div></div>' +
+          '<div class="wp-toggle-row"><div><div class="wp-toggle-text">Encender ahora</div><div class="wp-toggle-sub">Muestra la sesión como EN VIVO aunque no sea la hora</div></div>' +
+            '<label class="wp-toggle"><input id="lv-act" type="checkbox"' + (s.is_active ? ' checked' : '') + '><span class="wp-toggle-track"></span></label></div>' +
         '</div>' +
         '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Cuándo</div></div>' +
           '<div class="wp-field wp-grid2"><div><label class="wp-label">Día</label><input id="lv-d" type="date" class="wp-input" value="' + dV + '"></div><div><label class="wp-label">Hora de inicio</label><input id="lv-h" type="time" class="wp-input" value="' + tV + '"></div></div>' +
@@ -3256,17 +3277,12 @@ function _liveModal(s) {
           '</div>' +
           '<div class="lv-endrow"' + (durSel <= 0 ? '' : ' style="display:none"') + '><label class="wp-label">Termina a las</label><input id="lv-e" type="time" class="wp-input" value="' + eV + '"></div>' +
           '<div class="lv-hint">Se activa sola a la hora de inicio y se apaga al terminar.</div></div>' +
-        '</div></div><div>' +
-        '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Dónde</div></div>' +
-          '<div class="wp-field"><label class="wp-label">Link para unirse</label><input id="lv-u" class="wp-input" placeholder="https://discord.com/channels/..." value="' + _mkEsc(s.discord_url || '') + '"></div>' +
-          '<div class="wp-toggle-row"><div><div class="wp-toggle-text">Encender ahora</div><div class="wp-toggle-sub">Muestra la sesión como EN VIVO aunque no sea la hora</div></div>' +
-            '<label class="wp-toggle"><input id="lv-act" type="checkbox"' + (s.is_active ? ' checked' : '') + '><span class="wp-toggle-track"></span></label></div>' +
         '</div>' +
         '<div class="wp-card"><div class="wp-card-head"><div class="wp-card-title">Grabación</div></div>' +
           '<div class="lv-rec"><div class="lv-rec-th" id="lv-rec-th"' + (th ? ' style="background-image:url(\'' + _mkEsc(th) + '\')"' : '') + '>' + (th ? '' : '<span>Sin video</span>') + '</div>' +
           '<div style="flex:1;min-width:0;"><label class="wp-label">Link del video <i class="lv-opt">YouTube o Bunny</i></label><input id="lv-rec" class="wp-input" placeholder="Pégalo cuando termine el en vivo" value="' + _mkEsc(s.recording_url || '') + '"></div></div>' +
         '</div>' +
-        '</div></div>' +
+        '</div>' +
         '<div class="lv-foot">' +
           (isNew ? '' : '<button class="lv-del" data-del>Eliminar</button>') +
           '<span style="flex:1"></span>' +
@@ -3286,6 +3302,13 @@ function _liveModal(s) {
       endRow.style.display = b.dataset.m === '0' ? '' : 'none';
     });
   });
+  ov.querySelectorAll('.lv-seg button').forEach(function(b) {
+    b.addEventListener('click', function() {
+      kind = b.dataset.k;
+      ov.querySelectorAll('.lv-seg button').forEach(function(x){ x.classList.toggle('on', x === b); });
+      ov.querySelectorAll('.lv-k').forEach(function(x){ x.style.display = x.dataset.k === kind ? '' : 'none'; });
+    });
+  });
   var recIn = ov.querySelector('#lv-rec');
   recIn.addEventListener('input', function() {
     var t = _mkThumb({ video_url: recIn.value.trim() }), box = ov.querySelector('#lv-rec-th');
@@ -3297,6 +3320,8 @@ function _liveModal(s) {
     var btn = this;
     var t = ov.querySelector('#lv-t').value.trim(), d = ov.querySelector('#lv-d').value, h = ov.querySelector('#lv-h').value;
     if (!t || !d || !h) return tst('Pon título, día y hora', 1);
+    var link = ov.querySelector(kind === 'in' ? '#lv-yt' : '#lv-u').value.trim();
+    if (kind === 'in' && link && !_isYtUrl(link)) return tst('Para transmitir en la plataforma pega un link de YouTube', 1);
     var start = new Date(d + 'T' + h);
     var on = ov.querySelector('.lv-dur.on'), m = on ? +on.dataset.m : 0, end = null;
     if (m > 0) end = new Date(start.getTime() + m * 60000);
@@ -3307,7 +3332,7 @@ function _liveModal(s) {
       description: ov.querySelector('#lv-desc').value.trim(),
       scheduled_at: start.toISOString(),
       end_time: end ? end.toISOString() : null,
-      discord_url: ov.querySelector('#lv-u').value.trim(),
+      discord_url: link,
       recording_url: recIn.value.trim() || null,
       is_active: act
     };

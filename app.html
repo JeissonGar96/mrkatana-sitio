@@ -7728,6 +7728,26 @@ function _calDayTile(d, isToday) {
 function _calTx(t) {
   return String(t).replace(/📈\s?/g, '<b class="cx up">▲</b> ').replace(/📉\s?/g, '<b class="cx dn">▼</b> ').replace(/➡️\s?/g, '');
 }
+// Trae el calendario; si el servidor falla reintenta una vez y, si sigue fallando,
+// muestra la última copia buena guardada en este navegador (de los últimos 3 días)
+function _calFetch() {
+  var get = function() {
+    return fetch('/api/calendar').then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(d) {
+        if (!d || !d.ok) throw new Error('feed');
+        try { localStorage.setItem('mk-cal', JSON.stringify(d)); } catch (e) {}
+        return d;
+      });
+  };
+  return get()
+    .catch(function() { return new Promise(function(ok){ setTimeout(ok, 3000); }).then(get); })
+    .catch(function(err) {
+      var sv = null;
+      try { sv = JSON.parse(localStorage.getItem('mk-cal') || 'null'); } catch (e) {}
+      if (sv && sv.events && sv.events.length && sv.updated && (Date.now() - new Date(sv.updated)) < 3 * 864e5) return sv;
+      throw err;
+    });
+}
 function loadCalendar() {
   var c = document.getElementById('econ-cal');
   if (!c) return;
@@ -7869,7 +7889,7 @@ function loadCalendar() {
     });
   });
 
-  fetch('/api/calendar').then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  _calFetch()
     .then(function(data) {
       if (!data.ok || !data.events || !data.events.length) {
     // Keep previous data if available
@@ -7979,6 +7999,7 @@ function loadCalendar() {
       c.innerHTML = html;
     })
     .catch(function(err) {
+      if (c.querySelector('.cal-event')) return; // si ya se veía, lo dejamos como estaba
       c.innerHTML = '<div class="cal-error"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>No se pudo cargar el calendario. Intenta más tarde.</div>';
       console.error('Calendar error:', err);
     });

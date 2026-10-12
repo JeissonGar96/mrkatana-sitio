@@ -1421,6 +1421,46 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .ce-draft{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:20px;background:rgba(var(--c-ov),.1);color:var(--c-text2);flex-shrink:0;}
 .ce-draft-card{position:absolute;top:14px;left:14px;z-index:3;background:rgba(0,0,0,.6);color:#fff;}
 .lesson-layout-mobile .ce-ltools{display:flex;position:static;transform:none;box-shadow:none;background:transparent;}
+/* Pulido Curso: efectos al pasar el mouse */
+.lvl-card{transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s !important;}
+.lvl-card:hover{transform:translateY(-5px) !important;border-color:rgba(var(--c-acc),.55) !important;box-shadow:var(--k-sh-hi),0 0 0 1px rgba(var(--c-acc),.18),0 18px 40px -12px rgba(var(--c-acc),.28) !important;}
+.lvl-card:active{transform:translateY(-2px) scale(.99) !important;}
+.lvl-thumb{overflow:hidden;}
+.lvl-thumb::before{content:"";position:absolute;inset:0;background-image:inherit;background-size:cover;background-position:center;transition:transform .7s cubic-bezier(.2,.8,.2,1);}
+.lvl-card:hover .lvl-thumb::before{transform:scale(1.07);}
+.lvl-thumb::after{content:"";position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(var(--c-acc),.95) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5.5v13l11-6.5z' fill='%23111'/%3E%3C/svg%3E") 56% 50%/22px no-repeat;box-shadow:0 10px 30px rgba(0,0,0,.45);opacity:0;transform:scale(.7);transition:opacity .3s,transform .35s cubic-bezier(.2,.8,.2,1);z-index:2;}
+.lvl-card:hover .lvl-thumb::after{opacity:1;transform:scale(1);}
+.lvl-title{transition:color .25s;}
+.lvl-card:hover .lvl-title{color:rgb(var(--c-acc)) !important;}
+.lvl-bar i{transition:width .8s cubic-bezier(.2,.8,.2,1);}
+.ce-new{transition:background .25s,border-color .25s,transform .35s cubic-bezier(.2,.8,.2,1) !important;}
+.ce-new:hover{transform:translateY(-5px);border-color:rgba(var(--c-acc),.8) !important;}
+.ce-ic{transition:transform .2s,background .2s,color .2s;}
+.ce-ic:hover{transform:scale(1.1);}
+/* Reproductor: lista de clases */
+.lp2 .ls-lesson-item{transition:background .2s,transform .25s cubic-bezier(.2,.8,.2,1);}
+.lp2 .ls-lesson-item:hover{transform:translateX(3px);}
+.lp2 .ls-lesson-item:hover .ls-lesson-title{color:rgb(var(--c-acc)) !important;}
+.lp2 .ls-lesson-title{transition:color .2s;}
+.lp-th{border-radius:8px;overflow:hidden;}
+.lp-th::after{content:"";position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5.5v13l11-6.5z' fill='%23fff'/%3E%3C/svg%3E") center/16px no-repeat;opacity:0;transition:opacity .25s;}
+.lp2 .ls-lesson-item:hover .lp-th::after{opacity:1;}
+.lp2 .ls-lesson-item.active .lp-th::after{opacity:0;}
+.lp2 .ls-lesson-thumb{transition:transform .4s cubic-bezier(.2,.8,.2,1);}
+.lp2 .ls-lesson-item:hover .ls-lesson-thumb{transform:scale(1.08);}
+.lp2 .ls-module-header{transition:background .2s;}
+.lp-st{transition:border-color .2s,transform .2s;}
+.lp2 .ls-lesson-item:hover .lp-st{border-color:rgba(var(--c-acc),.6);}
+/* Tarjeta "A continuación" y botones */
+.lp-next{cursor:pointer;transition:border-color .3s,transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s !important;}
+.lp-next:hover{transform:translateY(-3px);box-shadow:var(--k-sh-hi),0 16px 36px -14px rgba(var(--c-acc),.3) !important;}
+.lp-next-th{transition:transform .4s cubic-bezier(.2,.8,.2,1);}
+.lp-next:hover .lp-next-th{transform:scale(1.04);}
+.lp-nav:active,.lp-done-btn:active{transform:scale(.97);}
+.lp-crumbs a{transition:color .2s,opacity .2s;}
+.lp-crumbs a:hover{opacity:.8;}
+@media(hover:none){.lvl-card:hover,.ce-new:hover,.lp-next:hover{transform:none !important;}.lvl-thumb::after{display:none;}.lp2 .ls-lesson-item:hover{transform:none;}}
+@media(prefers-reduced-motion:reduce){.lvl-card,.lvl-thumb::before,.lp2 .ls-lesson-item,.lp-next{transition:none !important;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3684,7 +3724,6 @@ function _buildAdminTabs() {
 
   var allTabs = [
     ['st','Alumnos','access_students'],
-    ['cl','Clases','access_clases'],
     ['se','Sesiones','access_sesiones'],
     ['1on1','Reuniones 1-1','access_students'],
     ['codes','Planes', ['access_plans','access_discord','access_codes']],

@@ -2425,7 +2425,7 @@ function rDash(liveOnly) {
 
   // Load next 1-1 from meetings table and update card
   sb.from('meetings_1on1').select('*')
-    .eq('student_id', cUser.id)
+    .eq('student_id', cUser.id).or('status.is.null,status.neq.cancelled')
     .gte('scheduled_at', new Date(Date.now() - 1800000).toISOString())
     .order('scheduled_at')
     .limit(1)
@@ -2477,7 +2477,7 @@ function chkLive() {
 }
 function loadUp() {
   var p1 = sb.from('live_sessions').select('*').gte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(3);
-  var p2 = sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).gte('scheduled_at', new Date(Date.now() - 1800000).toISOString()).order('scheduled_at').limit(2);
+  var p2 = sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).or('status.is.null,status.neq.cancelled').gte('scheduled_at', new Date(Date.now() - 1800000).toISOString()).order('scheduled_at').limit(2);
   Promise.all([p1, p2]).then(function(res) {
     var ss = (res[0].data || []).map(function(s){ return Object.assign({},s,{_t:'g'}); });
     var mm = (res[1].data || []).map(function(m){ return Object.assign({},m,{_t:'1'}); });
@@ -3578,8 +3578,8 @@ function rReun() {
     var meetings   = res[0].data || [];
     var recordings = res[1].data || [];
 
-    var upcoming = meetings.filter(function(m){ return new Date(m.scheduled_at) >= new Date(now.getTime() - 1800000); });
-    var past     = meetings.filter(function(m){ return new Date(m.scheduled_at) < new Date(now.getTime() - 1800000); });
+    var upcoming = meetings.filter(function(m){ return m.status !== 'cancelled' && new Date(m.scheduled_at) >= new Date(now.getTime() - 1800000); });
+    var past     = meetings.filter(function(m){ return new Date(m.scheduled_at) < new Date(now.getTime() - 1800000) && m.status !== 'no_show' && m.status !== 'cancelled'; });
 
     var html = '<div class="mk-row2" style="grid-template-columns:1.2fr 1fr;">';
     // ── PRÓXIMA SESIÓN 1-1 (cuenta regresiva) ──
@@ -3618,7 +3618,7 @@ function rReun() {
       var md = new Date(mt.scheduled_at), key = md.toDateString();
       var rec = recordings.find(function(r){ return !recUsed[r.id] && r.recorded_at && new Date(r.recorded_at).toDateString() === key; });
       if (rec) recUsed[rec.id] = true;
-      return { d: md, t: mt.title || 'Sesión 1-1', future: md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url };
+      return { d: md, t: mt.title || 'Sesión 1-1', future: mt.status !== 'cancelled' && md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url, st: mt.status };
     });
     recordings.forEach(function(r){ if (!recUsed[r.id]) rows.push({ d: new Date(r.recorded_at), t: r.title || 'Grabación', future: false, rec: r }); });
     rows.sort(function(x, y){ return y.d - x.d; });
@@ -3632,7 +3632,7 @@ function rReun() {
             ? '<button class="mk-chip" onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" data-title="' + _mkEsc(x.rec.title || x.t) + '" data-date="' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) + '" data-url="' + _mkEsc(toEmbedUrl(x.rec.video_url || '')) + '">▶ Ver grabación</button>'
             : (x.future && x.url ? '<a class="mk-chip" href="' + _mkEsc(_mkSafeUrl(x.url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span style="color:var(--c-muted);">' + (x.future ? 'Disponible luego' : '—') + '</span>');
           return '<tr><td>' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + '</td><td>' + _mkEsc(x.t) + '</td>' +
-            '<td><span class="mk-pill ' + (x.future ? 'b' : 'g') + '">' + (x.future ? 'Programada' : 'Completada') + '</span></td><td>' + recBtn + '</td></tr>';
+            '<td>' + (x.future ? '<span class="mk-pill b">Programada</span>' : x.st === 'no_show' ? '<span class="mk-pill r">No asistió</span>' : x.st === 'cancelled' ? '<span class="mk-pill">Cancelada</span>' : '<span class="mk-pill g">Completada</span>') + '</td><td>' + recBtn + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }
 
@@ -4241,7 +4241,7 @@ function _mkUpcoming(cb) {
   var now = new Date().toISOString();
   Promise.all([
     sb.from('live_sessions').select('title, scheduled_at, is_active').gte('scheduled_at', now).order('scheduled_at').limit(3),
-    sb.from('meetings_1on1').select('title, scheduled_at').eq('student_id', cUser.id).gte('scheduled_at', now).order('scheduled_at').limit(2),
+    sb.from('meetings_1on1').select('title, scheduled_at').eq('student_id', cUser.id).or('status.is.null,status.neq.cancelled').gte('scheduled_at', now).order('scheduled_at').limit(2),
     sb.from('live_sessions').select('title, discord_url').eq('is_active', true).limit(1)
   ]).then(function(res) {
     var items = [];
@@ -5039,18 +5039,20 @@ function rAdm1on1() {
   c.innerHTML =
     '<div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;">' +
       '<button id="a1on1-tab-mtg" onclick="swA1on1(\'mtg\')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(var(--c-acc),.3);background:rgba(var(--c-acc),.15);color:var(--sl);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">📅 Reuniones próximas</button>' +
+      '<button id="a1on1-tab-past" onclick="swA1on1(\'past\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:var(--c-muted);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">🕘 Pasadas</button>' +
       '<button onclick="openSchModal()" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(var(--c-ok),.25);background:rgba(var(--c-ok),.06);color:rgb(var(--c-ok));font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">➕ Programar reunión</button>' +
       '<button id="a1on1-tab-rec" onclick="swA1on1(\'rec\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:var(--c-muted);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">🎥 Grabaciones</button>' +
     '</div>' +
     '<div id="a1on1-mtg"></div>' +
+    '<div id="a1on1-past" style="display:none;"></div>' +
     '<div id="a1on1-rec" style="display:none;"></div>';
 
   _rAdm1on1Mtg();
 }
 
 function swA1on1(tab) {
-  var tabs  = { mtg: 'a1on1-tab-mtg', rec: 'a1on1-tab-rec' };
-  var panes = { mtg: 'a1on1-mtg',     rec: 'a1on1-rec' };
+  var tabs  = { mtg: 'a1on1-tab-mtg', past: 'a1on1-tab-past', rec: 'a1on1-tab-rec' };
+  var panes = { mtg: 'a1on1-mtg',     past: 'a1on1-past',     rec: 'a1on1-rec' };
   Object.keys(tabs).forEach(function(t) {
     var btn  = document.getElementById(tabs[t]);
     var pane = document.getElementById(panes[t]);
@@ -5059,6 +5061,68 @@ function swA1on1(tab) {
     if (pane) pane.style.display = active ? 'block' : 'none';
   });
   if (tab === 'rec') _rAdm1on1Rec();
+  if (tab === 'past') _rAdm1on1Past();
+}
+
+// Recarga la lista de reuniones que esté abierta (próximas o pasadas)
+function _rAdm1on1Refresh() {
+  var p = document.getElementById('a1on1-past');
+  if (p && p.style.display !== 'none') _rAdm1on1Past(); else _rAdm1on1Mtg();
+}
+
+// ── REUNIONES PASADAS: historial con estado (completada / no asistió / cancelada) ──
+var _MTG_ST = [['completed','Completada','c-ok'],['no_show','No asistió','c-bad'],['cancelled','Cancelada','c-muted-rgb']];
+function _rAdm1on1Past() {
+  var el = document.getElementById('a1on1-past'); if (!el) return;
+  el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
+  var lim = new Date(Date.now() - 1800000).toISOString();
+  sb.from('meetings_1on1')
+    .select('*, profiles(full_name, avatar_url)')
+    .lt('scheduled_at', lim)
+    .order('scheduled_at', { ascending: false })
+    .limit(200)
+    .then(function(r) {
+      if (r.error) { el.innerHTML = '<div style="color:rgb(var(--c-bad));font-size:.84rem;">Error: ' + _mkEsc(r.error.message) + '</div>'; return; }
+      var data = r.data || [];
+      if (!data.length) {
+        el.innerHTML = '<div style="border:1px dashed rgba(var(--c-acc),.18);border-radius:10px;padding:30px;text-align:center;color:var(--c-faint);font-size:.84rem;">Aún no hay reuniones pasadas.</div>';
+        return;
+      }
+      var unmarked = data.filter(function(m){ return !m.status || m.status === 'scheduled'; }).length;
+      var html = unmarked ? '<div style="font-size:.78rem;color:var(--c-muted);margin-bottom:12px;">' + unmarked + ' sin marcar. Si no las marcas, al alumno le aparecen como completadas.</div>' : '';
+      data.forEach(function(m) {
+        var d = new Date(m.scheduled_at);
+        var name = (m.profiles && m.profiles.full_name) ? m.profiles.full_name : 'Alumno';
+        var initials = name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+        var chips = _MTG_ST.map(function(o) {
+          var on = m.status === o[0];
+          var col = o[2] === 'c-muted-rgb' ? 'var(--c-muted)' : 'rgb(var(--' + o[2] + '))';
+          var bg  = o[2] === 'c-muted-rgb' ? 'rgba(var(--c-ov),.10)' : 'rgba(var(--' + o[2] + '),.14)';
+          return '<button onclick="setMtgStatus(\'' + m.id + '\',\'' + (on ? 'scheduled' : o[0]) + '\')" style="padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid ' + (on ? col : 'var(--br)') + ';background:' + (on ? bg : 'transparent') + ';color:' + (on ? col : 'var(--c-muted)') + ';">' + o[1] + '</button>';
+        }).join('');
+        html +=
+          '<div style="border:1px solid var(--k-line,var(--br));border-radius:12px;padding:12px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">' +
+            '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0;">' + _mkEsc(initials) + '</div>' +
+            '<div style="flex:1;min-width:160px;">' +
+              '<div style="font-size:.88rem;font-weight:600;color:var(--c-text);">' + _mkEsc(name) + '</div>' +
+              '<div style="font-size:.75rem;color:var(--c-muted);margin-top:2px;">' + _mkEsc(m.title || 'Sesión 1-1') + ' · ' + d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + chips + '</div>' +
+            '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+              '<button onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title||'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url||'') + '\',\'' + m.scheduled_at + '\')" style="background:rgba(var(--c-acc),.06);border:1px solid rgba(var(--c-acc),.15);color:rgb(var(--c-acc));width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+              '<button onclick="delAdmMtg(\'' + m.id + '\')" style="background:rgba(var(--c-bad),.06);border:1px solid rgba(var(--c-bad),.15);color:rgb(var(--c-bad));width:28px;height:28px;border-radius:6px;font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Eliminar">✕</button>' +
+            '</div>' +
+          '</div>';
+      });
+      el.innerHTML = html;
+    });
+}
+
+function setMtgStatus(id, st) {
+  sb.from('meetings_1on1').update({ status: st }).eq('id', id).then(function(r) {
+    if (r.error) return tst('No se pudo guardar el estado: ' + r.error.message, 1);
+    _rAdm1on1Past();
+  });
 }
 
 function _rAdm1on1Mtg() {
@@ -5240,6 +5304,7 @@ function saveSchModal() {
     student_id:   studentId,
     scheduled_at: new Date(date + 'T' + time).toISOString(),
     title:        title.trim() || 'Sesión 1-1',
+    meet_url:     url.trim() || null,
     status:       'scheduled'
   }).then(function(r) {
     if (r.error) { tst('Error: '+r.error.message,1); if(btn){btn.disabled=false;btn.textContent='Programar sesión';} return; }
@@ -5300,7 +5365,7 @@ function saveEditMtg(id) {
     if (r.error) { tst('Error: '+r.error.message,1); if(btn){btn.disabled=false;btn.textContent='Guardar cambios';} return; }
     tst('✓ Reunión actualizada');
     var m = document.getElementById('edit-mtg-modal'); if(m) m.remove();
-    _rAdm1on1Mtg();
+    _rAdm1on1Refresh();
   });
 }
 
@@ -5481,7 +5546,7 @@ function delAdmMtg(id) {
   sb.from('meetings_1on1').delete().eq('id', id).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Reunión eliminada');
-    rAdm1on1();
+    _rAdm1on1Refresh();
   });
 }
 

@@ -77,6 +77,19 @@ module.exports = async function handler(req, res) {
     const urls = [`https://nfs.faireconomy.media/ff_calendar_thisweek.json`];
     if (dow === 5 || dow === 6 || dow === 0) urls.push(`https://nfs.faireconomy.media/ff_calendar_nextweek.json`);
 
+    // Resultados reales ("Actual"): el feed gratis de ForexFactory no los trae,
+    // así que los pedimos a JB News (mismo calendario de ForexFactory) si hay llave.
+    const jbKey = process.env.JBNEWS_API_KEY;
+    let jbStatus = jbKey ? 'sin respuesta' : 'sin llave';
+    const jbPromise = jbKey
+      ? fetch('https://www.jblanked.com/news/api/forex-factory/calendar/week/?currency=USD&impact=High', {
+          headers: { 'Authorization': 'Api-Key ' + jbKey.trim(), 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(8000),
+        }).then(r => { jbStatus = 'HTTP ' + r.status; return r.ok ? r.json() : []; })
+          .then(d => { if (Array.isArray(d)) jbStatus = 'ok (' + d.length + ' noticias)'; return d; })
+          .catch(e => { jbStatus = 'error: ' + (e && e.message); return []; })
+      : Promise.resolve([]);
+
     const results = await Promise.allSettled(
       urls.map(url =>
         fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(8000) })
@@ -112,6 +125,22 @@ module.exports = async function handler(req, res) {
 
     const s = v => (v!=null && String(v).trim()!=='') ? String(v).trim() : '—';
 
+    // Índice de resultados de JB News por día + nombre del evento
+    const jbList = await jbPromise;
+    const norm = t => String(t||'').toLowerCase().replace(/\s+/g, ' ').trim();
+    const jbActual = {};
+    (Array.isArray(jbList) ? jbList : []).forEach(j => {
+      const day = String(j.Date || '').slice(0, 10).replace(/\./g, '-');
+      if (j.Actual === null || j.Actual === undefined || j.Actual === '') return;
+      jbActual[day + '|' + norm(j.Name)] = j.Actual;
+    });
+    // Le pone al número el mismo sufijo que usa ForexFactory (%, K, M, B)
+    const withUnit = (val, like) => {
+      const m = String(like || '').match(/([%KMBT])$/i);
+      return String(val) + (m && !String(val).match(/[%KMBT]$/i) ? m[1] : '');
+    };
+    const nowMs = Date.now();
+
     const events = display.map(e => ({
       date:     toDateLabel(toIsoDate(e.date)),
       isoDate:  toIsoDate(e.date),
@@ -122,7 +151,14 @@ module.exports = async function handler(req, res) {
       impact:   'high',
       forecast: s(e.forecast),
       previous: s(e.previous),
-      actual:   s(e.actual),
+      actual:   (function() {
+        const own = s(e.actual);
+        if (own !== '—') return own;
+        // Solo si la noticia ya salió (evita mostrar un 0 antes de tiempo)
+        if (toSortKey(e.date) > nowMs) return own;
+        const v = jbActual[toIsoDate(e.date) + '|' + norm(e.title)];
+        return (v === undefined) ? own : withUnit(v, e.forecast || e.previous);
+      })(),
     }))
     .filter(e => e.name)
     .sort((a, b) => a.sortKey - b.sortKey);
@@ -142,6 +178,7 @@ module.exports = async function handler(req, res) {
       timezone: 'UTC-5 (Ecuador)',
       today:    todayStr,
       events:   final,
+      jbnews:   jbStatus, // para revisar en /api/calendar si JB News responde
     };
     res.status(200).json(lastGood);
 

@@ -82,10 +82,10 @@ module.exports = async function handler(req, res) {
     const jbKey = process.env.JBNEWS_API_KEY;
     let jbStatus = jbKey ? 'sin respuesta' : 'sin llave';
     let jbRaw = '';
-    const jbGet = (path) => fetch('https://www.jblanked.com/news/api/forex-factory/calendar/' + path, {
+    const jbGet = (path, src) => fetch('https://www.jblanked.com/news/api/' + (src || 'forex-factory') + '/calendar/' + path, {
         headers: { 'Authorization': 'Api-Key ' + jbKey.trim(), 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(8000),
-      }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      }).then(r => r.ok ? r.json() : r.text().then(t => { throw new Error('HTTP ' + r.status + ' ' + String(t).replace(/\s+/g, ' ').slice(0, 160)); }))
         .then(d => {
           if (Array.isArray(d)) return d;
           if (d && Array.isArray(d.data)) return d.data;
@@ -98,7 +98,13 @@ module.exports = async function handler(req, res) {
           .then(d => { jbStatus = 'week: ' + d.length; if (d.length) return d;
             return new Promise(ok => setTimeout(ok, 1100)).then(() => jbGet('range/?from=' + thisMon + '&to=' + new Date(new Date(thisMon).getTime() + 6*86400000).toISOString().slice(0,10))
               .then(d2 => { jbStatus += ', range: ' + d2.length; return d2; })); })
-          .catch(e => { jbStatus = 'error: ' + (e && e.message); return []; })
+          .catch(e => {
+            // Si ForexFactory no está permitido con esta llave, probamos el calendario de MQL5
+            jbStatus = 'forex-factory error: ' + (e && e.message);
+            return new Promise(ok => setTimeout(ok, 1100)).then(() => jbGet('week/', 'mql5'))
+              .then(d => { jbStatus += ' | mql5 week: ' + d.length; return d; })
+              .catch(e2 => { jbStatus += ' | mql5 error: ' + (e2 && e2.message); return []; });
+          })
       : Promise.resolve([]);
 
     const results = await Promise.allSettled(

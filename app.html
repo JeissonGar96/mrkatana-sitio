@@ -1531,8 +1531,7 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 *::-webkit-scrollbar{width:8px;height:8px;}
 *::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent;}
 *::-webkit-scrollbar-button{display:none;width:0;height:0;}
-*::-webkit-scrollbar-thumb{background:transparent;border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
-.sb-on::-webkit-scrollbar-thumb{background:rgba(var(--c-ov),.16);border:2px solid transparent;background-clip:padding-box;}
+*::-webkit-scrollbar-thumb{background:rgba(var(--c-ov),.13);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
 *::-webkit-scrollbar-thumb:hover{background:rgba(var(--c-ov),.26);border:2px solid transparent;background-clip:padding-box;}
 @supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.3) transparent;}}
 /* ══ Pantallas grandes: las tarjetas guardan el tamaño de la laptop y entran más por fila ══ */
@@ -1547,34 +1546,6 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .mk-ad.mk-ad-img img{position:relative;max-width:1000px;margin:0 auto;}
 .mk-ad.mk-ad-img img.mk-ad-bg{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;filter:blur(32px) brightness(.5);transform:scale(1.2);}
 </style>
-<script>
-// Barras de scroll como en Mac: aparecen al mover el mouse o hacer scroll sobre la sección y se ocultan solas
-(function(){
-  var on = [], timer = null;
-  function scrollables(el) {
-    var out = [];
-    for (; el && el.nodeType === 1; el = el.parentElement) {
-      if (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) {
-        var cs = getComputedStyle(el);
-        if (/(auto|scroll)/.test(cs.overflowY + cs.overflowX)) out.push(el);
-      }
-    }
-    return out;
-  }
-  function show(target) {
-    var els = scrollables(target);
-    on.forEach(function(e){ if (els.indexOf(e) < 0) e.classList.remove('sb-on'); });
-    els.forEach(function(e){ e.classList.add('sb-on'); });
-    on = els;
-    clearTimeout(timer);
-    timer = setTimeout(function(){ on.forEach(function(e){ e.classList.remove('sb-on'); }); on = []; }, 1000);
-  }
-  var pending = null;
-  function queue(t) { if (!pending) requestAnimationFrame(function(){ var x = pending; pending = null; if (x) show(x); }); pending = t; }
-  document.addEventListener('mousemove', function(e){ queue(e.target); }, { passive: true });
-  document.addEventListener('scroll', function(e){ queue(e.target === document ? document.documentElement : e.target); }, { passive: true, capture: true });
-})();
-</script>
 <script>
 // Tema Dark/Light guardado en este navegador
 try { var _t = localStorage.getItem('mk-theme'); if (_t === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}

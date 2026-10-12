@@ -1736,6 +1736,9 @@ function _renderSection(state) {
   var _alay = document.querySelector('.alay');
   // Panel derecho "Tu perfil" en todas las pestañas del alumno (no en Admin ni dentro de una clase)
   var _rpOn = state.section !== 'admin' && state.section !== 'clases';
+  // Si salía de una llamada en vivo navegando, se cierra la sala
+  if (_alay) _alay._lvRp = false;
+  if (typeof _lvApi !== 'undefined' && _lvApi) { try { _lvApi.dispose(); } catch (e) {} _lvApi = null; }
   if (_alay) _alay.classList.toggle('with-rp', _rpOn);
   if (_rpOn) _mkRenderRPanel(!_hasClasesAccess());
   else if (state.section === 'admin' && cProfile && cProfile.role === 'admin') { if (_alay) _alay.classList.add('with-rp'); _mkRenderAdminRP(); }
@@ -3142,6 +3145,7 @@ function _mkSkelTab() {
     '<div class="mk-row2"><div class="mk-skel" style="height:260px;border-radius:20px;"></div><div class="mk-skel" style="height:260px;border-radius:20px;"></div></div>';
 }
 function rSes() {
+  if (_lvApi && document.getElementById('lv-room-box')) return; // no cortar una llamada en curso
   var m = document.getElementById('amain');
   m.innerHTML = _mkSkelTab();
 
@@ -3460,11 +3464,14 @@ function _lvLoadJitsi(appId) {
 }
 function _lvLeaveRoom() {
   if (_lvApi) { try { _lvApi.dispose(); } catch (e) {} _lvApi = null; }
+  var al = document.querySelector('.alay'); if (al && al._lvRp) { al.classList.add('with-rp'); al._lvRp = false; }
   var cur = history.state;
   if (cur && cur.section === 'sesiones') rSes();
 }
 function _lvJoinRoom(sessionId, title) {
   var m = document.getElementById('amain'); if (!m) return;
+  // Durante la llamada se esconde el panel derecho para que el video use todo el ancho
+  var al = document.querySelector('.alay'); if (al && al.classList.contains('with-rp')) { al.classList.remove('with-rp'); al._lvRp = true; }
   var msgs = { no_live_plan: 'Tu plan no incluye las sesiones en vivo.', not_live: 'La sesión todavía no empieza. Entra cuando aparezca EN VIVO.', missing_key: 'La sala no está configurada todavía.' };
   m.innerHTML = '<div class="lv-room"><div class="lv-room-bar"><span class="mk-pill r">● En vivo</span><b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span><button class="mk-btn ghost" id="lv-leave">Salir de la sesión</button></div>' +
     '<div class="lv-room-box" id="lv-room-box"><div class="lv-room-wait"><span class="spin"></span>Conectando a la sesión...</div></div></div>';
@@ -4103,7 +4110,6 @@ function _buildAdminTabs() {
 
   var allTabs = [
     ['st','Alumnos','access_students'],
-    ['se','Sesiones','access_sesiones'],
     ['1on1','Reuniones 1-1','access_students'],
     ['codes','Planes', ['access_plans','access_discord','access_codes']],
     ['roadmap','Roadmap','access_roadmap'],

@@ -1525,6 +1525,20 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .lv-go .mk-emp-ic{transition:transform .3s,color .3s;}
 .lv-go-tx{margin-top:8px;font-size:.8rem;font-weight:700;color:rgb(var(--c-acc));}
 .lv-start{background:rgb(var(--c-bad)) !important;color:#fff !important;}
+
+/* ══ Barras de scroll sutiles (Windows se veían grises y con flechas) ══ */
+.amain,.lp2 .lesson-main{scrollbar-width:auto !important;}
+*::-webkit-scrollbar{width:8px;height:8px;}
+*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent;}
+*::-webkit-scrollbar-button{display:none;width:0;height:0;}
+*::-webkit-scrollbar-thumb{background:rgba(var(--c-ov),.13);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
+*::-webkit-scrollbar-thumb:hover{background:rgba(var(--c-ov),.26);border:2px solid transparent;background-clip:padding-box;}
+@supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.3) transparent;}}
+/* ══ Pantallas grandes: el contenido no crece más que en un portátil ══ */
+@media(min-width:861px){
+  .acol .atop,.acol .amain{padding-left:max(26px,calc((100% - 1440px) / 2)) !important;padding-right:max(26px,calc((100% - 1440px) / 2)) !important;}
+  .alay.with-rp .acol .atop,.alay.with-rp .acol .amain{padding-left:max(26px,calc((100% - 1280px) / 2)) !important;padding-right:max(26px,calc((100% - 1280px) / 2)) !important;}
+}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3387,8 +3401,9 @@ function _lvQuickStart() {
         '<div class="wp-field"><label class="wp-label">Título</label><input id="lv-qt" class="wp-input" placeholder="Ej: Análisis en vivo de MNQ"></div>' +
         '<div class="wp-field"><label class="wp-label">Descripción <i class="lv-opt">opcional</i></label><input id="lv-qd" class="wp-input" placeholder="De qué trata"></div>' +
         '<div class="wp-field"><label class="wp-label">Duración aproximada</label><div class="lv-durs">' +
-          _LIVE_DUR.filter(function(x){ return x[0]; }).map(function(x){ return '<button type="button" class="lv-dur' + (x[0] === 60 ? ' on' : '') + '" data-m="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
-        '</div><div class="lv-hint">Se apaga sola al terminar; también puedes terminarla antes.</div></div>' +
+          '<button type="button" class="lv-dur on" data-m="-1">Sin límite</button>' +
+          _LIVE_DUR.filter(function(x){ return x[0]; }).map(function(x){ return '<button type="button" class="lv-dur" data-m="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+        '</div><div class="lv-hint" id="lv-qh">Sigue al aire hasta que toques "Terminar en vivo".</div></div>' +
         '<div class="lv-foot" style="margin-top:18px;"><span style="flex:1"></span><button class="wp-btn-ghost" data-x>Cancelar</button><button class="wp-btn-primary lv-start" id="lv-qgo">● Iniciar en vivo</button></div>' +
       '</div>' +
     '</div>';
@@ -3399,20 +3414,21 @@ function _lvQuickStart() {
     b.addEventListener('click', function() {
       ov.querySelectorAll('.lv-dur').forEach(function(x){ x.classList.remove('on'); });
       b.classList.add('on');
+      ov.querySelector('#lv-qh').textContent = b.dataset.m === '-1' ? 'Sigue al aire hasta que toques "Terminar en vivo".' : 'Se apaga sola al terminar; también puedes terminarla antes.';
     });
   });
   var tIn = ov.querySelector('#lv-qt'); setTimeout(function(){ tIn.focus(); }, 50);
   ov.querySelector('#lv-qgo').addEventListener('click', function() {
     var btn = this, t = tIn.value.trim();
     if (!t) { tIn.focus(); return tst('Ponle un título a tu en vivo', 1); }
-    var on = ov.querySelector('.lv-dur.on'), mins = on ? +on.dataset.m : 60;
+    var on = ov.querySelector('.lv-dur.on'), mins = on ? +on.dataset.m : -1;
     var now = new Date();
     btn.disabled = true; btn.textContent = 'Iniciando...';
     sb.from('live_sessions').insert({
       title: t,
       description: ov.querySelector('#lv-qd').value.trim(),
       scheduled_at: now.toISOString(),
-      end_time: new Date(now.getTime() + mins * 60000).toISOString(),
+      end_time: mins > 0 ? new Date(now.getTime() + mins * 60000).toISOString() : null,
       discord_url: 'jitsi',
       recording_url: null,
       is_active: true,

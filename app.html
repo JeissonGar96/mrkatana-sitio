@@ -1539,6 +1539,16 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
   .acol .atop,.acol .amain{padding-left:max(26px,calc((100% - 1440px) / 2)) !important;padding-right:max(26px,calc((100% - 1440px) / 2)) !important;}
   .alay.with-rp .acol .atop,.alay.with-rp .acol .amain{padding-left:max(26px,calc((100% - 1280px) / 2)) !important;padding-right:max(26px,calc((100% - 1280px) / 2)) !important;}
 }
+/* ══ Aviso "En vivo ahora" del Dashboard ══ */
+.mk-livebar{align-items:center;gap:16px;margin-bottom:20px;padding:16px 18px;border-radius:18px;background:var(--c-card);background-image:linear-gradient(100deg,rgba(var(--c-bad),.10),rgba(var(--c-bad),0) 55%);border:1px solid rgba(var(--c-bad),.28);box-shadow:var(--k-sh);}
+.mk-livebar-ic{position:relative;width:46px;height:46px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-bad),.13);color:rgb(var(--c-bad));}
+.mk-livebar-ic svg{width:20px;height:20px;}
+.mk-livebar-dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:rgb(var(--c-bad));border:2px solid var(--c-card);animation:pulse 1.5s infinite;}
+.mk-livebar-tx{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;}
+.mk-livebar-tit{font-weight:700;font-size:1rem;color:var(--c-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.mk-livebar-sub{font-size:.8rem;color:var(--c-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.mk-livebar .mk-btn{flex-shrink:0;}
+@media(max-width:600px){.mk-livebar{flex-wrap:wrap;}.mk-livebar .mk-btn{width:100%;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2317,10 +2327,10 @@ function rDash(liveOnly) {
     '<div id="mk-ads"></div>' +
 
     // En vivo ahora (aparece solo si hay una sesión activa)
-    '<div id="lbanner" style="display:none;background:rgba(var(--c-ok),.07);border:1px solid rgba(var(--c-ok),.18);border-radius:16px;padding:14px 18px;align-items:center;gap:12px;margin-bottom:20px;">' +
-      '<div style="width:8px;height:8px;border-radius:50%;background:rgb(var(--c-ok));flex-shrink:0;animation:pulse 1.5s infinite;"></div>' +
-      '<div style="flex:1;"><div id="ltit" style="font-weight:600;font-size:.92rem;"></div><div style="font-size:.78rem;color:var(--c-muted);">Sesión en curso</div></div>' +
-      '<a id="llnk" href="#" target="_blank" style="background:rgb(var(--c-ok));color:#08130c;padding:8px 15px;border-radius:20px;font-weight:700;font-size:.8rem;text-decoration:none;">Unirme →</a>' +
+    '<div id="lbanner" class="mk-livebar" style="display:none;">' +
+      '<div class="mk-livebar-ic">' + MK_IC.live + '<span class="mk-livebar-dot"></span></div>' +
+      '<div class="mk-livebar-tx"><span class="mk-pill r">● En vivo ahora</span><div id="ltit" class="mk-livebar-tit"></div><div id="lsub" class="mk-livebar-sub">Sesión en curso</div></div>' +
+      '<button id="llnk" class="mk-btn">Unirme a la sesión →</button>' +
     '</div>' +
 
     // Tres tarjetas: progreso, próxima sesión grupal, próxima 1-1
@@ -2460,7 +2470,18 @@ function chkLive() {
   sb.from('live_sessions').select('*').eq('is_active',true).limit(1).then(function(r) {
     if (r.data && r.data.length) {
       var b = document.getElementById('lbanner');
-      if (b) { b.style.display='flex'; document.getElementById('ltit').textContent=r.data[0].title; document.getElementById('llnk').href=r.data[0].discord_url||'#'; }
+      if (b) {
+        var ls = r.data[0];
+        b.style.display = 'flex';
+        document.getElementById('ltit').textContent = ls.title || 'Sesión en vivo';
+        if (ls.description) document.getElementById('lsub').textContent = ls.description;
+        document.getElementById('llnk').onclick = function() {
+          // Sala en la plataforma: entra directo a la llamada; link externo: lo abre
+          if (_isJitsi(ls.discord_url) && _hasLiveAccess()) { _lvAutoJoin = { id: ls.id, title: ls.title }; navigateTo('sesiones'); }
+          else if (!_isJitsi(ls.discord_url) && ls.discord_url && _hasLiveAccess()) window.open(ls.discord_url, '_blank');
+          else navigateTo('sesiones');
+        };
+      }
     }
   });
 }
@@ -3211,6 +3232,8 @@ function rSes() {
     }
 
     m.innerHTML = html;
+    // Viene del botón "Unirme" del Dashboard: entra directo a la llamada
+    if (_lvAutoJoin) { var aj = _lvAutoJoin; _lvAutoJoin = null; setTimeout(function(){ _lvJoinRoom(aj.id, aj.title); }, 0); }
     if (ed && !m._lvBound) m._lvBound = true, m.addEventListener('click', function(e) {
       var b = e.target.closest('[data-lv]'); if (!b || !m.contains(b)) return;
       e.preventDefault(); e.stopPropagation();
@@ -3447,6 +3470,7 @@ function _lvQuickStart() {
 
 // ── Sala de Jitsi (8x8) dentro de la pestaña En vivo ──
 var _lvApi = null;
+var _lvAutoJoin = null;
 function _lvLoadJitsi(appId) {
   if (window.JitsiMeetExternalAPI) return Promise.resolve();
   return new Promise(function(ok, ko) {

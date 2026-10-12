@@ -1391,8 +1391,6 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .lp2 .lesson-no-video{background:radial-gradient(80% 90% at 70% 20%,rgba(212,175,55,.18),transparent 60%),linear-gradient(135deg,#1c1a14,#0d0e11) !important;}
 .lp2 .lesson-no-video div{color:rgba(255,255,255,.45) !important;}
 /* Paso 22: editar el curso desde la pestaña Curso (solo admin/staff) */
-.ce-bar{display:flex;align-items:center;gap:10px;margin:18px 0 -4px;padding:10px 14px;border:1px dashed rgba(var(--c-acc),.45);border-radius:14px;background:rgba(var(--c-acc),.06);font-size:.82rem;color:var(--c-text2);}
-.ce-bar b{color:rgb(var(--c-acc));font-weight:700;}
 .ce-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;background:rgb(var(--c-acc));color:var(--c-ongold);font-weight:700;font-size:.8rem;padding:8px 14px;border-radius:30px;cursor:pointer;font-family:inherit;}
 .ce-btn:hover{background:rgb(var(--c-acc2));}
 .ce-btn.gh{background:transparent;border:1px solid var(--k-line);color:var(--c-text);}
@@ -2436,9 +2434,6 @@ function showLevels() {
   if (!ed) lq = lq.eq('is_published', true);
   lq.order('sort_order').then(function(r) {
     var g = document.getElementById('lvl-grid'); if (!g) return;
-    if (ed && !document.getElementById('ce-bar')) {
-      g.insertAdjacentHTML('beforebegin', '<div class="ce-bar" id="ce-bar"><b>Modo edición</b><span>Solo lo ves tú</span><span style="flex:1"></span><button class="ce-btn" onclick="_ceNew(\'level\')">' + CE_IC.plus + ' Nuevo nivel</button></div>');
-    }
     // Progreso por nivel: clases publicadas vs. completadas por el alumno
     var lvLessons = {};
     (r.data || []).forEach(function(lv) {

@@ -22,17 +22,28 @@ function b64url(x) {
     .toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
-// Acepta la llave pegada en Vercel tal cual, con \n escritos o toda en una sola línea
-function normalizeKey(raw) {
-  let k = String(raw || '').replace(/\\n/g, '\n').replace(/\r/g, '').trim().replace(/^["']|["']$/g, '');
-  const m = k.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
-  if (!m) return k;
-  const body = m[2].replace(/\s+/g, '');
-  return '-----BEGIN ' + m[1] + '-----\n' + body.match(/.{1,64}/g).join('\n') + '\n-----END ' + m[1] + '-----\n';
+// Acepta la llave pegada en Vercel tal cual: con \n escritos, en una sola línea,
+// o solo el bloque de letras sin las líneas BEGIN/END.
+function wrapPem(label, body) {
+  return '-----BEGIN ' + label + '-----\n' + body.match(/.{1,64}/g).join('\n') + '\n-----END ' + label + '-----\n';
+}
+function loadPrivateKey(raw) {
+  const k = String(raw || '').replace(/\\n/g, '\n').replace(/\r/g, '').trim().replace(/^["']|["']$/g, '');
+  const m = k.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END [A-Z ]+-----/);
+  const label = m ? m[1] : '';
+  const body = (m ? m[2] : k).replace(/[^A-Za-z0-9+/=]/g, '');
+  if (/PUBLIC/.test(label)) { const e = new Error('public_key_pasted'); e.code = 'public_key'; throw e; }
+  if (!body) { const e = new Error('empty_key'); e.code = 'empty_key'; throw e; }
+  const tries = label ? [label, 'PRIVATE KEY', 'RSA PRIVATE KEY'] : ['PRIVATE KEY', 'RSA PRIVATE KEY'];
+  for (const t of tries) {
+    try { return crypto.createPrivateKey(wrapPem(t, body)); } catch (e) {}
+  }
+  try { return crypto.createPrivateKey({ key: Buffer.from(body, 'base64'), format: 'der', type: 'pkcs8' }); } catch (e) {}
+  const e = new Error('bad_key_format (' + (label || 'sin BEGIN') + ', ' + body.length + ' letras)'); e.code = 'bad_key'; throw e;
 }
 
 function signJwt(payload) {
-  const key = normalizeKey(process.env.JAAS_PRIVATE_KEY);
+  const key = loadPrivateKey(process.env.JAAS_PRIVATE_KEY);
   const head = b64url({ alg: 'RS256', kid: KEY_ID, typ: 'JWT' });
   const body = b64url(payload);
   const sig = crypto.createSign('RSA-SHA256').update(head + '.' + body).sign(key)
@@ -112,6 +123,7 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({ jwt: jwt, room: APP_ID + '/' + room, appId: APP_ID, moderator: isMod });
   } catch (e) {
+    if (e && e.code) return res.status(500).json({ error: e.code, detail: e.message });
     return res.status(500).json({ error: 'server_error', detail: e && e.message });
   }
 };

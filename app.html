@@ -1308,6 +1308,88 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
   #econ-cal .cal-event{grid-template-columns:56px 24px 1fr;padding:12px 0;margin:0;}
   #econ-cal .cal-values{padding-left:0;}
 }
+/* Paso 21: reproductor de clases rediseñado (misma estructura) */
+.lp2.lesson-layout{background:transparent !important;border:none !important;box-shadow:none !important;gap:20px;overflow:visible !important;border-radius:0 !important;}
+.lp2 .lesson-sidebar{background:var(--c-card) !important;border:1px solid var(--k-line) !important;border-radius:20px !important;box-shadow:var(--k-sh);padding-bottom:8px;}
+.lp2 .lesson-main{background:transparent !important;border-radius:0 !important;padding-right:4px;scrollbar-width:thin;}
+.lp2 .lesson-sidebar-header{padding:16px 16px 14px;border-bottom:1px solid var(--k-line);background:var(--c-card);border-radius:20px 20px 0 0;}
+.lp-hrow{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.lp-hrow small{display:block;font-size:.66rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--c-muted);}
+.lp-hrow b{display:block;font-size:1.02rem;color:var(--c-text);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lp-back{width:36px;height:36px;flex-shrink:0;border-radius:11px;border:1px solid var(--k-line);background:rgba(var(--c-ov),.05);color:var(--c-text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s,color .2s,border-color .2s;}
+.lp-back:hover{background:rgba(var(--c-acc),.14);color:rgb(var(--c-acc));border-color:rgba(var(--c-acc),.4);}
+.lp-prog-row{display:flex;justify-content:space-between;font-size:.74rem;color:var(--c-muted);margin:8px 0 7px;}
+.lp-prog-row em{font-style:normal;color:rgb(var(--c-acc));font-weight:700;}
+.lp-prog-bar{height:6px;border-radius:6px;background:rgba(var(--c-ov),.08);overflow:hidden;}
+.lp-prog-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,rgb(var(--c-accd)),rgb(var(--c-acc)));border-radius:6px;transition:width .4s;}
+.lp2 .ls-module-section{border:none !important;}
+.lp2 .ls-module-header{gap:12px;padding:14px 16px;background:transparent !important;align-items:center;}
+.lp2 .ls-module-header:hover .ls-mod-title{color:rgb(var(--c-acc)) !important;}
+.lp-num{width:28px;height:28px;flex-shrink:0;border-radius:9px;background:rgba(var(--c-acc),.13);color:rgb(var(--c-acc));font-size:.78rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.lp2 .ls-mod-arrow{order:9;margin-left:auto;color:var(--c-muted);}
+.lp2 .ls-mod-title{text-transform:none !important;letter-spacing:0 !important;font-size:.88rem !important;font-weight:700 !important;color:var(--c-text) !important;transition:color .2s;}
+.lp2 .ls-mod-meta{font-size:.72rem !important;color:var(--c-muted) !important;}
+.lp-mbar{display:block;width:120px;height:3px;border-radius:3px;background:rgba(var(--c-ov),.08);margin-top:6px;overflow:hidden;}
+.lp-mbar i{display:block;height:100%;background:rgb(var(--c-acc));}
+.lp2 .ls-lessons-wrap{background:transparent !important;padding:0 8px 6px;}
+.lp2 .ls-lesson-item{border-radius:12px;padding:8px 10px;gap:12px;border:none !important;align-items:center;margin-bottom:2px;}
+.lp2 .ls-lesson-item:hover{background:rgba(var(--c-ov),.04);}
+.lp2 .ls-lesson-item.active{background:rgba(var(--c-acc),.1) !important;box-shadow:inset 3px 0 0 rgb(var(--c-acc));}
+.lp2 .ls-lesson-item.active .ls-lesson-title{color:rgb(var(--c-acc)) !important;}
+.lp-th{position:relative;flex-shrink:0;}
+.lp2 .ls-lesson-thumb{width:68px;height:40px;border-radius:8px;object-fit:cover;display:flex;}
+.lp2 .ls-lesson-thumb-empty{background:linear-gradient(135deg,#2b2412,#15161a) !important;border:none !important;}
+.lp-dur{position:absolute;right:3px;bottom:3px;font-size:.56rem;font-weight:700;color:#fff;background:rgba(0,0,0,.7);padding:1px 4px;border-radius:4px;}
+.lp2 .ls-lesson-title{font-size:.82rem !important;font-weight:600;color:var(--c-text) !important;white-space:normal !important;line-height:1.3;}
+.lp2 .ls-lesson-meta{font-size:.7rem !important;color:var(--c-muted) !important;margin-top:3px;}
+.lp-st{width:20px;height:20px;flex-shrink:0;border-radius:50%;border:1.5px solid var(--k-line);display:flex;align-items:center;justify-content:center;margin-left:auto;}
+.lp-st.ok{background:rgb(var(--c-ok));border-color:transparent;color:#fff;}
+.lp-st svg{width:11px;height:11px;}
+.lp2 .lesson-video-wrap{border-radius:20px;overflow:hidden;box-shadow:var(--k-sh-hi);border:1px solid var(--k-line);}
+.lp2 .lesson-info-panel{padding:22px 4px 30px !important;}
+.lp-crumb{display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--c-muted);margin-bottom:10px;}
+.lp-crumb i{font-style:normal;opacity:.6;}
+.lp-crumb em{font-style:normal;margin-left:auto;padding:4px 10px;border-radius:20px;background:rgba(var(--c-acc),.12);color:rgb(var(--c-acc));font-weight:700;font-size:.7rem;white-space:nowrap;}
+.lp2 .lesson-title-big{font-family:inherit !important;text-transform:none !important;letter-spacing:-.3px !important;font-size:1.75rem !important;font-weight:800 !important;color:var(--c-text) !important;margin-bottom:10px !important;}
+.lp-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;}
+.lp-chips span{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;color:var(--c-text2);background:rgba(var(--c-ov),.05);border:1px solid var(--k-line);padding:5px 11px;border-radius:20px;}
+.lp2 .lesson-actions{padding-bottom:22px;border-bottom:1px solid var(--k-line);margin-bottom:20px;gap:10px;flex-wrap:wrap;}
+.lp2 .lesson-done-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(var(--c-ok),.14) !important;border:none !important;color:rgb(var(--c-ok)) !important;border-radius:30px !important;padding:9px 16px !important;font-weight:700;font-size:.8rem;}
+.lp-done-btn{display:inline-flex;align-items:center;gap:8px;border:none;background:rgb(var(--c-ok));color:#fff;font-weight:700;font-size:.82rem;padding:10px 18px;border-radius:30px;cursor:pointer;box-shadow:0 6px 18px rgba(var(--c-ok),.3);transition:transform .2s;}
+.lp-done-btn:hover{transform:translateY(-1px);}
+.lp-nav{border:none;background:rgb(var(--c-acc));color:var(--c-ongold);font-weight:700;font-size:.82rem;padding:10px 18px;border-radius:30px;cursor:pointer;box-shadow:0 4px 14px rgba(var(--c-acc),.22);transition:transform .2s,box-shadow .2s;white-space:nowrap;}
+.lp-nav:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(var(--c-acc),.32);}
+.lp-nav.gh{background:transparent;border:1px solid var(--k-line);color:var(--c-text);box-shadow:none;}
+.lp-nav.gh:hover{border-color:rgba(var(--c-acc),.5);color:rgb(var(--c-acc));}
+.lp-nav:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none;}
+.lp-card{background:var(--c-card);border:1px solid var(--k-line);border-radius:18px;padding:18px 20px;box-shadow:var(--k-sh);margin-bottom:16px;}
+.lp-card-h{font-weight:700;font-size:.95rem;color:var(--c-text);margin-bottom:8px;}
+.lp2 .lesson-desc-text{margin:0 !important;font-size:.88rem !important;color:var(--c-text2) !important;line-height:1.7;}
+.lp2 .lesson-task-box{background:var(--c-card) !important;border:1px solid rgba(var(--c-acc),.3) !important;border-radius:18px !important;padding:18px 20px !important;box-shadow:var(--k-sh);margin-bottom:16px;}
+.lp2 .lesson-task-label{display:flex;align-items:center;gap:10px;text-transform:none !important;letter-spacing:0 !important;font-size:.95rem !important;font-weight:700;color:var(--c-text) !important;margin-bottom:8px;}
+.lp-tic{width:30px;height:30px;border-radius:9px;background:rgba(var(--c-acc),.14);color:rgb(var(--c-acc));display:flex;align-items:center;justify-content:center;}
+.lp2 .lesson-task-text{font-size:.88rem !important;color:var(--c-text2) !important;}
+.lp-ta{margin-top:12px;width:100%;box-sizing:border-box;background:var(--c-bg);border:1px solid var(--k-line);border-radius:12px;padding:12px 14px;color:var(--c-text);font:inherit;font-size:16px;resize:vertical;}
+.lp-ta:focus{outline:none;border-color:rgba(var(--c-acc),.6);box-shadow:0 0 0 3px rgba(var(--c-acc),.15);}
+.lp-next{display:flex;align-items:center;gap:16px;padding:14px;border-radius:18px;border:1px solid var(--k-line);background:linear-gradient(120deg,rgba(var(--c-acc),.1),transparent 60%),var(--c-card);box-shadow:var(--k-sh);cursor:pointer;transition:border-color .2s;}
+.lp-next:hover{border-color:rgba(var(--c-acc),.45);}
+.lp-next-th{width:120px;height:68px;flex-shrink:0;border-radius:12px;background:radial-gradient(80% 90% at 70% 20%,rgba(212,175,55,.3),transparent 60%),linear-gradient(135deg,#1c1a14,#0d0e11);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;}
+.lp-next-th svg{filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));}
+.lp-next-tx{flex:1;min-width:0;}
+.lp-next-tx small{display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgb(var(--c-acc));}
+.lp-next-tx b{display:block;font-size:.98rem;color:var(--c-text);margin:4px 0 2px;}
+.lp-next-tx span{font-size:.76rem;color:var(--c-muted);}
+.lp2.lesson-layout-mobile .lesson-sidebar{border-radius:20px !important;}
+@media(max-width:860px){.lp-next-th{width:84px;height:50px;}.lp-next .lp-nav{display:none;}}
+/* Volver: ruta "‹ Curso / Nivel" */
+.lp-crumbs{display:flex;align-items:center;gap:6px;font-size:.76rem;margin-bottom:8px;min-width:0;}
+.lp-crumbs a{display:inline-flex;align-items:center;gap:3px;color:rgb(var(--c-acc));font-weight:600;cursor:pointer;text-decoration:none;flex-shrink:0;}
+.lp-crumbs a:hover{text-decoration:underline;}
+.lp-crumbs i{font-style:normal;color:var(--c-muted);}
+.lp-crumbs span{color:var(--c-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lp-ltit{display:block;font-size:1.02rem;color:var(--c-text);font-weight:700;}
+.lp2 .lesson-no-video{background:radial-gradient(80% 90% at 70% 20%,rgba(212,175,55,.18),transparent 60%),linear-gradient(135deg,#1c1a14,#0d0e11) !important;}
+.lp2 .lesson-no-video div{color:rgba(255,255,255,.45) !important;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2385,12 +2467,13 @@ function showLessons(mod, level, progress) {
   var m = document.getElementById('amain');
 
   m.innerHTML =
-    '<div class="lesson-layout' + (isMobile ? ' lesson-layout-mobile' : '') + '" id="lesson-layout">' +
+    '<div class="lesson-layout lp2' + (isMobile ? ' lesson-layout-mobile' : '') + '" id="lesson-layout">' +
       '<div class="lesson-sidebar" id="lesson-sidebar">' +
         '<div class="lesson-sidebar-header">' +
-          '<div class="course-back" id="back-levels-btn">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Volver a ' + level.title +
-          '</div>' +
+          '<div class="lp-crumbs"><a id="back-levels-btn" title="Volver a los niveles"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Curso</a><i>/</i><span>' + level.title + '</span></div>' +
+          '<b class="lp-ltit">' + level.title + '</b>' +
+          '<div class="lp-prog-row"><span id="lp-prog-txt">&nbsp;</span><em id="lp-prog-pct"></em></div>' +
+          '<div class="lp-prog-bar"><i id="lp-prog-bar"></i></div>' +
         '</div>' +
         '<div id="lesson-list"><span class="spin"></span></div>' +
       '</div>' +
@@ -2443,6 +2526,7 @@ function showLessons(mod, level, progress) {
     function buildSidebar(prog, currentWeek) {
       list.innerHTML = '';
       var allLessonsFlat = [];
+      var lockedIds = {};
       mr.data.forEach(function(module) {
         var lessons = (module.course_lessons||[]).sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
         lessons.forEach(function(l){ allLessonsFlat.push(l); });
@@ -2472,6 +2556,8 @@ function showLessons(mod, level, progress) {
         var isCurrentMod = mod && module.id === mod.id;
         var doneCount = lessons.filter(function(l){ return prog[l.id]; }).length;
 
+        var modNum = mr.data.indexOf(module) + 1;
+        if (isLocked) lessons.forEach(function(l){ lockedIds[l.id] = true; });
         var modSection = document.createElement('div');
         modSection.className = 'ls-module-section';
 
@@ -2485,9 +2571,11 @@ function showLessons(mod, level, progress) {
               ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
               : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:.2s;' + (isCurrentMod || isMobile ? 'transform:rotate(90deg)' : '') + '"><path d="M9 18l6-6-6-6"/></svg>') +
           '</div>' +
+          '<span class="lp-num">' + modNum + '</span>' +
           '<div class="ls-mod-info">' +
             '<div class="ls-mod-title">' + module.title + (isLocked ? ' <span style="font-size:.65rem;color:var(--c-muted);font-weight:400;">· Disponible semana ' + unlockWeek + '</span>' : '') + '</div>' +
-            '<div class="ls-mod-meta">' + lessons.length + ' clase' + (lessons.length!==1?'s':'') + (doneCount ? ' · ' + doneCount + ' ✓' : '') + '</div>' +
+            '<div class="ls-mod-meta">' + (lessons.length ? doneCount + ' de ' + lessons.length + ' completadas' : 'Sin clases') + '</div>' +
+            (lessons.length ? '<span class="lp-mbar"><i style="width:' + Math.round(doneCount / lessons.length * 100) + '%"></i></span>' : '') +
           '</div>';
 
         var lessonsDiv = document.createElement('div');
@@ -2514,17 +2602,20 @@ function showLessons(mod, level, progress) {
           item.className = 'ls-lesson-item' + (done ? ' done' : '');
           item.id = 'li-' + lesson.id;
           item.innerHTML =
+            '<div class="lp-th">' +
             (thumbUrl
               ? '<img src="' + thumbUrl + '" class="ls-lesson-thumb" onerror="this.style.display=\"none\"" />'
               : '<div class="ls-lesson-thumb ls-lesson-thumb-empty"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--c-ov),.2)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="rgba(var(--c-ov),.15)"/></svg></div>') +
+              (lesson.duration_minutes ? '<b class="lp-dur">' + lesson.duration_minutes + ' min</b>' : '') +
+            '</div>' +
             '<div class="ls-lesson-info">' +
               '<div class="ls-lesson-title">' + lesson.title + '</div>' +
-              '<div class="ls-lesson-meta">' +
-                (done ? '<span style="color:rgb(var(--c-ok));margin-right:3px;">✓</span>' : '') +
-                (lesson.duration_minutes ? lesson.duration_minutes + ' min' : 'Video') +
+              '<div class="ls-lesson-meta">Video' +
+                (lesson.duration_minutes ? ' · ' + lesson.duration_minutes + ' min' : '') +
                 (lesson.has_task ? ' · Tarea' : '') +
               '</div>' +
-            '</div>';
+            '</div>' +
+            '<span class="lp-st' + (done ? ' ok' : '') + '">' + (done ? _LP_CHECK : '') + '</span>';
 
           (function(les, mod_ref) {
             item.addEventListener('click', function() {
@@ -2546,9 +2637,13 @@ function showLessons(mod, level, progress) {
         list.appendChild(modSection);
       });
 
+      window._lpCtx = { level: level, mods: mr.data, locked: lockedIds, prog: prog, all: allLessonsFlat };
+      _lpUpdateProg();
+      _lpFit();
+
       // Desktop auto-play first incomplete lesson
       if (!isMobile && allLessonsFlat.length) {
-        var target = allLessonsFlat.find(function(l){ return !prog[l.id]; }) || allLessonsFlat[0];
+        var target = allLessonsFlat.find(function(l){ return !prog[l.id] && !lockedIds[l.id]; }) || allLessonsFlat[0];
         if (mod) {
           var curMod = mr.data.find(function(mm){ return mm.id === mod.id; });
           if (curMod) {
@@ -2715,6 +2810,19 @@ function playLesson(lesson, allLessons, progress) {
     if (!embedUrl.includes('embed')) embedUrl = '';
   }
 
+  // Datos para la ruta, "Clase X de N", anterior/siguiente
+  var ctx = window._lpCtx || {};
+  var locked = ctx.locked || {};
+  var curMod = (ctx.mods || []).find(function(mm){ return (mm.course_lessons || []).some(function(l){ return l.id === lesson.id; }); });
+  var modLessons = curMod ? (curMod.course_lessons || []).slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); }) : [];
+  var posInMod = modLessons.findIndex(function(l){ return l.id === lesson.id; });
+  var idx = allLessons.findIndex(function(l){ return l.id === lesson.id; });
+  var prevL = null, nextL = null, k;
+  for (k = idx - 1; k >= 0; k--) { if (!locked[allLessons[k].id]) { prevL = allLessons[k]; break; } }
+  for (k = idx + 1; k < allLessons.length; k++) { if (!locked[allLessons[k].id]) { nextL = allLessons[k]; break; } }
+  var nextMod = nextL && (ctx.mods || []).find(function(mm){ return (mm.course_lessons || []).some(function(l){ return l.id === nextL.id; }); });
+  var esc = typeof _mkEsc === 'function' ? _mkEsc : function(x){ return x; };
+
   main.innerHTML =
     '<div class="lesson-player">' +
       '<div class="lesson-video-wrap">' +
@@ -2726,29 +2834,76 @@ function playLesson(lesson, allLessons, progress) {
             '</div>') +
       '</div>' +
       '<div class="lesson-info-panel">' +
+        '<div class="lp-crumb"><span>' + esc((ctx.level && ctx.level.title) || '') + '</span>' + (curMod ? '<i>›</i><span>' + esc(curMod.title) + '</span>' : '') +
+          (posInMod > -1 ? '<em>Clase ' + (posInMod + 1) + ' de ' + modLessons.length + '</em>' : '') + '</div>' +
         '<div class="lesson-title-big">' + lesson.title + '</div>' +
-        (lesson.description ? '<div class="lesson-desc-text">' + lesson.description + '</div>' : '') +
-        (lesson.has_task && lesson.task_instructions
-          ? '<div class="lesson-task-box">' +
-              '<div class="lesson-task-label">' +
-                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>' +
-                ' Tarea' +
-              '</div>' +
-              '<div class="lesson-task-text">' + lesson.task_instructions + '</div>' +
-              (!done ? '<textarea id="task-input" class="ai" placeholder="Escribe tu respuesta o pega un link..." rows="3" style="margin-top:10px;width:100%;box-sizing:border-box;resize:vertical;font-size:16px;"></textarea>' : '') +
-            '</div>'
-          : '') +
+        '<div class="lp-chips">' +
+          (lesson.duration_minutes ? '<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' + lesson.duration_minutes + ' min</span>' : '') +
+          '<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3z"/></svg>Video</span>' +
+          (lesson.has_task && lesson.task_instructions ? '<span>Con tarea</span>' : '') +
+        '</div>' +
         '<div class="lesson-actions">' +
           (!done
-            ? '<button class="abtn2" id="btn-complete" style="padding:10px 22px;">✓ Marcar como completada</button>'
-            : '<div class="lesson-done-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Completada</div>') +
+            ? '<button class="lp-done-btn" id="btn-complete">' + _LP_CHECK + 'Marcar como completada</button>'
+            : '<div class="lesson-done-badge">' + _LP_CHECK + 'Completada</div>') +
+          '<span style="flex:1"></span>' +
+          '<button class="lp-nav gh" id="lp-prev"' + (prevL ? '' : ' disabled') + '>‹ Anterior</button>' +
+          '<button class="lp-nav" id="lp-next"' + (nextL ? '' : ' disabled') + '>Siguiente clase ›</button>' +
         '</div>' +
+        (lesson.description ? '<div class="lp-card"><div class="lp-card-h">Sobre esta clase</div><div class="lesson-desc-text">' + lesson.description + '</div></div>' : '') +
+        (lesson.has_task && lesson.task_instructions
+          ? '<div class="lesson-task-box">' +
+              '<div class="lesson-task-label"><span class="lp-tic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>Tarea de la clase</div>' +
+              '<div class="lesson-task-text">' + lesson.task_instructions + '</div>' +
+              (!done ? '<textarea id="task-input" class="lp-ta" placeholder="Escribe tu respuesta o pega un link..." rows="3"></textarea>' : '') +
+            '</div>'
+          : '') +
+        (nextL
+          ? '<div class="lp-next" id="lp-next-card">' +
+              '<div class="lp-next-th"' + (_mkThumb(nextL) ? ' style="background-image:url(\'' + _mkThumb(nextL) + '\')"' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>' +
+              '<div class="lp-next-tx"><small>' + (nextMod && curMod && nextMod.id !== curMod.id ? 'Siguiente módulo' : 'A continuación') + '</small><b>' + esc(nextL.title) + '</b>' +
+                '<span>' + esc(nextMod ? nextMod.title : '') + (nextL.duration_minutes ? ' · ' + nextL.duration_minutes + ' min' : '') + '</span></div>' +
+              '<button class="lp-nav">Ver ahora ›</button>' +
+            '</div>'
+          : '') +
       '</div>' +
     '</div>';
+  main.scrollTop = 0;
 
+  var go = function(l) {
+    if (!l) return;
+    var lm = (ctx.mods || []).find(function(mm){ return (mm.course_lessons || []).some(function(x){ return x.id === l.id; }); });
+    if (lm) courseState.moduleId = lm.id;
+    playLesson(l, allLessons, progress);
+  };
+  var bp = document.getElementById('lp-prev'); if (bp) bp.addEventListener('click', function(){ go(prevL); });
+  var bn = document.getElementById('lp-next'); if (bn) bn.addEventListener('click', function(){ go(nextL); });
+  var nc = document.getElementById('lp-next-card'); if (nc) nc.addEventListener('click', function(){ go(nextL); });
   var btnC = document.getElementById('btn-complete');
-  if (btnC) btnC.addEventListener('click', function() { markDone(lesson.id); });
+  if (btnC) btnC.addEventListener('click', function() { if (progress) progress[lesson.id] = true; markDone(lesson.id); });
 }
+
+var _LP_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+// Progreso del nivel en la cabecera de la lista
+function _lpUpdateProg() {
+  var c = window._lpCtx; if (!c) return;
+  var all = c.all || [], done = all.filter(function(l){ return c.prog && c.prog[l.id]; }).length;
+  var pct = all.length ? Math.round(done / all.length * 100) : 0;
+  var t = document.getElementById('lp-prog-txt'), p = document.getElementById('lp-prog-pct'), b = document.getElementById('lp-prog-bar');
+  if (t) t.textContent = done + ' de ' + all.length + ' clases';
+  if (p) p.textContent = pct + '%';
+  if (b) b.style.width = pct + '%';
+}
+// En escritorio la caja llega hasta abajo del panel
+function _lpFit() {
+  var lay = document.getElementById('lesson-layout');
+  if (!lay || lay.classList.contains('lesson-layout-mobile')) return;
+  var box = document.querySelector('.acol') || document.getElementById('amain');
+  var z = parseFloat(getComputedStyle(document.getElementById('appdash') || document.body).zoom) || 1;
+  var h = (box.getBoundingClientRect().bottom - lay.getBoundingClientRect().top - 22) / z;
+  if (h > 420) lay.style.height = h + 'px';
+}
+window.addEventListener('resize', function(){ _lpFit(); });
 
 function markDone(lessonId, isMobile) {
   var taskInput = document.getElementById(isMobile ? 'mob-task-input' : 'task-input');
@@ -2762,10 +2917,13 @@ function markDone(lessonId, isMobile) {
     var li = document.getElementById('li-' + lessonId);
     if (li) {
       li.classList.add('done');
-      var meta = li.querySelector('.ls-lesson-meta');
-      if (meta) meta.innerHTML = '<span style="color:rgb(var(--c-ok));margin-right:3px;">✓</span>' + meta.textContent;
+      var st = li.querySelector('.lp-st');
+      if (st) { st.classList.add('ok'); st.innerHTML = _LP_CHECK; }
     }
-    if (btn) btn.outerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;color:rgb(var(--c-ok));font-size:.82rem;padding:12px;border:1px solid rgba(var(--c-ok),.2);border-radius:8px;background:rgba(var(--c-ok),.05);">✓ Completada</div>';
+    if (window._lpCtx && window._lpCtx.prog) { window._lpCtx.prog[lessonId] = true; _lpUpdateProg(); }
+    if (btn) btn.outerHTML = isMobile
+      ? '<div style="display:flex;align-items:center;justify-content:center;gap:8px;color:rgb(var(--c-ok));font-size:.82rem;padding:12px;border:1px solid rgba(var(--c-ok),.2);border-radius:8px;background:rgba(var(--c-ok),.05);">✓ Completada</div>'
+      : '<div class="lesson-done-badge">' + _LP_CHECK + 'Completada</div>';
     tst('✓ Clase completada');
   });
 }

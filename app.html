@@ -1509,6 +1509,16 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 @media(hover:none){.lv-li-tools,.cw-card .ce-tools{opacity:1;}}
 @media(max-width:760px){.lv-cols{grid-template-columns:1fr;}}
 @media(max-width:600px){.lv-endrow{max-width:none;}.lv-rec{flex-direction:column;align-items:stretch;}.lv-rec-th{width:100%;height:150px;}}
+.lv-inbox{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;background:rgba(var(--c-acc),.08);border:1px solid rgba(var(--c-acc),.25);}
+.lv-inbox svg{width:20px;height:20px;flex-shrink:0;color:rgb(var(--c-acc));margin-top:2px;}
+.lv-inbox b{display:block;font-size:.84rem;color:var(--c-text);margin-bottom:3px;}
+.lv-inbox span{font-size:.75rem;color:var(--c-text2);line-height:1.45;}
+.lv-room{display:flex;flex-direction:column;gap:14px;}
+.lv-room-bar{display:flex;align-items:center;gap:12px;}
+.lv-room-bar b{font-size:1.05rem;color:var(--c-text);}
+.lv-room-box{height:min(78vh,780px);border-radius:20px;overflow:hidden;background:#0d0e11;border:1px solid var(--k-line);box-shadow:var(--k-sh-hi);}
+.lv-room-wait{height:100%;display:flex;align-items:center;justify-content:center;gap:10px;color:#cfcfcf;font-size:.9rem;text-align:center;padding:20px;}
+@media(max-width:700px){.lv-room-bar b{display:none;}.lv-room-box{height:calc(100dvh - 170px);border-radius:14px;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3133,11 +3143,14 @@ function rSes() {
           '<div class="mk-live-tit">' + _mkEsc(hero.title) + '</div>' +
           '<div class="mk-live-sub">' + (hero.description ? _mkEsc(hero.description) : (isLive ? 'Con Jeisson · en curso' : _mkWhen(hero.scheduled_at))) + '</div>' +
           (isLive
-            ? '<button class="mk-btn" id="btn-join-live" data-url="' + _mkEsc(hero.discord_url || '') + '">Unirme a la sesión →</button>'
+            ? (_isJitsi(hero.discord_url)
+              ? '<button class="mk-btn" data-room="' + hero.id + '">Entrar a la sesión →</button>'
+              : '<button class="mk-btn" id="btn-join-live" data-url="' + _mkEsc(hero.discord_url || '') + '">Unirme a la sesión →</button>')
             : '<a class="mk-btn ghost" href="' + _mkCalLink(hero) + '" target="_blank" rel="noopener">Recordarme →</a>') +
           (ed ? '<div class="lv-hero-ed">' + (isLive
             ? '<button class="mk-btn lv-on-btn" data-lv="off" data-id="' + hero.id + '">■ Terminar en vivo</button>'
-            : '<button class="mk-chip" data-lv="on" data-id="' + hero.id + '">● Iniciar en vivo ahora</button>') + '</div>' : '') +
+            : '<button class="mk-chip" data-lv="on" data-id="' + hero.id + '">● Iniciar en vivo ahora</button>' +
+              (_isJitsi(hero.discord_url) ? '<button class="mk-chip" data-room="' + hero.id + '">Entrar a la sala antes</button>' : '')) + '</div>' : '') +
         '</div></div>';
     } else {
       html += '<div class="mk-card mk-live" style="justify-content:center;text-align:center;flex-direction:column;"><div class="mk-emp-ic">' + MK_IC.live + '</div><div style="color:var(--c-muted);font-size:.9rem;">No hay sesión en vivo en este momento</div>' + (ed ? '<button class="ce-btn" data-lv="new" style="margin-top:14px;">' + CE_IC.plus + ' Programar sesión</button>' : '') + '</div>';
@@ -3186,6 +3199,9 @@ function rSes() {
     }, true);
 
     // ── Bind join button ──
+    m.querySelectorAll('[data-room]').forEach(function(b) {
+      b.addEventListener('click', function(e) { e.stopPropagation(); _lvJoinRoom(b.dataset.room, hero ? hero.title : ''); });
+    });
     var joinBtn = document.getElementById('btn-join-live');
     if (joinBtn) {
       joinBtn.addEventListener('click', function() {
@@ -3224,7 +3240,7 @@ function _liveDel(id) {
   });
 }
 var _LIVE_DUR = [[30,'30 min'],[60,'1 h'],[90,'1 h 30'],[120,'2 h'],[0,'Otra']];
-function _isYtUrl(u) { return /(^|\/\/|\.)(youtube\.com|youtu\.be)\//i.test(String(u || '')); }
+function _isJitsi(u) { return String(u || '').trim() === 'jitsi'; }
 function openLiveModal(id, preset) {
   if (id) {
     sb.from('live_sessions').select('*').eq('id', id).single().then(function(r) { if (r.data) _liveModal(r.data); });
@@ -3245,7 +3261,7 @@ function _liveModal(s) {
   var en = s.end_time ? new Date(s.end_time) : null;
   var eV = en ? pad(en.getHours()) + ':' + pad(en.getMinutes()) : '';
   var th = s.recording_url ? _mkThumb({ video_url: s.recording_url }) : '';
-  var kind = (isNew || _isYtUrl(s.discord_url)) ? 'in' : 'out';
+  var kind = (isNew || _isJitsi(s.discord_url)) ? 'in' : 'out';
   var ov = document.createElement('div');
   ov.id = 'live-modal'; ov.className = 'wp-overlay';
   ov.innerHTML =
@@ -3265,7 +3281,7 @@ function _liveModal(s) {
             '<button type="button" data-k="in"' + (kind === 'in' ? ' class="on"' : '') + '>En la plataforma</button>' +
             '<button type="button" data-k="out"' + (kind === 'out' ? ' class="on"' : '') + '>Otra plataforma</button>' +
           '</div></div>' +
-          '<div class="wp-field lv-k" data-k="in"' + (kind === 'in' ? '' : ' style="display:none"') + '><label class="wp-label">Link de tu transmisión en YouTube</label><input id="lv-yt" class="wp-input" placeholder="https://youtube.com/live/..." value="' + (kind === 'in' ? _mkEsc(s.discord_url || '') : '') + '"><div class="lv-hint">Tus alumnos la ven aquí mismo, en la pestaña En vivo, con chat. No salen de la plataforma.</div></div>' +
+          '<div class="wp-field lv-k" data-k="in"' + (kind === 'in' ? '' : ' style="display:none"') + '><div class="lv-inbox">' + MK_IC.live + '<div><b>Videollamada en vivo dentro de tu plataforma</b><span>Sin links y sin retraso. Tú y tus alumnos entran desde la pestaña En vivo; tú compartes pantalla y ellos te escriben en el chat.</span></div></div></div>' +
           '<div class="wp-field lv-k" data-k="out"' + (kind === 'out' ? '' : ' style="display:none"') + '><label class="wp-label">Link para unirse</label><input id="lv-u" class="wp-input" placeholder="Discord, Zoom, Google Meet..." value="' + (kind === 'out' ? _mkEsc(s.discord_url || '') : '') + '"><div class="lv-hint">Tus alumnos verán un botón "Unirme" que abre este link.</div></div>' +
           '<div class="wp-toggle-row"><div><div class="wp-toggle-text">Encender ahora</div><div class="wp-toggle-sub">Muestra la sesión como EN VIVO aunque no sea la hora</div></div>' +
             '<label class="wp-toggle"><input id="lv-act" type="checkbox"' + (s.is_active ? ' checked' : '') + '><span class="wp-toggle-track"></span></label></div>' +
@@ -3320,8 +3336,7 @@ function _liveModal(s) {
     var btn = this;
     var t = ov.querySelector('#lv-t').value.trim(), d = ov.querySelector('#lv-d').value, h = ov.querySelector('#lv-h').value;
     if (!t || !d || !h) return tst('Pon título, día y hora', 1);
-    var link = ov.querySelector(kind === 'in' ? '#lv-yt' : '#lv-u').value.trim();
-    if (kind === 'in' && link && !_isYtUrl(link)) return tst('Para transmitir en la plataforma pega un link de YouTube', 1);
+    var link = kind === 'in' ? 'jitsi' : ov.querySelector('#lv-u').value.trim();
     var start = new Date(d + 'T' + h);
     var on = ov.querySelector('.lv-dur.on'), m = on ? +on.dataset.m : 0, end = null;
     if (m > 0) end = new Date(start.getTime() + m * 60000);
@@ -3344,6 +3359,60 @@ function _liveModal(s) {
       tst(isNew ? '✓ Sesión programada' : '✓ Sesión actualizada');
       close(); _afterLiveEdit();
     });
+  });
+}
+
+// ── Sala de Jitsi (8x8) dentro de la pestaña En vivo ──
+var _lvApi = null;
+function _lvLoadJitsi(appId) {
+  if (window.JitsiMeetExternalAPI) return Promise.resolve();
+  return new Promise(function(ok, ko) {
+    var sc = document.createElement('script');
+    sc.src = 'https://8x8.vc/' + appId + '/external_api.js';
+    sc.onload = ok; sc.onerror = ko;
+    document.head.appendChild(sc);
+  });
+}
+function _lvLeaveRoom() {
+  if (_lvApi) { try { _lvApi.dispose(); } catch (e) {} _lvApi = null; }
+  var cur = history.state;
+  if (cur && cur.section === 'sesiones') rSes();
+}
+function _lvJoinRoom(sessionId, title) {
+  var m = document.getElementById('amain'); if (!m) return;
+  var msgs = { no_live_plan: 'Tu plan no incluye las sesiones en vivo.', not_live: 'La sesión todavía no empieza. Entra cuando aparezca EN VIVO.', missing_key: 'La sala no está configurada todavía.' };
+  m.innerHTML = '<div class="lv-room"><div class="lv-room-bar"><span class="mk-pill r">● En vivo</span><b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span><button class="mk-btn ghost" id="lv-leave">Salir de la sesión</button></div>' +
+    '<div class="lv-room-box" id="lv-room-box"><div class="lv-room-wait"><span class="spin"></span>Conectando a la sesión...</div></div></div>';
+  document.getElementById('lv-leave').addEventListener('click', _lvLeaveRoom);
+  sb.auth.getSession().then(function(r) {
+    var tk = r && r.data && r.data.session ? r.data.session.access_token : '';
+    return fetch('/api/jaas-token?session=' + encodeURIComponent(sessionId), { headers: { Authorization: 'Bearer ' + tk } });
+  }).then(function(res) {
+    return res.json().then(function(j) { if (!res.ok) throw new Error(j.error || 'error'); return j; });
+  }).then(function(j) {
+    return _lvLoadJitsi(j.appId).then(function() { return j; });
+  }).then(function(j) {
+    var box = document.getElementById('lv-room-box'); if (!box) return;
+    box.innerHTML = '';
+    _lvApi = new JitsiMeetExternalAPI('8x8.vc', {
+      roomName: j.room,
+      jwt: j.jwt,
+      parentNode: box,
+      width: '100%',
+      height: '100%',
+      lang: 'es',
+      configOverwrite: {
+        prejoinPageEnabled: false,
+        startWithAudioMuted: !j.moderator,
+        startWithVideoMuted: !j.moderator,
+        disableDeepLinking: true,
+        subject: title || 'Sesión en vivo'
+      }
+    });
+    _lvApi.addListener('readyToClose', _lvLeaveRoom);
+  }).catch(function(e) {
+    var box = document.getElementById('lv-room-box');
+    if (box) box.innerHTML = '<div class="lv-room-wait">' + _mkEsc(msgs[e && e.message] || 'No se pudo abrir la sesión. Intenta de nuevo en un momento.') + '</div>';
   });
 }
 

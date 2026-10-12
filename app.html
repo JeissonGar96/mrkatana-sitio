@@ -1544,6 +1544,44 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 #st-group-card.is-live .mk-ic{background:rgba(var(--c-ok),.14) !important;color:rgb(var(--c-ok)) !important;animation:pulse 1.5s infinite;}
 #st-group-card.is-live #st-group-lbl{color:rgb(var(--c-ok)) !important;}
 #st-group-card.is-live #st-group{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── Admin · Reuniones 1-1 ── */
+.a1-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.a1-seg{flex:0 0 auto;}
+.a1-seg button{flex:0 0 auto;padding:8px 16px;display:inline-flex;align-items:center;gap:6px;}
+.a1-seg button i{font-style:normal;font-size:.68rem;font-weight:700;min-width:18px;height:18px;border-radius:9px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--c-ov),.10);}
+.a1-seg button i:empty{display:none;}
+.a1-seg button i.warn{background:rgb(var(--c-bad));color:#fff;}
+.a1-seg button.on i{background:rgba(0,0,0,.18);color:inherit;}
+.a1-seg button.on i.warn{background:rgb(var(--c-bad));color:#fff;}
+.a1-q{flex:1;min-width:180px;background:var(--c-card);border:1px solid var(--k-line);border-radius:30px;padding:9px 16px;color:var(--c-text);font:inherit;font-size:.82rem;outline:none;}
+.a1-q:focus{border-color:rgba(var(--c-acc),.5);}
+.a1-head .mk-btn{margin-top:0;}
+.a1-tbl td{white-space:nowrap;}
+.a1-who{display:flex;align-items:center;gap:10px;}
+.a1-who b{font-weight:600;}
+.a1-av{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;background:rgba(var(--c-acc),.16);color:rgb(var(--c-acc));}
+.a1-t{white-space:normal !important;max-width:260px;color:var(--c-text2) !important;}
+.a1-d{color:var(--c-text2) !important;}
+.a1-ok{color:rgb(var(--c-ok));font-weight:600;font-size:.8rem;}
+.a1-mut{color:var(--c-muted);font-size:.8rem;}
+.a1-soon{color:rgb(var(--c-acc));font-weight:700;font-size:.8rem;}
+.a1-tbl .mk-pill{text-decoration:none;}
+.a1-st{appearance:none;-webkit-appearance:none;width:auto !important;min-height:0 !important;border:1px solid transparent;border-radius:20px !important;padding:5px 26px 5px 12px !important;font:inherit;font-size:.74rem;font-weight:700;cursor:pointer;outline:none;background-repeat:no-repeat;background-position:right 9px center;background-size:9px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.6'/%3E%3C/svg%3E");}
+.a1-st.g{background-color:rgba(var(--c-ok),.13) !important;color:rgb(var(--c-ok)) !important;border-color:transparent !important;}
+.a1-st.r{background-color:rgba(var(--c-bad),.13) !important;color:rgb(var(--c-bad)) !important;border-color:transparent !important;}
+.a1-st.n{background-color:rgba(var(--c-ov),.08) !important;color:var(--c-muted) !important;border-color:transparent !important;}
+.a1-st.w{background-color:transparent !important;border-color:rgba(var(--c-acc),.5) !important;color:rgb(var(--c-acc)) !important;}
+.a1-st option{background:var(--c-card);color:var(--c-text);}
+.a1-auto{font-size:.64rem;color:var(--c-muted);margin:4px 0 0 4px;}
+.a1-act{display:flex;align-items:center;justify-content:flex-end;gap:6px;}
+.a1-ic{width:30px;height:30px;border-radius:50%;border:1px solid var(--k-line);background:transparent;color:var(--c-muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.a1-ic:hover{color:rgb(var(--c-acc));border-color:rgba(var(--c-acc),.4);}
+.a1-ic.del:hover{color:rgb(var(--c-bad));border-color:rgba(var(--c-bad),.4);}
+.a1-note{font-size:.74rem;color:var(--c-muted);margin:12px 4px 0;}
+.a1-empty{text-align:center;color:var(--c-muted);font-size:.86rem;padding:40px 24px !important;}
+.reu-hint{font-size:.74rem;color:var(--c-muted);margin-top:6px;}
+.mk-btn.off,.mk-btn:disabled{opacity:.45;cursor:not-allowed;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3473,20 +3511,29 @@ function _lvLoadJitsi(appId) {
 function _lvLeaveRoom() {
   if (_lvApi) { try { _lvApi.dispose(); } catch (e) {} _lvApi = null; }
   var al = document.querySelector('.alay'); if (al && al._lvRp) { al.classList.add('with-rp'); al._lvRp = false; }
-  var cur = history.state;
-  if (cur && cur.section === 'sesiones') rSes();
+  var cur = history.state, sec = cur && cur.section;
+  if (sec === 'sesiones') rSes();
+  else if (sec === 'reuniones') rReun();
+  else if (sec === 'admin') {
+    rAdmin();
+    var t = [].slice.call(document.querySelectorAll('.admtab')).find(function(b){ return /1-1/.test(b.textContent); });
+    if (t) t.click();
+  }
 }
-function _lvJoinRoom(sessionId, title) {
+// opts.meeting = true → sala privada de una reunión 1-1 (id = id de la reunión)
+function _lvJoinRoom(sessionId, title, opts) {
+  opts = opts || {};
   var m = document.getElementById('amain'); if (!m) return;
   // Durante la llamada se esconde el panel derecho para que el video use todo el ancho
   var al = document.querySelector('.alay'); if (al && al.classList.contains('with-rp')) { al.classList.remove('with-rp'); al._lvRp = true; }
-  var msgs = { no_live_plan: 'Tu plan no incluye las sesiones en vivo.', not_live: 'La sesión todavía no empieza. Entra cuando aparezca EN VIVO.', missing_key: 'La sala no está configurada todavía.' };
-  m.innerHTML = '<div class="lv-room"><div class="lv-room-bar"><span class="mk-pill r">● En vivo</span><b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span><button class="mk-btn ghost" id="lv-leave">Salir de la sesión</button></div>' +
+  var msgs = { no_live_plan: 'Tu plan no incluye las sesiones en vivo.', not_live: 'La sesión todavía no empieza. Entra cuando aparezca EN VIVO.', missing_key: 'La sala no está configurada todavía.',
+    too_early: 'Tu sesión 1-1 todavía no empieza. Podrás entrar 10 minutos antes de la hora.', meeting_over: 'Esta sesión 1-1 ya terminó.', not_yours: 'Esta sesión 1-1 no es tuya.', cancelled: 'Esta sesión 1-1 fue cancelada.', no_meeting: 'No encontramos esta sesión 1-1.' };
+  m.innerHTML = '<div class="lv-room"><div class="lv-room-bar">' + (opts.meeting ? '<span class="mk-pill g">● Sesión 1-1</span>' : '<span class="mk-pill r">● En vivo</span>') + '<b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span><button class="mk-btn ghost" id="lv-leave">Salir de la sesión</button></div>' +
     '<div class="lv-room-box" id="lv-room-box"><div class="lv-room-wait"><span class="spin"></span>Conectando a la sesión...</div></div></div>';
   document.getElementById('lv-leave').addEventListener('click', _lvLeaveRoom);
   sb.auth.getSession().then(function(r) {
     var tk = r && r.data && r.data.session ? r.data.session.access_token : '';
-    return fetch('/api/jaas-token?session=' + encodeURIComponent(sessionId), { headers: { Authorization: 'Bearer ' + tk } });
+    return fetch('/api/jaas-token?' + (opts.meeting ? 'meeting=' : 'session=') + encodeURIComponent(sessionId), { headers: { Authorization: 'Bearer ' + tk } });
   }).then(function(res) {
     return res.text().then(function(t) {
       var j; try { j = JSON.parse(t); } catch (e) { throw new Error('http_' + res.status); }
@@ -3565,6 +3612,7 @@ function openRecModal(title, date, embedUrl) {
 
 // ── REUNIONES ──
 function rReun() {
+  if (_lvApi && document.getElementById('lv-room-box')) return; // no cortar una llamada en curso
   var m = document.getElementById('amain');
   m.innerHTML = _mkSkelTab();
 
@@ -3588,12 +3636,15 @@ function rReun() {
       var nd = new Date(next.scheduled_at);
       html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal.replace(/18/g, '26') + '</div>' +
         '<div style="flex:1;min-width:0;"><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-count" id="reu-count">—</div>' +
-        '<div class="mk-live-sub">' + _mkEsc(next.title || 'Sesión 1-1') + ' · ' + nd.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + nd.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</div></div>' +
-        (next.meet_url ? '<a class="mk-btn" href="' + _mkEsc(_mkSafeUrl(next.meet_url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span class="mk-chip" style="cursor:default;" title="Jeisson te enviará el link">Link pendiente</span>') +
+        '<div class="mk-live-sub">' + _mkEsc(next.title || 'Sesión 1-1') + ' · ' + nd.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + nd.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</div>' + (next.meet_url ? '' : '<div class="reu-hint" id="reu-hint"></div>') + '</div>' +
+        (next.meet_url ? '<a class="mk-btn" href="' + _mkEsc(_mkSafeUrl(next.meet_url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<button class="mk-btn" id="reu-join" data-id="' + _mkEsc(next.id) + '" data-t="' + _mkEsc(next.title || 'Sesión 1-1') + '">Entrar a la llamada</button>') +
       '</div>';
       setTimeout(function tick() {
         var el = document.getElementById('reu-count'); if (!el) return;
         var df = nd - new Date();
+        // La sala 1-1 se abre 10 minutos antes de la hora
+        var jb = document.getElementById('reu-join'), hn = document.getElementById('reu-hint');
+        if (jb) { var open = df <= 600000; jb.disabled = !open; jb.classList.toggle('off', !open); if (hn) hn.textContent = open ? 'Tu sala privada está abierta. Entra cuando quieras.' : 'El botón se activa 10 minutos antes. La llamada es dentro de la app, solo tú y Jeisson.'; }
         if (df <= 0) { el.textContent = '¡Ahora!'; return; }
         var D = Math.floor(df / 86400000), H = Math.floor(df % 86400000 / 3600000), M = Math.floor(df % 3600000 / 60000);
         el.textContent = D + 'd : ' + String(H).padStart(2, '0') + 'h : ' + String(M).padStart(2, '0') + 'm';
@@ -3637,6 +3688,8 @@ function rReun() {
     }
 
     m.innerHTML = html;
+    var jb = document.getElementById('reu-join');
+    if (jb) jb.addEventListener('click', function() { if (!jb.disabled) _lvJoinRoom(jb.dataset.id, jb.dataset.t, { meeting: true }); });
   });
 }
 
@@ -5034,157 +5087,132 @@ function deleteRoadmapWeek(weekNum) {
   });
 }
 
+// ── ADMIN · REUNIONES 1-1 ──
+// Próximas / Pasadas (con asistencia y estado) / Grabaciones en una sola vista
+var _a1Tab = 'up';
+// Desde esta fecha, las reuniones dentro de la app se marcan solas según si el alumno entró
+var MTG_AUTO_FROM = new Date('2026-10-12T00:00:00Z');
+function _mtgInApp(m) { return !m.meet_url; }
+function _mtgDone(m) { return new Date(m.scheduled_at) < new Date(Date.now() - 1800000); }
+
 function rAdm1on1() {
   var c = document.getElementById('a-1on1'); if (!c) return;
   c.innerHTML =
-    '<div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;">' +
-      '<button id="a1on1-tab-mtg" onclick="swA1on1(\'mtg\')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(var(--c-acc),.3);background:rgba(var(--c-acc),.15);color:var(--sl);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">📅 Reuniones próximas</button>' +
-      '<button id="a1on1-tab-past" onclick="swA1on1(\'past\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:var(--c-muted);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">🕘 Pasadas</button>' +
-      '<button onclick="openSchModal()" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(var(--c-ok),.25);background:rgba(var(--c-ok),.06);color:rgb(var(--c-ok));font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">➕ Programar reunión</button>' +
-      '<button id="a1on1-tab-rec" onclick="swA1on1(\'rec\')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--br);background:transparent;color:var(--c-muted);font-family:sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;">🎥 Grabaciones</button>' +
+    '<div class="a1-head">' +
+      '<div class="lv-seg a1-seg">' +
+        '<button data-a1="up">Próximas <i id="a1-n-up"></i></button>' +
+        '<button data-a1="past">Pasadas <i id="a1-n-past"></i></button>' +
+        '<button data-a1="rec">Grabaciones</button>' +
+      '</div>' +
+      '<input class="a1-q" id="a1-q" placeholder="Buscar alumno...">' +
+      '<button class="mk-btn" onclick="openSchModal()">+ Programar reunión</button>' +
     '</div>' +
-    '<div id="a1on1-mtg"></div>' +
-    '<div id="a1on1-past" style="display:none;"></div>' +
+    '<div id="a1on1-list"></div>' +
     '<div id="a1on1-rec" style="display:none;"></div>';
-
-  _rAdm1on1Mtg();
+  c.querySelectorAll('[data-a1]').forEach(function(b) { b.addEventListener('click', function() { swA1on1(b.dataset.a1); }); });
+  document.getElementById('a1-q').addEventListener('input', function() { _rA1List(); });
+  swA1on1(_a1Tab === 'rec' ? 'up' : _a1Tab);
 }
 
 function swA1on1(tab) {
-  var tabs  = { mtg: 'a1on1-tab-mtg', past: 'a1on1-tab-past', rec: 'a1on1-tab-rec' };
-  var panes = { mtg: 'a1on1-mtg',     past: 'a1on1-past',     rec: 'a1on1-rec' };
-  Object.keys(tabs).forEach(function(t) {
-    var btn  = document.getElementById(tabs[t]);
-    var pane = document.getElementById(panes[t]);
-    var active = t === tab;
-    if (btn)  { btn.style.background = active ? 'rgba(var(--c-acc),.15)' : 'transparent'; btn.style.borderColor = active ? 'rgba(var(--c-acc),.3)' : 'var(--br)'; btn.style.color = active ? 'var(--sl)' : 'var(--c-muted)'; }
-    if (pane) pane.style.display = active ? 'block' : 'none';
-  });
-  if (tab === 'rec') _rAdm1on1Rec();
-  if (tab === 'past') _rAdm1on1Past();
+  _a1Tab = tab;
+  document.querySelectorAll('[data-a1]').forEach(function(b) { b.classList.toggle('on', b.dataset.a1 === tab); });
+  var l = document.getElementById('a1on1-list'), r = document.getElementById('a1on1-rec'), q = document.getElementById('a1-q');
+  if (l) l.style.display = tab === 'rec' ? 'none' : '';
+  if (r) r.style.display = tab === 'rec' ? '' : 'none';
+  if (q) q.style.display = tab === 'rec' ? 'none' : '';
+  if (tab === 'rec') _rAdm1on1Rec(); else _rAdm1on1Load();
 }
+function _rAdm1on1Refresh() { if (_a1Tab === 'rec') _rAdm1on1Rec(); else _rAdm1on1Load(); }
+function _rAdm1on1Mtg() { _rAdm1on1Load(); }
 
-// Recarga la lista de reuniones que esté abierta (próximas o pasadas)
-function _rAdm1on1Refresh() {
-  var p = document.getElementById('a1on1-past');
-  if (p && p.style.display !== 'none') _rAdm1on1Past(); else _rAdm1on1Mtg();
-}
-
-// ── REUNIONES PASADAS: historial con estado (completada / no asistió / cancelada) ──
-var _MTG_ST = [['completed','Completada','c-ok'],['no_show','No asistió','c-bad'],['cancelled','Cancelada','c-muted-rgb']];
-function _rAdm1on1Past() {
-  var el = document.getElementById('a1on1-past'); if (!el) return;
-  el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
-  var lim = new Date(Date.now() - 1800000).toISOString();
-  sb.from('meetings_1on1')
-    .select('*, profiles(full_name, avatar_url)')
-    .lt('scheduled_at', lim)
-    .order('scheduled_at', { ascending: false })
-    .limit(200)
-    .then(function(r) {
-      if (r.error) { el.innerHTML = '<div style="color:rgb(var(--c-bad));font-size:.84rem;">Error: ' + _mkEsc(r.error.message) + '</div>'; return; }
-      var data = r.data || [];
-      if (!data.length) {
-        el.innerHTML = '<div style="border:1px dashed rgba(var(--c-acc),.18);border-radius:10px;padding:30px;text-align:center;color:var(--c-faint);font-size:.84rem;">Aún no hay reuniones pasadas.</div>';
-        return;
-      }
-      var unmarked = data.filter(function(m){ return !m.status || m.status === 'scheduled'; }).length;
-      var html = unmarked ? '<div style="font-size:.78rem;color:var(--c-muted);margin-bottom:12px;">' + unmarked + ' sin marcar. Si no las marcas, al alumno le aparecen como completadas.</div>' : '';
-      data.forEach(function(m) {
-        var d = new Date(m.scheduled_at);
-        var name = (m.profiles && m.profiles.full_name) ? m.profiles.full_name : 'Alumno';
-        var initials = name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
-        var chips = _MTG_ST.map(function(o) {
-          var on = m.status === o[0];
-          var col = o[2] === 'c-muted-rgb' ? 'var(--c-muted)' : 'rgb(var(--' + o[2] + '))';
-          var bg  = o[2] === 'c-muted-rgb' ? 'rgba(var(--c-ov),.10)' : 'rgba(var(--' + o[2] + '),.14)';
-          return '<button onclick="setMtgStatus(\'' + m.id + '\',\'' + (on ? 'scheduled' : o[0]) + '\')" style="padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid ' + (on ? col : 'var(--br)') + ';background:' + (on ? bg : 'transparent') + ';color:' + (on ? col : 'var(--c-muted)') + ';">' + o[1] + '</button>';
-        }).join('');
-        html +=
-          '<div style="border:1px solid var(--k-line,var(--br));border-radius:12px;padding:12px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">' +
-            '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0;">' + _mkEsc(initials) + '</div>' +
-            '<div style="flex:1;min-width:160px;">' +
-              '<div style="font-size:.88rem;font-weight:600;color:var(--c-text);">' + _mkEsc(name) + '</div>' +
-              '<div style="font-size:.75rem;color:var(--c-muted);margin-top:2px;">' + _mkEsc(m.title || 'Sesión 1-1') + ' · ' + d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</div>' +
-            '</div>' +
-            '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + chips + '</div>' +
-            '<div style="display:flex;gap:4px;flex-shrink:0;">' +
-              '<button onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title||'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url||'') + '\',\'' + m.scheduled_at + '\')" style="background:rgba(var(--c-acc),.06);border:1px solid rgba(var(--c-acc),.15);color:rgb(var(--c-acc));width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
-              '<button onclick="delAdmMtg(\'' + m.id + '\')" style="background:rgba(var(--c-bad),.06);border:1px solid rgba(var(--c-bad),.15);color:rgb(var(--c-bad));width:28px;height:28px;border-radius:6px;font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Eliminar">✕</button>' +
-            '</div>' +
-          '</div>';
-      });
-      el.innerHTML = html;
+var _a1Data = [];
+function _rAdm1on1Load() {
+  var el = document.getElementById('a1on1-list'); if (!el) return;
+  if (!_a1Data.length) el.innerHTML = '<div class="mk-card" style="text-align:center;padding:40px;"><span class="spin"></span></div>';
+  sb.from('meetings_1on1').select('*, profiles(full_name, avatar_url)').order('scheduled_at', { ascending: false }).limit(300).then(function(r) {
+    if (r.error) { el.innerHTML = '<div class="mk-empty">Error: ' + _mkEsc(r.error.message) + '</div>'; return; }
+    _a1Data = r.data || [];
+    // Marca automática: reuniones dentro de la app que ya pasaron y nadie revisó
+    var auto = _a1Data.filter(function(m) {
+      return _mtgDone(m) && _mtgInApp(m) && (!m.status || m.status === 'scheduled') && ('student_joined_at' in m) && new Date(m.scheduled_at) >= MTG_AUTO_FROM;
     });
+    auto.forEach(function(m) {
+      m.status = m.student_joined_at ? 'completed' : 'no_show'; m._auto = true;
+      sb.from('meetings_1on1').update({ status: m.status }).eq('id', m.id).then(function(){});
+    });
+    _rA1List();
+  });
+}
+
+function _a1Av(name) {
+  var ini = String(name || '?').split(' ').map(function(w){ return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
+  return '<span class="a1-av">' + _mkEsc(ini) + '</span>';
+}
+var _A1_ST = { completed: ['Completada', 'g'], no_show: ['No asistió', 'r'], cancelled: ['Cancelada', 'n'], scheduled: ['Sin revisar', 'w'] };
+
+function _rA1List() {
+  var el = document.getElementById('a1on1-list'); if (!el) return;
+  var q = ((document.getElementById('a1-q') || {}).value || '').toLowerCase().trim();
+  var up = [], past = [];
+  _a1Data.forEach(function(m) { (_mtgDone(m) ? past : up).push(m); });
+  up.reverse();
+  var pend = past.filter(function(m){ return !m.status || m.status === 'scheduled'; }).length;
+  var nu = document.getElementById('a1-n-up'); if (nu) nu.textContent = up.length || '';
+  var np = document.getElementById('a1-n-past'); if (np) { np.textContent = pend || ''; np.className = pend ? 'warn' : ''; }
+  var rows = (_a1Tab === 'past' ? past : up).filter(function(m) {
+    return !q || ((m.profiles && m.profiles.full_name) || '').toLowerCase().indexOf(q) > -1 || (m.title || '').toLowerCase().indexOf(q) > -1;
+  });
+  if (!rows.length) {
+    el.innerHTML = '<div class="mk-card a1-empty">' + (q ? 'Sin resultados para "' + _mkEsc(q) + '".' : _a1Tab === 'past' ? 'Aún no hay reuniones pasadas.' : 'No hay reuniones próximas. Usa "+ Programar reunión" para agendar una.') + '</div>';
+    return;
+  }
+  var isPast = _a1Tab === 'past';
+  var ico = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
+  var del = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+  var html = '<div class="mk-card mk-tbl-wrap"><table class="mk-tbl a1-tbl"><thead><tr><th>Alumno</th><th>Tema</th><th>Fecha</th><th>Llamada</th><th>' + (isPast ? 'Asistencia' : 'Empieza') + '</th>' + (isPast ? '<th>Estado</th>' : '') + '<th></th></tr></thead><tbody>';
+  rows.forEach(function(m) {
+    var d = new Date(m.scheduled_at), name = (m.profiles && m.profiles.full_name) || 'Alumno';
+    var inApp = _mtgInApp(m);
+    var call = inApp ? '<span class="mk-pill">En la app</span>' : '<a class="mk-pill b" href="' + _mkEsc(_mkSafeUrl(m.meet_url)) + '" target="_blank" rel="noopener">Link externo ↗</a>';
+    var fecha = d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    var col5, col6 = '', act;
+    if (isPast) {
+      if (!inApp) col5 = '<span class="a1-mut">Fuera de la app</span>';
+      else if (m.student_joined_at) col5 = '<span class="a1-ok">● Entró ' + new Date(m.student_joined_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</span>';
+      else col5 = '<span class="a1-mut">○ No entró</span>';
+      var st = _A1_ST[m.status] ? m.status : 'scheduled';
+      col6 = '<td><select class="a1-st ' + _A1_ST[st][1] + '" data-id="' + _mkEsc(m.id) + '">' +
+        ['scheduled', 'completed', 'no_show', 'cancelled'].map(function(k) { return '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + _A1_ST[k][0] + '</option>'; }).join('') +
+        '</select>' + (m._auto ? '<div class="a1-auto">marcada sola</div>' : '') + '</td>';
+    } else {
+      var df = d - new Date(), D = Math.floor(df / 86400000), H = Math.floor(df % 86400000 / 3600000), M = Math.max(0, Math.floor(df % 3600000 / 60000));
+      col5 = df <= 0 ? '<span class="a1-ok">● Ahora</span>' : '<span class="' + (df < 3600000 ? 'a1-soon' : 'a1-mut') + '">en ' + (D > 0 ? D + 'd ' + H + 'h' : H > 0 ? H + 'h ' + M + 'm' : M + ' min') + '</span>';
+    }
+    act = '<div class="a1-act">' +
+      (!isPast ? (inApp ? '<button class="mk-chip" data-a1join="' + _mkEsc(m.id) + '" data-t="' + _mkEsc(m.title || 'Sesión 1-1') + '" data-n="' + _mkEsc(name) + '">Entrar</button>' : '') : '') +
+      '<button class="a1-ic" title="Editar" onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title || 'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url || '') + '\',\'' + m.scheduled_at + '\')">' + ico + '</button>' +
+      '<button class="a1-ic del" title="Eliminar" onclick="delAdmMtg(\'' + m.id + '\')">' + del + '</button></div>';
+    html += '<tr><td><div class="a1-who">' + _a1Av(name) + '<b>' + _mkEsc(name) + '</b></div></td><td class="a1-t">' + _mkEsc(m.title || 'Sesión 1-1') + '</td><td class="a1-d">' + fecha + '</td><td>' + call + '</td><td>' + col5 + '</td>' + col6 + '<td>' + act + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  if (isPast) html += '<div class="a1-note">Las reuniones dentro de la app se marcan solas: Completada si el alumno entró y No asistió si no entró. Puedes cambiar el estado cuando quieras.</div>';
+  el.innerHTML = html;
+  el.querySelectorAll('.a1-st').forEach(function(s) {
+    s.addEventListener('change', function() { setMtgStatus(s.dataset.id, s.value); });
+  });
+  el.querySelectorAll('[data-a1join]').forEach(function(b) {
+    b.addEventListener('click', function() { _lvJoinRoom(b.dataset.a1join, b.dataset.t + ' · ' + b.dataset.n, { meeting: true }); });
+  });
 }
 
 function setMtgStatus(id, st) {
   sb.from('meetings_1on1').update({ status: st }).eq('id', id).then(function(r) {
-    if (r.error) return tst('No se pudo guardar el estado: ' + r.error.message, 1);
-    _rAdm1on1Past();
+    if (r.error) { tst('No se pudo guardar el estado: ' + r.error.message, 1); return _rAdm1on1Load(); }
+    var m = _a1Data.find(function(x){ return String(x.id) === String(id); }); if (m) { m.status = st; m._auto = false; }
+    tst('✓ Estado guardado');
+    _rA1List();
   });
-}
-
-function _rAdm1on1Mtg() {
-  var el = document.getElementById('a1on1-mtg'); if (!el) return;
-  el.innerHTML = '<div style="padding:20px 0;text-align:center;"><span class="spin"></span></div>';
-  var now = new Date(Date.now() - 1800000).toISOString(); // 30 min de gracia
-  sb.from('meetings_1on1')
-    .select('*, profiles(full_name, avatar_url)')
-    .gte('scheduled_at', now)
-    .order('scheduled_at')
-    .then(function(r) {
-      var data = r.data || [];
-      if (!data.length) {
-        el.innerHTML = '<div style="background:linear-gradient(160deg,rgba(var(--c-ov),.04) 0%,rgba(var(--c-bgrgb),.95) 50%,rgba(var(--c-acc),.04) 100%);border:1px dashed rgba(var(--c-acc),.18);border-radius:10px;padding:30px;text-align:center;color:var(--c-faint);font-size:.84rem;">No hay reuniones 1-1 próximas programadas.</div>';
-        return;
-      }
-      var byDate = {};
-      data.forEach(function(m) {
-        var d = new Date(m.scheduled_at);
-        var key = d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-        if (!byDate[key]) byDate[key] = [];
-        byDate[key].push(m);
-      });
-      var html = '';
-      Object.keys(byDate).forEach(function(dateLabel) {
-        html += '<div style="margin-bottom:18px;">';
-        html += '<div style="font-size:.65rem;color:var(--sl);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(var(--c-acc),.12);">' + dateLabel + '</div>';
-        byDate[dateLabel].forEach(function(m) {
-          var d = new Date(m.scheduled_at);
-          var timeStr = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-          var now2 = new Date();
-          var diff = d - now2;
-          var dDays = Math.floor(diff / 86400000);
-          var dHrs  = Math.floor((diff % 86400000) / 3600000);
-          var dMins = Math.floor((diff % 3600000) / 60000);
-          var countdown = dDays > 0 ? dDays + 'd ' + dHrs + 'h' : dHrs + 'h ' + dMins + 'm';
-          var name = (m.profiles && m.profiles.full_name) ? m.profiles.full_name : 'Alumno';
-          var initials = name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
-          var isFuture10 = diff < 600000 && diff > 0;
-          html +=
-            '<div style="background:linear-gradient(160deg,rgba(var(--c-ov),.05) 0%,rgba(var(--c-acc),.07) 30%,rgba(var(--c-bgrgb),.92) 60%,rgba(var(--c-acc),.04) 100%);border:1px solid rgba(var(--c-acc),.2);box-shadow:0 1px 0 rgba(var(--c-ov),.06) inset,0 4px 16px rgba(0,0,0,.35);border-radius:12px;padding:14px 16px;margin-bottom:7px;display:flex;align-items:center;gap:14px;" >' +
-              '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
-              '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:.88rem;font-weight:600;color:var(--c-text);">' + name + '</div>' +
-                '<div style="font-size:.75rem;color:var(--c-muted);margin-top:2px;">' + (m.title || 'Sesión 1-1') + '</div>' +
-              '</div>' +
-              '<div style="text-align:right;flex-shrink:0;">' +
-                '<div style="font-size:.85rem;font-weight:600;color:var(--sl);">' + timeStr + '</div>' +
-                '<div style="font-size:.68rem;color:' + (isFuture10 ? 'rgb(var(--c-bad))' : 'var(--c-muted)') + ';margin-top:2px;">En ' + countdown + '</div>' +
-              '</div>' +
-              (m.meet_url ? '<a href="' + m.meet_url + '" target="_blank" rel="noopener" style="flex-shrink:0;background:rgba(var(--c-ok),.08);border:1px solid rgba(var(--c-ok),.2);color:rgb(var(--c-ok));padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:600;text-decoration:none;white-space:nowrap;">Entrar</a>' : '<span style="flex-shrink:0;font-size:.72rem;color:var(--c-faint);padding:5px 10px;">Sin link</span>') +
-              '<div style="display:flex;gap:4px;margin-left:6px;flex-shrink:0;">' +
-                '<button onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title||'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url||'') + '\',\'' + m.scheduled_at + '\')" style="background:rgba(var(--c-acc),.06);border:1px solid rgba(var(--c-acc),.15);color:rgb(var(--c-acc));width:28px;height:28px;border-radius:6px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
-                '<button onclick="delAdmMtg(\'' + m.id + '\')" style="background:rgba(var(--c-bad),.06);border:1px solid rgba(var(--c-bad),.15);color:rgb(var(--c-bad));width:28px;height:28px;border-radius:6px;font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Eliminar">✕</button>' +
-              '</div>' +
-            '</div>';
-        });
-        html += '</div>';
-      });
-      html += '<div style="font-size:.68rem;color:var(--c-faint);padding-top:4px;text-align:right;">' + data.length + ' reunión' + (data.length !== 1 ? 'es' : '') + ' próxima' + (data.length !== 1 ? 's' : '') + '</div>';
-      el.innerHTML = html;
-    });
 }
 
 // ── MODAL PROGRAMAR REUNIÓN ──
@@ -5222,12 +5250,13 @@ function openSchModal() {
           '<div><label class="wp-label">Fecha</label><input type="date" id="sch-m-date" class="wp-input"></div>' +
           '<div><label class="wp-label">Hora</label><input type="time" id="sch-m-time" class="wp-input"></div>' +
         '</div>' +
-        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="sch-m-url" class="wp-input" placeholder="meet.google.com/..."></div>' +
+        _mtgWhereHtml('sch-m', '') +
         '<button id="sch-m-save" class="wp-btn-primary" onclick="saveSchModal()" style="width:100%;">Programar sesión</button>' +
       '</div>' +
     '</div>';
 
   document.body.appendChild(ov);
+  _mtgWhereBind(ov);
   ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
 
   // Load students
@@ -5296,7 +5325,7 @@ function saveSchModal() {
   var title = (document.getElementById('sch-m-title')||{}).value || 'Sesión 1-1';
   var date  = (document.getElementById('sch-m-date') ||{}).value || '';
   var time  = (document.getElementById('sch-m-time') ||{}).value || '00:00';
-  var url   = (document.getElementById('sch-m-url')  ||{}).value || '';
+  var url   = _mtgWhereUrl('sch-m-url');
   if (!date) return tst('Selecciona una fecha', 1);
   var btn = document.getElementById('sch-m-save');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
@@ -5312,7 +5341,7 @@ function saveSchModal() {
     var m = document.getElementById('sch-modal');
     if (m) m.remove();
     // Refresh meetings tab if visible
-    if (document.getElementById('a1on1-mtg') && document.getElementById('a1on1-mtg').style.display !== 'none') _rAdm1on1Mtg();
+    _rAdm1on1Refresh();
   });
 }
 
@@ -5339,7 +5368,7 @@ function openEditMtgModal(id, encTitle, encUrl, isoDate) {
       '<div class="wp-body" style="padding:16px 24px 24px;">' +
         '<div class="wp-field"><label class="wp-label">Título</label><input id="emtg-title" class="wp-input" value="' + title.replace(/"/g,"'") + '"></div>' +
         '<div class="wp-field"><label class="wp-label">Fecha y hora</label><input type="datetime-local" id="emtg-date" class="wp-input" value="' + dtLocal + '"></div>' +
-        '<div class="wp-field"><label class="wp-label">Link Google Meet</label><input id="emtg-url" class="wp-input" value="' + url.replace(/"/g,"'") + '" placeholder="meet.google.com/..."></div>' +
+        _mtgWhereHtml('emtg', url) +
         '<div class="wp-footer">' +
           '<button id="emtg-save" class="wp-btn-primary" onclick="saveEditMtg(\'' + id + '\')">Guardar cambios</button>' +
           '<button class="wp-btn-ghost" onclick="document.getElementById(\'edit-mtg-modal\').remove()">Cancelar</button>' +
@@ -5347,13 +5376,41 @@ function openEditMtgModal(id, encTitle, encUrl, isoDate) {
       '</div>' +
     '</div>';
   document.body.appendChild(ov);
+  _mtgWhereBind(ov);
   ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+}
+
+// Campo "Dónde": llamada dentro de la app (sala privada) o link externo
+function _mtgWhereHtml(pre, url) {
+  var ext = !!url;
+  return '<div class="wp-field"><label class="wp-label">Dónde será la llamada</label><div class="lv-seg mtg-where">' +
+      '<button type="button" data-w="app"' + (ext ? '' : ' class="on"') + '>En la app</button>' +
+      '<button type="button" data-w="ext"' + (ext ? ' class="on"' : '') + '>Link externo</button></div>' +
+    '<div class="mtg-where-hint" style="font-size:.74rem;color:var(--c-muted);margin-top:8px;' + (ext ? 'display:none;' : '') + '">Sala privada: solo entran tú y este alumno, desde su pestaña Reuniones 1-1.</div>' +
+    '<input id="' + pre + '-url" class="wp-input" style="margin-top:10px;' + (ext ? '' : 'display:none;') + '" value="' + _mkEsc(url || '') + '" placeholder="https://meet.google.com/...">' +
+  '</div>';
+}
+function _mtgWhereBind(ov) {
+  var seg = ov.querySelector('.mtg-where'); if (!seg) return;
+  seg.querySelectorAll('button').forEach(function(b) {
+    b.addEventListener('click', function() {
+      seg.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+      var ext = b.dataset.w === 'ext', f = seg.parentNode;
+      f.querySelector('.mtg-where-hint').style.display = ext ? 'none' : '';
+      var inp = f.querySelector('input'); inp.style.display = ext ? '' : 'none'; if (ext) inp.focus();
+    });
+  });
+}
+function _mtgWhereUrl(id) {
+  var inp = document.getElementById(id); if (!inp) return '';
+  var on = inp.parentNode.querySelector('.mtg-where .on');
+  return on && on.dataset.w === 'ext' ? inp.value.trim() : '';
 }
 
 function saveEditMtg(id) {
   var title = (document.getElementById('emtg-title')||{}).value || '';
   var date  = (document.getElementById('emtg-date') ||{}).value || '';
-  var url   = (document.getElementById('emtg-url')  ||{}).value || '';
+  var url   = _mtgWhereUrl('emtg-url');
   if (!date) return tst('Selecciona fecha y hora', 1);
   var btn = document.getElementById('emtg-save');
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }

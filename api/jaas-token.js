@@ -70,6 +70,47 @@ module.exports = async function handler(req, res) {
     }
     const user = { id: claims.sub };
 
+    // ── Sala privada de una reunión 1-1: solo admin (o staff con alumnos) y el alumno de esa reunión ──
+    const meetingId = String((req.query && req.query.meeting) || '');
+    if (meetingId) {
+      if (!/^[\w-]{1,64}$/.test(meetingId)) return res.status(400).json({ error: 'bad_meeting' });
+      const [pR, mR, sR] = await Promise.all([
+        sb.from('profiles').select('role, full_name, email, avatar_url').eq('id', user.id).single(),
+        sb.from('meetings_1on1').select('id, student_id, scheduled_at, status, meet_url').eq('id', meetingId).single(),
+        sb.from('staff_permissions').select('access_students').eq('id', 1).single()
+      ]);
+      const pp = pR.data, mt = mR.data;
+      if (pR.error && /jwt|token|auth/i.test(pR.error.message || '')) return res.status(401).json({ error: 'invalid_token', detail: pR.error.message });
+      if (!pp) return res.status(403).json({ error: 'no_profile' });
+      if (!mt) return res.status(404).json({ error: 'no_meeting' });
+      const mod = pp.role === 'admin' || (pp.role === 'staff' && !!(sR.data && sR.data.access_students));
+      if (!mod) {
+        if (mt.student_id !== user.id) return res.status(403).json({ error: 'not_yours' });
+        if (mt.status === 'cancelled') return res.status(403).json({ error: 'cancelled' });
+        const t = new Date(mt.scheduled_at).getTime(), n = Date.now();
+        if (n < t - 10 * 60000) return res.status(403).json({ error: 'too_early' });
+        if (n > t + 3 * 3600000) return res.status(403).json({ error: 'meeting_over' });
+        // Asistencia: queda anotado que el alumno entró (con la service key, solo la primera vez)
+        if (process.env.SUPABASE_SERVICE_KEY) {
+          try {
+            await createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } })
+              .from('meetings_1on1').update({ student_joined_at: new Date().toISOString() })
+              .eq('id', mt.id).is('student_joined_at', null);
+          } catch (e) {}
+        }
+      }
+      const room1 = 'mrkatana-1a1-' + String(mt.id).toLowerCase().replace(/[^a-z0-9]/g, '');
+      const now1 = Math.floor(Date.now() / 1000);
+      const jwt1 = signJwt({
+        aud: 'jitsi', iss: 'chat', sub: APP_ID, room: room1, iat: now1, nbf: now1 - 10, exp: now1 + 4 * 3600,
+        context: {
+          user: { id: user.id, name: pp.full_name || (pp.email || '').split('@')[0] || 'Alumno', email: pp.email || '', avatar: pp.avatar_url || '', moderator: mod ? 'true' : 'false' },
+          features: { livestreaming: 'false', recording: 'false', transcription: 'false', 'outbound-call': 'false', 'sip-outbound-call': 'false' }
+        }
+      });
+      return res.status(200).json({ jwt: jwt1, room: APP_ID + '/' + room1, appId: APP_ID, moderator: mod });
+    }
+
     const sessionId = String((req.query && req.query.session) || '');
     if (!/^[\w-]{1,64}$/.test(sessionId)) return res.status(400).json({ error: 'bad_session' });
 

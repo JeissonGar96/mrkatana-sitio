@@ -1271,6 +1271,13 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
   #econ-cal .cal-event{grid-template-columns:64px 26px 1fr;gap:0 10px;padding:10px;margin:0 -10px;}
   #econ-cal .cal-values{justify-content:flex-start !important;padding-left:100px;}
 }
+/* Calendario: cada noticia en su propio bloque suave para distinguirlas dentro del día */
+#econ-cal .cal-event{background:rgba(var(--c-ov),.035);border:1px solid var(--k-line);margin:0 0 8px;padding:12px 14px;}
+#econ-cal .cal-event:hover{background:rgba(var(--c-ov),.06);border:1px solid rgba(var(--c-acc),.35);}
+#econ-cal .cal-day-header{margin:0 0 10px;}
+#econ-cal .cal-day-group{padding:16px 0 8px;}
+#econ-cal .cal-time{background:var(--c-card);}
+@media(max-width:860px){#econ-cal .cal-event{margin:0 0 8px;padding:10px 12px;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador

@@ -1674,6 +1674,21 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .rp-menu button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:9px 12px;font:inherit;font-size:.84rem;font-weight:500;color:var(--c-text2);cursor:pointer;}
 .rp-menu button:hover{background:rgba(var(--c-ov),.06);color:var(--c-text);}
 .rp-menu hr{border:0;border-top:1px solid rgba(var(--c-ov),.08);margin:5px 4px;}
+.pg-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.pg-tile{border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:12px 14px;}
+.pg-tile span{display:block;font-size:.74rem;color:var(--c-muted);}
+.pg-tile b{display:block;font-size:1.4rem;color:var(--c-text);margin:4px 0 2px;}
+.pg-tile small{font-size:.7rem;color:var(--c-muted);}
+.pg-empty{margin-top:18px;border:1px dashed rgba(var(--c-ov),.14);border-radius:14px;padding:22px;text-align:center;}
+.pg-empty h4{margin:0 0 8px;font-size:1rem;color:var(--c-text);}
+.pg-empty p{font-size:.84rem;line-height:1.6;color:var(--c-muted);margin:0 auto 16px;max-width:460px;}
+.pg-empty b{color:var(--c-text2);}
+@media (max-width:600px){.pg-tiles{grid-template-columns:1fr 1fr;}}
+.pg-prize{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
+.pg-ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;}
+.pg-ph b{font-size:.92rem;color:var(--c-text);}
+.pg-ph span{font-size:.78rem;color:var(--c-muted);}
+.pg-prize small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3913,6 +3928,27 @@ function _rpPhoto() {
   i.click();
 }
 document.addEventListener('click', function() { document.querySelectorAll('.rp-menu.open').forEach(function(x) { x.classList.remove('open'); }); });
+// ── MI PROGRESO DETALLADO: cuenta de trading (lo que llenará las barras de "Tu progreso semanal") ──
+function _pgDays() { // días hábiles (lunes a viernes) del mes actual
+  var d = new Date(), y = d.getFullYear(), mo = d.getMonth(), n = 0;
+  for (var i = 1; i <= new Date(y, mo + 1, 0).getDate(); i++) { var w = new Date(y, mo, i).getDay(); if (w > 0 && w < 6) n++; }
+  return n;
+}
+function openProgreso() {
+  var old = document.getElementById('pg-modal'); if (old) old.remove();
+  var ov = document.createElement('div'); ov.id = 'pg-modal'; ov.className = 'sum-ov';
+  var tiles = [['Días operados', 'este mes'], ['Racha actual', 'días seguidos'], ['Operaciones', 'este mes'], ['Resultado', 'este mes']];
+  ov.innerHTML = '<div class="sum-box"><div class="sum-top"><div><div class="sum-t">Mi progreso detallado</div><div class="sum-d">Tu cuenta de trading</div></div><button class="sum-x" aria-label="Cerrar">✕</button></div><div class="sum-body">' +
+    '<div class="pg-tiles">' + tiles.map(function(t) { return '<div class="pg-tile"><span>' + t[0] + '</span><b>—</b><small>' + t[1] + '</small></div>'; }).join('') + '</div>' +
+    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>0 de ' + _pgDays() + ' días operados · te faltan ' + _pgDays() + '</span></div><div class="lvl-bar"><i style="width:0%"></i></div><small>Opera todos los días hábiles del mes para ganar el premio.</small></div>' +
+    '<div class="pg-empty"><h4>Conecta tu cuenta de trading</h4><p>Cuando conectes tu cuenta de Exness o de una empresa de fondeo aliada, tus operaciones se registrarán solas. Cada día que operes se llenará una barra de <b>Tu progreso semanal</b> y aquí verás tu racha, tus operaciones y tus resultados.</p>' +
+    '<button class="mk-btn off" disabled>Próximamente</button></div>' +
+    '</div></div>';
+  document.body.appendChild(ov);
+  var close = function() { ov.remove(); };
+  ov.querySelector('.sum-x').addEventListener('click', close);
+  ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
+}
 function openAjustes(t) { _ajTab = t || 'perfil'; navigateTo('perfil'); }
 
 // ── HERRAMIENTAS: copiador, journal y lo que se vaya sumando para la comunidad ──
@@ -4722,7 +4758,7 @@ function _mkRenderRPanel(liveOnly) {
   var days = ['L','M','M','J','V','S','D'];
   rp.innerHTML =
     '<div class="rp-h rp-hm" style="font-size:1.1rem;">Tu perfil<button class="rp-dots" aria-label="Más opciones" onclick="event.stopPropagation();this.nextSibling.classList.toggle(\'open\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
-      '<div class="rp-menu"><button onclick="_rpPhoto()">Cambiar foto</button><button onclick="openAjustes(\'perfil\')">Editar mis datos</button><button onclick="openAjustes(\'planes\')">Mi plan</button><hr><button onclick="openAjustes(\'cuenta\')">Ajustes</button></div></div>' +
+      '<div class="rp-menu"><button onclick="_rpPhoto()">Cambiar foto</button><button onclick="openAjustes(\'perfil\')">Editar mis datos</button><button onclick="openAjustes(\'planes\')">Mi plan</button><button onclick="openProgreso()">Mi progreso detallado</button><hr><button onclick="openAjustes(\'cuenta\')">Ajustes</button></div></div>' +
     '<div class="rp-ava"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="4"/>' +
       '<circle id="rp-ring" cx="48" cy="48" r="44" fill="none" stroke="rgb(var(--c-acc))" stroke-width="4" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset .8s ease;"/></svg>' +
       '<div class="face">' + face + '</div></div>' +

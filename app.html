@@ -1717,6 +1717,8 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .rp-rank-tx b{display:block;font-size:.9rem;color:var(--c-text);margin-top:1px;}
 .rp-rank-tx span{display:block;font-size:.72rem;color:var(--c-muted);margin-top:1px;}
 .rp-rank-go{color:var(--c-muted);font-size:1.1rem;}
+/* Plan de la semana retirado (2026-10-13): las próximas actividades ya guían al alumno */
+#mk-wk,#mk-wk-home{display:none !important;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -4482,7 +4484,7 @@ function _buildAdminTabs() {
     ['st','Alumnos','access_students'],
     ['1on1','Reuniones 1-1','access_students'],
     ['codes','Planes', ['access_plans','access_discord','access_codes']],
-    ['roadmap','Roadmap','access_roadmap'],
+    // ['roadmap','Roadmap','access_roadmap'], // oculto 2026-10-13: Plan de la semana retirado (datos se conservan)
     ['ads','Anuncios','__admin_only'],
     ['apar','Apariencia','__admin_only']
   ];
@@ -6194,8 +6196,8 @@ function viewStudentProfile(id) {
           '</div>' +
         '</div>' +
 
-        // Roadmap
-        '<div class="wp-card">' +
+        // Roadmap (oculto: Plan de la semana retirado)
+        '<div class="wp-card" style="display:none;">' +
           '<div class="wp-card-head"><span class="wp-card-icon">🗺️</span><span class="wp-card-title">Progreso del Roadmap</span></div>' +
           '<div id="stud-roadmap-'+p.id+'"><div style="color:var(--c-muted);font-size:.78rem;">Cargando...</div></div>' +
         '</div>' +

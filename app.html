@@ -1689,6 +1689,17 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .pg-ph b{font-size:.92rem;color:var(--c-text);}
 .pg-ph span{font-size:.78rem;color:var(--c-muted);}
 .pg-prize small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
+.pg-rk{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
+.pg-rk-empty{font-size:.82rem;color:var(--c-muted);padding:6px 0 2px;}
+.pg-row{display:grid;grid-template-columns:26px 130px 1fr 44px;align-items:center;gap:12px;padding:7px 8px;border-radius:8px;}
+.pg-row.me{background:rgba(var(--c-acc),.08);}
+.pg-pos{font-size:.8rem;color:var(--c-muted);text-align:center;font-weight:600;}
+.pg-pos.top{color:rgb(var(--c-acc));}
+.pg-nm{font-size:.84rem;color:var(--c-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pg-nm em{font-style:normal;font-size:.7rem;color:rgb(var(--c-acc));margin-left:4px;}
+.pg-bar{margin:0 !important;}
+.pg-n{font-size:.78rem;color:var(--c-text2);text-align:right;}
+.sum-box{max-height:90vh;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3934,13 +3945,32 @@ function _pgDays() { // días hábiles (lunes a viernes) del mes actual
   for (var i = 1; i <= new Date(y, mo + 1, 0).getDate(); i++) { var w = new Date(y, mo, i).getDay(); if (w > 0 && w < 6) n++; }
   return n;
 }
+// Ranking del mes: días cumplidos (operó o anotó en el journal por qué no operó). Filas: {name, days, me}
+function _pgRanking(rows) {
+  var tot = _pgDays();
+  var head = '<div class="pg-rk"><div class="pg-ph"><b>Ranking del mes</b><span>Días cumplidos: operaste o anotaste por qué no operaste</span></div>';
+  if (!rows.length) return head + '<div class="pg-rk-empty">El ranking empieza cuando los alumnos conecten su cuenta de trading.</div></div>';
+  rows = rows.slice().sort(function(a, b) { return b.days - a.days; });
+  var meI = rows.findIndex(function(r) { return r.me; });
+  var show = rows.slice(0, 10);
+  if (meI >= 10) show.push(rows[meI]);
+  return head + show.map(function(r) {
+    var i = rows.indexOf(r), parts = String(r.name || '').split(' ');
+    var nm = parts[0] + (parts[1] ? ' ' + parts[1].charAt(0) + '.' : '');
+    return '<div class="pg-row' + (r.me ? ' me' : '') + '"><span class="pg-pos' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</span>' +
+      '<span class="pg-nm">' + _mkEsc(nm) + (r.me ? ' <em>Tú</em>' : '') + '</span>' +
+      '<div class="lvl-bar pg-bar"><i style="width:' + Math.round(r.days / tot * 100) + '%"></i></div>' +
+      '<span class="pg-n">' + r.days + '/' + tot + '</span></div>';
+  }).join('') + '</div>';
+}
 function openProgreso() {
   var old = document.getElementById('pg-modal'); if (old) old.remove();
   var ov = document.createElement('div'); ov.id = 'pg-modal'; ov.className = 'sum-ov';
   var tiles = [['Días operados', 'este mes'], ['Racha actual', 'días seguidos'], ['Operaciones', 'este mes'], ['Resultado', 'este mes']];
   ov.innerHTML = '<div class="sum-box"><div class="sum-top"><div><div class="sum-t">Mi progreso detallado</div><div class="sum-d">Tu cuenta de trading</div></div><button class="sum-x" aria-label="Cerrar">✕</button></div><div class="sum-body">' +
     '<div class="pg-tiles">' + tiles.map(function(t) { return '<div class="pg-tile"><span>' + t[0] + '</span><b>—</b><small>' + t[1] + '</small></div>'; }).join('') + '</div>' +
-    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>0 de ' + _pgDays() + ' días operados · te faltan ' + _pgDays() + '</span></div><div class="lvl-bar"><i style="width:0%"></i></div><small>Opera todos los días hábiles del mes para ganar el premio.</small></div>' +
+    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>0 de ' + _pgDays() + ' días cumplidos · te faltan ' + _pgDays() + '</span></div><div class="lvl-bar"><i style="width:0%"></i></div><small>Cumple todos los días hábiles del mes para ganar el premio. Si hay empate, gana quien mejor cuidó su cuenta.</small></div>' +
+    _pgRanking(window._pgRank || []) +
     '<div class="pg-empty"><h4>Conecta tu cuenta de trading</h4><p>Cuando conectes tu cuenta de Exness o de una empresa de fondeo aliada, tus operaciones se registrarán solas. Cada día que operes se llenará una barra de <b>Tu progreso semanal</b> y aquí verás tu racha, tus operaciones y tus resultados.</p>' +
     '<button class="mk-btn off" disabled>Próximamente</button></div>' +
     '</div></div>';

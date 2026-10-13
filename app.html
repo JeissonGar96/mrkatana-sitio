@@ -1618,6 +1618,29 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .sum-ck{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(var(--c-acc),.5);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--sl);margin-top:1px;}
 .sum-fx{display:inline-block;margin-top:18px;}
 .sum-chip{margin-left:4px;}
+
+/* ── Sobrio: menos color y menos burbujas (estados = punto + texto) ── */
+.mk-pill{display:inline-flex !important;align-items:center;gap:7px;background:none !important;padding:0 !important;border-radius:0 !important;text-transform:none !important;letter-spacing:0 !important;font-size:.8rem !important;font-weight:500 !important;color:var(--c-text2) !important;white-space:nowrap;}
+.mk-pill::before{content:"";width:6px;height:6px;border-radius:50%;flex-shrink:0;background:rgba(var(--c-ov),.35);}
+.mk-pill.g::before{background:rgb(var(--c-ok));}
+.mk-pill.r::before{background:rgb(var(--c-bad));}
+.mk-pill.b::before{background:rgb(var(--c-acc));}
+.mk-pill.a1-ext::before{display:none;}
+a.mk-pill{text-decoration:none;}
+a.mk-pill:hover{color:var(--c-text) !important;}
+.mk-chip{background:transparent !important;color:var(--c-text) !important;border:1px solid rgba(var(--c-ov),.14) !important;border-radius:8px !important;font-weight:600 !important;}
+.mk-chip:hover{background:transparent !important;border-color:rgba(var(--c-acc),.55) !important;color:rgb(var(--c-acc)) !important;}
+.a1-ok,.a1-mut,.a1-soon{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:500 !important;color:var(--c-text2) !important;}
+.a1-mut{color:var(--c-muted) !important;}
+.a1-ok i,.a1-mut i{width:6px;height:6px;border-radius:50%;background:rgb(var(--c-ok));display:inline-block;}
+.a1-mut i{background:rgba(var(--c-ov),.3);}
+.a1-st.g,.a1-st.r,.a1-st.n,.a1-st.w{background-color:transparent !important;border-color:rgba(var(--c-ov),.14) !important;color:var(--c-text) !important;border-radius:8px !important;font-weight:500 !important;}
+.a1-st.n{color:var(--c-muted) !important;}
+.a1-st.w{border-color:rgba(var(--c-acc),.45) !important;}
+.a1-tabs .wp-subtab-btn i,.a1-tabs .wp-subtab-btn i.warn{background:none !important;color:var(--c-muted) !important;padding:0 !important;min-width:0 !important;font-weight:500 !important;font-size:.74rem !important;}
+.a1-tabs .wp-subtab-btn i.warn{color:rgb(var(--c-acc)) !important;}
+.mk-ic,.mk-ic.r,.mk-ic.g,.mk-ic.b{background:rgba(var(--c-ov),.05) !important;color:var(--c-text2) !important;box-shadow:inset 0 0 0 1px rgba(var(--c-ov),.09) !important;}
+.cw-tag,.cw-tag.b{background:none !important;padding:0 !important;color:var(--c-muted) !important;font-weight:600 !important;letter-spacing:.8px !important;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3249,7 +3272,7 @@ function rSes() {
         (ed ? '<div class="ce-tools"><button class="ce-ic sm" title="Editar sesión" data-lv="edit" data-id="' + hero.id + '">' + CE_IC.edit + '</button><button class="ce-ic sm r" title="Eliminar sesión" data-lv="del" data-id="' + hero.id + '">' + CE_IC.del + '</button></div>' : '') +
         '<div class="mk-live-th">' + (isLive ? '<span class="mk-live-pill">● LIVE</span>' : '') + '<span class="cw-play">▶</span>' + (isLive ? '<span class="cw-dur">EN VIVO</span>' : '') + '</div>' +
         '<div class="mk-live-tx">' +
-          (isLive ? '<span class="mk-pill r">● En vivo ahora</span>' : '<span class="mk-pill">Próxima sesión</span>') +
+          (isLive ? '<span class="mk-pill r">En vivo ahora</span>' : '<span class="mk-pill">Próxima sesión</span>') +
           '<div class="mk-live-tit">' + _mkEsc(hero.title) + '</div>' +
           '<div class="mk-live-sub">' + (hero.description ? _mkEsc(hero.description) : (isLive ? 'Con Jeisson · en curso' : _mkWhen(hero.scheduled_at))) + '</div>' +
           (isLive
@@ -3574,7 +3597,7 @@ function _lvJoinRoom(sessionId, title, opts) {
   var al = document.querySelector('.alay'); if (al && al.classList.contains('with-rp')) { al.classList.remove('with-rp'); al._lvRp = true; }
   var msgs = { no_live_plan: 'Tu plan no incluye las sesiones en vivo.', not_live: 'La sesión todavía no empieza. Entra cuando aparezca EN VIVO.', missing_key: 'La sala no está configurada todavía.',
     too_early: 'Tu sesión 1-1 todavía no empieza. Podrás entrar 10 minutos antes de la hora.', meeting_over: 'Esta sesión 1-1 ya terminó.', not_yours: 'Esta sesión 1-1 no es tuya.', cancelled: 'Esta sesión 1-1 fue cancelada.', no_meeting: 'No encontramos esta sesión 1-1.' };
-  m.innerHTML = '<div class="lv-room"><div class="lv-room-bar">' + (opts.meeting ? '<span class="mk-pill g">● Sesión 1-1</span>' : '<span class="mk-pill r">● En vivo</span>') + '<b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span>' +
+  m.innerHTML = '<div class="lv-room"><div class="lv-room-bar">' + (opts.meeting ? '<span class="mk-pill g">Sesión 1-1</span>' : '<span class="mk-pill r">En vivo</span>') + '<b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span>' +
     (opts.meeting && cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff') ? '<button class="mk-btn lv-on-btn" id="lv-end1">■ Terminar llamada</button>' : '') +
     '<button class="mk-btn ghost" id="lv-leave">Salir de la sesión</button></div>' +
     '<div class="lv-room-box" id="lv-room-box"><div class="lv-room-wait"><span class="spin"></span>Conectando a la sesión...</div></div></div>';
@@ -3791,7 +3814,7 @@ function rReun() {
           var recBtn = x.rec
             ? '<button class="mk-chip" onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" data-title="' + _mkEsc(x.rec.title || x.t) + '" data-date="' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) + '" data-url="' + _mkEsc(toEmbedUrl(x.rec.video_url || '')) + '">▶ Ver grabación</button>'
             : (x.future && x.url ? '<a class="mk-chip" data-mtgx="' + _mkEsc(x.id) + '" href="' + _mkEsc(_mkSafeUrl(x.url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span style="color:var(--c-muted);">' + (x.future ? 'Disponible luego' : '—') + '</span>');
-          if (x.sum) { _mtgSum[x.id] = x.sum; recBtn = (x.rec ? recBtn + ' ' : '') + '<button class="mk-chip sum-chip" onclick="openMtgSummary(\'' + _mkEsc(x.id) + '\')">📝 Resumen</button>'; }
+          if (x.sum) { _mtgSum[x.id] = x.sum; recBtn = (x.rec ? recBtn + ' ' : '') + '<button class="mk-chip sum-chip" onclick="openMtgSummary(\'' + _mkEsc(x.id) + '\')">Resumen</button>'; }
           return '<tr><td>' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + '</td><td>' + _mkEsc(x.t) + '</td>' +
             '<td>' + (x.future ? '<span class="mk-pill b">Programada</span>' : x.st === 'no_show' ? '<span class="mk-pill r">No asistió</span>' : x.st === 'cancelled' ? '<span class="mk-pill">Cancelada</span>' : '<span class="mk-pill g">Completada</span>') + '</td><td>' + recBtn + '</td></tr>';
         }).join('') + '</tbody></table></div>';
@@ -5296,23 +5319,23 @@ function _rA1List() {
     var d = new Date(m.scheduled_at), name = (m.profiles && m.profiles.full_name) || 'Alumno';
     if (m.fathom_summary) _mtgSum[m.id] = m;
     var inApp = _mtgInApp(m);
-    var call = inApp ? '<span class="mk-pill">En la app</span>' : '<a class="mk-pill b" href="' + _mkEsc(_mkSafeUrl(m.meet_url)) + '" target="_blank" rel="noopener">Link externo ↗</a>';
+    var call = inApp ? '<span class="mk-pill">En la app</span>' : '<a class="mk-pill b a1-ext" href="' + _mkEsc(_mkSafeUrl(m.meet_url)) + '" target="_blank" rel="noopener">Link externo ↗</a>';
     var fecha = d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     var col5, col6 = '', act;
     if (isPast) {
-      if (m.student_joined_at) col5 = '<span class="a1-ok">● Entró ' + new Date(m.student_joined_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</span>';
-      else col5 = '<span class="a1-mut">○ No entró</span>';
+      if (m.student_joined_at) col5 = '<span class="a1-ok"><i></i>Entró ' + new Date(m.student_joined_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</span>';
+      else col5 = '<span class="a1-mut"><i></i>No entró</span>';
       var st = _A1_ST[m.status] ? m.status : 'scheduled';
       col6 = '<td><select class="a1-st ' + _A1_ST[st][1] + '" data-id="' + _mkEsc(m.id) + '">' +
         ['scheduled', 'completed', 'no_show', 'cancelled'].map(function(k) { return '<option value="' + k + '"' + (k === st ? ' selected' : '') + '>' + _A1_ST[k][0] + '</option>'; }).join('') +
         '</select>' + (m._auto ? '<div class="a1-auto">marcada sola</div>' : '') + '</td>';
     } else {
       var df = d - new Date(), D = Math.floor(df / 86400000), H = Math.floor(df % 86400000 / 3600000), M = Math.max(0, Math.floor(df % 3600000 / 60000));
-      col5 = df <= 0 ? '<span class="a1-ok">● Ahora</span>' : '<span class="' + (df < 3600000 ? 'a1-soon' : 'a1-mut') + '">en ' + (D > 0 ? D + 'd ' + H + 'h' : H > 0 ? H + 'h ' + M + 'm' : M + ' min') + '</span>';
+      col5 = df <= 0 ? '<span class="a1-ok"><i></i>Ahora</span>' : '<span class="' + (df < 3600000 ? 'a1-soon' : 'a1-mut') + '">en ' + (D > 0 ? D + 'd ' + H + 'h' : H > 0 ? H + 'h ' + M + 'm' : M + ' min') + '</span>';
     }
     act = '<div class="a1-act">' +
       (!isPast ? (inApp ? '<button class="mk-chip" data-a1join="' + _mkEsc(m.id) + '" data-t="' + _mkEsc(m.title || 'Sesión 1-1') + '" data-n="' + _mkEsc(name) + '">Entrar</button>' : '') : '') +
-      (m.fathom_summary ? '<button class="mk-chip sum-chip" onclick="openMtgSummary(\'' + _mkEsc(m.id) + '\')">📝 Resumen</button>' : '') +
+      (m.fathom_summary ? '<button class="mk-chip sum-chip" onclick="openMtgSummary(\'' + _mkEsc(m.id) + '\')">Resumen</button>' : '') +
       '<button class="a1-ic" title="Editar" onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title || 'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url || '') + '\',\'' + m.scheduled_at + '\')">' + ico + '</button>' +
       '<button class="a1-ic del" title="Eliminar" onclick="delAdmMtg(\'' + m.id + '\')">' + del + '</button></div>';
     html += '<tr><td><div class="a1-who">' + _a1Av(name) + '<b>' + _mkEsc(name) + '</b></div></td><td class="a1-t">' + _mkEsc(m.title || 'Sesión 1-1') + '</td><td class="a1-d">' + fecha + '</td><td>' + call + '</td><td>' + col5 + '</td>' + col6 + '<td>' + act + '</td></tr>';

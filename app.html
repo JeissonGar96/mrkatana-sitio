@@ -8186,8 +8186,14 @@ function loadCalendar() {
 // Runs every 30 seconds — activates sessions when start time is reached,
 // deactivates when end_time passes or manually toggled
 function checkSessionTimes() {
+  // Ahorro de base de datos: solo lo hace admin/staff, con la pestaña visible,
+  // y solo mira las sesiones de las últimas 24 h o las que siguen encendidas.
+  if (document.hidden || !cProfile || (cProfile.role !== 'admin' && cProfile.role !== 'staff')) return;
   var now = new Date();
-  sb.from('live_sessions').select('id, scheduled_at, end_time, is_active, manually_deactivated').then(function(r) {
+  var since = new Date(now.getTime() - 86400000).toISOString();
+  sb.from('live_sessions').select('id, scheduled_at, end_time, is_active, manually_deactivated')
+    .or('is_active.eq.true,and(scheduled_at.gte.' + since + ',scheduled_at.lte.' + new Date(now.getTime() + 60000).toISOString() + ')')
+    .then(function(r) {
     if (!r.data) return;
     r.data.forEach(function(s) {
       var start = new Date(s.scheduled_at);
@@ -8257,7 +8263,7 @@ function _checkInactivityAndMembership() {
 // Start checker when user is logged in
 function startSessionChecker() {
   checkSessionTimes(); // run immediately
-  setInterval(checkSessionTimes, 30000); // live sessions every 30s
+  setInterval(checkSessionTimes, 60000); // live sessions every 60s (solo admin/staff)
   setInterval(_checkInactivityAndMembership, 60000); // inactivity + membership every 60s
 }
 

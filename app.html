@@ -1590,7 +1590,8 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .tab-in{animation:tabIn .32s cubic-bezier(.2,.7,.2,1) both;}
 @keyframes tabIn{from{opacity:0;}to{opacity:1;}}
 .a1-tabs{margin-bottom:16px !important;}
-.a1-tabs .wp-subtab-btn i{font-style:normal;font-size:.66rem;font-weight:700;min-width:18px;height:18px;border-radius:9px;padding:0 5px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--c-ov),.10);color:var(--c-text2);}
+.a1-tabs .wp-subtab-btn{display:inline-flex;align-items:center;}
+.a1-tabs .wp-subtab-btn i{font-style:normal;font-size:.66rem;font-weight:700;min-width:18px;height:18px;line-height:1;margin-top:-4px;margin-bottom:-4px;border-radius:9px;padding:0 5px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--c-ov),.10);color:var(--c-text2);}
 .a1-tabs .wp-subtab-btn i:empty{display:none;}
 .a1-tabs .wp-subtab-btn i.warn{background:rgb(var(--c-bad));color:#fff;}
 .a1-more{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;}
@@ -5184,6 +5185,8 @@ function _rA1List() {
   var pend = past.filter(function(m){ return !m.status || m.status === 'scheduled'; }).length;
   var nu = document.getElementById('a1-n-up'); if (nu) nu.textContent = up.length || '';
   var np = document.getElementById('a1-n-past'); if (np) { np.textContent = pend || ''; np.className = pend ? 'warn' : ''; }
+  // Los números cambian la altura de la pestaña: recolocar la línea para que no "salte" al tocar
+  _tabInk(document.querySelector('.a1-tabs'));
   var rows = (_a1Tab === 'past' ? past : up).filter(function(m) {
     return !q || ((m.profiles && m.profiles.full_name) || '').toLowerCase().indexOf(q) > -1 || (m.title || '').toLowerCase().indexOf(q) > -1;
   });

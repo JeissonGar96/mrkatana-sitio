@@ -3673,7 +3673,8 @@ function rReun() {
     // ── TU PLAN 1-1 ──
     // Total = sesiones que trae su plan (3 por defecto); hechas = las que ya pasaron y no fueron canceladas ni faltó
     var doneN = past.length, totN = planRow && planRow.sessions_1on1 != null ? planRow.sessions_1on1 : 3;
-    if (doneN > totN) totN = doneN;
+    // Sesiones extra: si agendas más de las del plan, el total sube solo (ej. 3 de 4)
+    if (doneN + upcoming.length > totN) totN = doneN + upcoming.length;
     var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
     var endS = !end ? '—' : end.getFullYear() >= 2099 ? 'Ilimitado' : end.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
     html += '<div class="mk-card"><div class="mk-lbl">Tu plan 1-1</div>' +

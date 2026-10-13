@@ -1700,6 +1700,23 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .pg-bar{margin:0 !important;}
 .pg-n{font-size:.78rem;color:var(--c-text2);text-align:right;}
 .sum-box{max-height:90vh;}
+.pg-row.p1 .pg-pos{color:#e2b84a;}
+.pg-row.p2 .pg-pos{color:#c3c7cf;font-weight:700;}
+.pg-row.p3 .pg-pos{color:#c58a5a;font-weight:700;}
+.pg-pos svg{display:block;margin:0 auto;}
+.pg-row.p1 .pg-nm{font-weight:700;}
+.pg-row.p1{background:rgba(226,184,74,.07);}
+.pg-row:not(.p1):not(.p2):not(.p3) .pg-bar i{background:rgba(var(--c-ov),.28) !important;}
+.pg-row.p2 .pg-bar i{background:#c3c7cf !important;}
+.pg-row.p3 .pg-bar i{background:#c58a5a !important;}
+.rp-rank{display:flex;align-items:center;gap:12px;width:100%;margin:14px 0 4px;padding:12px 14px;background:none;border:1px solid rgba(var(--c-ov),.09);border-radius:12px;cursor:pointer;text-align:left;font:inherit;transition:border-color .2s;}
+.rp-rank:hover{border-color:rgba(var(--c-acc),.45);}
+.rp-rank-ic{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#e2b84a;background:rgba(var(--c-ov),.05);flex-shrink:0;}
+.rp-rank-tx{flex:1;min-width:0;}
+.rp-rank-tx small{display:block;font-size:.68rem;color:var(--c-muted);letter-spacing:.3px;}
+.rp-rank-tx b{display:block;font-size:.9rem;color:var(--c-text);margin-top:1px;}
+.rp-rank-tx span{display:block;font-size:.72rem;color:var(--c-muted);margin-top:1px;}
+.rp-rank-go{color:var(--c-muted);font-size:1.1rem;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3945,6 +3962,14 @@ function _pgDays() { // días hábiles (lunes a viernes) del mes actual
   for (var i = 1; i <= new Date(y, mo + 1, 0).getDate(); i++) { var w = new Date(y, mo, i).getDay(); if (w > 0 && w < 6) n++; }
   return n;
 }
+// Tarjetita del panel derecho: puesto del alumno en el ranking del mes
+function _rpRankCard() {
+  var rows = (window._pgRank || []).slice().sort(function(a, b) { return b.days - a.days; });
+  var i = rows.findIndex(function(r) { return r.me; });
+  var body = i < 0 ? '<b>Sin puesto aún</b><span>Conecta tu cuenta para entrar</span>'
+    : '<b>Tu puesto: #' + (i + 1) + '</b><span>' + rows[i].days + ' de ' + _pgDays() + ' días cumplidos</span>';
+  return '<button class="rp-rank" onclick="openProgreso()"><span class="rp-rank-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg></span><span class="rp-rank-tx"><small>Ranking del mes</small>' + body + '</span><span class="rp-rank-go">›</span></button>';
+}
 // Ranking del mes: días cumplidos (operó o anotó en el journal por qué no operó). Filas: {name, days, me}
 function _pgRanking(rows) {
   var tot = _pgDays();
@@ -3957,7 +3982,8 @@ function _pgRanking(rows) {
   return head + show.map(function(r) {
     var i = rows.indexOf(r), parts = String(r.name || '').split(' ');
     var nm = parts[0] + (parts[1] ? ' ' + parts[1].charAt(0) + '.' : '');
-    return '<div class="pg-row' + (r.me ? ' me' : '') + '"><span class="pg-pos' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</span>' +
+    var crown = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg>';
+    return '<div class="pg-row' + (r.me ? ' me' : '') + (i < 3 ? ' p' + (i + 1) : '') + '"><span class="pg-pos">' + (i === 0 ? crown : i + 1) + '</span>' +
       '<span class="pg-nm">' + _mkEsc(nm) + (r.me ? ' <em>Tú</em>' : '') + '</span>' +
       '<div class="lvl-bar pg-bar"><i style="width:' + Math.round(r.days / tot * 100) + '%"></i></div>' +
       '<span class="pg-n">' + r.days + '/' + tot + '</span></div>';
@@ -4800,6 +4826,7 @@ function _mkRenderRPanel(liveOnly) {
     '</div>' +
     (liveOnly ? '' : '<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span style="font-size:.78rem;color:var(--c-muted);font-weight:400;">lecciones</span></div>' +
       '<div class="rp-chart" id="rp-chart">' + days.map(function(d){ return '<div><i style="height:4%"></i><span>' + d + '</span></div>'; }).join('') + '</div>') +
+    _rpRankCard() +
     '<div class="rp-h" id="rp-up-h" style="font-size:1.1rem;">Próximas actividades</div><div id="rp-up"><div style="font-size:.8rem;color:var(--c-muted);">Cargando...</div></div>' +
     '<button class="rp-all" onclick="navigateTo(\'sesiones\')">Ver todo</button>';
 

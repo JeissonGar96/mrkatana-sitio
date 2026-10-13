@@ -3511,6 +3511,16 @@ function _lvQuickStart() {
   });
 }
 
+// Asistencia en reuniones 1-1 con link externo: al tocar "Entrar" queda anotado que el alumno entró
+document.addEventListener('click', function(e) {
+  var a = e.target.closest && e.target.closest('[data-mtgx]'); if (!a) return;
+  if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) return;
+  sb.auth.getSession().then(function(r) {
+    var tk = r && r.data && r.data.session ? r.data.session.access_token : '';
+    if (tk) fetch('/api/meeting-join?meeting=' + encodeURIComponent(a.dataset.mtgx), { method: 'POST', keepalive: true, headers: { Authorization: 'Bearer ' + tk } }).catch(function(){});
+  });
+});
+
 // ── Sala de Jitsi (8x8) dentro de la pestaña En vivo ──
 var _lvApi = null;
 var _lvAutoJoin = null;
@@ -3669,7 +3679,7 @@ function rReun() {
       html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal.replace(/18/g, '26') + '</div>' +
         '<div style="flex:1;min-width:0;"><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-count" id="reu-count">—</div>' +
         '<div class="mk-live-sub">' + _mkEsc(next.title || 'Sesión 1-1') + ' · ' + nd.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + nd.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</div>' + (next.meet_url ? '' : '<div class="reu-hint" id="reu-hint"></div>') + '</div>' +
-        (next.meet_url ? '<a class="mk-btn" href="' + _mkEsc(_mkSafeUrl(next.meet_url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<button class="mk-btn" id="reu-join" data-id="' + _mkEsc(next.id) + '" data-t="' + _mkEsc(next.title || 'Sesión 1-1') + '">Entrar a la llamada</button>') +
+        (next.meet_url ? '<a class="mk-btn" data-mtgx="' + _mkEsc(next.id) + '" href="' + _mkEsc(_mkSafeUrl(next.meet_url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<button class="mk-btn" id="reu-join" data-id="' + _mkEsc(next.id) + '" data-t="' + _mkEsc(next.title || 'Sesión 1-1') + '">Entrar a la llamada</button>') +
       '</div>';
       setTimeout(function tick() {
         var el = document.getElementById('reu-count'); if (!el) return;
@@ -3704,7 +3714,7 @@ function rReun() {
       var md = new Date(mt.scheduled_at), key = md.toDateString();
       var rec = recordings.find(function(r){ return !recUsed[r.id] && r.recorded_at && new Date(r.recorded_at).toDateString() === key; });
       if (rec) recUsed[rec.id] = true;
-      return { d: md, t: mt.title || 'Sesión 1-1', future: mt.status !== 'cancelled' && !closed(mt) && md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url, st: mt.status };
+      return { d: md, t: mt.title || 'Sesión 1-1', future: mt.status !== 'cancelled' && !closed(mt) && md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url, st: mt.status, id: mt.id };
     });
     recordings.forEach(function(r){ if (!recUsed[r.id]) rows.push({ d: new Date(r.recorded_at), t: r.title || 'Grabación', future: false, rec: r }); });
     rows.sort(function(x, y){ return y.d - x.d; });
@@ -3716,7 +3726,7 @@ function rReun() {
         rows.map(function(x) {
           var recBtn = x.rec
             ? '<button class="mk-chip" onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" data-title="' + _mkEsc(x.rec.title || x.t) + '" data-date="' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) + '" data-url="' + _mkEsc(toEmbedUrl(x.rec.video_url || '')) + '">▶ Ver grabación</button>'
-            : (x.future && x.url ? '<a class="mk-chip" href="' + _mkEsc(_mkSafeUrl(x.url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span style="color:var(--c-muted);">' + (x.future ? 'Disponible luego' : '—') + '</span>');
+            : (x.future && x.url ? '<a class="mk-chip" data-mtgx="' + _mkEsc(x.id) + '" href="' + _mkEsc(_mkSafeUrl(x.url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span style="color:var(--c-muted);">' + (x.future ? 'Disponible luego' : '—') + '</span>');
           return '<tr><td>' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + '</td><td>' + _mkEsc(x.t) + '</td>' +
             '<td>' + (x.future ? '<span class="mk-pill b">Programada</span>' : x.st === 'no_show' ? '<span class="mk-pill r">No asistió</span>' : x.st === 'cancelled' ? '<span class="mk-pill">Cancelada</span>' : '<span class="mk-pill g">Completada</span>') + '</td><td>' + recBtn + '</td></tr>';
         }).join('') + '</tbody></table></div>';
@@ -5127,6 +5137,8 @@ function deleteRoadmapWeek(weekNum) {
 var _a1Tab = 'up';
 // Desde esta fecha, las reuniones dentro de la app se marcan solas según si el alumno entró
 var MTG_AUTO_FROM = new Date('2026-10-12T00:00:00Z');
+// Con link externo, la asistencia se anota desde que existe el aviso al tocar "Entrar"
+var MTG_AUTO_FROM_EXT = new Date('2026-10-13T19:00:00Z');
 function _mtgInApp(m) { return !m.meet_url; }
 function _mtgDone(m) { return m.status === 'completed' || m.status === 'no_show' || new Date(m.scheduled_at) < new Date(Date.now() - 1800000); }
 
@@ -5175,7 +5187,7 @@ function _rAdm1on1Load() {
     _a1Data = r.data || [];
     // Marca automática: reuniones dentro de la app que ya pasaron y nadie revisó
     var auto = _a1Data.filter(function(m) {
-      return _mtgDone(m) && _mtgInApp(m) && (!m.status || m.status === 'scheduled') && ('student_joined_at' in m) && new Date(m.scheduled_at) >= MTG_AUTO_FROM;
+      return _mtgDone(m) && (!m.status || m.status === 'scheduled') && ('student_joined_at' in m) && new Date(m.scheduled_at) >= (_mtgInApp(m) ? MTG_AUTO_FROM : MTG_AUTO_FROM_EXT);
     });
     auto.forEach(function(m) {
       m.status = m.student_joined_at ? 'completed' : 'no_show'; m._auto = true;
@@ -5222,8 +5234,7 @@ function _rA1List() {
     var fecha = d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     var col5, col6 = '', act;
     if (isPast) {
-      if (!inApp) col5 = '<span class="a1-mut">Fuera de la app</span>';
-      else if (m.student_joined_at) col5 = '<span class="a1-ok">● Entró ' + new Date(m.student_joined_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</span>';
+      if (m.student_joined_at) col5 = '<span class="a1-ok">● Entró ' + new Date(m.student_joined_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</span>';
       else col5 = '<span class="a1-mut">○ No entró</span>';
       var st = _A1_ST[m.status] ? m.status : 'scheduled';
       col6 = '<td><select class="a1-st ' + _A1_ST[st][1] + '" data-id="' + _mkEsc(m.id) + '">' +
@@ -5241,7 +5252,7 @@ function _rA1List() {
   });
   html += '</tbody></table></div>';
   if (total > rows.length) html += '<div class="a1-more"><button class="mk-btn ghost" id="a1-more">Ver ' + Math.min(5, total - rows.length) + ' más</button><span>Mostrando ' + rows.length + ' de ' + total + '</span></div>';
-  if (isPast) html += '<div class="a1-note">Las reuniones dentro de la app se marcan solas: Completada si el alumno entró y No asistió si no entró. Puedes cambiar el estado cuando quieras.</div>';
+  if (isPast) html += '<div class="a1-note">Las reuniones se marcan solas: Completada si el alumno entró (o tocó "Entrar" en el link externo) y No asistió si no entró. Puedes cambiar el estado cuando quieras.</div>';
   el.innerHTML = html;
   var mb = document.getElementById('a1-more');
   if (mb) mb.addEventListener('click', function() { _a1Shown += 5; _rA1List(); });

@@ -87,6 +87,7 @@ module.exports = async function handler(req, res) {
       if (!mod) {
         if (mt.student_id !== user.id) return res.status(403).json({ error: 'not_yours' });
         if (mt.status === 'cancelled') return res.status(403).json({ error: 'cancelled' });
+        if (mt.status === 'completed' || mt.status === 'no_show') return res.status(403).json({ error: 'meeting_over' });
         const t = new Date(mt.scheduled_at).getTime(), n = Date.now();
         if (n < t - 10 * 60000) return res.status(403).json({ error: 'too_early' });
         if (n > t + 3 * 3600000) return res.status(403).json({ error: 'meeting_over' });

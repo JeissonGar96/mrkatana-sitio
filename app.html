@@ -3543,9 +3543,22 @@ function _lvJoinRoom(sessionId, title, opts) {
   var al = document.querySelector('.alay'); if (al && al.classList.contains('with-rp')) { al.classList.remove('with-rp'); al._lvRp = true; }
   var msgs = { no_live_plan: 'Tu plan no incluye las sesiones en vivo.', not_live: 'La sesión todavía no empieza. Entra cuando aparezca EN VIVO.', missing_key: 'La sala no está configurada todavía.',
     too_early: 'Tu sesión 1-1 todavía no empieza. Podrás entrar 10 minutos antes de la hora.', meeting_over: 'Esta sesión 1-1 ya terminó.', not_yours: 'Esta sesión 1-1 no es tuya.', cancelled: 'Esta sesión 1-1 fue cancelada.', no_meeting: 'No encontramos esta sesión 1-1.' };
-  m.innerHTML = '<div class="lv-room"><div class="lv-room-bar">' + (opts.meeting ? '<span class="mk-pill g">● Sesión 1-1</span>' : '<span class="mk-pill r">● En vivo</span>') + '<b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span><button class="mk-btn ghost" id="lv-leave">Salir de la sesión</button></div>' +
+  m.innerHTML = '<div class="lv-room"><div class="lv-room-bar">' + (opts.meeting ? '<span class="mk-pill g">● Sesión 1-1</span>' : '<span class="mk-pill r">● En vivo</span>') + '<b>' + _mkEsc(title || 'Sesión en vivo') + '</b><span style="flex:1"></span>' +
+    (opts.meeting && cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff') ? '<button class="mk-btn lv-on-btn" id="lv-end1">■ Terminar llamada</button>' : '') +
+    '<button class="mk-btn ghost" id="lv-leave">Salir de la sesión</button></div>' +
     '<div class="lv-room-box" id="lv-room-box"><div class="lv-room-wait"><span class="spin"></span>Conectando a la sesión...</div></div></div>';
   document.getElementById('lv-leave').addEventListener('click', _lvLeaveRoom);
+  // 1-1: el admin termina la llamada para los dos y queda marcada como completada
+  var end1 = document.getElementById('lv-end1');
+  if (end1) end1.addEventListener('click', function() {
+    if (!confirm('¿Terminar la llamada para los dos? Quedará marcada como completada.')) return;
+    end1.disabled = true;
+    try { if (_lvApi) _lvApi.executeCommand('endConference'); } catch (e) {}
+    sb.from('meetings_1on1').update({ status: 'completed' }).eq('id', sessionId).then(function(r) {
+      if (r && r.error) tst('La llamada se cerró, pero no se pudo marcar: ' + r.error.message, 1); else tst('✓ Llamada terminada');
+      setTimeout(_lvLeaveRoom, 400);
+    });
+  });
   sb.auth.getSession().then(function(r) {
     var tk = r && r.data && r.data.session ? r.data.session.access_token : '';
     return fetch('/api/jaas-token?' + (opts.meeting ? 'meeting=' : 'session=') + encodeURIComponent(sessionId), { headers: { Authorization: 'Bearer ' + tk } });
@@ -3578,6 +3591,7 @@ function _lvJoinRoom(sessionId, title, opts) {
       }
     });
     _lvApi.addListener('readyToClose', _lvLeaveRoom);
+    if (opts.meeting) _lvApi.addListener('videoConferenceLeft', function() { setTimeout(_lvLeaveRoom, 300); });
   }).catch(function(e) {
     var box = document.getElementById('lv-room-box');
     console.error('[En vivo] no se pudo abrir la sala:', e);
@@ -3643,8 +3657,9 @@ function rReun() {
     var recordings = res[1].data || [];
     var planRow    = res[2] && res[2].data;
 
-    var upcoming = meetings.filter(function(m){ return m.status !== 'cancelled' && new Date(m.scheduled_at) >= new Date(now.getTime() - 1800000); });
-    var past     = meetings.filter(function(m){ return new Date(m.scheduled_at) < new Date(now.getTime() - 1800000) && m.status !== 'no_show' && m.status !== 'cancelled'; });
+    var closed   = function(m){ return m.status === 'completed' || m.status === 'no_show'; };
+    var upcoming = meetings.filter(function(m){ return m.status !== 'cancelled' && !closed(m) && new Date(m.scheduled_at) >= new Date(now.getTime() - 1800000); });
+    var past     = meetings.filter(function(m){ return (closed(m) || new Date(m.scheduled_at) < new Date(now.getTime() - 1800000)) && m.status !== 'no_show' && m.status !== 'cancelled'; });
 
     var html = '<div class="mk-row2" style="grid-template-columns:1.2fr 1fr;">';
     // ── PRÓXIMA SESIÓN 1-1 (cuenta regresiva) ──
@@ -3689,7 +3704,7 @@ function rReun() {
       var md = new Date(mt.scheduled_at), key = md.toDateString();
       var rec = recordings.find(function(r){ return !recUsed[r.id] && r.recorded_at && new Date(r.recorded_at).toDateString() === key; });
       if (rec) recUsed[rec.id] = true;
-      return { d: md, t: mt.title || 'Sesión 1-1', future: mt.status !== 'cancelled' && md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url, st: mt.status };
+      return { d: md, t: mt.title || 'Sesión 1-1', future: mt.status !== 'cancelled' && !closed(mt) && md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url, st: mt.status };
     });
     recordings.forEach(function(r){ if (!recUsed[r.id]) rows.push({ d: new Date(r.recorded_at), t: r.title || 'Grabación', future: false, rec: r }); });
     rows.sort(function(x, y){ return y.d - x.d; });
@@ -5113,7 +5128,7 @@ var _a1Tab = 'up';
 // Desde esta fecha, las reuniones dentro de la app se marcan solas según si el alumno entró
 var MTG_AUTO_FROM = new Date('2026-10-12T00:00:00Z');
 function _mtgInApp(m) { return !m.meet_url; }
-function _mtgDone(m) { return new Date(m.scheduled_at) < new Date(Date.now() - 1800000); }
+function _mtgDone(m) { return m.status === 'completed' || m.status === 'no_show' || new Date(m.scheduled_at) < new Date(Date.now() - 1800000); }
 
 function rAdm1on1() {
   var c = document.getElementById('a-1on1'); if (!c) return;

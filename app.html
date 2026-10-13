@@ -1646,6 +1646,34 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .sum-vid iframe{width:100%;height:100%;border:0;display:block;}
 .sum-fx{display:inline-block;margin-top:16px;font-size:.78rem;color:var(--c-muted);text-decoration:none;}
 .sum-fx:hover{color:var(--c-text);}
+
+/* ── Ajustes (antes Mi perfil) ── */
+.aj{display:grid;grid-template-columns:210px 1fr;gap:22px;align-items:start;}
+.aj-nav{display:flex;flex-direction:column;gap:2px;position:sticky;top:0;}
+.aj-nav button{text-align:left;background:none;border:0;border-radius:10px;padding:10px 14px;font:inherit;font-size:.86rem;color:var(--c-text2);cursor:pointer;transition:background .15s,color .15s;}
+.aj-nav button:hover{background:rgba(var(--c-ov),.04);color:var(--c-text);}
+.aj-nav button.on{background:rgba(var(--c-ov),.06);color:var(--c-text);font-weight:600;}
+.aj-body .mk-pf,.aj-body .mk-pf2{margin-top:0;}
+.aj-pane > .mk-card + .mk-card{margin-top:16px;}
+.aj-row{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.aj-row b{display:block;font-size:.9rem;color:var(--c-text);}
+.aj-row span{display:block;font-size:.8rem;color:var(--c-muted);margin-top:3px;}
+.aj-help{font-size:.82rem;color:var(--c-muted);margin:-4px 0 14px;}
+@media (max-width:900px){.aj{grid-template-columns:1fr;}.aj-nav{flex-direction:row;overflow-x:auto;position:static;}.aj-nav button{white-space:nowrap;}}
+/* ── Herramientas ── */
+.tl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.tl-card h3{font-size:1rem;margin:0;color:var(--c-text);}
+.tl-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;}
+.tl-card p{font-size:.84rem;color:var(--c-muted);line-height:1.55;margin:0;}
+/* ── Menú de 3 puntos del panel derecho ── */
+.rp-h.rp-hm{display:flex;align-items:center;justify-content:space-between;position:relative;}
+.rp-dots{background:none;border:0;width:30px;height:30px;border-radius:8px;color:var(--c-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.rp-dots:hover{background:rgba(var(--c-ov),.06);color:var(--c-text);}
+.rp-menu{position:absolute;right:0;top:36px;z-index:50;min-width:200px;background:var(--c-card);border:1px solid rgba(var(--c-ov),.1);border-radius:12px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.35);display:none;}
+.rp-menu.open{display:block;}
+.rp-menu button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:9px 12px;font:inherit;font-size:.84rem;font-weight:500;color:var(--c-text2);cursor:pointer;}
+.rp-menu button:hover{background:rgba(var(--c-ov),.06);color:var(--c-text);}
+.rp-menu hr{border:0;border-top:1px solid rgba(var(--c-ov),.08);margin:5px 4px;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -1683,7 +1711,7 @@ function mkToggleTheme() {
         <button class="snav" data-v="clases"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10,8 16,12 10,16"/></svg> Curso</button>
         <button class="snav" data-v="sesiones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.89L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg> En vivo<span class="snav-live" id="snav-live" style="display:none;">LIVE</span></button>
         <button class="snav" data-v="reuniones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Reuniones 1-1</button>
-        <button class="snav" data-v="perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Mi Perfil</button>
+        <button class="snav" data-v="herramientas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg> Herramientas</button>
         <div id="adm-lnk" style="display:none;"><div class="snav-sec">Gestión</div>
           <button class="snav" data-v="admin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg> Admin</button>
         </div>
@@ -1693,6 +1721,7 @@ function mkToggleTheme() {
       </div>
       <div class="aside-foot">
         <div class="snav-sec" style="margin-top:4px;">Apariencia</div><div class="theme-tgl"><button onclick="mkSetTheme('dark')" class="tg-dark">● Dark</button><button onclick="mkSetTheme('light')" class="tg-light">○ Light</button></div>
+        <button class="snav" data-v="perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg> Ajustes</button>
         <div class="aside-user" style="display:none;">Hola, <strong id="uname2">Alumno</strong></div>
         <button class="snav snav-out" onclick="document.getElementById('btn-out').click()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg> Cerrar sesión</button>
       </div>
@@ -1729,7 +1758,7 @@ function mkToggleTheme() {
   </button>
   <button class="mob-nav-btn" data-v="perfil">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-    <span>Perfil</span>
+    <span>Ajustes</span>
   </button>
   <button class="mob-nav-btn" data-v="admin" id="mob-adm-btn" style="display:none">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
@@ -1871,6 +1900,7 @@ function _renderSection(state) {
   else if (state.section === 'sesiones')  rSes();
   else if (state.section === 'reuniones') rReun();
   else if (state.section === 'perfil')    rPerfil();
+  else if (state.section === 'herramientas') rTools();
   else if (state.section === 'admin') {
     // Solo admin y staff pueden abrir el panel (aunque escriban /app/admin a mano)
     if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) rAdmin();
@@ -1945,7 +1975,7 @@ function _parseUrlToState(path) {
   var m = path.match(/^\/app\/([^\/]+)(?:\/([^\/]+)\/([^\/]+))?/);
   if (!m) return { section: 'dash' };
   var section = m[1] || 'dash';
-  var valid = ['dash','clases','sesiones','reuniones','perfil','admin'];
+  var valid = ['dash','clases','sesiones','reuniones','perfil','herramientas','admin'];
   if (valid.indexOf(section) === -1) return { section: 'dash' };
   var state = { section: section };
   if (section === 'clases' && m[2] && m[3]) {
@@ -3871,6 +3901,34 @@ function restoreReuView() {
 
 
 // ── PERFIL ──
+var _ajTab = 'perfil';
+function _ajShow(t) {
+  _ajTab = t;
+  document.querySelectorAll('.aj-nav button').forEach(function(b) { b.classList.toggle('on', b.dataset.aj === t); });
+  document.querySelectorAll('.aj-pane').forEach(function(x) { x.style.display = x.dataset.aj === t ? '' : 'none'; });
+}
+function _rpPhoto() {
+  var i = document.getElementById('rp-ava-in');
+  if (!i) { i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.id = 'rp-ava-in'; i.style.display = 'none'; i.onchange = function() { uploadAvatar(i); }; document.body.appendChild(i); }
+  i.click();
+}
+document.addEventListener('click', function() { document.querySelectorAll('.rp-menu.open').forEach(function(x) { x.classList.remove('open'); }); });
+function openAjustes(t) { _ajTab = t || 'perfil'; navigateTo('perfil'); }
+
+// ── HERRAMIENTAS: copiador, journal y lo que se vaya sumando para la comunidad ──
+function rTools() {
+  var m = document.getElementById('amain');
+  var tools = [
+    ['Journal automático', 'Tus operaciones se registran solas desde tu cuenta de trading. Estadísticas, racha y progreso.'],
+    ['Copiador de operaciones', 'Copia las operaciones del mentor en tu cuenta de forma automática.'],
+    ['Más herramientas', 'Vamos sumando herramientas para la comunidad. Te avisaremos cuando estén listas.']
+  ];
+  m.innerHTML = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div>' +
+    '<div class="tl-grid">' + tools.map(function(t) {
+      return '<div class="mk-card tl-card"><div class="tl-top"><h3>' + t[0] + '</h3><span class="mk-pill">Próximamente</span></div><p>' + t[1] + '</p></div>';
+    }).join('') + '</div>';
+}
+
 function rPerfil() {
   var p = cProfile || {};
   var m = document.getElementById('amain');
@@ -3886,8 +3944,12 @@ function rPerfil() {
   if (p.access_1on1) perks.push('Sesiones 1-1');
 
   m.innerHTML =
-    '<div class="atit">Mi Perfil</div>' +
-    '<div class="asub" style="margin-bottom:22px;">Personaliza tu cuenta</div>' +
+    '<div class="atit">Ajustes</div>' +
+    '<div class="asub" style="margin-bottom:22px;">Tu cuenta, tus planes y tus pagos</div>' +
+    '<div class="aj"><nav class="aj-nav">' +
+      [['perfil','Datos personales'],['cuenta','Cuenta y seguridad'],['planes','Mis planes'],['pagos','Pagos'],['apariencia','Apariencia']].map(function(t){ return '<button data-aj="' + t[0] + '"' + (t[0] === _ajTab ? ' class="on"' : '') + '>' + t[1] + '</button>'; }).join('') +
+    '</nav><div class="aj-body">' +
+    '<div class="aj-pane" data-aj="perfil">' +
 
     '<div class="mk-pf">' +
       // Tarjeta izquierda: foto, nombre y Discord
@@ -3989,21 +4051,24 @@ function rPerfil() {
         '<div style="margin-bottom:16px;"><label class="al">Bio / Presentación</label>' +
           '<textarea id="pf-bio" class="ai" rows="3" placeholder="Cuéntanos sobre ti y tus metas en trading..." style="width:100%;box-sizing:border-box;resize:vertical;">'+(p.bio||'')+'</textarea>' +
         '</div>' +
-        '<h3 class="mk-ct" style="margin-top:20px;">Apariencia</h3>' +
-        '<div class="theme-tgl" style="max-width:320px;margin:0;"><button onclick="mkSetTheme(\'dark\')" class="tg-dark">● Dark</button><button onclick="mkSetTheme(\'light\')" class="tg-light">○ Light</button></div>' +
       '</div>' +
     '</div>' +
 
-    // Mi plan + historial de pagos
-    '<div class="mk-pf2">' +
+    '</div>' +
+    // Mi plan
+    '<div class="aj-pane" data-aj="planes">' +
       '<div class="mk-card"><div class="mk-sh" style="margin:0 0 8px;"><h3 class="mk-ct" style="margin:0;">Mi plan</h3><span class="mk-pill ' + (active ? 'g' : 'r') + '">' + (active ? 'Activo' : 'Inactivo') + '</span></div>' +
         '<div class="mk-count" id="pf-plan-name" style="font-size:2rem;">' + _mkEsc(p.plan || (active ? 'Plan activo' : 'Sin plan')) + '</div>' +
         '<div class="mk-live-sub" style="margin-top:6px;">' + (perks.length ? perks.join(' · ') + ' · ' : '') + endS + '</div></div>' +
-      '<div class="mk-card"><h3 class="mk-ct">Historial de pagos</h3><div id="pf-pays"><div class="mk-skel" style="height:46px;border-radius:12px;margin-bottom:8px;"></div><div class="mk-skel" style="height:46px;border-radius:12px;"></div></div></div>' +
     '</div>' +
+    // Pagos: historial + métodos de pago
+    '<div class="aj-pane" data-aj="pagos">' +
+      '<div class="mk-card"><h3 class="mk-ct">Historial de pagos</h3><div id="pf-pays"><div class="mk-skel" style="height:46px;border-radius:12px;margin-bottom:8px;"></div><div class="mk-skel" style="height:46px;border-radius:12px;"></div></div></div>' +
+      '<div class="mk-card" style="margin-top:16px;"><h3 class="mk-ct">Métodos de pago</h3><div class="aj-row"><div><b>PayPal o tarjeta</b><span>Pagas cada renovación en el checkout. No guardamos los datos de tu tarjeta.</span></div><a class="mk-chip" href="/checkout">Renovar o cambiar plan</a></div></div>' +
 
+    '</div>' +
     // Seguridad
-    '<div class="mk-pf2">' +
+    '<div class="aj-pane" data-aj="cuenta"><div class="mk-pf2">' +
       '<div class="mk-card"><h3 class="mk-ct">Cambiar contraseña</h3>' +
           '<div style="margin-bottom:10px;"><label class="al">Nueva contraseña</label><input id="pf-pw1" type="password" class="ai" placeholder="Mínimo 6 caracteres"></div>' +
           '<div style="margin-bottom:16px;"><label class="al">Confirmar contraseña</label><input id="pf-pw2" type="password" class="ai" placeholder="Repite la contraseña"></div>' +
@@ -4017,7 +4082,12 @@ function rPerfil() {
           '<div style="margin-bottom:16px;"><label class="al">Nuevo email</label><input id="pf-email" type="email" class="ai" placeholder="nuevo@email.com"></div>' +
           '<button class="mk-btn" onclick="saveEmail()">Cambiar email</button>' +
       '</div>' +
-    '</div>';
+    '</div></div>' +
+    '<div class="aj-pane" data-aj="apariencia"><div class="mk-card"><h3 class="mk-ct">Tema</h3><p class="aj-help">Elige cómo quieres ver la plataforma.</p>' +
+      '<div class="theme-tgl" style="max-width:320px;margin:0;"><button onclick="mkSetTheme(\'dark\')" class="tg-dark">● Dark</button><button onclick="mkSetTheme(\'light\')" class="tg-light">○ Light</button></div></div></div>' +
+    '</div></div>';
+  _ajShow(_ajTab);
+  m.querySelectorAll('.aj-nav button').forEach(function(b) { b.addEventListener('click', function() { _ajShow(b.dataset.aj); }); });
 
   // Nombre del plan e historial de pagos (tabla purchases)
   Promise.all([
@@ -4196,7 +4266,9 @@ async function uploadAvatar(input) {
         cProfile.avatar_url = publicUrl;
         if (wrap) wrap.style.opacity = '1';
         tst('✓ Foto actualizada');
-        rPerfil();
+        if (wrap) rPerfil();
+        var al = document.querySelector('.alay');
+        if (al && al.classList.contains('with-rp') && !document.querySelector('.snav.on[data-v="admin"]')) _mkRenderRPanel(!_hasClasesAccess());
       }, 'image/jpeg', 0.85);
     };
     img.src = e.target.result;
@@ -4649,7 +4721,8 @@ function _mkRenderRPanel(liveOnly) {
   var face = cProfile.avatar_url ? '<img src="' + _mkEsc(cProfile.avatar_url) + '" alt="">' : _mkEsc(ini);
   var days = ['L','M','M','J','V','S','D'];
   rp.innerHTML =
-    '<div class="rp-h" style="font-size:1.1rem;">Tu perfil</div>' +
+    '<div class="rp-h rp-hm" style="font-size:1.1rem;">Tu perfil<button class="rp-dots" aria-label="Más opciones" onclick="event.stopPropagation();this.nextSibling.classList.toggle(\'open\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
+      '<div class="rp-menu"><button onclick="_rpPhoto()">Cambiar foto</button><button onclick="openAjustes(\'perfil\')">Editar mis datos</button><button onclick="openAjustes(\'planes\')">Mi plan</button><hr><button onclick="openAjustes(\'cuenta\')">Ajustes</button></div></div>' +
     '<div class="rp-ava"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="4"/>' +
       '<circle id="rp-ring" cx="48" cy="48" r="44" fill="none" stroke="rgb(var(--c-acc))" stroke-width="4" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset .8s ease;"/></svg>' +
       '<div class="face">' + face + '</div></div>' +

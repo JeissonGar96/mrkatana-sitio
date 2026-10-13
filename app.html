@@ -1597,6 +1597,27 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .a1-more{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;}
 .a1-more .mk-btn{margin-top:0;}
 .a1-more span{font-size:.74rem;color:var(--c-muted);}
+
+/* ── Resumen de Fathom ── */
+.sum-ov{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);}
+.sum-box{background:var(--c-bg);border:1px solid rgba(var(--c-acc),.2);border-radius:16px;width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.sum-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(var(--c-ov),.06);}
+.sum-t{font-weight:700;color:var(--c-text);}
+.sum-d{font-size:.74rem;color:var(--c-muted);margin-top:2px;}
+.sum-x{background:rgba(var(--c-ov),.06);border:1px solid rgba(var(--c-ov),.1);color:var(--c-text2);width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0;}
+.sum-body{padding:18px 20px 22px;overflow-y:auto;}
+.sum-md{font-size:.86rem;line-height:1.6;color:var(--c-text2);margin-top:8px;}
+.sum-md h4{font-size:.9rem;color:var(--c-text);margin:14px 0 4px;}
+.sum-md p{margin:0 0 8px;}
+.sum-md ul{margin:0 0 8px;padding-left:18px;}
+.sum-md a{color:var(--sl);}
+.sum-acts{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:8px;}
+.sum-acts li{display:flex;gap:10px;align-items:flex-start;font-size:.85rem;color:var(--c-text);background:rgba(var(--c-ov),.03);border:1px solid rgba(var(--c-ov),.06);border-radius:10px;padding:10px 12px;}
+.sum-acts li.done{color:var(--c-muted);text-decoration:line-through;}
+.sum-acts small{display:block;color:var(--c-muted);font-size:.72rem;margin-top:2px;text-decoration:none;}
+.sum-ck{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(var(--c-acc),.5);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--sl);margin-top:1px;}
+.sum-fx{display:inline-block;margin-top:18px;}
+.sum-chip{margin-left:4px;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3650,6 +3671,49 @@ function openRecModal(title, date, embedUrl) {
 
 
 // ── REUNIONES ──
+// ── RESUMEN DE FATHOM (reuniones 1-1 por Meet/Zoom) ──
+var _mtgSum = {};
+function _mdLite(md) {
+  var out = [], inList = false;
+  String(md || '').split('\n').forEach(function(line) {
+    var t = line.trim();
+    var fmt = function(s) {
+      return _mkEsc(s)
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, function(_, a, u) { return '<a href="' + u + '" target="_blank" rel="noopener">' + a + '</a>'; })
+        .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+    };
+    var li = t.match(/^[-*]\s+(.*)/);
+    if (li) { if (!inList) { out.push('<ul>'); inList = true; } out.push('<li>' + fmt(li[1]) + '</li>'); return; }
+    if (inList) { out.push('</ul>'); inList = false; }
+    var h = t.match(/^#{1,6}\s+(.*)/);
+    if (h) out.push('<h4>' + fmt(h[1]) + '</h4>');
+    else if (t) out.push('<p>' + fmt(t) + '</p>');
+  });
+  if (inList) out.push('</ul>');
+  return out.join('');
+}
+function openMtgSummary(id) {
+  var mt = _mtgSum[id]; if (!mt) return;
+  var old = document.getElementById('sum-modal'); if (old) old.remove();
+  var d = new Date(mt.scheduled_at);
+  var acts = Array.isArray(mt.fathom_actions) ? mt.fathom_actions : [];
+  var ov = document.createElement('div');
+  ov.id = 'sum-modal'; ov.className = 'sum-ov';
+  ov.innerHTML = '<div class="sum-box"><div class="sum-top"><div><div class="sum-t">' + _mkEsc(mt.title || 'Sesión 1-1') + '</div>' +
+    '<div class="sum-d">' + d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) + '</div></div>' +
+    '<button class="sum-x" aria-label="Cerrar">✕</button></div><div class="sum-body">' +
+    '<div class="mk-lbl">Resumen de la clase</div><div class="sum-md">' + (mt.fathom_summary ? _mdLite(mt.fathom_summary) : '<p>Sin resumen.</p>') + '</div>' +
+    (acts.length ? '<div class="mk-lbl" style="margin-top:18px;">Tareas pendientes</div><ul class="sum-acts">' + acts.map(function(a) {
+      return '<li class="' + (a.done ? 'done' : '') + '"><span class="sum-ck">' + (a.done ? '✓' : '') + '</span><div>' + _mkEsc(a.text) + (a.who ? '<small>' + _mkEsc(a.who) + '</small>' : '') + '</div></li>';
+    }).join('') + '</ul>' : '') +
+    (mt.fathom_url ? '<a class="mk-btn ghost sum-fx" href="' + _mkEsc(_mkSafeUrl(mt.fathom_url)) + '" target="_blank" rel="noopener">Ver la clase completa en Fathom ↗</a>' : '') +
+    '</div></div>';
+  document.body.appendChild(ov);
+  var close = function() { ov.remove(); };
+  ov.querySelector('.sum-x').addEventListener('click', close);
+  ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
+}
+
 function rReun() {
   if (_lvApi && document.getElementById('lv-room-box')) return; // no cortar una llamada en curso
   var m = document.getElementById('amain');
@@ -3714,7 +3778,7 @@ function rReun() {
       var md = new Date(mt.scheduled_at), key = md.toDateString();
       var rec = recordings.find(function(r){ return !recUsed[r.id] && r.recorded_at && new Date(r.recorded_at).toDateString() === key; });
       if (rec) recUsed[rec.id] = true;
-      return { d: md, t: mt.title || 'Sesión 1-1', future: mt.status !== 'cancelled' && !closed(mt) && md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url, st: mt.status, id: mt.id };
+      return { d: md, t: mt.title || 'Sesión 1-1', future: mt.status !== 'cancelled' && !closed(mt) && md >= new Date(now.getTime() - 1800000), rec: rec, url: mt.meet_url, st: mt.status, id: mt.id, sum: mt.fathom_summary || (mt.fathom_actions && mt.fathom_actions.length) ? mt : null };
     });
     recordings.forEach(function(r){ if (!recUsed[r.id]) rows.push({ d: new Date(r.recorded_at), t: r.title || 'Grabación', future: false, rec: r }); });
     rows.sort(function(x, y){ return y.d - x.d; });
@@ -3727,6 +3791,7 @@ function rReun() {
           var recBtn = x.rec
             ? '<button class="mk-chip" onclick="openRecModal(this.dataset.title,this.dataset.date,this.dataset.url)" data-title="' + _mkEsc(x.rec.title || x.t) + '" data-date="' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }) + '" data-url="' + _mkEsc(toEmbedUrl(x.rec.video_url || '')) + '">▶ Ver grabación</button>'
             : (x.future && x.url ? '<a class="mk-chip" data-mtgx="' + _mkEsc(x.id) + '" href="' + _mkEsc(_mkSafeUrl(x.url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<span style="color:var(--c-muted);">' + (x.future ? 'Disponible luego' : '—') + '</span>');
+          if (x.sum) { _mtgSum[x.id] = x.sum; recBtn = (x.rec ? recBtn + ' ' : '') + '<button class="mk-chip sum-chip" onclick="openMtgSummary(\'' + _mkEsc(x.id) + '\')">📝 Resumen</button>'; }
           return '<tr><td>' + x.d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) + '</td><td>' + _mkEsc(x.t) + '</td>' +
             '<td>' + (x.future ? '<span class="mk-pill b">Programada</span>' : x.st === 'no_show' ? '<span class="mk-pill r">No asistió</span>' : x.st === 'cancelled' ? '<span class="mk-pill">Cancelada</span>' : '<span class="mk-pill g">Completada</span>') + '</td><td>' + recBtn + '</td></tr>';
         }).join('') + '</tbody></table></div>';
@@ -5229,6 +5294,7 @@ function _rA1List() {
   var html = '<div class="mk-card mk-tbl-wrap"><table class="mk-tbl a1-tbl"><thead><tr><th>Alumno</th><th>Tema</th><th>Fecha</th><th>Llamada</th><th>' + (isPast ? 'Asistencia' : 'Empieza') + '</th>' + (isPast ? '<th>Estado</th>' : '') + '<th></th></tr></thead><tbody>';
   rows.forEach(function(m) {
     var d = new Date(m.scheduled_at), name = (m.profiles && m.profiles.full_name) || 'Alumno';
+    if (m.fathom_summary) _mtgSum[m.id] = m;
     var inApp = _mtgInApp(m);
     var call = inApp ? '<span class="mk-pill">En la app</span>' : '<a class="mk-pill b" href="' + _mkEsc(_mkSafeUrl(m.meet_url)) + '" target="_blank" rel="noopener">Link externo ↗</a>';
     var fecha = d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -5246,6 +5312,7 @@ function _rA1List() {
     }
     act = '<div class="a1-act">' +
       (!isPast ? (inApp ? '<button class="mk-chip" data-a1join="' + _mkEsc(m.id) + '" data-t="' + _mkEsc(m.title || 'Sesión 1-1') + '" data-n="' + _mkEsc(name) + '">Entrar</button>' : '') : '') +
+      (m.fathom_summary ? '<button class="mk-chip sum-chip" onclick="openMtgSummary(\'' + _mkEsc(m.id) + '\')">📝 Resumen</button>' : '') +
       '<button class="a1-ic" title="Editar" onclick="openEditMtgModal(\'' + m.id + '\',\'' + encodeURIComponent(m.title || 'Sesión 1-1') + '\',\'' + encodeURIComponent(m.meet_url || '') + '\',\'' + m.scheduled_at + '\')">' + ico + '</button>' +
       '<button class="a1-ic del" title="Eliminar" onclick="delAdmMtg(\'' + m.id + '\')">' + del + '</button></div>';
     html += '<tr><td><div class="a1-who">' + _a1Av(name) + '<b>' + _mkEsc(name) + '</b></div></td><td class="a1-t">' + _mkEsc(m.title || 'Sesión 1-1') + '</td><td class="a1-d">' + fecha + '</td><td>' + call + '</td><td>' + col5 + '</td>' + col6 + '<td>' + act + '</td></tr>';

@@ -1582,6 +1582,21 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .a1-empty{text-align:center;color:var(--c-muted);font-size:.86rem;padding:40px 24px !important;}
 .reu-hint{font-size:.74rem;color:var(--c-muted);margin-top:6px;}
 .mk-btn.off,.mk-btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* Pestañas estilo Planes con línea deslizante */
+.wp-subtabs{position:relative;}
+.wp-subtabs.has-ink .wp-subtab-btn.active{border-bottom-color:transparent !important;}
+.wp-ink{position:absolute;left:0;bottom:0;height:2px;border-radius:2px;background:var(--sl);box-shadow:0 0 10px rgba(var(--c-acc),.45);pointer-events:none;transition:transform .38s cubic-bezier(.65,0,.35,1),width .38s cubic-bezier(.65,0,.35,1);}
+.wp-subtab-btn{transition:color .25s ease !important;}
+.tab-in{animation:tabIn .32s cubic-bezier(.2,.7,.2,1) both;}
+@keyframes tabIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.a1-tabs{margin-bottom:16px !important;}
+.a1-tabs .wp-subtab-btn i{font-style:normal;font-size:.66rem;font-weight:700;min-width:18px;height:18px;border-radius:9px;padding:0 5px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--c-ov),.10);color:var(--c-text2);}
+.a1-tabs .wp-subtab-btn i:empty{display:none;}
+.a1-tabs .wp-subtab-btn i.warn{background:rgb(var(--c-bad));color:#fff;}
+.a1-more{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;}
+.a1-more .mk-btn{margin-top:0;}
+.a1-more span{font-size:.74rem;color:var(--c-muted);}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3621,10 +3636,12 @@ function rReun() {
   // Load meetings and recordings in parallel
   Promise.all([
     sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).order('scheduled_at'),
-    sb.from('recordings_1on1').select('*').eq('student_id', cUser.id).order('recorded_at', {ascending: false})
+    sb.from('recordings_1on1').select('*').eq('student_id', cUser.id).order('recorded_at', {ascending: false}),
+    cProfile && cProfile.plan ? sb.from('checkout_plans').select('*').eq('id', cProfile.plan).maybeSingle() : Promise.resolve({ data: null })
   ]).then(function(res) {
     var meetings   = res[0].data || [];
     var recordings = res[1].data || [];
+    var planRow    = res[2] && res[2].data;
 
     var upcoming = meetings.filter(function(m){ return m.status !== 'cancelled' && new Date(m.scheduled_at) >= new Date(now.getTime() - 1800000); });
     var past     = meetings.filter(function(m){ return new Date(m.scheduled_at) < new Date(now.getTime() - 1800000) && m.status !== 'no_show' && m.status !== 'cancelled'; });
@@ -3654,7 +3671,9 @@ function rReun() {
       html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal.replace(/18/g, '26') + '</div><div><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-live-sub" style="margin-top:6px;">Sin sesiones programadas. Escríbele a Jeisson para agendar.</div></div></div>';
     }
     // ── TU PLAN 1-1 ──
-    var doneN = past.length, totN = past.length + upcoming.length;
+    // Total = sesiones que trae su plan (3 por defecto); hechas = las que ya pasaron y no fueron canceladas ni faltó
+    var doneN = past.length, totN = planRow && planRow.sessions_1on1 != null ? planRow.sessions_1on1 : 3;
+    if (doneN > totN) totN = doneN;
     var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
     var endS = !end ? '—' : end.getFullYear() >= 2099 ? 'Ilimitado' : end.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
     html += '<div class="mk-card"><div class="mk-lbl">Tu plan 1-1</div>' +
@@ -5097,36 +5116,41 @@ function _mtgDone(m) { return new Date(m.scheduled_at) < new Date(Date.now() - 1
 
 function rAdm1on1() {
   var c = document.getElementById('a-1on1'); if (!c) return;
+  _injectWhopStyles();
   c.innerHTML =
+    '<div class="wp-subtabs a1-tabs">' +
+      '<button class="wp-subtab-btn" data-a1="up">Próximas <i id="a1-n-up"></i></button>' +
+      '<button class="wp-subtab-btn" data-a1="past">Pasadas <i id="a1-n-past"></i></button>' +
+      '<button class="wp-subtab-btn" data-a1="rec">Grabaciones</button>' +
+    '</div>' +
     '<div class="a1-head">' +
-      '<div class="lv-seg a1-seg">' +
-        '<button data-a1="up">Próximas <i id="a1-n-up"></i></button>' +
-        '<button data-a1="past">Pasadas <i id="a1-n-past"></i></button>' +
-        '<button data-a1="rec">Grabaciones</button>' +
-      '</div>' +
       '<input class="a1-q" id="a1-q" placeholder="Buscar alumno...">' +
       '<button class="mk-btn" onclick="openSchModal()">+ Programar reunión</button>' +
     '</div>' +
     '<div id="a1on1-list"></div>' +
     '<div id="a1on1-rec" style="display:none;"></div>';
   c.querySelectorAll('[data-a1]').forEach(function(b) { b.addEventListener('click', function() { swA1on1(b.dataset.a1); }); });
-  document.getElementById('a1-q').addEventListener('input', function() { _rA1List(); });
+  document.getElementById('a1-q').addEventListener('input', function() { _a1Shown = 5; _rA1List(); });
   swA1on1(_a1Tab === 'rec' ? 'up' : _a1Tab);
 }
 
 function swA1on1(tab) {
   _a1Tab = tab;
-  document.querySelectorAll('[data-a1]').forEach(function(b) { b.classList.toggle('on', b.dataset.a1 === tab); });
+  document.querySelectorAll('[data-a1]').forEach(function(b) { b.classList.toggle('active', b.dataset.a1 === tab); });
+  _tabInk(document.querySelector('.a1-tabs'));
+  _a1Shown = 5;
   var l = document.getElementById('a1on1-list'), r = document.getElementById('a1on1-rec'), q = document.getElementById('a1-q');
   if (l) l.style.display = tab === 'rec' ? 'none' : '';
   if (r) r.style.display = tab === 'rec' ? '' : 'none';
   if (q) q.style.display = tab === 'rec' ? 'none' : '';
+  _tabFx(tab === 'rec' ? r : l);
   if (tab === 'rec') _rAdm1on1Rec(); else _rAdm1on1Load();
 }
 function _rAdm1on1Refresh() { if (_a1Tab === 'rec') _rAdm1on1Rec(); else _rAdm1on1Load(); }
 function _rAdm1on1Mtg() { _rAdm1on1Load(); }
 
 var _a1Data = [];
+var _a1Shown = 5; // se muestran de 5 en 5 ("Ver más")
 function _rAdm1on1Load() {
   var el = document.getElementById('a1on1-list'); if (!el) return;
   if (!_a1Data.length) el.innerHTML = '<div class="mk-card" style="text-align:center;padding:40px;"><span class="spin"></span></div>';
@@ -5168,6 +5192,8 @@ function _rA1List() {
     return;
   }
   var isPast = _a1Tab === 'past';
+  var total = rows.length;
+  rows = rows.slice(0, _a1Shown);
   var ico = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
   var del = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
   var html = '<div class="mk-card mk-tbl-wrap"><table class="mk-tbl a1-tbl"><thead><tr><th>Alumno</th><th>Tema</th><th>Fecha</th><th>Llamada</th><th>' + (isPast ? 'Asistencia' : 'Empieza') + '</th>' + (isPast ? '<th>Estado</th>' : '') + '<th></th></tr></thead><tbody>';
@@ -5196,8 +5222,11 @@ function _rA1List() {
     html += '<tr><td><div class="a1-who">' + _a1Av(name) + '<b>' + _mkEsc(name) + '</b></div></td><td class="a1-t">' + _mkEsc(m.title || 'Sesión 1-1') + '</td><td class="a1-d">' + fecha + '</td><td>' + call + '</td><td>' + col5 + '</td>' + col6 + '<td>' + act + '</td></tr>';
   });
   html += '</tbody></table></div>';
+  if (total > rows.length) html += '<div class="a1-more"><button class="mk-btn ghost" id="a1-more">Ver ' + Math.min(5, total - rows.length) + ' más</button><span>Mostrando ' + rows.length + ' de ' + total + '</span></div>';
   if (isPast) html += '<div class="a1-note">Las reuniones dentro de la app se marcan solas: Completada si el alumno entró y No asistió si no entró. Puedes cambiar el estado cuando quieras.</div>';
   el.innerHTML = html;
+  var mb = document.getElementById('a1-more');
+  if (mb) mb.addEventListener('click', function() { _a1Shown += 5; _rA1List(); });
   el.querySelectorAll('.a1-st').forEach(function(s) {
     s.addEventListener('change', function() { setMtgStatus(s.dataset.id, s.value); });
   });
@@ -6774,15 +6803,37 @@ function rAdmCodes() {
   // Mostrar solo la primera sub-pestaña realmente visible
   var firstSubtab = visibleSubtabs[0][0];
   document.getElementById('codes-subtab-' + firstSubtab).style.display = '';
+  _tabInk(c.querySelector('.wp-subtabs'));
 }
 
 function _switchCodesSubtab(tab) {
-  document.querySelectorAll('.wp-subtab-btn').forEach(function(b) {
+  document.querySelectorAll('.wp-subtab-btn[data-subtab]').forEach(function(b) {
     b.classList.toggle('active', b.dataset.subtab === tab);
   });
   document.querySelectorAll('.codes-subtab-panel').forEach(function(p) {
-    p.style.display = p.id === 'codes-subtab-' + tab ? '' : 'none';
+    var on = p.id === 'codes-subtab-' + tab;
+    p.style.display = on ? '' : 'none';
+    if (on) _tabFx(p);
   });
+  var b0 = document.querySelector('.wp-subtab-btn[data-subtab]');
+  if (b0) _tabInk(b0.parentNode);
+}
+
+// Línea dorada que se desliza bajo la pestaña activa (pestañas estilo Planes)
+function _tabInk(wrap) {
+  if (!wrap) return;
+  var ink = wrap.querySelector('.wp-ink'), fresh = !ink;
+  if (fresh) { ink = document.createElement('span'); ink.className = 'wp-ink'; wrap.appendChild(ink); wrap.classList.add('has-ink'); }
+  var a = wrap.querySelector('.wp-subtab-btn.active');
+  if (fresh) ink.style.transition = 'none';
+  ink.style.width = a ? a.offsetWidth + 'px' : '0';
+  ink.style.transform = 'translateX(' + (a ? a.offsetLeft : 0) + 'px)';
+  if (fresh) { void ink.offsetWidth; ink.style.transition = ''; }
+}
+// Entrada suave del contenido al cambiar de pestaña
+function _tabFx(el) {
+  if (!el) return;
+  el.classList.remove('tab-in'); void el.offsetWidth; el.classList.add('tab-in');
 }
 
 var STAFF_PERMS = [
@@ -7109,6 +7160,7 @@ function openPlanModal(planId) {
             '<span class="wp-toggle-text">Incluye sesiones 1-a-1</span>' +
             '<label class="wp-toggle"><input type="checkbox" id="pm-1on1" '+(p.access_1on1?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
           '</div>' +
+          ('sessions_1on1' in p || (!p.id && (window._allPlans || []).some(function(x){ return 'sessions_1on1' in x; })) ? '<div class="wp-field" style="margin-top:6px;"><label class="wp-label">Cuántas sesiones 1-a-1 incluye</label><input type="number" min="0" id="pm-1on1-n" class="wp-input" value="' + (p.sessions_1on1 != null ? p.sessions_1on1 : 3) + '"></div>' : '') +
           '<div class="wp-toggle-row">' +
             '<span class="wp-toggle-text">Marcar "Popular" en checkout</span>' +
             '<label class="wp-toggle"><input type="checkbox" id="pm-popular" '+(p.popular?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
@@ -7198,6 +7250,8 @@ function openPlanModal(planId) {
       popular: document.getElementById('pm-popular').checked,
       discord_role_ids: roleIds
     };
+    var n1 = document.getElementById('pm-1on1-n');
+    if (n1 && n1.value !== '') data.sessions_1on1 = parseInt(n1.value, 10);
     if (isNew) { data.active = false; data.sort_order = (window._allPlans || []).length; }
 
     var op = isNew ? sb.from('checkout_plans').insert(data) : sb.from('checkout_plans').update(data).eq('id', id);

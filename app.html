@@ -1641,6 +1641,11 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .a1-tabs .wp-subtab-btn i.warn{color:rgb(var(--c-acc)) !important;}
 .mk-ic,.mk-ic.r,.mk-ic.g,.mk-ic.b{background:rgba(var(--c-ov),.05) !important;color:var(--c-text2) !important;box-shadow:inset 0 0 0 1px rgba(var(--c-ov),.09) !important;}
 .cw-tag,.cw-tag.b{background:none !important;padding:0 !important;color:var(--c-muted) !important;font-weight:600 !important;letter-spacing:.8px !important;}
+.sum-ov.has-vid .sum-box{max-width:860px;}
+.sum-vid{aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin-bottom:18px;}
+.sum-vid iframe{width:100%;height:100%;border:0;display:block;}
+.sum-fx{display:inline-block;margin-top:16px;font-size:.78rem;color:var(--c-muted);text-decoration:none;}
+.sum-fx:hover{color:var(--c-text);}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3715,6 +3720,10 @@ function _mdLite(md) {
   if (inList) out.push('</ul>');
   return out.join('');
 }
+function _fathomEmbed(u) {
+  var m = String(u || '').match(/^https:\/\/fathom\.video\/(?:share|embed)\/([\w-]+)/);
+  return m ? 'https://fathom.video/embed/' + m[1] : '';
+}
 function openMtgSummary(id) {
   var mt = _mtgSum[id]; if (!mt) return;
   var old = document.getElementById('sum-modal'); if (old) old.remove();
@@ -3722,14 +3731,16 @@ function openMtgSummary(id) {
   var acts = Array.isArray(mt.fathom_actions) ? mt.fathom_actions : [];
   var ov = document.createElement('div');
   ov.id = 'sum-modal'; ov.className = 'sum-ov';
+  if (_fathomEmbed(mt.fathom_url)) ov.classList.add('has-vid');
   ov.innerHTML = '<div class="sum-box"><div class="sum-top"><div><div class="sum-t">' + _mkEsc(mt.title || 'Sesión 1-1') + '</div>' +
     '<div class="sum-d">' + d.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) + '</div></div>' +
     '<button class="sum-x" aria-label="Cerrar">✕</button></div><div class="sum-body">' +
+    (_fathomEmbed(mt.fathom_url) ? '<div class="sum-vid"><iframe src="' + _fathomEmbed(mt.fathom_url) + '" allow="fullscreen" allowfullscreen></iframe></div>' : '') +
     '<div class="mk-lbl">Resumen de la clase</div><div class="sum-md">' + (mt.fathom_summary ? _mdLite(mt.fathom_summary) : '<p>Sin resumen.</p>') + '</div>' +
     (acts.length ? '<div class="mk-lbl" style="margin-top:18px;">Tareas pendientes</div><ul class="sum-acts">' + acts.map(function(a) {
       return '<li class="' + (a.done ? 'done' : '') + '"><span class="sum-ck">' + (a.done ? '✓' : '') + '</span><div>' + _mkEsc(a.text) + (a.who ? '<small>' + _mkEsc(a.who) + '</small>' : '') + '</div></li>';
     }).join('') + '</ul>' : '') +
-    (mt.fathom_url ? '<a class="mk-btn ghost sum-fx" href="' + _mkEsc(_mkSafeUrl(mt.fathom_url)) + '" target="_blank" rel="noopener">Ver la clase completa en Fathom ↗</a>' : '') +
+    (mt.fathom_url ? '<a class="sum-fx" href="' + _mkEsc(_mkSafeUrl(mt.fathom_url)) + '" target="_blank" rel="noopener">Abrir en Fathom ↗</a>' : '') +
     '</div></div>';
   document.body.appendChild(ov);
   var close = function() { ov.remove(); };

@@ -1584,10 +1584,9 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .mk-btn.off,.mk-btn:disabled{opacity:.45;cursor:not-allowed;}
 
 /* Pestañas estilo Planes con línea deslizante */
-.wp-subtabs{position:relative;}
-.wp-subtabs.has-ink .wp-subtab-btn.active{border-bottom-color:transparent !important;}
-.wp-ink{position:absolute;left:0;bottom:0;height:2px;border-radius:2px;background:var(--sl);box-shadow:0 0 10px rgba(var(--c-acc),.45);pointer-events:none;transition:transform .38s cubic-bezier(.65,0,.35,1),width .38s cubic-bezier(.65,0,.35,1);}
-.wp-subtab-btn{transition:color .25s ease !important;}
+.a1-tabs{position:relative;overflow:visible !important;}
+.a1-tabs.has-ink .wp-subtab-btn.active{border-bottom-color:transparent !important;}
+.a1-tabs .wp-ink{position:absolute;left:0;top:0;box-sizing:border-box;background:transparent;border-bottom:2px solid var(--sl);pointer-events:none;transition:transform .38s cubic-bezier(.65,0,.35,1),width .38s cubic-bezier(.65,0,.35,1);}
 .tab-in{animation:tabIn .32s cubic-bezier(.2,.7,.2,1) both;}
 @keyframes tabIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 .a1-tabs{margin-bottom:16px !important;}
@@ -6804,7 +6803,6 @@ function rAdmCodes() {
   // Mostrar solo la primera sub-pestaña realmente visible
   var firstSubtab = visibleSubtabs[0][0];
   document.getElementById('codes-subtab-' + firstSubtab).style.display = '';
-  _tabInk(c.querySelector('.wp-subtabs'));
 }
 
 function _switchCodesSubtab(tab) {
@@ -6812,12 +6810,8 @@ function _switchCodesSubtab(tab) {
     b.classList.toggle('active', b.dataset.subtab === tab);
   });
   document.querySelectorAll('.codes-subtab-panel').forEach(function(p) {
-    var on = p.id === 'codes-subtab-' + tab;
-    p.style.display = on ? '' : 'none';
-    if (on) _tabFx(p);
+    p.style.display = p.id === 'codes-subtab-' + tab ? '' : 'none';
   });
-  var b0 = document.querySelector('.wp-subtab-btn[data-subtab]');
-  if (b0) _tabInk(b0.parentNode);
 }
 
 // Línea dorada que se desliza bajo la pestaña activa (pestañas estilo Planes)
@@ -6828,6 +6822,7 @@ function _tabInk(wrap) {
   var a = wrap.querySelector('.wp-subtab-btn.active');
   if (fresh) ink.style.transition = 'none';
   ink.style.width = a ? a.offsetWidth + 'px' : '0';
+  if (a) { ink.style.height = a.offsetHeight + 'px'; ink.style.top = a.offsetTop + 'px'; ink.style.borderRadius = getComputedStyle(a).borderRadius; }
   ink.style.transform = 'translateX(' + (a ? a.offsetLeft : 0) + 'px)';
   if (fresh) { void ink.offsetWidth; ink.style.transition = ''; }
 }

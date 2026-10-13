@@ -1584,11 +1584,11 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .mk-btn.off,.mk-btn:disabled{opacity:.45;cursor:not-allowed;}
 
 /* Pestañas estilo Planes con línea deslizante */
-.a1-tabs{position:relative;overflow:visible !important;}
-.a1-tabs.has-ink .wp-subtab-btn.active{border-bottom-color:transparent !important;}
-.a1-tabs .wp-ink{position:absolute;left:0;top:0;box-sizing:border-box;background:transparent;border-bottom:2px solid var(--sl);pointer-events:none;transition:transform .38s cubic-bezier(.65,0,.35,1),width .38s cubic-bezier(.65,0,.35,1);}
+.wp-subtabs.has-ink{position:relative;overflow:visible !important;}
+.wp-subtabs.has-ink .wp-subtab-btn.active{border-bottom-color:transparent !important;}
+.wp-subtabs.has-ink .wp-ink{position:absolute;left:0;top:0;box-sizing:border-box;background:transparent;border-bottom:2px solid var(--sl);pointer-events:none;transition:transform .38s cubic-bezier(.65,0,.35,1),width .38s cubic-bezier(.65,0,.35,1);}
 .tab-in{animation:tabIn .32s cubic-bezier(.2,.7,.2,1) both;}
-@keyframes tabIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+@keyframes tabIn{from{opacity:0;}to{opacity:1;}}
 .a1-tabs{margin-bottom:16px !important;}
 .a1-tabs .wp-subtab-btn i{font-style:normal;font-size:.66rem;font-weight:700;min-width:18px;height:18px;border-radius:9px;padding:0 5px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--c-ov),.10);color:var(--c-text2);}
 .a1-tabs .wp-subtab-btn i:empty{display:none;}
@@ -6803,6 +6803,7 @@ function rAdmCodes() {
   // Mostrar solo la primera sub-pestaña realmente visible
   var firstSubtab = visibleSubtabs[0][0];
   document.getElementById('codes-subtab-' + firstSubtab).style.display = '';
+  _tabInk(c.querySelector('.wp-subtabs'));
 }
 
 function _switchCodesSubtab(tab) {
@@ -6810,8 +6811,12 @@ function _switchCodesSubtab(tab) {
     b.classList.toggle('active', b.dataset.subtab === tab);
   });
   document.querySelectorAll('.codes-subtab-panel').forEach(function(p) {
-    p.style.display = p.id === 'codes-subtab-' + tab ? '' : 'none';
+    var on = p.id === 'codes-subtab-' + tab;
+    p.style.display = on ? '' : 'none';
+    if (on) _tabFx(p);
   });
+  var b0 = document.querySelector('.wp-subtab-btn[data-subtab]');
+  if (b0) _tabInk(b0.parentNode);
 }
 
 // Línea dorada que se desliza bajo la pestaña activa (pestañas estilo Planes)

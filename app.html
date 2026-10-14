@@ -4242,7 +4242,7 @@ function _ajMemb() {
     el.querySelectorAll('[data-ed]').forEach(function(b) {
       b.addEventListener('click', function() {
         var k = b.dataset.ed;
-        if (k === 'renew') window.location.href = '/checkout';
+        if (k === 'renew') window.location.href = '/checkout?email=' + encodeURIComponent(cUser ? cUser.email : '') + '&name=' + encodeURIComponent((cProfile && cProfile.full_name) || '') + '&renew=1';
         else if (k.indexOf('rc') === 0) _ajReceipt(_ajPays[+k.slice(2)], names);
       });
     });

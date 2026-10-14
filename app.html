@@ -1756,6 +1756,12 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .aj2-bar{height:6px;border-radius:3px;background:rgba(var(--c-ov),.08);margin-top:8px;overflow:hidden;max-width:420px;}
 .aj2-bar i{display:block;height:100%;background:rgb(var(--c-acc));}
 @media (max-width:900px){.aj2{grid-template-columns:1fr;gap:16px;}.aj2-nav{flex-direction:row;overflow-x:auto;}.aj2-nav button{white-space:nowrap;}.aj2-l{width:110px;}.aj2-acts{margin-left:0;}}
+/* Invitación a avisos de en vivo */
+.push-ask{position:fixed;right:24px;bottom:24px;z-index:900;width:340px;max-width:calc(100vw - 32px);background:var(--c-card,#16171b);border:1px solid rgba(var(--c-ov),.1);border-radius:14px;padding:16px 18px;box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:12px;font-size:.84rem;}
+.push-ask b{display:block;color:var(--c-text);font-weight:600;margin-bottom:3px;}
+.push-ask span{color:var(--c-text2);line-height:1.45;}
+.push-ask-b{display:flex;justify-content:flex-end;gap:8px;}
+@media (max-width:900px){.push-ask{right:16px;bottom:84px;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2240,6 +2246,8 @@ function loadApp(user) {
       }
       // Start auto session checker
       startSessionChecker();
+      _pushSubscribe(false);
+      setTimeout(_pushAsk, 4000);
       // Restore route from URL or start at dash
       var path = window.location.pathname;
       var routeState = _parseUrlToState(path);
@@ -3477,9 +3485,15 @@ function _afterLiveEdit() {
   if (document.getElementById('a-se') && typeof rAdmSe === 'function') rAdmSe();
   if (cur && cur.section === 'sesiones') rSes();
 }
+// Avisa a los alumnos (celular y email) que empezó el en vivo. El servidor avisa una sola vez.
+function _liveNotify(id) {
+  if (!id) return;
+  fetch('/api/notify-live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) }).catch(function() {});
+}
 function _liveToggle(id, v) {
   sb.from('live_sessions').update({ is_active: v, manually_deactivated: !v }).eq('id', id).then(function(r) {
     if (r && r.error) return tst('Error: ' + r.error.message, 1);
+    if (v) _liveNotify(id);
     tst(v ? '✓ Estás en vivo' : 'En vivo terminado');
     _afterLiveEdit();
   });
@@ -3610,6 +3624,7 @@ function _liveModal(s) {
     q.then(function(r) {
       if (r && r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = isNew ? 'Programar' : 'Guardar cambios'; return; }
       tst(isNew ? '✓ Sesión programada' : '✓ Sesión actualizada');
+      if (act && !isNew) _liveNotify(s.id);
       close(); _afterLiveEdit();
     });
   });
@@ -3667,6 +3682,7 @@ function _lvQuickStart() {
     }).select().single().then(function(r) {
       if (r.error || !r.data) { tst('Error: ' + (r.error ? r.error.message : 'no se pudo crear'), 1); btn.disabled = false; btn.textContent = '● Iniciar en vivo'; return; }
       close();
+      _liveNotify(r.data.id);
       _lvJoinRoom(r.data.id, t);
     });
   });
@@ -4041,6 +4057,7 @@ function _ajRender() {
     var v = function(k, d) { return s[k] == null ? d : s[k]; };
     html = '<div class="aj2-h">Notificaciones</div><div class="aj2-s">Elige cómo quieres enterarte.</div>' +
       _ajGroup('Cuando empieza un en vivo', _ajRow('En el celular o computador', 'Aparece aunque no tengas la página abierta', _ajToggle('notify_live_push', v('notify_live_push', true)).replace('<button', '<span').replace('</button>', '</span>')) +
+        _ajPushRow() +
         _ajRow('Por email', _mkEsc(cUser ? cUser.email : ''), _ajToggle('notify_live_email', v('notify_live_email', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
       _ajGroup('Reuniones 1-1', _ajRow('Recordatorio de mi 1-1', '10 minutos antes de la llamada', _ajToggle('notify_mtg', v('notify_mtg', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
       _ajGroup('Novedades', _ajRow('Clases nuevas', 'Cuando se publica una clase en el curso', _ajToggle('notify_new_class', v('notify_new_class', false)).replace('<button', '<span').replace('</button>', '</span>')));
@@ -4074,9 +4091,50 @@ function _ajSaveSet(upd, done) {
     tst('✓ Guardado'); done && done(true);
   });
 }
+// Avisos al celular/computador (Web Push). La llave pública va aquí; la privada solo en Vercel.
+var _VAPID_PUB = 'BFq0c3NiHS9LLzjgZJImePJ7dXBAvG-EYgRF8v8tI4jWfwdVLEDI7BetU4bfVhs9fhKZQ88nAVsmq9ZhyXh18oc';
+function _pushOk() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function _pushSubscribe(ask) {
+  if (!_pushOk() || !cUser) return Promise.resolve(false);
+  var perm = Notification.permission === 'default' && ask ? Notification.requestPermission() : Promise.resolve(Notification.permission);
+  return Promise.resolve(perm).then(function(pm) {
+    if (pm !== 'granted') return false;
+    return navigator.serviceWorker.register('/sw.js').then(function() { return navigator.serviceWorker.ready; }).then(function(reg) {
+      return reg.pushManager.getSubscription().then(function(sub) {
+        if (sub) return sub;
+        var b = (_VAPID_PUB + '='.repeat((4 - _VAPID_PUB.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+        var raw = atob(b), key = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i);
+        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      });
+    }).then(function(sub) {
+      var j = sub.toJSON();
+      return sb.from('push_subscriptions').upsert({ user_id: cUser.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_agent: navigator.userAgent.slice(0, 200) }, { onConflict: 'endpoint' })
+        .then(function(r) { return !r.error; });
+    });
+  }).catch(function() { return false; });
+}
+// Invitación discreta (una vez cada 14 días) para activar los avisos de en vivo
+function _pushAsk() {
+  if (!_pushOk() || Notification.permission !== 'default' || document.getElementById('push-ask')) return;
+  try { var t = +localStorage.getItem('mk-push-ask') || 0; if (Date.now() - t < 14 * 864e5) return; } catch (e) {}
+  var d = document.createElement('div'); d.id = 'push-ask'; d.className = 'push-ask';
+  d.innerHTML = '<div><b>Avisos de en vivo</b><span>Te avisamos en el celular o computador cuando empiece un en vivo.</span></div>' +
+    '<div class="push-ask-b"><button class="aj2-b" data-x>Ahora no</button><button class="aj2-b gold" data-ok>Activar</button></div>';
+  document.body.appendChild(d);
+  var close = function() { try { localStorage.setItem('mk-push-ask', Date.now()); } catch (e) {} d.remove(); };
+  d.querySelector('[data-x]').onclick = close;
+  d.querySelector('[data-ok]').onclick = function() { close(); _pushSubscribe(true).then(function(ok) { if (ok) tst('✓ Avisos activados'); }); };
+}
+function _ajPushRow() {
+  if (!_pushOk()) return _ajRow('Este dispositivo', _ajEmpty('Este navegador no permite avisos') + '<small>En iPhone: abre la página en Safari, toca Compartir y "Agregar a inicio", y entra desde ese ícono.</small>');
+  if (Notification.permission === 'granted') return _ajRow('Este dispositivo', '<span class="aj2-dot"></span>Avisos activados');
+  if (Notification.permission === 'denied') return _ajRow('Este dispositivo', _ajEmpty('Bloqueados en el navegador') + '<small>Actívalos desde el candado junto a la dirección de la página.</small>');
+  return _ajRow('Este dispositivo', 'Aún no activas los avisos aquí', 'Activar', 'pushdev', 'gold');
+}
 function _ajToggleSave(b) {
   var k = b.dataset.tg, on = !b.classList.contains('on');
-  if (k === 'notify_live_push' && on && window.Notification && Notification.permission === 'default') Notification.requestPermission();
+  if (k === 'notify_live_push' && on) _pushSubscribe(true).then(function() { if (_ajTab === 'notif') _ajRender(); });
   b.classList.toggle('on', on);
   var u = {}; u[k] = on;
   _ajSaveSet(u, function(ok) { if (!ok) b.classList.toggle('on', !on); });
@@ -4086,6 +4144,7 @@ function _ajToggleSave(b) {
 function _ajEdit(k) {
   var p = cProfile || {};
   if (k === 'foto') return _rpPhoto();
+  if (k === 'pushdev') return _pushSubscribe(true).then(function(ok) { tst(ok ? '✓ Avisos activados en este dispositivo' : 'No se activaron los avisos', !ok); _ajRender(); });
   if (k === 'discord') {
     var params = new URLSearchParams({ client_id: '1482794976118046851', redirect_uri: window.location.origin + '/api/discord-callback', response_type: 'code', scope: 'identify guilds.join', state: cUser ? cUser.id : '' });
     window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString(); return;
@@ -8294,6 +8353,7 @@ function togSe(id, v) {
     is_active: v,
     manually_deactivated: v ? false : true
   }).eq('id', id).then(function() {
+    if (v) _liveNotify(id);
     tst(v ? '✓ Sesión activada' : 'Sesión desactivada');
     rAdmSe();
   });
@@ -8762,6 +8822,7 @@ function checkSessionTimes() {
       if (shouldBeActive && !s.is_active && s.manually_deactivated !== true) {
         // Auto-activate only if not manually deactivated
         sb.from('live_sessions').update({ is_active: true }).eq('id', s.id).then(function() {
+          _liveNotify(s.id);
           var cur = history.state;
           if (cur && cur.section === 'sesiones') rSes();
         });

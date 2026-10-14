@@ -1719,6 +1719,43 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .rp-rank-go{color:var(--c-muted);font-size:1.1rem;}
 /* Plan de la semana retirado (2026-10-13): las próximas actividades ya guían al alumno */
 #mk-wk,#mk-wk-home{display:none !important;}
+
+/* ── Ajustes v2 (estilo lista) ── */
+.aj2{display:grid;grid-template-columns:210px minmax(0,1fr);gap:28px;align-items:start;max-width:1000px;}
+.aj2-nav{display:flex;flex-direction:column;gap:2px;}
+.aj2-nav button{text-align:left;background:none;border:0;border-radius:10px;padding:10px 14px;font:inherit;font-size:.86rem;color:var(--c-text2);cursor:pointer;transition:background .15s,color .15s;}
+.aj2-nav button:hover{background:rgba(var(--c-ov),.04);color:var(--c-text);}
+.aj2-nav button.on{background:rgba(var(--c-ov),.06);color:var(--c-text);font-weight:600;}
+.aj2-h{font-size:1.15rem;font-weight:700;color:var(--c-text);margin:0 0 4px;}
+.aj2-s{font-size:.82rem;color:var(--c-muted);margin:0 0 18px;}
+.aj2-gt{font-size:.72rem;letter-spacing:.8px;text-transform:uppercase;color:var(--c-muted);margin:0 0 8px 2px;}
+.aj2-g{border:1px solid rgba(var(--c-ov),.08);border-radius:14px;margin-bottom:22px;background:var(--c-card);}
+.aj2-r{display:flex;align-items:center;gap:16px;padding:15px 18px;border-top:1px solid rgba(var(--c-ov),.06);}
+.aj2-r:first-child{border-top:0;}
+.aj2-r.editing{align-items:flex-start;flex-wrap:wrap;}
+.aj2-l{width:190px;flex-shrink:0;font-size:.85rem;color:var(--c-text2);}
+.aj2-v{flex:1;font-size:.88rem;color:var(--c-text);min-width:0;line-height:1.45;}
+.aj2-v small{display:block;color:var(--c-muted);font-size:.76rem;margin-top:3px;}
+.aj2-v .ai{width:100%;box-sizing:border-box;}
+.aj2-mut{color:var(--c-muted);}
+.aj2-b{font:inherit;font-size:.8rem;color:var(--c-text2);background:none;border:1px solid rgba(var(--c-ov),.14);border-radius:8px;padding:6px 12px;white-space:nowrap;cursor:pointer;transition:border-color .2s,color .2s;}
+.aj2-b:hover{border-color:rgba(var(--c-acc),.5);color:var(--c-text);}
+.aj2-b.gold{background:rgb(var(--c-acc));color:#1a1408;border-color:transparent;font-weight:600;}
+.aj2-b.red{color:rgb(var(--c-bad));border-color:rgba(var(--c-bad),.35);}
+.aj2-b.off{opacity:.55;cursor:default;}
+.aj2-acts{display:flex;gap:8px;margin-left:206px;width:100%;}
+.aj2-av{width:52px;height:52px;border-radius:50%;background:rgba(var(--c-ov),.08);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--c-text);overflow:hidden;}
+.aj2-av img{width:100%;height:100%;object-fit:cover;}
+.aj2-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:rgb(var(--c-ok));margin-right:7px;vertical-align:middle;}
+.aj2-t{display:inline-block;width:38px;height:22px;border-radius:11px;background:rgba(var(--c-ov),.15);position:relative;flex-shrink:0;border:0;cursor:pointer;padding:0;transition:background .2s;}
+.aj2-t::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;}
+.aj2-t.on{background:rgb(var(--c-acc));}.aj2-t.on::after{left:19px;}
+.aj2-seg{display:inline-flex;border:1px solid rgba(var(--c-ov),.12);border-radius:9px;overflow:hidden;}
+.aj2-seg button{font:inherit;padding:6px 14px;font-size:.8rem;color:var(--c-text2);background:none;border:0;cursor:pointer;}
+.aj2-seg button.on{background:rgba(var(--c-ov),.08);color:var(--c-text);font-weight:600;}
+.aj2-bar{height:6px;border-radius:3px;background:rgba(var(--c-ov),.08);margin-top:8px;overflow:hidden;max-width:420px;}
+.aj2-bar i{display:block;height:100%;background:rgb(var(--c-acc));}
+@media (max-width:900px){.aj2{grid-template-columns:1fr;gap:16px;}.aj2-nav{flex-direction:row;overflow-x:auto;}.aj2-nav button{white-space:nowrap;}.aj2-l{width:110px;}.aj2-acts{margin-left:0;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -3947,6 +3984,226 @@ function restoreReuView() {
 
 // ── PERFIL ──
 var _ajTab = 'perfil';
+// ── AJUSTES (estilo lista: cada dato en una fila con "Editar") ──
+var _AJ_TABS = [['perfil','Perfil'],['cuenta','Cuenta y seguridad'],['membresia','Membresía y pagos'],['conexiones','Conexiones'],['notif','Notificaciones'],['pref','Preferencias']];
+var _ajSet = null; // fila de user_settings del alumno
+var _AJ_EXP = { 'sin-experiencia': 'Sin experiencia', 'principiante': 'Principiante (0-1 año)', 'intermedio': 'Intermedio (1-3 años)', 'avanzado': 'Avanzado (3+ años)' };
+var _AJ_COUNTRIES = ['Ecuador','Colombia','Venezuela','Perú','Argentina','Chile','México','Bolivia','Paraguay','Uruguay','Brasil','Guatemala','Honduras','El Salvador','Nicaragua','Costa Rica','Panamá','Cuba','República Dominicana','Puerto Rico','España','Estados Unidos','Canadá','Reino Unido','Alemania','Francia','Italia','Portugal','Países Bajos','Bélgica','Suiza','Australia','Nueva Zelanda','Otros'];
+
+function _ajRow(label, val, btn, key, cls) {
+  return '<div class="aj2-r"' + (key ? ' data-k="' + key + '"' : '') + '><div class="aj2-l">' + label + '</div><div class="aj2-v">' + val + '</div>' +
+    (btn ? '<button class="aj2-b ' + (cls || '') + '"' + (key ? ' data-ed="' + key + '"' : '') + '>' + btn + '</button>' : '') + '</div>';
+}
+function _ajGroup(title, rows) { return (title ? '<div class="aj2-gt">' + title + '</div>' : '') + '<div class="aj2-g">' + rows + '</div>'; }
+function _ajToggle(k, on) { return '<button class="aj2-t' + (on ? ' on' : '') + '" data-tg="' + k + '" aria-label="Activar o desactivar"></button>'; }
+function _ajFmtDate(d) { return d ? new Date(d + (String(d).length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; }
+function _ajEmpty(t) { return '<span class="aj2-mut">' + (t || 'Sin completar') + '</span>'; }
+
+function rPerfil() {
+  var m = document.getElementById('amain');
+  if (_ajTab === 'planes') _ajTab = 'membresia';
+  if (!_AJ_TABS.some(function(t){ return t[0] === _ajTab; })) _ajTab = 'perfil';
+  m.innerHTML = '<div class="atit">Ajustes</div><div class="asub" style="margin-bottom:22px;">Tu cuenta, tu membresía y tus preferencias</div>' +
+    '<div class="aj2"><nav class="aj2-nav">' + _AJ_TABS.map(function(t){ return '<button data-aj="' + t[0] + '"' + (t[0] === _ajTab ? ' class="on"' : '') + '>' + t[1] + '</button>'; }).join('') + '</nav>' +
+    '<div id="aj2-body"></div></div>';
+  m.querySelectorAll('.aj2-nav button').forEach(function(b) { b.addEventListener('click', function() { _ajTab = b.dataset.aj; rPerfil(); }); });
+  _ajRender();
+}
+
+function _ajRender() {
+  var box = document.getElementById('aj2-body'); if (!box) return;
+  var p = cProfile || {}, t = _ajTab, html = '';
+  if (t === 'perfil') {
+    var ini = (p.full_name || 'A').split(' ').filter(Boolean).slice(0, 2).map(function(w){ return w.charAt(0).toUpperCase(); }).join('');
+    html = '<div class="aj2-h">Perfil</div><div class="aj2-s">Así te ven en la comunidad.</div>' +
+      _ajGroup('', _ajRow('Foto', '<div class="aj2-av" id="avatar-wrap">' + (p.avatar_url ? '<img src="' + _mkEsc(p.avatar_url) + '" alt="">' : _mkEsc(ini)) + '</div>', 'Cambiar', 'foto') +
+        _ajRow('Nombre', p.full_name ? _mkEsc(p.full_name) : _ajEmpty(), 'Editar', 'full_name') +
+        _ajRow('Bio', p.bio ? _mkEsc(p.bio) : _ajEmpty('Cuéntanos sobre ti y tus metas'), 'Editar', 'bio') +
+        _ajRow('Experiencia', _AJ_EXP[p.trading_experience] || _ajEmpty(), 'Editar', 'trading_experience')) +
+      _ajGroup('Datos de contacto', _ajRow('WhatsApp', p.phone ? _mkEsc((p.phone_prefix || '') + ' ' + p.phone) : _ajEmpty(), 'Editar', 'phone') +
+        _ajRow('País', p.country ? _mkEsc(p.country) : _ajEmpty(), 'Editar', 'country') +
+        _ajRow('Fecha de nacimiento', p.date_of_birth ? _ajFmtDate(p.date_of_birth) : _ajEmpty(), 'Editar', 'date_of_birth'));
+  } else if (t === 'cuenta') {
+    html = '<div class="aj2-h">Cuenta y seguridad</div><div class="aj2-s">Tu acceso a la plataforma.</div>' +
+      _ajGroup('', _ajRow('Email', _mkEsc(cUser ? cUser.email : '—'), 'Cambiar', 'email') + _ajRow('Contraseña', '••••••••', 'Cambiar', 'password')) +
+      _ajGroup('Sesiones', _ajRow('Dispositivos', 'Cierra tu sesión en todos los computadores y celulares donde hayas entrado.', 'Cerrar en todos', 'signout_all')) +
+      _ajGroup('Zona de peligro', _ajRow('Eliminar cuenta', 'Se borran tus datos y pierdes el acceso. Lo hacemos por WhatsApp para confirmar que eres tú.', 'Solicitar', 'delete', 'red'));
+  } else if (t === 'membresia') {
+    html = '<div class="aj2-h">Membresía y pagos</div><div class="aj2-s">Tu plan, renovaciones y recibos.</div><div id="aj2-memb"><div class="mk-skel" style="height:180px;border-radius:14px;"></div></div>';
+  } else if (t === 'conexiones') {
+    var tv = _ajSet && _ajSet.tv_username;
+    html = '<div class="aj2-h">Conexiones</div><div class="aj2-s">Cuentas vinculadas a la plataforma.</div>' +
+      _ajGroup('', _ajRow('Discord', p.discord_id ? '<span class="aj2-dot"></span>Conectado' : _ajEmpty('Sin conectar'), p.discord_id ? 'Reconectar' : 'Conectar', 'discord') +
+        _ajRow('TradingView', tv ? _mkEsc(tv) + '<small>Usuario para recibir el acceso al indicador Kairus</small>' : _ajEmpty('Agrega tu usuario para recibir el indicador Kairus'), tv ? 'Editar' : 'Agregar', 'tv_username') +
+        _ajRow('Cuenta de trading', 'Exness o empresa de fondeo<small>Pronto: tu journal y el ranking se llenarán solos</small>', 'Próximamente', '', 'off'));
+  } else if (t === 'notif') {
+    var s = _ajSet || {};
+    var v = function(k, d) { return s[k] == null ? d : s[k]; };
+    html = '<div class="aj2-h">Notificaciones</div><div class="aj2-s">Elige cómo quieres enterarte.</div>' +
+      _ajGroup('Cuando empieza un en vivo', _ajRow('En el celular o computador', 'Aparece aunque no tengas la página abierta', _ajToggle('notify_live_push', v('notify_live_push', true)).replace('<button', '<span').replace('</button>', '</span>')) +
+        _ajRow('Por email', _mkEsc(cUser ? cUser.email : ''), _ajToggle('notify_live_email', v('notify_live_email', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
+      _ajGroup('Reuniones 1-1', _ajRow('Recordatorio de mi 1-1', '10 minutos antes de la llamada', _ajToggle('notify_mtg', v('notify_mtg', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
+      _ajGroup('Novedades', _ajRow('Clases nuevas', 'Cuando se publica una clase en el curso', _ajToggle('notify_new_class', v('notify_new_class', false)).replace('<button', '<span').replace('</button>', '</span>')));
+  } else if (t === 'pref') {
+    var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+    var off = -new Date().getTimezoneOffset() / 60;
+    var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+    html = '<div class="aj2-h">Preferencias</div><div class="aj2-s">Cómo se ve la plataforma para ti.</div>' +
+      _ajGroup('', _ajRow('Tema', '<span class="aj2-seg"><button class="' + (dark ? 'on' : '') + '" onclick="mkSetTheme(\'dark\');_ajRender()">Dark</button><button class="' + (dark ? '' : 'on') + '" onclick="mkSetTheme(\'light\');_ajRender()">Light</button></span>') +
+        _ajRow('Zona horaria', '(UTC' + (off >= 0 ? '+' : '') + off + ') ' + _mkEsc(tz.replace(/_/g, ' ')) + '<small>Se detecta sola desde tu dispositivo. Los horarios de en vivo y 1-1 se muestran en tu hora.</small>'));
+  }
+  box.innerHTML = html;
+  box.querySelectorAll('[data-ed]').forEach(function(b) { b.addEventListener('click', function() { _ajEdit(b.dataset.ed); }); });
+  box.querySelectorAll('[data-tg]').forEach(function(b) { b.addEventListener('click', function() { _ajToggleSave(b); }); });
+  if (t === 'membresia') _ajMemb();
+  if ((t === 'notif' || t === 'conexiones') && !_ajSet) _ajLoadSet();
+}
+
+function _ajLoadSet() {
+  sb.from('user_settings').select('*').eq('id', cUser.id).maybeSingle().then(function(r) {
+    _ajSet = (r && r.data) || { _new: true };
+    if (r && r.error) _ajSet._err = r.error.message;
+    if (_ajTab === 'notif' || _ajTab === 'conexiones') _ajRender();
+  });
+}
+function _ajSaveSet(upd, done) {
+  upd = Object.assign({ id: cUser.id, updated_at: new Date().toISOString() }, upd);
+  sb.from('user_settings').upsert(upd).then(function(r) {
+    if (r.error) { tst('No se pudo guardar: ' + r.error.message, 1); return done && done(false); }
+    _ajSet = Object.assign(_ajSet || {}, upd); delete _ajSet._new;
+    tst('✓ Guardado'); done && done(true);
+  });
+}
+function _ajToggleSave(b) {
+  var k = b.dataset.tg, on = !b.classList.contains('on');
+  if (k === 'notify_live_push' && on && window.Notification && Notification.permission === 'default') Notification.requestPermission();
+  b.classList.toggle('on', on);
+  var u = {}; u[k] = on;
+  _ajSaveSet(u, function(ok) { if (!ok) b.classList.toggle('on', !on); });
+}
+
+// Editor en línea: la fila se convierte en un campo con Guardar / Cancelar
+function _ajEdit(k) {
+  var p = cProfile || {};
+  if (k === 'foto') return _rpPhoto();
+  if (k === 'discord') {
+    var params = new URLSearchParams({ client_id: '1482794976118046851', redirect_uri: window.location.origin + '/api/discord-callback', response_type: 'code', scope: 'identify guilds.join', state: cUser ? cUser.id : '' });
+    window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString(); return;
+  }
+  if (k === 'signout_all') {
+    if (!confirm('¿Cerrar tu sesión en todos los dispositivos? Tendrás que volver a iniciar sesión.')) return;
+    sb.auth.signOut({ scope: 'global' }).then(function() { window.location.href = '/login'; }); return;
+  }
+  if (k === 'delete') { window.open('https://wa.me/593995014247?text=' + encodeURIComponent('Hola, quiero eliminar mi cuenta de Mr Katana (' + (cUser ? cUser.email : '') + ').'), '_blank'); return; }
+  var row = document.querySelector('.aj2-r[data-k="' + k + '"]'); if (!row) return;
+  var f = '';
+  if (k === 'full_name') f = '<input class="ai" id="aj2-in" value="' + _mkEsc(p.full_name || '') + '" placeholder="Tu nombre completo">';
+  else if (k === 'bio') f = '<textarea class="ai" id="aj2-in" rows="3" placeholder="Cuéntanos sobre ti y tus metas en trading...">' + _mkEsc(p.bio || '') + '</textarea>';
+  else if (k === 'trading_experience') f = '<select class="ai" id="aj2-in"><option value="">Selecciona...</option>' + Object.keys(_AJ_EXP).map(function(x){ return '<option value="' + x + '"' + (p.trading_experience === x ? ' selected' : '') + '>' + _AJ_EXP[x] + '</option>'; }).join('') + '</select>';
+  else if (k === 'phone') f = '<div style="display:flex;gap:6px;"><select class="ai" id="aj2-in2" style="width:auto;">' + _phonePrefix(p.phone_prefix || '+593') + '</select><input class="ai" id="aj2-in" type="tel" value="' + _mkEsc(p.phone || '') + '" placeholder="999 999 999"></div>';
+  else if (k === 'country') f = '<select class="ai" id="aj2-in"><option value="">Selecciona tu país...</option>' + _AJ_COUNTRIES.map(function(c){ return '<option' + (p.country === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>';
+  else if (k === 'date_of_birth') f = '<input class="ai" id="aj2-in" type="date" value="' + _mkEsc(p.date_of_birth || '') + '">';
+  else if (k === 'email') f = '<input class="ai" id="aj2-in" type="email" placeholder="nuevo@email.com"><small>Te llegará un correo para confirmar el cambio.</small>';
+  else if (k === 'password') f = '<input class="ai" id="aj2-in" type="password" placeholder="Nueva contraseña (mínimo 6 caracteres)" style="margin-bottom:6px;"><input class="ai" id="aj2-in2" type="password" placeholder="Repite la contraseña">';
+  else if (k === 'tv_username') f = '<input class="ai" id="aj2-in" value="' + _mkEsc((_ajSet && _ajSet.tv_username) || '') + '" placeholder="Tu usuario de TradingView"><small>Es el nombre que aparece en tu perfil de TradingView.</small>';
+  row.classList.add('editing');
+  row.querySelector('.aj2-v').innerHTML = f;
+  var b = row.querySelector('.aj2-b'); if (b) b.remove();
+  row.insertAdjacentHTML('beforeend', '<div class="aj2-acts"><button class="aj2-b" data-x="1">Cancelar</button><button class="aj2-b gold" data-ok="1">Guardar</button></div>');
+  var inp = document.getElementById('aj2-in'); if (inp) inp.focus();
+  row.querySelector('[data-x]').addEventListener('click', _ajRender);
+  row.querySelector('[data-ok]').addEventListener('click', function() { _ajCommit(k); });
+}
+
+function _ajCommit(k) {
+  var v = ((document.getElementById('aj2-in') || {}).value || '').trim();
+  var v2 = ((document.getElementById('aj2-in2') || {}).value || '').trim();
+  if (k === 'email') {
+    if (!v) return tst('Ingresa un email', 1);
+    return sb.auth.updateUser({ email: v }).then(function(r) { if (r.error) return tst('Error: ' + r.error.message, 1); tst('✓ Revisa tu nuevo email para confirmar el cambio'); _ajRender(); });
+  }
+  if (k === 'password') {
+    if (v.length < 6) return tst('Mínimo 6 caracteres', 1);
+    if (v !== v2) return tst('Las contraseñas no coinciden', 1);
+    return sb.auth.updateUser({ password: v }).then(function(r) { if (r.error) return tst('Error: ' + r.error.message, 1); tst('✓ Contraseña actualizada'); _ajRender(); });
+  }
+  if (k === 'tv_username') return _ajSaveSet({ tv_username: v || null }, function(ok) { if (ok) _ajRender(); });
+  var upd = {};
+  if (k === 'full_name') { if (!v) return tst('El nombre es requerido', 1); upd.full_name = v; }
+  else if (k === 'phone') { upd.phone = v; upd.phone_prefix = v2 || '+593'; }
+  else if (k === 'date_of_birth') {
+    upd.date_of_birth = v || null; upd.age = null;
+    if (v) { var t = new Date(), b = new Date(v + 'T12:00:00'), a = t.getFullYear() - b.getFullYear(); if (t.getMonth() < b.getMonth() || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) a--; upd.age = a; }
+  }
+  else upd[k] = v;
+  sb.from('profiles').update(upd).eq('id', cUser.id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    cProfile = Object.assign(cProfile || {}, upd);
+    if (upd.full_name) { var un = document.getElementById('uname'); if (un) un.textContent = upd.full_name.split(' ')[0]; }
+    tst('✓ Guardado'); _ajRender();
+  });
+}
+
+// Membresía y pagos: plan, vencimiento, sesiones 1-1 y recibos (tabla purchases)
+var _ajPays = [];
+function _ajMemb() {
+  var p = cProfile || {};
+  Promise.all([
+    sb.from('purchases').select('id, plan_id, amount, currency, payment_method, status, created_at').eq('user_id', cUser.id).order('created_at', { ascending: false }).limit(12),
+    sb.from('checkout_plans').select('*'),
+    sb.from('meetings_1on1').select('status').eq('student_id', cUser.id)
+  ]).then(function(res) {
+    var el = document.getElementById('aj2-memb'); if (!el) return;
+    var plans = (res[1] && res[1].data) || [], names = {};
+    plans.forEach(function(x){ names[x.id] = x.name; });
+    var plan = plans.find(function(x){ return x.id === p.plan; }) || {};
+    _ajPays = (res[0] && res[0].data) || [];
+    var done = ((res[2] && res[2].data) || []).filter(function(x){ return x.status === 'completed'; }).length;
+    var end = p.membership_end ? new Date(p.membership_end) : null, now = new Date();
+    var unl = end && end.getFullYear() >= 2099, active = end && end > now;
+    var perks = []; if (_hasClasesAccess()) perks.push('Clases grabadas'); if (_hasLiveAccess()) perks.push('En vivo'); if (p.access_1on1) perks.push('Sesiones 1-1');
+    var vence;
+    if (!end) vence = _ajEmpty('Sin plan activo');
+    else if (unl) vence = 'Acceso ilimitado';
+    else {
+      var left = Math.ceil((end - now) / 86400000), start = p.membership_start ? new Date(p.membership_start) : null;
+      var pct = start && end > start ? Math.max(0, Math.min(100, Math.round((end - now) / (end - start) * 100))) : 0;
+      vence = _ajFmtDate(p.membership_end.slice(0, 10)) + '<small>' + (active ? 'Te quedan ' + left + ' día' + (left === 1 ? '' : 's') : 'Tu plan venció') + '</small>' + (active ? '<div class="aj2-bar"><i style="width:' + pct + '%"></i></div>' : '');
+    }
+    var tot = plan.sessions_1on1 != null ? plan.sessions_1on1 : 3;
+    var rows = _ajRow('Plan actual', _mkEsc(plan.name || p.plan || 'Sin plan') + (perks.length ? '<small>' + perks.join(' · ') + '</small>' : ''), active && !unl ? 'Renovar' : (active ? '' : 'Ver planes'), 'renew', 'gold') +
+      _ajRow('Vence', vence) + (p.access_1on1 ? _ajRow('Sesiones 1-1', done + ' de ' + Math.max(tot, done) + ' usadas') : '');
+    var pays = _ajPays.length ? _ajPays.map(function(x, i) {
+      var d = new Date(x.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+      var amt = x.amount != null ? '$' + Number(x.amount).toFixed(2) + ' ' + _mkEsc(x.currency || 'USD') : '';
+      return _ajRow(d, _mkEsc(names[x.plan_id] || x.plan_id || 'Pago') + (x.payment_method ? ' · ' + _mkEsc(x.payment_method) : '') + (amt ? '<small>' + amt + '</small>' : ''), 'Recibo', 'rc' + i);
+    }).join('') : _ajRow('Sin pagos', _ajEmpty('Aún no hay pagos registrados.'));
+    el.innerHTML = _ajGroup('', rows) + _ajGroup('Historial de pagos', pays) +
+      _ajGroup('Método de pago', _ajRow('PayPal o tarjeta', 'Pagas al renovar en el checkout. No guardamos los datos de tu tarjeta.'));
+    el.querySelectorAll('[data-ed]').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var k = b.dataset.ed;
+        if (k === 'renew') window.location.href = '/checkout';
+        else if (k.indexOf('rc') === 0) _ajReceipt(_ajPays[+k.slice(2)], names);
+      });
+    });
+  });
+}
+function _ajReceipt(x, names) {
+  if (!x) return;
+  var w = window.open('', '_blank'); if (!w) return tst('Permite ventanas emergentes para ver el recibo', 1);
+  var d = new Date(x.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+  var e = _mkEsc;
+  w.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Recibo Mr Katana</title><style>body{font-family:system-ui,sans-serif;color:#111;max-width:560px;margin:40px auto;padding:0 20px}h1{font-size:20px;margin:0}small{color:#666}table{width:100%;border-collapse:collapse;margin:24px 0}td{padding:10px 0;border-bottom:1px solid #eee}td:last-child{text-align:right}.t{font-weight:700}button{margin-top:10px;padding:8px 16px}@media print{button{display:none}}</style></head><body>' +
+    '<h1>Mr Katana FX</h1><small>Recibo de pago</small>' +
+    '<table><tr><td>Fecha</td><td>' + d + '</td></tr><tr><td>Alumno</td><td>' + e((cProfile && cProfile.full_name) || '') + '<br><small>' + e(cUser ? cUser.email : '') + '</small></td></tr>' +
+    '<tr><td>Plan</td><td>' + e(names[x.plan_id] || x.plan_id || '') + '</td></tr><tr><td>Método</td><td>' + e(x.payment_method || '—') + '</td></tr>' +
+    '<tr><td>Estado</td><td>' + e(x.status || '') + '</td></tr><tr><td class="t">Total</td><td class="t">' + (x.amount != null ? '$' + Number(x.amount).toFixed(2) + ' ' + e(x.currency || 'USD') : '—') + '</td></tr></table>' +
+    '<small>N.º de referencia: ' + e(String(x.id || '')) + '</small><br><button onclick="print()">Imprimir o guardar PDF</button></body></html>');
+  w.document.close();
+}
+
+
 function _ajShow(t) {
   _ajTab = t;
   document.querySelectorAll('.aj-nav button').forEach(function(b) { b.classList.toggle('on', b.dataset.aj === t); });
@@ -4023,7 +4280,7 @@ function rTools() {
     }).join('') + '</div>';
 }
 
-function rPerfil() {
+function rPerfilOld() { // diseño anterior de Ajustes (ya no se usa)
   var p = cProfile || {};
   var m = document.getElementById('amain');
 
@@ -4816,7 +5073,7 @@ function _mkRenderRPanel(liveOnly) {
   var days = ['L','M','M','J','V','S','D'];
   rp.innerHTML =
     '<div class="rp-h rp-hm" style="font-size:1.1rem;">Tu perfil<button class="rp-dots" aria-label="Más opciones" onclick="event.stopPropagation();this.nextSibling.classList.toggle(\'open\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
-      '<div class="rp-menu"><button onclick="_rpPhoto()">Cambiar foto</button><button onclick="openAjustes(\'perfil\')">Editar mis datos</button><button onclick="openAjustes(\'planes\')">Mi plan</button><button onclick="openProgreso()">Mi progreso detallado</button><hr><button onclick="openAjustes(\'cuenta\')">Ajustes</button></div></div>' +
+      '<div class="rp-menu"><button onclick="_rpPhoto()">Cambiar foto</button><button onclick="openAjustes(\'perfil\')">Editar mis datos</button><button onclick="openAjustes(\'membresia\')">Mi plan</button><button onclick="openProgreso()">Mi progreso detallado</button><hr><button onclick="openAjustes(\'perfil\')">Ajustes</button></div></div>' +
     '<div class="rp-ava"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="4"/>' +
       '<circle id="rp-ring" cx="48" cy="48" r="44" fill="none" stroke="rgb(var(--c-acc))" stroke-width="4" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset .8s ease;"/></svg>' +
       '<div class="face">' + face + '</div></div>' +

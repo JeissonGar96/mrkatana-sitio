@@ -3033,7 +3033,8 @@ async function _updateStudent(id, data) {
 }
 
 async function _deleteStudent(id) {
-  if (cProfile && cProfile.role === 'staff') {
+  // Admin y staff pasan por la API para borrar también la cuenta de acceso.
+  {
     try {
       var headers = await _authHeader();
       var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { method: 'DELETE', headers: headers });
@@ -3043,7 +3044,6 @@ async function _deleteStudent(id) {
       return { error: { message: e.name === 'AbortError' ? 'timeout' : 'connection_error' } };
     }
   }
-  return await sb.from('profiles').delete().eq('id', id);
 }
 
 function _buildAdminTabs() {
@@ -4308,10 +4308,10 @@ function saveRecording(studentId) {
 
 
 function dStudent(id) {
-  if (!confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
+  if (!confirm('¿Eliminar este alumno permanentemente?\n\nSe borrará su cuenta, sus compras y su progreso. Si vuelve a registrarse empezará desde cero.')) return;
   _deleteStudent(id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Perfil eliminado. Recuerda eliminar también en Auth → Users');
+    if (r.error) return tst(r.error.message === 'cannot_delete_admin' ? 'No se puede eliminar a un administrador' : 'Error: ' + r.error.message, 1);
+    tst('✓ Alumno eliminado por completo');
     rAdmSt();
   });
 }

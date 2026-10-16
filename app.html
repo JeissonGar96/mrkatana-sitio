@@ -1808,6 +1808,21 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .ok-rows{text-align:left;border-top:1px solid rgba(var(--c-ov),.07);margin:8px 0 18px;}.ok-rows div{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid rgba(var(--c-ov),.06);font-size:.83rem;color:var(--c-muted);}.ok-rows b{color:var(--c-text);font-weight:500;text-align:right;}
 .ok-tip{font-size:.78rem !important;color:var(--c-muted) !important;}
 @media (max-width:900px){.kc{grid-template-columns:1fr;}.kc-r{border-left:0;border-top:1px solid rgba(var(--c-ov),.07);}.st-r{flex-wrap:wrap;}.st-act{align-items:flex-start;width:100%;}}
+/* Cuenta gratis: pestañas bloqueadas */
+.snav .snav-lk{margin-left:auto;opacity:.45;}
+.mob-nav-btn .snav-lk{display:none;}
+.lk-c{max-width:520px;margin:48px auto;padding:36px 34px;text-align:center;}
+.lk-ic{width:46px;height:46px;margin:0 auto 18px;border-radius:50%;border:1px solid var(--br);display:flex;align-items:center;justify-content:center;color:var(--c-text2);}
+.lk-ic .snav-lk{margin:0;opacity:1;}
+.lk-c h2{font-size:1.35rem;font-weight:700;color:var(--c-text);margin:0 0 8px;}
+.lk-c p{font-size:.88rem;color:var(--c-muted);line-height:1.6;margin:0 auto 18px;max-width:400px;}
+.lk-c ul{list-style:none;padding:0;margin:0 auto 24px;display:inline-flex;flex-direction:column;gap:7px;text-align:left;}
+.lk-c li{font-size:.84rem;color:var(--c-text2);padding-left:18px;position:relative;}
+.lk-c li:before{content:'';position:absolute;left:0;top:.55em;width:8px;height:1px;background:var(--sl);}
+.lk-buy{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:20px;}
+.lk-buy .buy-p{justify-content:center;}.lk-buy a{text-decoration:none;}
+.lk-alt{font-size:.8rem;color:var(--c-muted);}.lk-alt a{color:var(--c-text2);text-decoration:underline;}
+@media (max-width:600px){.lk-c{margin:20px auto;padding:28px 20px;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -2021,19 +2036,16 @@ function _renderSection(state) {
     if (!_hasClasesAccess()) rDash(true); else rDash();
   }
   else if (state.section === 'clases') {
-    if (!_hasClasesAccess()) {
-      // Redirigir al dashboard si intenta acceder a clases por URL directa
-      history.replaceState({ section: 'dash' }, '', '/app/dash');
-      rDash(true);
-    } else {
+    if (!_hasClasesAccess()) _rLocked('clases');
+    else {
       if (state.lessonId)       _restoreLesson(state);
       else if (state.moduleId)  _restoreModule(state);
       else if (state.levelId)   _restoreLevel(state);
       else                      rClases();
     }
   }
-  else if (state.section === 'sesiones')  rSes();
-  else if (state.section === 'reuniones') rReun();
+  else if (state.section === 'sesiones')  { if (_secOpen('sesiones')) rSes(); else _rLocked('sesiones'); }
+  else if (state.section === 'reuniones') { if (_secOpen('reuniones')) rReun(); else _rLocked('reuniones'); }
   else if (state.section === 'perfil')    rPerfil();
   else if (state.section === 'herramientas') rTools();
   else if (state.section === 'admin') {
@@ -2056,12 +2068,57 @@ function _hasLiveAccess() {
   return !!(cProfile && cProfile.live_end && new Date(cProfile.live_end) > new Date());
 }
 
+// Cuenta gratis: qué secciones puede abrir y candado en las que no
+function _secOpen(v) {
+  if (_isTeam()) return true;
+  if (v === 'clases') return _hasClasesAccess();
+  if (v === 'sesiones') return _hasLiveAccess();
+  if (v === 'reuniones') return !!(cProfile && cProfile.access_1on1);
+  return true;
+}
+var _LK_SVG = '<svg class="snav-lk" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
+function _navLocks() {
+  ['clases', 'sesiones', 'reuniones'].forEach(function(v) {
+    var lk = !_secOpen(v);
+    document.querySelectorAll('.snav[data-v="' + v + '"], .mob-nav-btn[data-v="' + v + '"]').forEach(function(b) {
+      b.style.display = '';
+      b.classList.toggle('is-lk', lk);
+      var i = b.querySelector('.snav-lk');
+      if (lk && !i) b.insertAdjacentHTML('beforeend', _LK_SVG);
+      else if (!lk && i) i.remove();
+    });
+  });
+}
+var _LK_TXT = {
+  clases: { t: 'Curso de trading', d: 'El curso completo está incluido en la Mentoría. Aprende el método paso a paso y a tu ritmo.',
+    li: ['Clases grabadas por niveles', 'Plan de estudio semanal', 'Seguimiento de tu progreso'], wa: 'Hola, quiero información de la Mentoría' },
+  sesiones: { t: 'Sesiones en vivo', d: 'Análisis y operativa en directo con Mr Katana durante los días de mercado.',
+    li: ['En vivo diarios', 'Preguntas en directo', 'Aviso cuando empieza cada sesión'], wa: 'Hola, quiero información de las sesiones en vivo' },
+  reuniones: { t: 'Reuniones 1-1', d: 'Sesiones privadas para revisar tu operativa y resolver tus dudas.',
+    li: ['Revisión de tus operaciones', 'Plan personalizado', 'Grabación de cada sesión'], wa: 'Hola, quiero información de las reuniones 1-1' }
+};
+function _rLocked(v) {
+  _activateNav(v);
+  var x = _LK_TXT[v], m = document.getElementById('amain'); if (!x || !m) return;
+  var em = cUser ? encodeURIComponent(cUser.email) : '', nm = cProfile && cProfile.full_name ? encodeURIComponent(cProfile.full_name) : '';
+  m.innerHTML = '<div class="mk-card lk-c"><div class="lk-ic">' + _LK_SVG.replace('width="12" height="12"', 'width="20" height="20"') + '</div>' +
+    '<h2>' + x.t + '</h2><p>' + x.d + '</p><ul>' + x.li.map(function(l) { return '<li>' + l + '</li>'; }).join('') + '</ul>' +
+    '<div class="lk-buy" id="lk-buy"><span class="spin"></span></div>' +
+    '<div class="lk-alt">¿Tienes dudas? <a target="_blank" href="https://wa.me/593995014247?text=' + encodeURIComponent(x.wa) + '">Escríbenos por WhatsApp</a></div></div>';
+  var f = v === 'clases' ? function(p) { return p.category === 'clases' || (p.category === 'ambos' && p.access_clases !== false); }
+    : v === 'sesiones' ? function(p) { return p.duration_live_months || p.variants.some(function(q) { return q.duration_live_months; }); }
+    : function(p) { return (p.extra_1on1 || 0) > 0 || p.access_1on1 || p.variants.some(function(q) { return q.extra_1on1; }); };
+  _storeLoad(function(st) {
+    var box = document.getElementById('lk-buy'), cur = history.state; if (!box || (cur && cur.section !== v)) return;
+    var ps = st.filter(f);
+    if (ps.length) box.innerHTML = ps.map(function(p) { return '<div class="buy-p">' + (ps.length > 1 || !p.variants.length ? '<span class="buy-n">' + (ps.length > 1 ? _mkEsc(p.name) + ' · ' : '') + (p.variants.length ? '' : _priceLbl(p)) + '</span>' : '') + _storePick(p, 'gold') + '</div>'; }).join('');
+    else if (v === 'clases') box.innerHTML = '<a class="aj2-b gold" href="/checkout?email=' + em + '&name=' + nm + '&renew=1">Ver la Mentoría</a>';
+    else box.innerHTML = '<a class="aj2-b gold" target="_blank" href="https://wa.me/593995014247?text=' + encodeURIComponent(x.wa) + '">Escríbenos por WhatsApp</a>';
+    _storeBind(box);
+  });
+}
+
 function navigateTo(v) {
-  // Usuarios sin acceso a clases no pueden entrar a esa sección
-  if (v === 'clases' && !_hasClasesAccess()) {
-    toast('Tu plan no incluye acceso a las clases grabadas.', true);
-    return;
-  }
   var state = { section: v };
   pushRoute(state);
   _renderSection(state);
@@ -2233,10 +2290,7 @@ function loadApp(user) {
       var hasClases = end && end > now;
       var hasLive = liveEnd && liveEnd > now;
       var has1on1 = !!(cProfile && cProfile.access_1on1);
-      if (!hasClases && !hasLive && !has1on1) {
-        _showPendingLocked();
-        return;
-      }
+      // Sin plan pagado = cuenta gratis (Herramientas abiertas, lo demás bloqueado con opción de compra)
       _grantAccess();
     }
 
@@ -2258,29 +2312,8 @@ function loadApp(user) {
       var hasClasesAccess = _hasClasesAccess();
       var hasLiveAccess = _hasLiveAccess();
 
-      if (!isAdmin) {
-        // Sin acceso a clases → ocultar Clases y Roadmap
-        if (!hasClasesAccess) {
-          var claseBtn = document.querySelector('.snav[data-v="clases"]');
-          if (claseBtn) claseBtn.style.display = 'none';
-          var mobClaseBtn = document.querySelector('.mob-nav-btn[data-v="clases"]');
-          if (mobClaseBtn) mobClaseBtn.style.display = 'none';
-        }
-        // Sin live activo → ocultar En vivo
-        if (!hasLiveAccess) {
-          var liveBtn = document.querySelector('.snav[data-v="sesiones"]');
-          if (liveBtn) liveBtn.style.display = 'none';
-          var mobLiveBtn = document.querySelector('.mob-nav-btn[data-v="sesiones"]');
-          if (mobLiveBtn) mobLiveBtn.style.display = 'none';
-        }
-        // Solo si el plan incluye 1-a-1
-        if (!cProfile.access_1on1) {
-          var r1on1Btn = document.querySelector('.snav[data-v="reuniones"]');
-          if (r1on1Btn) r1on1Btn.style.display = 'none';
-          var mobR1on1Btn = document.querySelector('.mob-nav-btn[data-v="reuniones"]');
-          if (mobR1on1Btn) mobR1on1Btn.style.display = 'none';
-        }
-      }
+      // Pestañas sin plan: se ven con candado y al entrar ofrecen comprar
+      if (!isAdmin) _navLocks();
       // Si no tiene foto, mostrar pantalla para completar perfil
       if (!cProfile.avatar_url && cProfile.role !== 'admin') {
         _showCompleteProfile();
@@ -2778,6 +2811,7 @@ function rClases() {
 }
 
 function goToLastLesson() {
+  if (!_hasClasesAccess()) { navigateTo('clases'); return; }
   _activateNav('clases');
   courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
 
@@ -2914,6 +2948,7 @@ function _ceNew(type, lvId, modId, nextOrder) {
 }
 
 function openLevel(level) {
+  if (!_hasClasesAccess()) { navigateTo('clases'); return; }
   // Go straight to sidebar layout — no intermediate module cards
   courseState.levelId = level.id;
   pushRoute({ section: 'clases', levelId: level.id });
@@ -2929,6 +2964,7 @@ function openLevel(level) {
 
 
 function showLessons(mod, level, progress) {
+  if (!_hasClasesAccess()) { navigateTo('clases'); return; }
   _mkRP(false);
   courseState.moduleId = mod ? mod.id : null;
   pushRoute({ section: 'clases', levelId: level.id, moduleId: mod ? mod.id : null });
@@ -3267,6 +3303,7 @@ function openMobilePlayer(lesson, allLessons, progress, level, module) {
 
 
 function playLesson(lesson, allLessons, progress) {
+  if (!_hasClasesAccess()) { navigateTo('clases'); return; }
   courseState.lessonId = lesson.id;
   pushRoute({ section: 'clases', levelId: courseState.levelId, moduleId: courseState.moduleId, lessonId: lesson.id });
 
@@ -5384,7 +5421,7 @@ function _mkRenderRPanel(liveOnly) {
     '<div class="rp-ava"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="4"/>' +
       '<circle id="rp-ring" cx="48" cy="48" r="44" fill="none" stroke="rgb(var(--c-acc))" stroke-width="4" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset .8s ease;"/></svg>' +
       '<div class="face">' + face + '</div></div>' +
-    '<div class="rp-hi"><b>' + hi + ', ' + _mkEsc(first) + '</b><p id="rp-pct">' + (liveOnly ? 'Bienvenido a las sesiones en vivo' : 'Cargando tu progreso...') + '</p></div>' +
+    '<div class="rp-hi"><b>' + hi + ', ' + _mkEsc(first) + '</b><p id="rp-pct">' + (liveOnly ? (_hasLiveAccess() ? 'Bienvenido a las sesiones en vivo' : 'Bienvenido a Mr Katana FX') : 'Cargando tu progreso...') + '</p></div>' +
     '<div class="rp-qa">' +
       '<a href="#" title="Próximas actividades" onclick="_mkBell(event);return false;">' + MK_IC.bell + '</a>' +
       '<a href="https://discord.com/app" target="_blank" rel="noopener" title="Discord">' + MK_IC.discord + '</a>' +
@@ -9175,25 +9212,8 @@ function _checkInactivityAndMembership() {
     });
     return;
   }
-  // 2. Membresía vencida — mostrar pantalla bloqueada sin cerrar sesión
-  // (solo si NO tiene ningún acceso válido: ni Clases, ni Live, ni 1-a-1)
-  if (cProfile && cProfile.role !== 'admin' && cProfile.role !== 'staff') {
-    var end = cProfile.membership_end ? new Date(cProfile.membership_end) : null;
-    var liveEnd = cProfile.live_end ? new Date(cProfile.live_end) : null;
-    var hasClases = end && end > new Date();
-    var hasLive = liveEnd && liveEnd > new Date();
-    var has1on1 = !!cProfile.access_1on1;
-    if (!hasClases && !hasLive && !has1on1) {
-      var aside = document.querySelector('.aside');
-      if (aside) aside.style.display = 'none';
-      var mobNav = document.getElementById('mob-nav');
-      if (mobNav) mobNav.style.display = 'none';
-      document.querySelectorAll('.snav[data-v], .mob-nav-btn').forEach(function(b) {
-        b.onclick = function(e) { e.stopPropagation(); e.preventDefault(); };
-      });
-      showPending();
-    }
-  }
+  // 2. Si un plan vence con la app abierta, la pestaña pasa a bloqueada
+  if (cProfile && !_isTeam()) _navLocks();
 }
 
 // Start checker when user is logged in

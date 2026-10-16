@@ -1369,7 +1369,8 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
           </div>
           <div id="pass-hint" style="font-size:.62rem;color:#555;margin-top:4px;">Mínimo 6 caracteres, una mayúscula y un número</div>
         </div>
-        <button class="mbtnn" id="btn-reg-continue">Continuar al pago →</button>
+        <button class="mbtnn" id="btn-reg-continue">Crear cuenta gratis</button>
+        <p style="text-align:center;font-size:.72rem;color:#666;margin-top:10px;">Gratis: herramientas de trading. El curso, los en vivo y las reuniones 1-1 se agregan desde tu panel.</p>
         <p style="text-align:center;font-size:.69rem;color:#444;margin-top:10px;">Al continuar aceptas nuestros <a href="/legal" style="color:var(--sl);">Términos</a> y <a href="/legal#privacidad" style="color:var(--sl);">Privacidad</a></p>
       </div>
     </div>
@@ -1476,14 +1477,17 @@ async function doRegContinue() {
   // Verificar email via RPC sin crear cuenta
   var checkEmail = await sb.rpc('check_email_exists', { p_email: e });
   if (!checkEmail.error && checkEmail.data === true) {
-    btn.disabled = false; btn.textContent = 'Continuar al pago →';
+    btn.disabled = false; btn.textContent = 'Crear cuenta gratis';
     showMsg('Este email ya está registrado. Inicia sesión con tu cuenta.', true);
     return;
   }
 
-  btn.disabled = false; btn.textContent = 'Continuar al pago →';
-  try { sessionStorage.setItem('_rn', n); sessionStorage.setItem('_re', e); sessionStorage.setItem('_rp', p); } catch(ex){}
-  window.location.href = '/checkout?name=' + encodeURIComponent(n) + '&email=' + encodeURIComponent(e);
+  btn.textContent = 'Creando cuenta...';
+  var reg = await sb.auth.signUp({ email: e, password: p, options: { data: { full_name: n }, emailRedirectTo: location.origin + '/app' } });
+  btn.disabled = false; btn.textContent = 'Crear cuenta gratis';
+  if (reg.error) return showMsg(reg.error.message.indexOf('already') >= 0 ? 'Este email ya está registrado. Inicia sesión con tu cuenta.' : 'No se pudo crear la cuenta: ' + reg.error.message, true);
+  if (reg.data && reg.data.session) { window.location.href = '/app'; return; }
+  showMsg('Listo. Te enviamos un correo a ' + e + '. Ábrelo para confirmar tu cuenta y luego inicia sesión.', false);
 }
 
 // On load — check if already logged in

@@ -1432,7 +1432,7 @@ function doLogin() {
         resendBtn.style.cssText = 'margin-top:8px;background:rgba(91,127,166,.15);border:1px solid var(--bs);color:var(--sl);padding:7px 14px;border-radius:5px;font-size:.76rem;cursor:pointer;width:100%;';
         resendBtn.onclick = function() {
           resendBtn.disabled = true; resendBtn.textContent = 'Enviando...';
-          sb.auth.resend({ type: 'signup', email: e }).then(function(res) {
+          sb.auth.resend({ type: 'signup', email: e, options: { emailRedirectTo: window.location.origin + '/app' } }).then(function(res) {
             if (res.error) { resendBtn.disabled = false; resendBtn.textContent = 'Reenviar email de confirmación'; showMsg('Error al reenviar: ' + res.error.message, true); }
             else { showMsg('✓ Email de confirmación reenviado. Revisa tu bandeja de entrada.', false); }
           });

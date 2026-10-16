@@ -2878,7 +2878,7 @@ function saveEmail() {
   if (!email) return tst('Ingresa un email', 1);
   sb.auth.updateUser({ email: email }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Revisa tu nuevo email para confirmar el cambio');
+    tst('✓ Te enviamos un enlace a tu nuevo correo. Ábrelo para completar el cambio');
     document.getElementById('pf-email').value = '';
   });
 }
@@ -3033,7 +3033,8 @@ async function _updateStudent(id, data) {
 }
 
 async function _deleteStudent(id) {
-  if (cProfile && cProfile.role === 'staff') {
+  // Admin y staff pasan por la API para borrar también la cuenta de acceso.
+  {
     try {
       var headers = await _authHeader();
       var res = await _fetchWithTimeout('/api/staff-profiles?id=' + id, { method: 'DELETE', headers: headers });
@@ -3043,7 +3044,6 @@ async function _deleteStudent(id) {
       return { error: { message: e.name === 'AbortError' ? 'timeout' : 'connection_error' } };
     }
   }
-  return await sb.from('profiles').delete().eq('id', id);
 }
 
 function _buildAdminTabs() {
@@ -4308,10 +4308,10 @@ function saveRecording(studentId) {
 
 
 function dStudent(id) {
-  if (!confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
+  if (!confirm('¿Eliminar este alumno permanentemente?\n\nSe borrará su cuenta, sus compras y su progreso. Si vuelve a registrarse empezará desde cero.')) return;
   _deleteStudent(id).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Perfil eliminado. Recuerda eliminar también en Auth → Users');
+    if (r.error) return tst(r.error.message === 'cannot_delete_admin' ? 'No se puede eliminar a un administrador' : 'Error: ' + r.error.message, 1);
+    tst('✓ Alumno eliminado por completo');
     rAdmSt();
   });
 }
@@ -4426,7 +4426,7 @@ function activateMember(id, isActive) {
 function cSt() {
   var n=document.getElementById('a-n').value.trim(),e=document.getElementById('a-e').value.trim(),p=document.getElementById('a-p').value;
   if(!n||!e||!p) return tst('Completa todos los campos',1);
-  sb.auth.signUp({email:e,password:p,options:{data:{full_name:n}}}).then(function(r){ if(r.error) return tst('Error: '+r.error.message,1); tst('✓ Alumno creado'); document.getElementById('a-n').value='';document.getElementById('a-e').value='';document.getElementById('a-p').value=''; setTimeout(rAdmSt,900); });
+  sb.auth.signUp({email:e,password:p,options:{data:{full_name:n},emailRedirectTo:window.location.origin+'/app'}}).then(function(r){ if(r.error) return tst('Error: '+r.error.message,1); tst('✓ Alumno creado'); document.getElementById('a-n').value='';document.getElementById('a-e').value='';document.getElementById('a-p').value=''; setTimeout(rAdmSt,900); });
 }
 function rAdmCl() {
   var c = document.getElementById('a-cl'); if (!c) return;

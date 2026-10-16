@@ -79,6 +79,12 @@ module.exports = async function handler(req, res) {
     if (req.method === 'DELETE') {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: 'missing_id' });
+      if (id === userData.user.id) return res.status(400).json({ error: 'cannot_delete_self' });
+      const { data: target } = await sb.from('profiles').select('role').eq('id', id).maybeSingle();
+      if (target && target.role === 'admin') return res.status(403).json({ error: 'cannot_delete_admin' });
+      // Borra la cuenta de acceso (auth.users); ficha, compras y progreso caen en cascada.
+      const { error: authErr } = await sb.auth.admin.deleteUser(id);
+      if (authErr && authErr.status !== 404) return res.status(500).json({ error: authErr.message });
       const { error } = await sb.from('profiles').delete().eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ ok: true });

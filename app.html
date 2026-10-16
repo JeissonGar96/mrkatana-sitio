@@ -7993,7 +7993,7 @@ function openPlanModal(planId) {
             '<div><label class="wp-label">Sesiones 1-1 extra que suma</label><input id="pm-extra" type="number" min="0" class="wp-input" value="'+(p.extra_1on1||'')+'" placeholder="0"></div>' +
             '<div><label class="wp-label">Meses de acceso al indicador</label><input id="pm-tv-m" type="number" min="0" class="wp-input" value="'+(p.duration_tv_months||'')+'" placeholder="Vacío = de por vida"></div>' +
           '</div>' +
-          '<div class="wp-field"><label class="wp-label">ID del indicador en TradingView (solo si este plan es un indicador, ej. Kairus)</label><input id="pm-tv" class="wp-input" value="'+(p.tv_pine_id||'')+'" placeholder="PUB;abc123..."></div>' +
+          '<div class="wp-field"><label class="wp-label">Indicador de TradingView: link de la página del script o su ID (solo si este plan es un indicador)</label><input id="pm-tv" class="wp-input" value="'+(p.tv_pine_id||'')+'" placeholder="Link del script o PUB;abc123..."></div>' +
           (p.tv_pine_id ? '<div id="pm-tv-list" style="margin-top:12px;"><span class="spin"></span></div>' : '') +
         '</div>' : '') +
 

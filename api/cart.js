@@ -226,8 +226,9 @@ async function grantTv(sb, userId, it, retry) {
   else if (!process.env.TV_SESSIONID) error = 'missing_tv_session';
   else {
     try {
-      ok = await tvCall('add', it.tv_pine_id, username, expires);
-      if (!ok) ok = await tvCall('modify_user_expiration', it.tv_pine_id, username, expires);
+      const pine = await resolvePine(it.tv_pine_id);
+      ok = await tvCall('add', pine, username, expires);
+      if (!ok) ok = await tvCall('modify_user_expiration', pine, username, expires);
       if (!ok) error = 'tv_rejected';
     } catch (e) { error = String(e.message || e); }
   }
@@ -236,6 +237,21 @@ async function grantTv(sb, userId, it, retry) {
     expires_at: expires, status: ok ? 'ok' : 'error', last_error: error, updated_at: new Date().toISOString()
   }, { onConflict: 'user_id,pine_id' });
   return { ok, error, expires, username };
+}
+
+// En Admin se puede poner el ID (PUB;...) o simplemente el link de la página del script:
+// en ese caso se lee el ID real desde esa página.
+const _pineCache = {};
+async function resolvePine(v) {
+  v = String(v || '').trim();
+  if (/^PUB;/.test(v)) return v;
+  if (_pineCache[v]) return _pineCache[v];
+  const url = v.replace(/^https?:\/\/[a-z]{2,3}\.tradingview\.com/, 'https://www.tradingview.com');
+  const r = await fetch(url, { headers: { cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), 'user-agent': 'Mozilla/5.0' } });
+  const html = await r.text();
+  const m = html.match(/PUB;[A-Za-z0-9]{16,}/);
+  if (!m) throw new Error('pine_id_not_found');
+  return (_pineCache[v] = m[0]);
 }
 
 async function tvCall(kind, pineId, username, expires) {

@@ -4426,7 +4426,7 @@ function activateMember(id, isActive) {
 function cSt() {
   var n=document.getElementById('a-n').value.trim(),e=document.getElementById('a-e').value.trim(),p=document.getElementById('a-p').value;
   if(!n||!e||!p) return tst('Completa todos los campos',1);
-  sb.auth.signUp({email:e,password:p,options:{data:{full_name:n}}}).then(function(r){ if(r.error) return tst('Error: '+r.error.message,1); tst('✓ Alumno creado'); document.getElementById('a-n').value='';document.getElementById('a-e').value='';document.getElementById('a-p').value=''; setTimeout(rAdmSt,900); });
+  sb.auth.signUp({email:e,password:p,options:{data:{full_name:n},emailRedirectTo:window.location.origin+'/app'}}).then(function(r){ if(r.error) return tst('Error: '+r.error.message,1); tst('✓ Alumno creado'); document.getElementById('a-n').value='';document.getElementById('a-e').value='';document.getElementById('a-p').value=''; setTimeout(rAdmSt,900); });
 }
 function rAdmCl() {
   var c = document.getElementById('a-cl'); if (!c) return;

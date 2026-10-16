@@ -1001,7 +1001,7 @@ async function createAccount() {
     var reg = await sb.auth.signUp({
       email: email,
       password: pass,
-      options: { data: { full_name: name } }
+      options: { data: { full_name: name }, emailRedirectTo: window.location.origin + '/app' }
     });
     if (reg.error && reg.error.message.indexOf('already registered') >= 0) {
       // Email existe — hacer login para obtener userId
@@ -1228,7 +1228,7 @@ async function createAccountAfterPayment(paypalDetails) {
   } else {
     var reg = await sb.auth.signUp({
       email: email, password: pass,
-      options: { data: { full_name: name } }
+      options: { data: { full_name: name }, emailRedirectTo: window.location.origin + '/app' }
     });
     if (reg.error && reg.error.message.indexOf('already registered') >= 0) {
       // Email ya existe en Auth — hacer login para obtener userId

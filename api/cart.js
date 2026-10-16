@@ -158,6 +158,7 @@ function addMonths(fromISO, months) {
   d = new Date(d); d.setMonth(d.getMonth() + months);
   return d.toISOString();
 }
+const fmt = x => new Date(x).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Guayaquil' });
 const isUnl = x => x && new Date(x).getFullYear() >= 2099;
 
 async function applyItems(sb, user, ord, payerEmail) {
@@ -177,13 +178,13 @@ async function applyItems(sb, user, ord, payerEmail) {
       upd.membership_end = end; if (!p.membership_start) upd.membership_start = new Date().toISOString();
       upd.plan = it.plan_id; if (it.roadmap_mode) upd.roadmap_mode = it.roadmap_mode;
       expires = end;
-      out.lines.push({ name: it.name, text: isUnl(end) ? 'Acceso ilimitado a las clases' : 'Clases hasta ' + end.slice(0, 10) });
+      out.lines.push({ name: it.name, text: isUnl(end) ? 'Acceso ilimitado a las clases' : 'Clases hasta el ' + fmt(end) });
     }
     // En vivo
     if (it.live_months) {
       liveEnd = addMonths(liveEnd, it.live_months);
       upd.live_end = liveEnd; upd.live_plan = it.plan_id; expires = liveEnd;
-      out.lines.push({ name: it.name, text: 'En vivo hasta ' + liveEnd.slice(0, 10) });
+      out.lines.push({ name: it.name, text: 'En vivo hasta el ' + fmt(liveEnd) });
     }
     // Sesiones 1-1
     if (it.access_1on1 || it.extra_1on1) upd.access_1on1 = true;
@@ -192,7 +193,7 @@ async function applyItems(sb, user, ord, payerEmail) {
     if (it.tv_pine_id) {
       const tv = await grantTv(sb, user.id, it);
       expires = tv.expires || expires;
-      if (tv.ok) out.lines.push({ name: it.name, text: 'Activo en TradingView (' + tv.username + ')' + (tv.expires ? ' hasta ' + tv.expires.slice(0, 10) : '') });
+      if (tv.ok) out.lines.push({ name: it.name, text: 'Activo en TradingView (' + tv.username + ')' + (tv.expires ? ' hasta el ' + fmt(tv.expires) : '') });
       else { out.lines.push({ name: it.name, text: 'Pago recibido. Te damos el acceso en TradingView en breve.' }); out.errors.push('tv:' + tv.error); }
     }
     if (!out.lines.some(l => l.name === it.name)) out.lines.push({ name: it.name, text: 'Pago recibido' });

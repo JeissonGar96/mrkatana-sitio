@@ -12,7 +12,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 const VAPID_PUBLIC = 'BFq0c3NiHS9LLzjgZJImePJ7dXBAvG-EYgRF8v8tI4jWfwdVLEDI7BetU4bfVhs9fhKZQ88nAVsmq9ZhyXh18oc';
-const SITE = 'https://mrkatanafx.com';
+const SITE = 'https://www.mrkatanafx.com';
 
 module.exports = async function handler(req, res) {
   try {
@@ -62,7 +62,7 @@ module.exports = async function handler(req, res) {
 
     // Email (Resend)
     if (process.env.RESEND_API_KEY) {
-      const from = process.env.MAIL_FROM || 'Mr Katana FX <avisos@mrkatanafx.com>';
+      const from = process.env.MAIL_FROM || 'Mr Katana FX <noreply@mrkatanafx.com>';
       const mails = people.filter(p => wantMail(p) && p.email).map(p => ({
         from, to: [p.email], subject: 'En vivo ahora: ' + title,
         html: '<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;line-height:1.5">' +

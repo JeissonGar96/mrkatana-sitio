@@ -2878,7 +2878,7 @@ function saveEmail() {
   if (!email) return tst('Ingresa un email', 1);
   sb.auth.updateUser({ email: email }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
-    tst('✓ Revisa tu nuevo email para confirmar el cambio');
+    tst('✓ Te enviamos un enlace a tu correo actual y otro al nuevo. Abre los dos para completar el cambio');
     document.getElementById('pf-email').value = '';
   });
 }

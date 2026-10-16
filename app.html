@@ -1762,6 +1762,40 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .push-ask span{color:var(--c-text2);line-height:1.45;}
 .push-ask-b{display:flex;justify-content:flex-end;gap:8px;}
 @media (max-width:900px){.push-ask{right:16px;bottom:84px;}}
+/* Carrito y herramientas */
+#mk-cart-btn .cart-n{position:absolute;top:9px;right:9px;background:rgb(var(--c-acc));color:#111;font-size:.6rem;font-weight:700;border-radius:8px;min-width:15px;height:15px;padding:0 3px;display:flex;align-items:center;justify-content:center;}
+.st-r .aj2-v{flex:1;}
+.st-act{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+.st-seg{display:inline-flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;}
+.st-seg button{background:none;border:1px solid rgba(var(--c-ov),.1);border-radius:8px;padding:5px 10px;font:inherit;font-size:.74rem;color:var(--c-text2);cursor:pointer;}
+.st-seg button.on{border-color:rgb(var(--c-acc));color:var(--c-text);}
+.kc{display:grid;grid-template-columns:1.3fr 1fr;border:1px solid rgba(var(--c-ov),.08);border-radius:16px;background:var(--c-card);overflow:hidden;margin-bottom:18px;}
+.kc-l{padding:24px 26px;}.kc-r{padding:24px 26px;border-left:1px solid rgba(var(--c-ov),.07);display:flex;flex-direction:column;gap:12px;justify-content:center;}
+.kc h3{font-size:1.05rem;margin:0 0 4px;color:var(--c-text);font-weight:700;}.kc .k-s{font-size:.8rem;color:var(--c-muted);margin-bottom:14px;}
+.kc p{font-size:.84rem;color:var(--c-text2);line-height:1.55;margin:0 0 14px;}
+.kc ul{margin:0;padding:0;list-style:none;font-size:.82rem;color:var(--c-text2);display:grid;gap:7px;}.kc li:before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:rgb(var(--c-acc));margin-right:9px;vertical-align:middle;}
+.kc-k{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;color:var(--c-muted);}.kc-k b{color:var(--c-text);font-weight:600;}.kc-k a{color:rgb(var(--c-acc));cursor:pointer;}
+.kc-price{font-size:1.4rem;font-weight:700;color:var(--c-text);}.kc-price small{font-size:.8rem;color:var(--c-muted);font-weight:500;}
+.kc-r .st-seg{justify-content:stretch;}.kc-r .st-seg button{flex:1;padding:8px 6px;}
+.kc-r .aj2-b{width:100%;padding:11px 0;text-align:center;font-size:.86rem;}
+.kc-ren{font-size:.76rem;color:var(--c-muted);margin-top:6px;}
+.kc-note{font-size:.74rem;color:var(--c-muted);line-height:1.45;}
+.cdw-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;}
+.cdw{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100vw;background:var(--c-panel);border-left:1px solid rgba(var(--c-ov),.08);z-index:951;display:flex;flex-direction:column;}
+.cdw-h{padding:22px 24px;border-bottom:1px solid rgba(var(--c-ov),.07);display:flex;justify-content:space-between;align-items:center;}.cdw-h b{font-size:1rem;color:var(--c-text);}
+.cdw-x{background:none;border:0;color:var(--c-muted);font-size:1.4rem;cursor:pointer;line-height:1;}
+.cdw-b{flex:1;padding:8px 24px;overflow:auto;}
+.cdw-empty{padding:30px 0;text-align:center;color:var(--c-muted);font-size:.86rem;}
+.cdw-i{display:flex;justify-content:space-between;gap:12px;padding:16px 0;border-bottom:1px solid rgba(var(--c-ov),.06);font-size:.85rem;}.cdw-i b{display:block;color:var(--c-text);font-weight:600;margin-bottom:3px;}.cdw-i small{color:var(--c-muted);font-size:.76rem;display:block;line-height:1.45;}.cdw-i .pr{color:var(--c-text);font-weight:600;white-space:nowrap;}.cdw-i a{color:var(--c-muted);font-size:.74rem;text-decoration:underline;display:inline-block;margin-top:6px;cursor:pointer;}
+.cdw-f{padding:20px 24px;border-top:1px solid rgba(var(--c-ov),.07);display:grid;gap:12px;}
+.cdw-t{display:flex;justify-content:space-between;font-size:.84rem;color:var(--c-text2);}.cdw-t.big{font-size:1rem;color:var(--c-text);font-weight:700;}
+.cdw-note{font-size:.74rem;color:var(--c-muted);text-align:center;}
+.ok-box{max-width:520px;margin:40px auto;text-align:center;border:1px solid rgba(var(--c-ov),.08);border-radius:16px;background:var(--c-card);padding:36px 32px;}
+.ok-box h3{font-size:1.15rem;color:var(--c-text);margin:14px 0 6px;}.ok-box p{font-size:.85rem;color:var(--c-text2);line-height:1.55;margin:0 0 18px;}
+.ok-ic{width:44px;height:44px;border-radius:50%;border:1.5px solid rgb(var(--c-ok));margin:0 auto;display:flex;align-items:center;justify-content:center;color:rgb(var(--c-ok));font-size:1.2rem;}
+.ok-rows{text-align:left;border-top:1px solid rgba(var(--c-ov),.07);margin:8px 0 18px;}.ok-rows div{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid rgba(var(--c-ov),.06);font-size:.83rem;color:var(--c-muted);}.ok-rows b{color:var(--c-text);font-weight:500;text-align:right;}
+.ok-tip{font-size:.78rem !important;color:var(--c-muted) !important;}
+@media (max-width:900px){.kc{grid-template-columns:1fr;}.kc-r{border-left:0;border-top:1px solid rgba(var(--c-ov),.07);}.st-r{flex-wrap:wrap;}.st-act{align-items:flex-start;width:100%;}}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -1817,6 +1851,7 @@ function mkToggleTheme() {
     <div class="acol">
       <div class="atop">
         <div class="atop-s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="mk-q" type="search" autocomplete="off" placeholder="Buscar clases, módulos o lecciones..." oninput="_mkSearch(this.value)" onfocus="_mkSearch(this.value)"><div class="atop-dd" id="mk-q-dd"></div></div>
+        <button class="atop-b" id="mk-cart-btn" onclick="_cartOpen()" aria-label="Carrito" style="display:none"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6"/></svg><span class="cart-n">0</span></button>
         <button class="atop-b" id="mk-bell" onclick="_mkBell(event)" aria-label="Próximas actividades"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i class="dot" id="mk-bell-dot"></i><div class="atop-dd" id="mk-bell-dd"></div></button>
       </div>
       <main class="amain" id="amain"></main>
@@ -2247,6 +2282,7 @@ function loadApp(user) {
       // Start auto session checker
       startSessionChecker();
       _pushSubscribe(false);
+      _cartBadge();
       setTimeout(_pushAsk, 4000);
       // Restore route from URL or start at dash
       var path = window.location.pathname;
@@ -3887,9 +3923,11 @@ function rReun() {
   Promise.all([
     sb.from('meetings_1on1').select('*').eq('student_id', cUser.id).order('scheduled_at'),
     sb.from('recordings_1on1').select('*').eq('student_id', cUser.id).order('recorded_at', {ascending: false}),
-    cProfile && cProfile.plan ? sb.from('checkout_plans').select('*').eq('id', cProfile.plan).maybeSingle() : Promise.resolve({ data: null })
+    cProfile && cProfile.plan ? sb.from('checkout_plans').select('*').eq('id', cProfile.plan).maybeSingle() : Promise.resolve({ data: null }),
+    sb.from('purchases').select('*').eq('user_id', cUser.id)
   ]).then(function(res) {
     var meetings   = res[0].data || [];
+    var extra1on1  = ((res[3] && res[3].data) || []).reduce(function(a, x) { return a + (x.extra_1on1 || 0); }, 0);
     var recordings = res[1].data || [];
     var planRow    = res[2] && res[2].data;
 
@@ -3924,6 +3962,7 @@ function rReun() {
     // ── TU PLAN 1-1 ──
     // Total = sesiones que trae su plan (3 por defecto); hechas = las que ya pasaron y no fueron canceladas ni faltó
     var doneN = past.length, totN = planRow && planRow.sessions_1on1 != null ? planRow.sessions_1on1 : 3;
+    totN += extra1on1; // sesiones 1-1 extra compradas en el carrito
     // Sesiones extra: si agendas más de las del plan, el total sube solo (ej. 3 de 4)
     if (doneN + upcoming.length > totN) totN = doneN + upcoming.length;
     var end = cProfile && cProfile.membership_end ? new Date(cProfile.membership_end) : null;
@@ -4208,7 +4247,7 @@ var _ajPays = [];
 function _ajMemb() {
   var p = cProfile || {};
   Promise.all([
-    sb.from('purchases').select('id, plan_id, amount, currency, payment_method, status, created_at').eq('user_id', cUser.id).order('created_at', { ascending: false }).limit(12),
+    sb.from('purchases').select('*').eq('user_id', cUser.id).order('created_at', { ascending: false }).limit(50),
     sb.from('checkout_plans').select('*'),
     sb.from('meetings_1on1').select('status').eq('student_id', cUser.id)
   ]).then(function(res) {
@@ -4229,7 +4268,7 @@ function _ajMemb() {
       var pct = start && end > start ? Math.max(0, Math.min(100, Math.round((end - now) / (end - start) * 100))) : 0;
       vence = _ajFmtDate(p.membership_end.slice(0, 10)) + '<small>' + (active ? 'Te quedan ' + left + ' día' + (left === 1 ? '' : 's') : 'Tu plan venció') + '</small>' + (active ? '<div class="aj2-bar"><i style="width:' + pct + '%"></i></div>' : '');
     }
-    var tot = plan.sessions_1on1 != null ? plan.sessions_1on1 : 3;
+    var tot = (plan.sessions_1on1 != null ? plan.sessions_1on1 : 3) + _ajPays.reduce(function(a, x) { return a + (x.extra_1on1 || 0); }, 0);
     var rows = _ajRow('Plan actual', _mkEsc(plan.name || p.plan || 'Sin plan') + (perks.length ? '<small>' + perks.join(' · ') + '</small>' : ''), active && !unl ? 'Renovar' : (active ? '' : 'Ver planes'), 'renew', 'gold') +
       _ajRow('Vence', vence) + (p.access_1on1 ? _ajRow('Sesiones 1-1', done + ' de ' + Math.max(tot, done) + ' usadas') : '');
     var pays = _ajPays.length ? _ajPays.map(function(x, i) {
@@ -4237,7 +4276,7 @@ function _ajMemb() {
       var amt = x.amount != null ? '$' + Number(x.amount).toFixed(2) + ' ' + _mkEsc(x.currency || 'USD') : '';
       return _ajRow(d, _mkEsc(names[x.plan_id] || x.plan_id || 'Pago') + (x.payment_method ? ' · ' + _mkEsc(x.payment_method) : '') + (amt ? '<small>' + amt + '</small>' : ''), 'Recibo', 'rc' + i);
     }).join('') : _ajRow('Sin pagos', _ajEmpty('Aún no hay pagos registrados.'));
-    el.innerHTML = _ajGroup('', rows) + _ajGroup('Historial de pagos', pays) +
+    el.innerHTML = _ajGroup('', rows) + '<div id="aj2-store"></div>' + _ajGroup('Historial de pagos', pays) +
       _ajGroup('Método de pago', _ajRow('PayPal o tarjeta', 'Pagas al renovar en el checkout. No guardamos los datos de tu tarjeta.'));
     el.querySelectorAll('[data-ed]').forEach(function(b) {
       b.addEventListener('click', function() {
@@ -4246,6 +4285,7 @@ function _ajMemb() {
         else if (k.indexOf('rc') === 0) _ajReceipt(_ajPays[+k.slice(2)], names);
       });
     });
+    _storeLoad(function() { var b = document.getElementById('aj2-store'); if (!b) return; b.innerHTML = _storeRows(); _storeBind(b); });
   });
 }
 function _ajReceipt(x, names) {
@@ -4326,17 +4366,177 @@ function openProgreso() {
 function openAjustes(t) { _ajTab = t || 'perfil'; navigateTo('perfil'); }
 
 // ── HERRAMIENTAS: copiador, journal y lo que se vaya sumando para la comunidad ──
+// ── Carrito dentro de la app ──
+// Cualquier plan marcado "Mostrar en el carrito" en Admin > Planes se puede comprar aquí.
+// Los precios se recalculan en el servidor (api/cart.js); el carrito solo guarda qué eligió.
+var _store = null, _tvAcc = null, _ppLoading = false;
+var _PP_CLIENT = 'AYqmenNbm9toSrKHvVt5BxHZglY06A2a5Fgi_ffQrKbPoeLxtXlNc4wseA89j24Cv8iJjLoLYV08A0vu';
+function _cartGet() { try { return JSON.parse(localStorage.getItem('mk-cart') || '[]') || []; } catch (e) { return []; } }
+function _cartSet(c) { try { localStorage.setItem('mk-cart', JSON.stringify(c)); } catch (e) {} _cartBadge(); }
+function _cartBadge() {
+  var b = document.getElementById('mk-cart-btn'), n = _cartGet().length;
+  if (b) { b.style.display = n ? '' : 'none'; var i = b.querySelector('.cart-n'); if (i) i.textContent = n; }
+}
+function _storeLoad(cb) {
+  if (_store) return cb(_store);
+  Promise.all([
+    sb.from('checkout_plans').select('*').eq('in_store', true).order('sort_order'),
+    sb.from('checkout_plan_variants').select('*').order('sort_order'),
+    sb.from('tv_access').select('*').eq('user_id', cUser.id),
+    _ajSet ? Promise.resolve(null) : sb.from('user_settings').select('*').eq('id', cUser.id).maybeSingle()
+  ]).then(function(r) {
+    if (r[3]) _ajSet = r[3].data || { _new: true };
+    var plans = (r[0] && r[0].data) || [], vars = (r[1] && r[1].data) || [];
+    plans.forEach(function(p) { p.variants = vars.filter(function(v) { return v.plan_id === p.id; }); });
+    _store = plans; _tvAcc = (r[2] && r[2].data) || [];
+    cb(_store);
+  });
+}
+function _storeItem(c) {
+  var p = (_store || []).find(function(x) { return x.id === c.plan_id; }); if (!p) return null;
+  var v = c.variant_id ? p.variants.find(function(x) { return x.id === c.variant_id; }) : null;
+  if (p.variants.length && !v) return null;
+  return { p: p, v: v, name: p.name + (v ? ' · ' + v.name : ''), price: Number(v ? v.price : p.price) };
+}
+function _money(n) { return '$' + Number(n).toFixed(2); }
+function _priceLbl(p) {
+  if (!p.variants.length) return _money(p.price).replace('.00', '') + (p.period ? ' <small style="display:inline">' + _mkEsc(p.period) + '</small>' : '');
+  var min = Math.min.apply(null, p.variants.map(function(v) { return Number(v.price); }));
+  return 'Desde ' + _money(min).replace('.00', '');
+}
+// Selector de opción (mensual, trimestral...) + botón Agregar
+function _storePick(p, cls) {
+  var sel = p.variants.length ? '<span class="st-seg">' + p.variants.map(function(v, i) {
+    return '<button data-sv="' + v.id + '"' + (i === 0 ? ' class="on"' : '') + '>' + _mkEsc(v.name) + ' · ' + _money(v.price).replace('.00', '') + '</button>';
+  }).join('') + '</span>' : '';
+  return sel + '<button class="aj2-b ' + (cls || '') + '" data-add="' + _mkEsc(p.id) + '">Agregar al carrito</button>';
+}
+function _storeBind(box) {
+  box.querySelectorAll('.st-seg').forEach(function(g) {
+    g.querySelectorAll('[data-sv]').forEach(function(b) { b.onclick = function() { g.querySelectorAll('button').forEach(function(x) { x.classList.remove('on'); }); b.classList.add('on'); }; });
+  });
+  box.querySelectorAll('[data-add]').forEach(function(b) {
+    b.onclick = function() {
+      var p = (_store || []).find(function(x) { return x.id === b.dataset.add; }); if (!p) return;
+      var on = b.parentNode.querySelector('.st-seg .on');
+      if (p.tv_pine_id && !(_ajSet && _ajSet.tv_username)) {
+        tst('Primero agrega tu usuario de TradingView', 1); _ajTab = 'conexiones'; navigateTo('perfil'); return;
+      }
+      var c = _cartGet().filter(function(x) { return x.plan_id !== p.id; });
+      c.push({ plan_id: p.id, variant_id: on ? on.dataset.sv : null });
+      _cartSet(c); _cartOpen();
+    };
+  });
+}
+// Filas "Agregar a tu cuenta" dentro de Membresía y pagos
+function _storeRows() {
+  if (!_store || !_store.length) return '';
+  return _ajGroup('Agregar a tu cuenta', _store.map(function(p) {
+    return '<div class="aj2-r st-r"><div class="aj2-l">' + _mkEsc(p.name) + '</div><div class="aj2-v">' + _priceLbl(p) +
+      (p.description ? '<small>' + _mkEsc(p.description) + '</small>' : '') + '</div><div class="st-act">' + _storePick(p) + '</div></div>';
+  }).join(''));
+}
+function _cartOpen() {
+  _storeLoad(function() {
+    var old = document.getElementById('cdw'); if (old) old.remove();
+    var items = _cartGet().map(_storeItem);
+    if (items.some(function(x) { return !x; })) { _cartSet(_cartGet().filter(function(c) { return _storeItem(c); })); items = items.filter(Boolean); }
+    var total = items.reduce(function(a, x) { return a + x.price; }, 0);
+    var d = document.createElement('div'); d.id = 'cdw';
+    d.innerHTML = '<div class="cdw-bg"></div><div class="cdw"><div class="cdw-h"><b>Tu carrito</b><button class="cdw-x" aria-label="Cerrar">×</button></div><div class="cdw-b" id="cdw-b">' +
+      (items.length ? items.map(function(x, i) {
+        return '<div class="cdw-i"><div><b>' + _mkEsc(x.name) + '</b><small>' + _cartNote(x) + '</small><a data-rm="' + i + '">Quitar</a></div><div class="pr">' + _money(x.price) + '</div></div>';
+      }).join('') : '<div class="cdw-empty">Tu carrito está vacío.</div>') + '</div>' +
+      (items.length ? '<div class="cdw-f"><div class="cdw-t big"><span>Total</span><span>' + _money(total) + ' USD</span></div><div id="cdw-pp"></div><div class="cdw-note">Pagas sin salir de la plataforma. El acceso se activa al instante.</div></div>' : '') + '</div>';
+    document.body.appendChild(d);
+    var close = function() { d.remove(); };
+    d.querySelector('.cdw-bg').onclick = close; d.querySelector('.cdw-x').onclick = close;
+    d.querySelectorAll('[data-rm]').forEach(function(a) { a.onclick = function() { var c = _cartGet(); c.splice(+a.dataset.rm, 1); _cartSet(c); _cartOpen(); }; });
+    if (items.length) _ppRender();
+  });
+}
+function _cartNote(x) {
+  var p = cProfile || {}, v = x.v || {}, f = function(d) { return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }); };
+  var live = v.duration_live_months || x.p.duration_live_months, tv = v.duration_tv_months || x.p.duration_tv_months;
+  if (live) {
+    var from = p.live_end && new Date(p.live_end) > new Date() ? new Date(p.live_end) : new Date(), to = new Date(from); to.setMonth(to.getMonth() + live);
+    return 'Tu acceso a en vivo queda hasta el ' + f(to);
+  }
+  if (x.p.tv_pine_id) return 'Para tu usuario de TradingView ' + _mkEsc((_ajSet && _ajSet.tv_username) || '') + (tv ? '' : ' · de por vida');
+  var ex = v.extra_1on1 != null ? v.extra_1on1 : x.p.extra_1on1;
+  if (ex) return 'Suma ' + ex + ' sesión' + (ex === 1 ? '' : 'es') + ' 1-1 a tu cuenta';
+  return x.p.description ? _mkEsc(x.p.description) : '';
+}
+function _ppRender() {
+  if (!window.paypal) {
+    if (!_ppLoading) { _ppLoading = true; var s = document.createElement('script'); s.src = 'https://www.paypal.com/sdk/js?client-id=' + _PP_CLIENT + '&currency=USD&intent=capture'; s.onload = _ppRender; document.head.appendChild(s); }
+    return;
+  }
+  var box = document.getElementById('cdw-pp'); if (!box) return;
+  var tok = function() { return sb.auth.getSession().then(function(r) { return r && r.data && r.data.session ? r.data.session.access_token : ''; }); };
+  var call = function(body) {
+    return tok().then(function(t) {
+      return fetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(body) })
+        .then(function(r) { return r.json().then(function(j) { if (!r.ok) throw new Error(j.error || 'error'); return j; }); });
+    });
+  };
+  var errMsg = { need_tv_user: 'Agrega tu usuario de TradingView en Ajustes, Conexiones.', pick_variant: 'Elige una opción para cada producto.', not_in_store: 'Uno de los productos ya no está disponible.', missing_paypal_secret: 'El pago aún no está activado. Escríbenos por WhatsApp.' };
+  paypal.Buttons({
+    style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' },
+    createOrder: function() { return call({ action: 'create', items: _cartGet() }).then(function(j) { return j.id; }); },
+    onApprove: function(data) {
+      var b = document.getElementById('cdw-b'); if (b) b.innerHTML = '<div class="cdw-empty">Activando tu compra...</div>';
+      return call({ action: 'capture', orderID: data.orderID }).then(function(j) { _cartSet([]); _cartDone(j.result || {}); })
+        .catch(function(e) { tst('No pudimos confirmar el pago. Escríbenos por WhatsApp.', 1); });
+    },
+    onError: function(e) { var m = String(e && e.message || ''); tst(Object.keys(errMsg).filter(function(k) { return m.indexOf(k) > -1; }).map(function(k) { return errMsg[k]; })[0] || 'Error en el pago. Intenta de nuevo.', 1); },
+    onCancel: function() { tst('Pago cancelado.', 1); }
+  }).render('#cdw-pp');
+}
+function _cartDone(res) {
+  var d = document.getElementById('cdw'); if (d) d.remove();
+  _store = null; _tvAcc = null;
+  sb.from('profiles').select('*').eq('id', cUser.id).single().then(function(r) {
+    if (r && r.data) cProfile = r.data;
+    var m = document.getElementById('amain');
+    m.innerHTML = '<div class="ok-box"><div class="ok-ic">✓</div><h3>Pago recibido</h3><p>Ya tienes acceso. El recibo queda en Ajustes, Membresía y pagos.</p><div class="ok-rows">' +
+      (res.lines || []).map(function(l) { return '<div><span>' + _mkEsc(l.name) + '</span><b>' + _mkEsc(l.text) + '</b></div>'; }).join('') +
+      (res.total ? '<div><span>Total pagado</span><b>' + _money(res.total) + ' USD · PayPal</b></div>' : '') + '</div>' +
+      ((res.lines || []).some(function(l) { return /TradingView/.test(l.text); }) ? '<p class="ok-tip">En TradingView: abre Indicadores, pestaña "Solo por invitación", y búscalo ahí.</p>' : '') +
+      '<button class="aj2-b gold" onclick="navigateTo(\'dash\')">Ir al inicio</button></div>';
+  });
+}
+
+// Herramientas: indicadores a la venta (ej. Kairus) + lo que viene
 function rTools() {
   var m = document.getElementById('amain');
-  var tools = [
+  var soon = [
     ['Journal automático', 'Tus operaciones se registran solas desde tu cuenta de trading. Estadísticas, racha y progreso.'],
-    ['Copiador de operaciones', 'Copia las operaciones del mentor en tu cuenta de forma automática.'],
-    ['Más herramientas', 'Vamos sumando herramientas para la comunidad. Te avisaremos cuando estén listas.']
+    ['Copiador de operaciones', 'Copia las operaciones del mentor en tu cuenta de forma automática.']
   ];
-  m.innerHTML = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div>' +
-    '<div class="tl-grid">' + tools.map(function(t) {
-      return '<div class="mk-card tl-card"><div class="tl-top"><h3>' + t[0] + '</h3><span class="mk-pill">Próximamente</span></div><p>' + t[1] + '</p></div>';
-    }).join('') + '</div>';
+  var head = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div>';
+  var soonH = '<div class="tl-grid">' + soon.map(function(t) {
+    return '<div class="mk-card tl-card"><div class="tl-top"><h3>' + t[0] + '</h3><span class="mk-pill">Próximamente</span></div><p>' + t[1] + '</p></div>';
+  }).join('') + '</div>';
+  m.innerHTML = head + '<div id="tl-ind"></div>' + soonH;
+  _storeLoad(function(st) {
+    var box = document.getElementById('tl-ind'); if (!box) return;
+    box.innerHTML = st.filter(function(p) { return p.tv_pine_id; }).map(function(p) {
+      var a = (_tvAcc || []).find(function(x) { return x.pine_id === p.tv_pine_id; });
+      var active = a && a.status === 'ok' && (!a.expires_at || new Date(a.expires_at) > new Date());
+      var tvu = (_ajSet && _ajSet.tv_username) || '';
+      var f = function(d) { return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }); };
+      var right = active ?
+        '<div class="kc-k"><span>Estado</span><b><span class="aj2-dot"></span>Activo</b></div><div class="kc-k"><span>Vence</span><b>' + (a.expires_at ? f(a.expires_at) : 'De por vida') + '</b></div><div class="kc-k"><span>Usuario TradingView</span><b>' + _mkEsc(a.tv_username) + '</b></div>' + (a.expires_at ? '<div class="kc-ren">Renovar</div>' + _storePick(p, 'gold') : '')
+        : (a && a.status === 'error' ? '<div class="kc-note">Recibimos tu pago. Estamos activando tu acceso en TradingView.</div>' : '') +
+          '<div class="kc-price">' + _priceLbl(p) + '</div><div class="kc-k"><span>Usuario TradingView</span><b>' + (tvu ? _mkEsc(tvu) : '<a onclick="_ajTab=\'conexiones\';navigateTo(\'perfil\')">Agregar</a>') + '</b></div>' + _storePick(p, 'gold') +
+          '<div class="kc-note">El acceso se da a tu usuario de TradingView. Puedes cambiarlo en Ajustes, Conexiones.</div>';
+      return '<div class="kc"><div class="kc-l"><h3>' + _mkEsc(p.name) + '</h3><div class="k-s">Indicador para TradingView</div>' +
+        (p.description ? '<p>' + _mkEsc(p.description) + '</p>' : '') +
+        '<ul><li>Acceso en tu propia cuenta de TradingView</li><li>Se activa solo al pagar</li><li>Actualizaciones incluidas</li></ul></div><div class="kc-r">' + right + '</div></div>';
+    }).join('');
+    _storeBind(box);
+  });
 }
 
 function rPerfilOld() { // diseño anterior de Ajustes (ya no se usa)
@@ -7745,9 +7945,10 @@ function openPlanModal(planId) {
           '<div class="wp-card-head"><span class="wp-card-icon">🏷️</span><span class="wp-card-title">Categoría del plan</span></div>' +
           '<div style="font-size:.72rem;color:var(--c-muted);margin-bottom:10px;">Define qué tipo de acceso ofrece este plan — se usa para saber qué mostrarte al gestionar el plan/Live de un alumno.</div>' +
           '<div style="display:flex;gap:8px;">' +
-            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="clases" '+(p.category!=='live'&&p.category!=='ambos'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Clases</label>' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="clases" '+(p.category!=='live'&&p.category!=='ambos'&&p.category!=='herramienta'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Clases</label>' +
             '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="live" '+(p.category==='live'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Live</label>' +
             '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="ambos" '+(p.category==='ambos'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Ambos</label>' +
+            '<label class="wp-chip" style="cursor:pointer;flex:1;justify-content:center;"><input type="radio" name="pm-category" value="herramienta" '+(p.category==='herramienta'?'checked':'')+' style="width:12px;height:12px;accent-color:var(--sl);"> Herramienta</label>' +
           '</div>' +
         '</div>' +
 
@@ -7781,6 +7982,20 @@ function openPlanModal(planId) {
             '<label class="wp-toggle"><input type="checkbox" id="pm-popular" '+(p.popular?'checked':'')+'><span class="wp-toggle-track"></span></label>' +
           '</div>' +
         '</div>' +
+
+        // Card: Carrito de la app (se muestra cuando la base ya tiene las columnas del carrito)
+        ((!isNew && 'in_store' in p) || (isNew && (window._allPlans || []).some(function(x){ return 'in_store' in x; })) ?
+        '<div class="wp-card">' +
+          '<div class="wp-card-head"><span class="wp-card-title">Carrito de la app</span></div>' +
+          '<div class="wp-toggle-row"><span class="wp-toggle-text">Se puede comprar desde el carrito (alumnos ya registrados)</span>' +
+            '<label class="wp-toggle"><input type="checkbox" id="pm-store" '+(p.in_store?'checked':'')+'><span class="wp-toggle-track"></span></label></div>' +
+          '<div class="wp-field wp-grid2" style="margin-top:10px;">' +
+            '<div><label class="wp-label">Sesiones 1-1 extra que suma</label><input id="pm-extra" type="number" min="0" class="wp-input" value="'+(p.extra_1on1||'')+'" placeholder="0"></div>' +
+            '<div><label class="wp-label">Meses de acceso al indicador</label><input id="pm-tv-m" type="number" min="0" class="wp-input" value="'+(p.duration_tv_months||'')+'" placeholder="Vacío = de por vida"></div>' +
+          '</div>' +
+          '<div class="wp-field"><label class="wp-label">ID del indicador en TradingView (solo si este plan es un indicador, ej. Kairus)</label><input id="pm-tv" class="wp-input" value="'+(p.tv_pine_id||'')+'" placeholder="PUB;abc123..."></div>' +
+          (p.tv_pine_id ? '<div id="pm-tv-list" style="margin-top:12px;"><span class="spin"></span></div>' : '') +
+        '</div>' : '') +
 
         // Card: Discord roles
         '<div class="wp-card">' +
@@ -7826,6 +8041,8 @@ function openPlanModal(planId) {
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
 
+  if (p.tv_pine_id) _admTvList(p);
+
   // Cargar roles de Discord disponibles como chips (solo los marcados "Disponible",
   // más cualquiera que este plan ya tuviera asignado aunque después se haya ocultado)
   var selectedRoles = (p.discord_role_ids || []);
@@ -7867,6 +8084,12 @@ function openPlanModal(planId) {
     };
     var n1 = document.getElementById('pm-1on1-n');
     if (n1 && n1.value !== '') data.sessions_1on1 = parseInt(n1.value, 10);
+    if (document.getElementById('pm-store')) {
+      data.in_store = document.getElementById('pm-store').checked;
+      data.extra_1on1 = parseInt(document.getElementById('pm-extra').value, 10) || 0;
+      data.tv_pine_id = document.getElementById('pm-tv').value.trim() || null;
+      data.duration_tv_months = document.getElementById('pm-tv-m').value ? parseInt(document.getElementById('pm-tv-m').value, 10) : null;
+    }
     if (isNew) { data.active = false; data.sort_order = (window._allPlans || []).length; }
 
     var op = isNew ? sb.from('checkout_plans').insert(data) : sb.from('checkout_plans').update(data).eq('id', id);
@@ -7930,6 +8153,47 @@ function openPlanModal(planId) {
 }
 
 // ── MODAL: crear/editar variante ──
+// Admin: quién tiene acceso al indicador + dar acceso a mano (respaldo si TradingView falla)
+function _admTvList(p) {
+  var box = document.getElementById('pm-tv-list'); if (!box) return;
+  sb.from('tv_access').select('*').eq('pine_id', p.tv_pine_id).order('updated_at', { ascending: false }).then(function(r) {
+    var rows = (r && r.data) || [];
+    var ids = rows.map(function(x) { return x.user_id; });
+    (ids.length ? sb.from('profiles').select('id, full_name, email').in('id', ids) : Promise.resolve({ data: [] })).then(function(pr) {
+      var who = {}; ((pr && pr.data) || []).forEach(function(x) { who[x.id] = x; });
+      var f = function(d) { return d ? new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'De por vida'; };
+      box.innerHTML = '<div class="wp-label" style="margin-bottom:6px;">Alumnos con acceso (' + rows.length + ')</div>' +
+        (rows.length ? rows.map(function(x) {
+          var w = who[x.user_id] || {};
+          return '<div class="wp-variant-row"><span class="wp-variant-name">' + _mkEsc(w.full_name || w.email || 'Alumno') + ' · ' + _mkEsc(x.tv_username) + ' · ' + f(x.expires_at) +
+            (x.status === 'error' ? ' · <b style="color:rgb(var(--c-bad));font-weight:600;">No se pudo dar</b>' : '') + '</span>' +
+            (x.status === 'error' ? '<button class="wp-link-btn" style="color:var(--sl);" data-tvretry="' + x.user_id + '">Reintentar</button>' : '') + '</div>';
+        }).join('') : '<div style="font-size:.78rem;color:var(--c-muted);">Nadie todavía.</div>') +
+        '<div class="wp-label" style="margin:14px 0 6px;">Dar acceso a mano</div>' +
+        '<div class="wp-grid2" style="gap:8px;"><input id="tv-g-email" class="wp-input" placeholder="Email del alumno"><input id="tv-g-user" class="wp-input" placeholder="Usuario de TradingView"></div>' +
+        '<div class="wp-grid2" style="gap:8px;margin-top:8px;"><input id="tv-g-m" type="number" min="0" class="wp-input" placeholder="Meses (vacío = de por vida)"><button class="wp-btn-primary" id="tv-g-btn" style="margin:0;">Dar acceso</button></div>';
+      var call = function(body, done) {
+        sb.auth.getSession().then(function(s) {
+          var t = s && s.data && s.data.session ? s.data.session.access_token : '';
+          fetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(Object.assign({ action: 'tv_grant', plan_id: p.id }, body)) })
+            .then(function(r) { return r.json(); }).then(function(j) { tst(j.ok ? '✓ Acceso dado en TradingView' : 'No se pudo: ' + (j.error || 'error'), !j.ok); _admTvList(p); if (done) done(); })
+            .catch(function() { tst('No se pudo conectar', 1); if (done) done(); });
+        });
+      };
+      box.querySelectorAll('[data-tvretry]').forEach(function(b) { b.onclick = function() { b.disabled = true; call({ user_id: b.dataset.tvretry, retry: true }); }; });
+      document.getElementById('tv-g-btn').onclick = function() {
+        var btn = this, em = document.getElementById('tv-g-email').value.trim().toLowerCase();
+        if (!em) return tst('Escribe el email del alumno', 1);
+        btn.disabled = true;
+        sb.from('profiles').select('id').ilike('email', em).maybeSingle().then(function(q) {
+          if (!q || !q.data) { btn.disabled = false; return tst('No hay un alumno con ese email', 1); }
+          call({ user_id: q.data.id, tv_username: document.getElementById('tv-g-user').value.trim(), months: document.getElementById('tv-g-m').value || 0 }, function() { btn.disabled = false; });
+        });
+      };
+    });
+  });
+}
+
 function openVariantModal(planId, variantId) {
   var planEditModal = document.getElementById('plan-edit-modal');
   var existing = document.getElementById('variant-edit-modal');
@@ -7962,6 +8226,10 @@ function openVariantModal(planId, variantId) {
           '<div><label class="wp-label">Duración Clases (meses)</label><input id="vm-dur-clases" type="number" class="wp-input" value="'+(v.duration_clases_months||'')+'"></div>' +
           '<div><label class="wp-label">Duración Live (meses)</label><input id="vm-dur-live" type="number" class="wp-input" value="'+(v.duration_live_months||'')+'"></div>' +
         '</div>' +
+        (planDef && 'in_store' in planDef ? '<div class="wp-field wp-grid2">' +
+          '<div><label class="wp-label">Meses del indicador</label><input id="vm-dur-tv" type="number" class="wp-input" value="'+(v.duration_tv_months||'')+'"></div>' +
+          '<div><label class="wp-label">Sesiones 1-1 extra</label><input id="vm-extra" type="number" class="wp-input" value="'+(v.extra_1on1||'')+'"></div>' +
+        '</div>' : '') +
         '<div class="wp-field"><label class="wp-label">¿Incluye Clases?</label><select id="vm-clases" class="wp-input">' +
           '<option value="inherit"'+(v.access_clases===null||v.access_clases===undefined?' selected':'')+'>Igual que el plan</option>' +
           '<option value="yes"'+(v.access_clases===true?' selected':'')+'>Sí</option>' +
@@ -7989,6 +8257,10 @@ function openVariantModal(planId, variantId) {
       duration_live_months: document.getElementById('vm-dur-live').value ? parseInt(document.getElementById('vm-dur-live').value) : null,
       access_clases: clasesVal === 'inherit' ? null : (clasesVal === 'yes')
     };
+    if (document.getElementById('vm-dur-tv')) {
+      data.duration_tv_months = document.getElementById('vm-dur-tv').value ? parseInt(document.getElementById('vm-dur-tv').value, 10) : null;
+      data.extra_1on1 = document.getElementById('vm-extra').value ? parseInt(document.getElementById('vm-extra').value, 10) : null;
+    }
     var op = isNew ? sb.from('checkout_plan_variants').insert(data) : sb.from('checkout_plan_variants').update(data).eq('id', v.id);
     op.then(function(r) {
       if (r.error) { tst('Error: ' + r.error.message, 1); btn.disabled = false; btn.textContent = 'Guardar'; return; }

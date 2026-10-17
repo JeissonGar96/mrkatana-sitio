@@ -2240,6 +2240,13 @@ function loadApp(user) {
     document.getElementById('uname').textContent = name;
     var uname2 = document.getElementById('uname2'); if (uname2) uname2.textContent = name;
     _mkLoadSiteTheme();
+    // Registro gratis: los datos del formulario llegan en el usuario; se copian al perfil la primera vez
+    var _um = (user && user.user_metadata) || {};
+    if (cProfile && _um.date_of_birth && !cProfile.date_of_birth) {
+      var _pf = { date_of_birth: _um.date_of_birth, age: _um.age || null, country: _um.country || null, phone_prefix: _um.phone_prefix || null, phone: _um.phone || null };
+      Object.assign(cProfile, _pf);
+      sb.from('profiles').update(_pf).eq('id', user.id).then(function() {});
+    }
     if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) {
       document.getElementById('adm-lnk').style.display = 'block';
       var mobAdm = document.getElementById('mob-adm-btn');
@@ -2320,7 +2327,9 @@ function loadApp(user) {
         return;
       }
       // Si no tiene Discord conectado, es obligatorio antes de continuar
-      if (!cProfile.discord_id && cProfile.role !== 'admin') {
+      // Discord obligatorio solo para alumnos con plan; en la cuenta gratis es opcional
+      var _paid = _hasClasesAccess() || _hasLiveAccess() || !!cProfile.access_1on1 || _isTeam();
+      if (!cProfile.discord_id && cProfile.role !== 'admin' && _paid) {
         _showMandatoryDiscord();
         return;
       }

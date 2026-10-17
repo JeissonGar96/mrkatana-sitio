@@ -6789,7 +6789,7 @@ function openAccessPickerModal(studentId, kind) {
 }
 
 function toggleStudentStaff(studentId, enabled) {
-  var newRole = enabled ? 'staff' : null;
+  var newRole = enabled ? 'staff' : 'student';
   var msg = enabled ? '¿Convertir a esta persona en Staff? Tendrá acceso al panel de admin según los permisos configurados.' : '¿Quitarle el rol de Staff a esta persona?';
   if (!confirm(msg)) {
     var cb = document.getElementById('stud-staff-toggle'); if (cb) cb.checked = !enabled;

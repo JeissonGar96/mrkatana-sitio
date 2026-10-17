@@ -1321,8 +1321,8 @@ nav{
 /* ── Login / registro (diseño del panel) ── */
 :root{--lg-pg:#0a0a0c;--lg-bg:#0e0e10;--lg-pn:#151518;--lg-cd:#1c1c20;--lg-ln:#2a2a31;--lg-tx:#f0f0f0;--lg-t2:#9a9a9a;--lg-mu:#6a6871;--lg-acc:201,168,76;}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--lg-pg);color:var(--lg-tx);}
-html body{display:block;background:var(--lg-pg);}
-.lg-wrap{min-height:calc(100vh - 40px);width:auto;margin:20px;border:1px solid var(--lg-ln);border-radius:22px;background:var(--lg-bg);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
+html body{display:block;background:var(--lg-pg);padding:20px;min-height:100vh;}
+.lg-wrap{min-height:calc(100vh - 40px);width:auto;margin:0;border:1px solid var(--lg-ln);border-radius:22px;background:var(--lg-bg);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
 .lg-left{position:relative;padding:48px 56px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;background:radial-gradient(120% 80% at 0% 100%,rgba(var(--lg-acc),.10),transparent 60%),var(--lg-pn);border-right:1px solid var(--lg-ln);}
 .lg-llogo img{height:38px;display:block;}
 body:not(.is-reg) .lg-llogo{visibility:hidden;}
@@ -1349,7 +1349,7 @@ select.lg-fi{appearance:none;-webkit-appearance:none;cursor:pointer;}
 .lg-pw{position:relative;}.lg-pw .lg-fi{padding-right:40px;}
 .lg-pw button{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:var(--lg-mu);display:flex;}
 .lg-row3{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;}
-.lg-row2{display:grid;grid-template-columns:1fr 1.3fr;gap:12px;}
+.lg-row2{display:grid;grid-template-columns:1fr 1.3fr;gap:12px;}.lg-row2.eq{grid-template-columns:1fr 1fr;}.lg-chk em{color:var(--lg-mu);font-style:normal;}#rg-cap:not(:empty){margin:8px 0;}
 .lg-ph{display:flex;gap:6px;}.lg-ph select{width:84px;flex-shrink:0;padding:12px 8px;}
 .lg-note{font-size:.72rem;color:var(--lg-mu);margin-top:5px;}
 .lg-lnk{text-align:right;margin:-4px 0 6px;}.lg-lnk a{font-size:.8rem;color:var(--lg-t2);text-decoration:none;}
@@ -1378,7 +1378,15 @@ select.lg-fi{appearance:none;-webkit-appearance:none;cursor:pointer;}
 .lg-comm-r b{display:block;font-size:.92rem;}.lg-comm-r small{font-size:.76rem;color:var(--lg-t2);}
 .lg-comm-f{grid-column:1/-1;font-size:.76rem;color:var(--lg-mu);}
 .lg-foot{align-self:center;}
-@media (max-width:900px){.lg-wrap{grid-template-columns:1fr;margin:0;border:0;border-radius:0;min-height:100vh;}.lg-left{display:none;}.lg-right{padding:32px 18px;}body.is-reg .lg-flogo{display:block;}.lg-flogo img{height:38px;}}
+/* Barra de desplazamiento igual que en el panel */
+html{scrollbar-width:auto;}
+*::-webkit-scrollbar{width:8px;height:8px;}
+*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent;}
+*::-webkit-scrollbar-button{display:none;width:0;height:0;}
+*::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
+*::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.26);border:2px solid transparent;background-clip:padding-box;}
+@supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.3) transparent;}}
+@media (max-width:900px){html body{padding:0;}.lg-wrap{grid-template-columns:1fr;margin:0;border:0;border-radius:0;min-height:100vh;}.lg-left{display:none;}.lg-right{padding:32px 18px;}body.is-reg .lg-flogo{display:block;}.lg-flogo img{height:38px;}}
 @media (max-width:480px){.lg-row2{grid-template-columns:1fr;gap:0;}}
 </style>
 
@@ -1425,15 +1433,17 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
     </div>
     <div id="f-reg" style="display:none">
       <h2>Crea tu cuenta gratis</h2><div class="lg-sub">Sin tarjeta. Te enviaremos un correo para confirmarla.</div>
-      <div class="lg-fg"><label>Nombre completo</label><input type="text" id="rg-n" class="lg-fi" placeholder="Tu nombre completo" autocomplete="name"></div>
+      <div class="lg-row2 eq"><div class="lg-fg"><label>Nombre</label><input type="text" id="rg-n" class="lg-fi" placeholder="Tu nombre" autocomplete="given-name"></div><div class="lg-fg"><label>Apellido</label><input type="text" id="rg-ln" class="lg-fi" placeholder="Tu apellido" autocomplete="family-name"></div></div>
       <div class="lg-fg"><label>Correo</label><input type="email" id="rg-e" class="lg-fi" placeholder="tu@correo.com" autocomplete="email"></div>
-      <div class="lg-fg"><label>Contraseña</label><div class="lg-pw"><input type="password" id="rg-p" class="lg-fi" placeholder="Mín. 6 caracteres, 1 mayúscula y 1 número"><button type="button" onclick="togglePassVis('rg-p',this)"><svg id="eye-rg-p" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <div class="lg-row2 eq"><div class="lg-fg"><label>Contraseña</label><div class="lg-pw"><input type="password" id="rg-p" class="lg-fi" placeholder="Mín. 6, 1 mayúscula, 1 número"><button type="button" onclick="togglePassVis('rg-p',this)"><svg id="eye-rg-p" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><div class="lg-fg"><label>Confirmar contraseña</label><div class="lg-pw"><input type="password" id="rg-p2" class="lg-fi" placeholder="Repite tu contraseña"><button type="button" onclick="togglePassVis('rg-p2',this)"><svg id="eye-rg-p2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div></div>
       <div class="lg-fg"><label>Fecha de nacimiento</label><div class="lg-row3"><select id="rg-dd" class="lg-fi"><option value="">Día</option></select><select id="rg-dm" class="lg-fi"><option value="">Mes</option></select><select id="rg-dy" class="lg-fi"><option value="">Año</option></select></div><div class="lg-note">Debes ser mayor de 18 años.</div></div>
       <div class="lg-row2">
         <div class="lg-fg"><label>País</label><select id="rg-c" class="lg-fi"><option value="">Selecciona...</option><option value="Ecuador">Ecuador</option><option value="Colombia">Colombia</option><option value="Venezuela">Venezuela</option><option value="Perú">Perú</option><option value="México">México</option><option value="Chile">Chile</option><option value="Argentina">Argentina</option><option value="Bolivia">Bolivia</option><option value="Paraguay">Paraguay</option><option value="Uruguay">Uruguay</option><option value="Brasil">Brasil</option><option value="Guatemala">Guatemala</option><option value="Honduras">Honduras</option><option value="El Salvador">El Salvador</option><option value="Nicaragua">Nicaragua</option><option value="Costa Rica">Costa Rica</option><option value="Panamá">Panamá</option><option value="Cuba">Cuba</option><option value="República Dominicana">República Dominicana</option><option value="España">España</option><option value="Estados Unidos">Estados Unidos</option><option value="Otro">Otro</option></select></div>
         <div class="lg-fg"><label>Teléfono / WhatsApp</label><div class="lg-ph"><select id="rg-pp" class="lg-fi"><option value="+593">+593</option><option value="+57">+57</option><option value="+58">+58</option><option value="+51">+51</option><option value="+52">+52</option><option value="+56">+56</option><option value="+54">+54</option><option value="+591">+591</option><option value="+595">+595</option><option value="+598">+598</option><option value="+55">+55</option><option value="+502">+502</option><option value="+504">+504</option><option value="+503">+503</option><option value="+505">+505</option><option value="+506">+506</option><option value="+507">+507</option><option value="+53">+53</option><option value="+1">+1</option><option value="+34">+34</option></select><input type="tel" id="rg-ph" class="lg-fi" placeholder="999 999 999"></div></div>
       </div>
-      <label class="lg-chk"><input type="checkbox" id="rg-t"><span>Acepto los <a href="/legal" target="_blank">Términos y condiciones</a> y la <a href="/legal#privacidad" target="_blank">Política de privacidad</a>, y entiendo que el trading implica riesgo.</span></label>
+      <label class="lg-chk"><input type="checkbox" id="rg-t"><span>Certifico que soy mayor de 18 años, acepto los <a href="/legal" target="_blank">Términos y condiciones</a> y la <a href="/legal#privacidad" target="_blank">Política de privacidad</a>, y entiendo que el trading implica riesgo.</span></label>
+      <label class="lg-chk"><input type="checkbox" id="rg-mk"><span>Quiero recibir novedades, promociones y avisos de Mr Katana FX por correo y WhatsApp. <em>(opcional)</em></span></label>
+      <div id="rg-cap"></div>
       <button class="lg-btn" id="btn-reg-continue">Crear cuenta gratis</button>
       <div class="lg-alt">¿Ya tienes cuenta? <a href="#" id="t-in">Inicia sesión</a></div>
     </div>
@@ -1524,14 +1534,17 @@ function togglePassVis(fieldId, btn) {
 }
 
 async function doRegContinue() {
-  var n = (document.getElementById('rg-n')||{}).value.trim();
+  var fn = _v('rg-n').trim(), lnm = _v('rg-ln').trim();
+  var n = (fn + ' ' + lnm).trim();
   var e = (document.getElementById('rg-e')||{}).value.trim();
   var p = (document.getElementById('rg-p')||{}).value;
-  if (!n) return showMsg('Ingresa tu nombre completo.', true);
+  if (!fn) return showMsg('Ingresa tu nombre.', true);
+  if (!lnm) return showMsg('Ingresa tu apellido.', true);
   if (!e || !e.includes('@')) return showMsg('Ingresa un email válido.', true);
   if (!p || p.length < 6) return showMsg('Contraseña mínimo 6 caracteres.', true);
   if (!/[A-Z]/.test(p)) return showMsg('La contraseña debe tener al menos una mayúscula.', true);
   if (!/[0-9]/.test(p)) return showMsg('La contraseña debe tener al menos un número.', true);
+  if (p !== _v('rg-p2')) return showMsg('Las contraseñas no coinciden.', true);
   var dd = _v('rg-dd'), dm = _v('rg-dm'), dy = _v('rg-dy'), cty = _v('rg-c'), pp = _v('rg-pp'), ph = _v('rg-ph').trim();
   if (!dd || !dm || !dy) return showMsg('Ingresa tu fecha de nacimiento.', true);
   var dob = new Date(+dy, +dm - 1, +dd), now = new Date();
@@ -1542,6 +1555,7 @@ async function doRegContinue() {
   if (!cty) return showMsg('Selecciona tu país.', true);
   if (ph.replace(/\D/g, '').length < 6) return showMsg('Ingresa tu número de teléfono.', true);
   if (!document.getElementById('rg-t').checked) return showMsg('Debes aceptar los Términos y la Política de privacidad.', true);
+  if (TS_SITEKEY && !_capToken) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
 
   var btn = document.getElementById('btn-reg-continue');
   btn.disabled = true; btn.textContent = 'Verificando...';
@@ -1555,13 +1569,24 @@ async function doRegContinue() {
   }
 
   btn.textContent = 'Creando cuenta...';
-  var reg = await sb.auth.signUp({ email: e, password: p, options: { data: { full_name: n, date_of_birth: dy + '-' + dm + '-' + dd, age: age, country: cty, phone_prefix: pp, phone: ph, terms_accepted_at: new Date().toISOString() }, emailRedirectTo: location.origin + '/app' } });
+  var reg = await sb.auth.signUp({ email: e, password: p, options: { captchaToken: _capToken || undefined, data: { full_name: n, first_name: fn, last_name: lnm, marketing_opt_in: !!document.getElementById('rg-mk').checked, date_of_birth: dy + '-' + dm + '-' + dd, age: age, country: cty, phone_prefix: pp, phone: ph, terms_accepted_at: new Date().toISOString() }, emailRedirectTo: location.origin + '/app' } });
   btn.disabled = false; btn.textContent = 'Crear cuenta gratis';
+  _capReset();
   if (reg.error) return showMsg(reg.error.message.indexOf('already') >= 0 ? 'Este email ya está registrado. Inicia sesión con tu cuenta.' : 'No se pudo crear la cuenta: ' + reg.error.message, true);
   if (reg.data && reg.data.session) { window.location.href = '/app'; return; }
   showMsg('Listo. Te enviamos un correo a ' + e + '. Ábrelo para confirmar tu cuenta y luego inicia sesión.', false);
 }
 
+// Protección anti-bots (Cloudflare Turnstile). Se activa al poner la clave pública del sitio aquí
+// y activar Turnstile en Supabase > Authentication > Attack Protection con la clave secreta.
+var TS_SITEKEY = '';
+var _capToken = null, _capId = null;
+function _capLoad() {
+  if (!TS_SITEKEY || window.turnstile) return;
+  window._tsReady = function() { _capId = turnstile.render('#rg-cap', { sitekey: TS_SITEKEY, theme: 'dark', appearance: 'interaction-only', callback: function(t) { _capToken = t; }, 'expired-callback': function() { _capToken = null; } }); };
+  var sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_tsReady'; sc.async = true; document.head.appendChild(sc);
+}
+function _capReset() { if (window.turnstile && _capId !== null) { turnstile.reset(_capId); _capToken = null; } }
 function _v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
 function _fillDob() {
   var d = document.getElementById('rg-dd'), m = document.getElementById('rg-dm'), y = document.getElementById('rg-dy'); if (!d) return;
@@ -1573,6 +1598,7 @@ function _fillDob() {
 // On load — check if already logged in
 window.onload = function() {
   _fillDob();
+  _capLoad();
   if (location.hash === '#registro' || new URLSearchParams(location.search).get('registro') !== null) switchTab('reg');
   var sb_check = supabase.createClient(SB_URL, SB_KEY);
   sb_check.auth.getSession().then(function(r) {

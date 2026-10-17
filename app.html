@@ -26,14 +26,14 @@ body{font-family:sans-serif;background:var(--c-bg);color:var(--c-text);overflow-
   --c-page:#0a0a0c;--c-bg:#0e0e10;--c-panel:#151518;--c-card:#1c1c20;--c-line:#2a2a31;
   --c-text:#f0f0f0;--c-text2:#9a9a9a;--c-muted:#6a6871;--c-faint:#45434b;
   --c-ov:255,255,255;--c-bgrgb:20,20,24;
-  --c-acc:201,168,76;--c-acc2:224,193,110;--c-accd:168,130,43;--c-ongold:#151309;
+  --c-acc:201,168,76;--c-acc2:224,193,110;--c-accd:168,130,43;--c-ongold:#151309;--c-btn:201,168,76;
   --c-ok:74,222,128;--c-bad:248,113,113;
 }
 :root[data-theme="light"]{
   --c-page:#e6e2d8;--c-bg:#f4f2ec;--c-panel:#ffffff;--c-card:#ffffff;--c-line:#e4dfd3;
   --c-text:#18181b;--c-text2:#4f4c47;--c-muted:#77736b;--c-faint:#b9b4a8;
   --c-ov:0,0,0;--c-bgrgb:255,255,255;
-  --c-acc:168,130,43;--c-acc2:140,106,30;--c-accd:120,92,25;--c-ongold:#ffffff;
+  --c-acc:168,130,43;--c-acc2:140,106,30;--c-accd:120,92,25;--c-ongold:#ffffff;--c-btn:168,130,43;
   --c-ok:21,128,61;--c-bad:194,65,12;
 }
 :root{--st:rgb(var(--c-acc));--sl:rgb(var(--c-acc2));--bc:var(--c-card);--bm:var(--c-panel);--br:rgba(var(--c-ov),.07);--bs:rgba(var(--c-acc),.25);}
@@ -1823,6 +1823,39 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .lk-buy .buy-p{justify-content:center;}.lk-buy a{text-decoration:none;}
 .lk-alt{font-size:.8rem;color:var(--c-muted);}.lk-alt a{color:var(--c-text2);text-decoration:underline;}
 @media (max-width:600px){.lk-c{margin:20px auto;padding:28px 20px;}}
+/* Admin > Apariencia (paleta) */
+.ap-intro{font-size:.85rem;color:var(--c-text2);margin-bottom:16px;max-width:760px;}
+.ap-sec{font-size:.7rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px;}
+.ap-pres{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.ap-pr{display:flex;align-items:center;gap:9px;padding:9px 14px 9px 10px;border:1px solid var(--c-line);border-radius:10px;font-size:.84rem;color:var(--c-text2);background:var(--c-panel);cursor:pointer;font-family:inherit;}
+.ap-pr.on{border-color:rgb(var(--c-btn));color:var(--c-text);}
+.ap-pr i{display:flex;}.ap-pr i b{width:14px;height:14px;border-radius:50%;margin-right:-4px;border:2px solid var(--c-panel);}
+.ap-grid{display:grid;grid-template-columns:1fr 1fr 340px;gap:16px;}
+@media (max-width:1200px){.ap-grid{grid-template-columns:1fr;}}
+.ap-col,.ap-pv{background:var(--c-card);border:1px solid var(--c-line);border-radius:14px;padding:18px;}
+.ap-col h3,.ap-pv h3{font-size:.95rem;font-weight:700;margin-bottom:4px;}
+.ap-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--c-line);font-size:.84rem;color:var(--c-text2);cursor:pointer;}
+.ap-row:last-child{border-bottom:0;}
+.ap-t{flex:1;}.ap-t small{display:block;color:var(--c-muted);font-size:.72rem;margin-top:2px;}
+.ap-row>input[type=color]{width:42px;height:26px;border:1px solid var(--c-line);border-radius:7px;padding:0;background:none;cursor:pointer;}
+.ap-sw{position:relative;width:42px;height:26px;border-radius:7px;border:1px solid rgba(var(--c-ov),.14);overflow:hidden;}
+.ap-sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;}
+.ap-auto{font-size:.7rem;color:var(--c-muted);}
+.ap-lk{background:none;border:0;color:var(--c-muted);display:flex;cursor:pointer;padding:2px;}.ap-lk.on{color:var(--c-text);}
+.ap-mini{background:var(--c-panel);border:1px solid var(--c-line);border-radius:12px;padding:14px;margin-top:10px;}
+.ap-nav{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+.ap-nav div{font-size:.8rem;padding:8px 10px;border-radius:8px;color:var(--c-text2);}
+.ap-nav .snav.on{color:rgb(var(--c-acc));display:block;}
+.ap-card{background:var(--c-card);border:1px solid var(--c-line);border-radius:10px;padding:12px;margin-bottom:12px;}
+.ap-card b{font-size:.84rem;display:block;margin-bottom:8px;}
+.ap-bar{height:6px;border-radius:4px;background:var(--c-line);overflow:hidden;}.ap-bar i{display:block;height:100%;width:62%;background:rgb(var(--c-acc));}
+.ap-card small{font-size:.72rem;color:var(--c-text2);display:flex;justify-content:space-between;margin-top:6px;}.ap-card small a{color:rgb(var(--c-acc));}
+.ap-b1{display:block;width:100%;margin-bottom:8px;background:rgb(var(--c-btn)) !important;color:var(--c-ongold) !important;}
+.ap-b2{display:block;width:100%;border:1px solid rgb(var(--c-acc));border-radius:9px;padding:10px;font:600 .82rem inherit;font-family:inherit;background:transparent;color:rgb(var(--c-acc));cursor:pointer;}
+.ap-note{font-size:.76rem;color:var(--c-muted);margin-top:12px;line-height:1.5;}
+.ap-foot{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.ap-ghost{background:transparent;color:var(--c-text2);border:1px solid var(--c-line);border-radius:9px;padding:10px 18px;font-weight:600;cursor:pointer;font-family:inherit;}
+.ap-msg{font-size:.8rem;color:var(--c-text2);margin-top:10px;}
 </style>
 <script>
 // Tema Dark/Light guardado en este navegador
@@ -5670,17 +5703,51 @@ function _mkOnColor(h) {
   var c = _mkHexRgb(h);
   return (0.299*c[0] + 0.587*c[1] + 0.114*c[2]) > 150 ? '#151309' : '#ffffff';
 }
+// Paleta: el color principal pinta los botones; acentos, detalles suaves y texto en botones
+// se calculan solos a partir de él (salvo que el admin los fije a mano con el candado).
+function _mkHsl(h) {
+  var c = _mkHexRgb(h).map(function(v){ return v / 255; }), mx = Math.max.apply(null, c), mn = Math.min.apply(null, c);
+  var l = (mx + mn) / 2, d = mx - mn, hh = 0, ss = 0;
+  if (d) {
+    ss = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    hh = mx === c[0] ? (c[1] - c[2]) / d + (c[1] < c[2] ? 6 : 0) : mx === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4;
+    hh /= 6;
+  }
+  return [hh, ss, l];
+}
+function _mkFromHsl(h, s, l) {
+  function f(p, q, t) { if (t < 0) t += 1; if (t > 1) t -= 1; return t < 1/6 ? p + (q - p) * 6 * t : t < 1/2 ? q : t < 2/3 ? p + (q - p) * (2/3 - t) * 6 : p; }
+  var r, g, b;
+  if (!s) r = g = b = l;
+  else { var q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q; r = f(p, q, h + 1/3); g = f(p, q, h); b = f(p, q, h - 1/3); }
+  return '#' + [r, g, b].map(function(v){ return ('0' + Math.round(v * 255).toString(16)).slice(-2); }).join('');
+}
+function _mkAuto(acc, mode) {
+  var x = _mkHsl(acc), l = mode === 'light' ? Math.max(.28, Math.min(x[2], .38)) : Math.min(.78, Math.max(x[2], .62));
+  var a = _mkFromHsl(x[0], Math.min(x[1], .75), l), c = _mkHexRgb(acc);
+  return { accent: a, soft: 'rgba(' + c.join(',') + ',' + (mode === 'light' ? .12 : .14) + ')', on: _mkOnColor(acc) };
+}
+function _mkPal(cfg, mode) {
+  var p = Object.assign({}, MK_THEME_DEFAULT[mode], (cfg && cfg[mode]) || {}), au = _mkAuto(p.acc, mode);
+  ['accent','soft','on'].forEach(function(k){ if (!p[k]) p[k] = au[k]; });
+  return p;
+}
+var MK_BTN_SEL = '.abtn2,.mbtnn,.admtab.on,.ce-btn,.lp-nav,.lv-dur.on,.lv-seg button.on,.mk-btn,.aj2-b.gold,.wp-btn-primary,.lg-btn';
 function _mkThemeCss(cfg) {
-  var d = Object.assign({}, MK_THEME_DEFAULT.dark, (cfg && cfg.dark) || {});
-  var l = Object.assign({}, MK_THEME_DEFAULT.light, (cfg && cfg.light) || {});
-  return ':root{' +
-    '--c-acc:' + _mkTrip(d.acc) + ';--c-acc2:' + _mkTrip(_mkMix(d.acc,'#ffffff',.25)) + ';--c-accd:' + _mkTrip(_mkMix(d.acc,'#000000',.2)) + ';--c-ongold:' + _mkOnColor(d.acc) + ';' +
+  var d = _mkPal(cfg, 'dark'), l = _mkPal(cfg, 'light');
+  function sc(p, light) {
+    var x = p.accent;
+    return '--c-btn:' + _mkTrip(p.acc) + ';--c-ongold:' + p.on + ';--k-goldsoft:' + p.soft + ';--c-soft:' + p.soft + ';' +
+      '--c-acc:' + _mkTrip(x) + ';--c-acc2:' + _mkTrip(light ? _mkMix(x,'#000000',.17) : _mkMix(x,'#ffffff',.25)) + ';--c-accd:' + _mkTrip(_mkMix(x,'#000000',light ? .3 : .2)) + ';';
+  }
+  return ':root{' + sc(d, false) +
     '--c-bg:' + d.bg + ';--c-page:' + _mkMix(d.bg,'#000000',.3) + ';--c-panel:' + _mkMix(d.bg,d.card,.4) + ';--c-card:' + d.card + ';--c-line:' + _mkMix(d.card,'#ffffff',.08) + ';--c-bgrgb:' + _mkTrip(d.card) + ';' +
     '--c-text:' + d.text + ';--c-text2:' + _mkMix(d.text,d.bg,.4) + ';--c-muted:' + _mkMix(d.text,d.bg,.6) + ';--c-faint:' + _mkMix(d.text,d.bg,.75) + ';}' +
-    ':root[data-theme="light"]{' +
-    '--c-acc:' + _mkTrip(l.acc) + ';--c-acc2:' + _mkTrip(_mkMix(l.acc,'#000000',.17)) + ';--c-accd:' + _mkTrip(_mkMix(l.acc,'#000000',.3)) + ';--c-ongold:' + _mkOnColor(l.acc) + ';' +
+    ':root[data-theme="light"]{' + sc(l, true) +
     '--c-bg:' + l.bg + ';--c-page:' + _mkMix(l.bg,'#000000',.06) + ';--c-panel:' + l.card + ';--c-card:' + l.card + ';--c-line:' + _mkMix(l.card,'#000000',.1) + ';--c-bgrgb:' + _mkTrip(l.card) + ';' +
-    '--c-text:' + l.text + ';--c-text2:' + _mkMix(l.text,l.bg,.3) + ';--c-muted:' + _mkMix(l.text,l.bg,.5) + ';--c-faint:' + _mkMix(l.text,l.bg,.72) + ';}';
+    '--c-text:' + l.text + ';--c-text2:' + _mkMix(l.text,l.bg,.3) + ';--c-muted:' + _mkMix(l.text,l.bg,.5) + ';--c-faint:' + _mkMix(l.text,l.bg,.72) + ';}' +
+    MK_BTN_SEL + '{background:rgb(var(--c-btn)) !important;color:var(--c-ongold) !important;border-color:transparent !important;}' +
+    '.snav.on{background:var(--c-soft) !important;}';
 }
 function _mkApplyThemeCss(css, previewOnly) {
   var el = document.getElementById('mk-custom-theme');
@@ -5696,33 +5763,86 @@ function _mkLoadSiteTheme() {
     _mkApplyThemeCss(window._mkSiteTheme ? _mkThemeCss(window._mkSiteTheme) : '');
   });
 }
+var MK_PRESETS = [
+  { n: 'Dorado', t: null },
+  { n: 'Azul',   t: { dark: { acc:'#2f6fed' }, light: { acc:'#1f57c9' } } },
+  { n: 'Verde',  t: { dark: { acc:'#2fa36b' }, light: { acc:'#1f7f52' } } },
+  { n: 'Plata',  t: { dark: { acc:'#b8bcc6' }, light: { acc:'#5c6270' } } },
+  { n: 'Bronce', t: { dark: { acc:'#c07a45' }, light: { acc:'#9a5a2c' } } }
+];
 function rAdmApar() {
   var c = document.getElementById('a-apar');
   if (!c) return;
-  var cur = JSON.parse(JSON.stringify(MK_THEME_DEFAULT));
+  var cur = { dark: {}, light: {} };
   var saved = window._mkSiteTheme;
   if (saved) ['dark','light'].forEach(function(t){ Object.assign(cur[t], saved[t] || {}); });
-  var labels = [['acc','Color principal (botones y acentos)'],['bg','Fondo'],['card','Tarjetas y menú'],['text','Texto']];
+  var base = [['bg','Fondo'],['card','Tarjetas y menú'],['text','Texto']];
+  var brand = [['acc','Color principal','Botones principales'],['accent','Acentos','Pestaña activa, barras y enlaces'],['soft','Detalles suaves','Fondo de lo seleccionado'],['on','Texto en botones','Se elige para que se lea bien']];
+  var LK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0"/></svg>';
+  var LKC = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
+  function hex6(v) { if (/^#[0-9a-f]{6}$/i.test(v)) return v; var m = String(v).match(/rgba?\((\d+),(\d+),(\d+)/); return m ? '#' + [m[1],m[2],m[3]].map(function(x){ return ('0' + (+x).toString(16)).slice(-2); }).join('') : '#000000'; }
   function col(t, title) {
-    return '<div style="flex:1;min-width:260px;background:var(--c-card);border:1px solid var(--c-line);border-radius:14px;padding:18px;">' +
-      '<div style="font-weight:700;margin-bottom:12px;">' + title + '</div>' +
-      labels.map(function(l){
-        return '<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--c-line);font-size:.85rem;color:var(--c-text2);">' + l[1] +
-          '<input type="color" data-t="' + t + '" data-k="' + l[0] + '" value="' + cur[t][l[0]] + '" style="width:46px;height:30px;border:none;background:none;cursor:pointer;"></label>';
+    var p = _mkPal(cur, t);
+    return '<div class="ap-col"><h3>' + title + '</h3><div class="ap-sec">Base</div>' +
+      base.map(function(l){ return '<label class="ap-row"><span class="ap-t">' + l[1] + '</span><input type="color" data-t="' + t + '" data-k="' + l[0] + '" value="' + p[l[0]] + '"></label>'; }).join('') +
+      '<div class="ap-sec">Color de marca</div>' +
+      brand.map(function(l){
+        var auto = l[0] !== 'acc', fixed = auto && !!cur[t][l[0]];
+        return '<label class="ap-row"><span class="ap-t">' + l[1] + '<small>' + l[2] + '</small></span>' +
+          (auto ? '<span class="ap-auto">' + (fixed ? 'Fijo' : 'Auto') + '</span><button type="button" class="ap-lk' + (fixed ? ' on' : '') + '" data-t="' + t + '" data-k="' + l[0] + '" title="' + (fixed ? 'Volver a automático' : 'Se mueve con el color principal') + '">' + (fixed ? LKC : LK) + '</button>' : '') +
+          '<span class="ap-sw" style="background:' + p[l[0]] + '"><input type="color" data-t="' + t + '" data-k="' + l[0] + '" value="' + hex6(p[l[0]]) + '"></span></label>';
       }).join('') + '</div>';
   }
-  c.innerHTML = '<p style="font-size:.85rem;color:var(--c-text2);margin-bottom:14px;">Cambia los colores del panel para todos los alumnos. Lo que cambies se ve al instante aquí; los alumnos lo verán al darle a <b>Guardar</b>.</p>' +
-    '<div style="display:flex;gap:14px;flex-wrap:wrap;">' + col('dark','Modo Dark') + col('light','Modo Light') + '</div>' +
-    '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">' +
-      '<button class="abtn2" id="apar-save">Guardar</button>' +
-      '<button class="abtn2" id="apar-reset" style="background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;">Restaurar colores originales</button>' +
-    '</div><p id="apar-msg" style="font-size:.8rem;color:var(--c-text2);margin-top:10px;"></p>';
-  c.querySelectorAll('input[type=color]').forEach(function(inp) {
-    inp.addEventListener('input', function() {
-      cur[inp.dataset.t][inp.dataset.k] = inp.value;
-      _mkApplyThemeCss(_mkThemeCss(cur), true);
+  function curName() {
+    var s = JSON.stringify(cur);
+    for (var i = 0; i < MK_PRESETS.length; i++) {
+      var pt = MK_PRESETS[i].t || {};
+      if (JSON.stringify({ dark: pt.dark || {}, light: pt.light || {} }) === s) return MK_PRESETS[i].n;
+    }
+    return '';
+  }
+  function draw() {
+    var on = curName();
+    c.innerHTML = '<p class="ap-intro">Cambia los colores del panel para todos los alumnos. Elige una paleta y ajústala si quieres; al mover el color principal, los colores marcados como Auto se mueven solos para combinar.</p>' +
+      '<div class="ap-sec">Paletas listas</div><div class="ap-pres">' + MK_PRESETS.map(function(pr, i) {
+        var pd = _mkPal(pr.t, 'dark');
+        return '<button type="button" class="ap-pr' + (pr.n === on ? ' on' : '') + '" data-pr="' + i + '"><i><b style="background:' + pd.acc + '"></b><b style="background:' + pd.accent + '"></b></i>' + pr.n + '</button>';
+      }).join('') + '</div>' +
+      '<div class="ap-grid">' + col('dark','Modo Dark') + col('light','Modo Light') +
+      '<div class="ap-pv"><h3>Vista previa</h3><div class="ap-mini">' +
+        '<div class="ap-nav"><div>Dashboard</div><div class="snav on">Curso</div><div>En vivo</div></div>' +
+        '<div class="ap-card"><b>Progreso del curso</b><div class="ap-bar"><i></i></div><small><span>8 de 13 clases</span><a>Continuar viendo</a></small></div>' +
+        '<button type="button" class="abtn2 ap-b1">Agregar al carrito</button><button type="button" class="ap-b2">Ver detalles</button>' +
+      '</div><p class="ap-note">Lo que cambies se ve al instante en todo el panel. Los alumnos lo verán cuando le des a Guardar. Usa el botón Dark/Light del menú para revisar los dos modos.</p></div></div>' +
+      '<div class="ap-foot"><button class="abtn2" id="apar-save">Guardar</button><button class="ap-ghost" id="apar-reset">Restaurar colores originales</button></div><p id="apar-msg" class="ap-msg"></p>';
+    c.querySelectorAll('input[type=color]').forEach(function(inp) {
+      inp.addEventListener('input', function() {
+        var t = inp.dataset.t, k = inp.dataset.k, v = inp.value;
+        if (k === 'soft') { var rgb = _mkHexRgb(v); v = 'rgba(' + rgb.join(',') + ',' + (t === 'light' ? .12 : .14) + ')'; }
+        cur[t][k] = v;
+        _mkApplyThemeCss(_mkThemeCss(cur), true);
+        var sw = inp.closest('.ap-sw'); if (sw) sw.style.background = v;
+      });
+      inp.addEventListener('change', draw);
     });
-  });
+    c.querySelectorAll('.ap-lk').forEach(function(b) {
+      b.addEventListener('click', function(e) {
+        e.preventDefault();
+        var t = b.dataset.t, k = b.dataset.k;
+        if (cur[t][k]) delete cur[t][k]; else cur[t][k] = _mkPal(cur, t)[k];
+        _mkApplyThemeCss(_mkThemeCss(cur), true); draw();
+      });
+    });
+    c.querySelectorAll('.ap-pr').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var pt = MK_PRESETS[+b.dataset.pr].t || {};
+        cur = { dark: Object.assign({}, pt.dark || {}), light: Object.assign({}, pt.light || {}) };
+        _mkApplyThemeCss(_mkThemeCss(cur), true); draw();
+      });
+    });
+    bind();
+  }
+  function bind() {
   var msg = document.getElementById('apar-msg');
   function save(theme) {
     msg.textContent = 'Guardando...';
@@ -5733,14 +5853,17 @@ function rAdmApar() {
       }
       window._mkSiteTheme = theme;
       _mkApplyThemeCss(theme ? _mkThemeCss(theme) : '');
-      msg.textContent = theme ? 'Colores guardados. Los alumnos los verán la próxima vez que entren.' : 'Se restauraron los colores originales.';
-      if (!theme) rAdmApar();
+      if (!theme) { cur = { dark: {}, light: {} }; draw(); }
+      var m2 = document.getElementById('apar-msg');
+      if (m2) m2.textContent = theme ? 'Colores guardados. Los alumnos los verán la próxima vez que entren.' : 'Se restauraron los colores originales.';
     });
   }
-  document.getElementById('apar-save').addEventListener('click', function(){ save(cur); });
+  document.getElementById('apar-save').addEventListener('click', function(){ var empty = !Object.keys(cur.dark).length && !Object.keys(cur.light).length; save(empty ? null : cur); });
   document.getElementById('apar-reset').addEventListener('click', function(){
     if (confirm('¿Volver a los colores originales de Mr Katana?')) save(null);
   });
+  }
+  draw();
 }
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });

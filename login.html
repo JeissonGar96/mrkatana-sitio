@@ -1321,7 +1321,8 @@ nav{
 /* ── Login / registro (diseño del panel) ── */
 :root{--lg-pg:#0a0a0c;--lg-bg:#0e0e10;--lg-pn:#151518;--lg-cd:#1c1c20;--lg-ln:#2a2a31;--lg-tx:#f0f0f0;--lg-t2:#9a9a9a;--lg-mu:#6a6871;--lg-acc:201,168,76;}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--lg-pg);color:var(--lg-tx);}
-.lg-wrap{min-height:calc(100vh - 40px);margin:20px;border:1px solid var(--lg-ln);border-radius:22px;background:var(--lg-bg);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
+html body{display:block;background:var(--lg-pg);}
+.lg-wrap{min-height:calc(100vh - 40px);width:auto;margin:20px;border:1px solid var(--lg-ln);border-radius:22px;background:var(--lg-bg);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
 .lg-left{position:relative;padding:48px 56px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;background:radial-gradient(120% 80% at 0% 100%,rgba(var(--lg-acc),.10),transparent 60%),var(--lg-pn);border-right:1px solid var(--lg-ln);}
 .lg-llogo img{height:38px;display:block;}
 body:not(.is-reg) .lg-llogo{visibility:hidden;}
@@ -1335,7 +1336,7 @@ body.is-reg .lg-flogo{display:none;}
 .lg-inc i{width:6px;height:6px;border-radius:50%;background:rgb(var(--lg-acc));margin-top:7px;flex-shrink:0;}
 .lg-foot{font-size:.75rem;color:var(--lg-mu);}
 .lg-right{display:flex;align-items:center;justify-content:center;padding:40px;}
-.lg-card{width:100%;max-width:440px;}
+.lg-card{width:100%;max-width:460px;}
 .lg-flogo{display:block;text-align:center;margin-bottom:26px;}.lg-flogo img{height:46px;}
 .lg-card h2{font-size:1.5rem;font-weight:700;margin-bottom:6px;text-align:center;}
 .lg-sub{color:var(--lg-t2);font-size:.86rem;margin-bottom:24px;text-align:center;}

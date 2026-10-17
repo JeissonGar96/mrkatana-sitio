@@ -6066,8 +6066,17 @@ function _afToggle(id, title, sub, on, fn) {
   '.afa-num small{display:block;font-size:.72rem;color:var(--c-muted);margin-top:2px;}' +
   '.afa .wp-subtabs{justify-content:center;margin:18px 28px 0;}' +
   '.afa-bd{padding:6px 28px 6px;min-height:230px;max-height:42vh;overflow-y:auto;}' +
-  '.afa-ft{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 28px 8px;}' +
-  '.afa-del{text-align:center;padding:0 0 16px;}' +
+  '.afa-ft{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 28px 24px;}' +
+  '.afa-dz{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:26px 0 8px;padding:14px 16px;border:1px solid rgba(var(--c-bad),.25);border-radius:14px;}' +
+  '.afa-dz b{display:block;font-size:.86rem;font-weight:600;color:var(--c-text);}' +
+  '.afa-dz small{display:block;font-size:.76rem;color:var(--c-muted);margin-top:2px;}' +
+  '.afa-dzb{flex-shrink:0;height:36px;padding:0 14px;border-radius:10px;border:1px solid rgba(var(--c-bad),.4);background:none;color:rgb(var(--c-bad));font:600 .8rem inherit;font-family:inherit;cursor:pointer;}' +
+  '.afa-dzb:hover{background:rgba(var(--c-bad),.08);}' +
+  '.afa-dzb:disabled{opacity:.4;cursor:not-allowed;background:none;}' +
+  '.afa-dz.ask{display:block;}' +
+  '.afa-dz input{width:100%;height:40px;margin:10px 0;padding:0 12px;border-radius:10px;border:1px solid var(--k-line);background:var(--c-bg);color:var(--c-text);font:500 .86rem inherit;font-family:inherit;outline:none;box-sizing:border-box;}' +
+  '.afa-dz .row{display:flex;justify-content:flex-end;gap:8px;}' +
+  '.afa-dz .row .afa-dzb.no{border-color:var(--k-line);color:var(--c-text2);}' +
   '@media (max-width:860px){.af-ov{padding:0;align-items:flex-end;}.afx-md{max-height:94vh;overflow-y:auto;border-radius:22px 22px 0 0;}.afa-bd{max-height:none;}.afa-num div{padding:0 12px;}.afa-num b{font-size:.88rem;}.afa .wp-subtabs{justify-content:flex-start;margin:18px 16px 0;}.afa-bd,.afa-ft{padding-left:16px;padding-right:16px;}}';
   document.head.appendChild(st);
 })();
@@ -6080,6 +6089,14 @@ function _afOpen(cls, html) {
   ov.innerHTML = '<div class="afx-md ' + cls + '" role="dialog" aria-label="Ficha del alumno"><button class="af-x" onclick="this.closest(\'.af-ov\').remove()" aria-label="Cerrar">' + AS_IC.x + '</button>' + html + '</div>';
   document.body.appendChild(ov);
   return ov;
+}
+function _afDelAsk(btn) {
+  var dz = btn.closest('.afa-dz'), id = dz.dataset.id;
+  dz.classList.add('ask');
+  dz.innerHTML = '<b>¿Seguro que quieres eliminar a este alumno?</b><small>Escribe ELIMINAR para confirmar.</small>' +
+    '<input type="text" autocomplete="off" placeholder="ELIMINAR" oninput="this.parentNode.querySelector(\'.go\').disabled = this.value.trim().toUpperCase() !== \'ELIMINAR\'">' +
+    '<div class="row"><button class="afa-dzb no" onclick="viewStudentProfile(\'' + id + '\')">Cancelar</button><button class="afa-dzb go" disabled onclick="dStudent(\'' + id + '\', true);this.closest(\'.af-ov\').remove();">Eliminar definitivamente</button></div>';
+  dz.querySelector('input').focus();
 }
 function _afaTab(btn, k) {
   var md = btn.closest('.afa');
@@ -6114,7 +6131,8 @@ function viewStudentProfile(id) {
       (p.role === 'admin' || !cProfile || cProfile.role !== 'admin' ? '' : _afToggle('stud-staff-toggle', 'Miembro del Staff', 'Acceso al admin según Permisos de Staff', p.role === 'staff', 'toggleStudentStaff(\'' + p.id + '\',this.checked)'));
     var bPrg = '<button class="af-b pri" onclick="openScheduleModal(\'' + p.id + '\',\'' + nm + '\')">' + AS_IC.cal + 'Programar 1-1</button>';
     var bRec = '<button class="af-b gh" onclick="openRecordingModal(\'' + p.id + '\',\'' + nm + '\')">' + AS_IC.rec + 'Subir grabación</button>';
-    var bDel = _staffCan('delete_students') ? '<button class="af-del" style="margin-right:0" onclick="if(confirm(\'¿Eliminar este alumno? Esta acción no se puede deshacer.\')){dStudent(\'' + p.id + '\');this.closest(\'.af-ov\').remove();}">Eliminar alumno</button>' : '';
+    // Eliminar va al final de "Datos personales" y pide escribir ELIMINAR, para no tocarlo por accidente
+    var bDel = _staffCan('delete_students') ? '<div class="afa-dz" data-id="' + p.id + '"><div><b>Eliminar alumno</b><small>Borra su cuenta, compras y progreso. No se puede deshacer.</small></div><button class="afa-dzb" onclick="_afDelAsk(this)">Eliminar</button></div>' : '';
 
     {
       var tabs = [['acc', 'Accesos'], ['dat', 'Datos personales']].concat(p.bio ? [['bio', 'Sobre el alumno']] : []);
@@ -6124,10 +6142,10 @@ function viewStudentProfile(id) {
         '<div class="wp-subtabs">' + tabs.map(function(t, i) { return '<button class="wp-subtab-btn' + (i ? '' : ' active') + '" onclick="_afaTab(this,\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>' +
         '<div class="afa-bd">' +
           '<div class="afa-pn" data-k="acc">' + accesos + '</div>' +
-          '<div class="afa-pn af-dl" data-k="dat" style="display:none">' + datos.map(function(d) { return '<div><span>' + d[0] + '</span><b>' + d[1] + '</b></div>'; }).join('') + '</div>' +
+          '<div class="afa-pn" data-k="dat" style="display:none"><div class="af-dl">' + datos.map(function(d) { return '<div><span>' + d[0] + '</span><b>' + d[1] + '</b></div>'; }).join('') + '</div>' + bDel + '</div>' +
           (p.bio ? '<div class="afa-pn af-bio" data-k="bio" style="display:none">' + _mkEsc(p.bio) + '</div>' : '') +
         '</div>' +
-        '<div class="afa-ft">' + bRec + bPrg + '</div><div class="afa-del">' + bDel + '</div>');
+        '<div class="afa-ft">' + bRec + bPrg + '</div>');
       _tabInk(ov.querySelector('.wp-subtabs'));
     }
   });
@@ -7198,8 +7216,8 @@ function saveRecording(studentId) {
 
 
 
-function dStudent(id) {
-  if (!confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
+function dStudent(id, confirmed) {
+  if (!confirmed && !confirm('¿Eliminar este alumno permanentemente?\n\nEsto eliminará su perfil. Para eliminarlo completamente también debes ir a:\nSupabase → Authentication → Users → eliminar el email manualmente.')) return;
   _deleteStudent(id).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Perfil eliminado. Recuerda eliminar también en Auth → Users');

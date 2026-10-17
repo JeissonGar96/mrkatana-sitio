@@ -2438,16 +2438,7 @@ function loadApp(user) {
           '<div style="font-size:.72rem;color:var(--c-faint);margin-top:16px;max-width:340px;">Este paso es obligatorio solo la primera vez.</div>' +
         '</div>';
 
-      document.getElementById('btn-mandatory-discord-connect').addEventListener('click', function() {
-        var params = new URLSearchParams({
-          client_id:     '1482794976118046851',
-          redirect_uri:  window.location.origin + '/api/discord-callback',
-          response_type: 'code',
-          scope:         'identify guilds.join',
-          state:         cUser ? cUser.id : '',
-        });
-        window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
-      });
+      document.getElementById('btn-mandatory-discord-connect').addEventListener('click', function() { _discordGo(); });
     }
   });
 }
@@ -4282,14 +4273,26 @@ function _ajToggleSave(b) {
   _ajSaveSet(u, function(ok) { if (!ok) b.classList.toggle('on', !on); });
 }
 
+// Conectar Discord: el servidor firma el id del alumno (state) para que nadie conecte su Discord a otra cuenta
+async function _discordGo() {
+  try {
+    var s = await sb.auth.getSession();
+    var tk = s.data && s.data.session && s.data.session.access_token;
+    var r = await fetch('/api/discord-callback?start=1', { headers: { Authorization: 'Bearer ' + tk } });
+    var j = await r.json();
+    if (!j.state) throw new Error(j.error || 'state');
+    var params = new URLSearchParams({ client_id: '1482794976118046851', redirect_uri: window.location.origin + '/api/discord-callback', response_type: 'code', scope: 'identify guilds.join', state: j.state });
+    window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
+  } catch (e) { tst('No se pudo abrir Discord. Intenta de nuevo.', 1); }
+}
+
 // Editor en línea: la fila se convierte en un campo con Guardar / Cancelar
 function _ajEdit(k) {
   var p = cProfile || {};
   if (k === 'foto') return _rpPhoto();
   if (k === 'pushdev') return _pushSubscribe(true).then(function(ok) { tst(ok ? '✓ Avisos activados en este dispositivo' : 'No se activaron los avisos', !ok); _ajRender(); });
   if (k === 'discord') {
-    var params = new URLSearchParams({ client_id: '1482794976118046851', redirect_uri: window.location.origin + '/api/discord-callback', response_type: 'code', scope: 'identify guilds.join', state: cUser ? cUser.id : '' });
-    window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString(); return;
+    _discordGo(); return;
   }
   if (k === 'signout_all') {
     if (!confirm('¿Cerrar tu sesión en todos los dispositivos? Tendrás que volver a iniciar sesión.')) return;
@@ -4716,7 +4719,7 @@ function rPerfilOld() { // diseño anterior de Ajustes (ya no se usa)
         '<div class="mk-sh" style="margin:0 0 16px;"><h3 style="font-size:1.2rem;">Datos personales</h3><button class="mk-btn" style="margin:0;" onclick="savePerfil()">Guardar cambios</button></div>' +
         '<div style="margin-bottom:10px;">' +
           '<label class="al">Nombre completo</label>' +
-          '<input id="pf-name" class="ai" value="'+(p.full_name||'')+'" placeholder="Tu nombre completo" style="box-sizing:border-box;">' +
+          '<input id="pf-name" class="ai" value="'+_mkEsc(p.full_name||'')+'" placeholder="Tu nombre completo" style="box-sizing:border-box;">' +
         '</div>' +
         '<div style="margin-bottom:10px;">' +
           '<label class="al">Fecha de nacimiento</label>' +
@@ -4786,7 +4789,7 @@ function rPerfilOld() { // diseño anterior de Ajustes (ya no se usa)
           '</select>' +
         '</div>' +
         '<div style="margin-bottom:16px;"><label class="al">Bio / Presentación</label>' +
-          '<textarea id="pf-bio" class="ai" rows="3" placeholder="Cuéntanos sobre ti y tus metas en trading..." style="width:100%;box-sizing:border-box;resize:vertical;">'+(p.bio||'')+'</textarea>' +
+          '<textarea id="pf-bio" class="ai" rows="3" placeholder="Cuéntanos sobre ti y tus metas en trading..." style="width:100%;box-sizing:border-box;resize:vertical;">'+_mkEsc(p.bio||'')+'</textarea>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -6340,7 +6343,7 @@ function _renderSchModalList(students) {
       'onmouseout="this.style.background=\'transparent\';this.style.borderColor=\'transparent\'">' +
       '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
       '<div style="flex:1;">' +
-        '<div style="font-size:.85rem;font-weight:600;color:var(--c-text);">' + (s.full_name||'Sin nombre') + '</div>' +
+        '<div style="font-size:.85rem;font-weight:600;color:var(--c-text);">' + _mkEsc(s.full_name||'Sin nombre') + '</div>' +
         '<div style="font-size:.68rem;margin-top:1px;color:' + (active?'rgb(var(--c-ok))':'var(--c-muted)') + ';">' + (active?'● Activo':'○ Inactivo') + '</div>' +
       '</div>' +
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>' +
@@ -6362,7 +6365,7 @@ function schSelectStudent(id, encName, active) {
   var sel = document.getElementById('sch-selected-student');
   if (sel) sel.innerHTML =
     '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
-    '<div><div style="font-size:.85rem;font-weight:600;color:var(--c-text);">' + name + '</div>' +
+    '<div><div style="font-size:.85rem;font-weight:600;color:var(--c-text);">' + _mkEsc(name) + '</div>' +
     '<div style="font-size:.68rem;margin-top:1px;color:' + (active?'rgb(var(--c-ok))':'var(--c-muted)') + ';">' + (active?'● Activo':'○ Inactivo') + '</div></div>';
 
   document.getElementById('sch-step1').style.display = 'none';
@@ -6517,11 +6520,11 @@ function _rAdm1on1Rec() {
       var uid = 'rec-student-' + s.id;
 
       html +=
-        '<div class="rec-stu-card" data-name="' + (s.full_name||'').toLowerCase() + '" style="background:linear-gradient(160deg,rgba(var(--c-ov),.04) 0%,rgba(var(--c-acc),.05) 40%,rgba(var(--c-bgrgb),.95) 100%);border:1px solid rgba(var(--c-acc),.15);border-radius:12px;margin-bottom:10px;overflow:hidden;">' +
+        '<div class="rec-stu-card" data-name="' + _mkEsc((s.full_name||'').toLowerCase()) + '" style="background:linear-gradient(160deg,rgba(var(--c-ov),.04) 0%,rgba(var(--c-acc),.05) 40%,rgba(var(--c-bgrgb),.95) 100%);border:1px solid rgba(var(--c-acc),.15);border-radius:12px;margin-bottom:10px;overflow:hidden;">' +
           '<div onclick="toggleRecStudent(\'' + uid + '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;">' +
             '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--st),var(--sl));display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0;">' + initials + '</div>' +
             '<div style="flex:1;">' +
-              '<div style="font-size:.88rem;font-weight:600;color:var(--c-text);">' + (s.full_name || 'Sin nombre') + '</div>' +
+              '<div style="font-size:.88rem;font-weight:600;color:var(--c-text);">' + _mkEsc(s.full_name || 'Sin nombre') + '</div>' +
               '<div style="font-size:.72rem;color:var(--c-muted);margin-top:1px;">' + recs.length + ' grabación' + (recs.length !== 1 ? 'es' : '') + '</div>' +
             '</div>' +
             '<div style="display:flex;align-items:center;gap:8px;">' +
@@ -6834,8 +6837,8 @@ function viewStudentProfile(id) {
               (cached.avatar_url ? '<img src="'+cached.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (cached.full_name ? cached.full_name[0].toUpperCase() : '?')) +
             '</div>' +
             '<div>' +
-              '<div style="font-size:1rem;font-weight:700;color:var(--c-text);">'+(cached.full_name||'Sin nombre')+'</div>' +
-              '<div style="font-size:.78rem;color:var(--c-muted);margin-top:2px;">'+(cached.email||'')+'</div>' +
+              '<div style="font-size:1rem;font-weight:700;color:var(--c-text);">'+_mkEsc(cached.full_name||'Sin nombre')+'</div>' +
+              '<div style="font-size:.78rem;color:var(--c-muted);margin-top:2px;">'+_mkEsc(cached.email||'')+'</div>' +
               '<span style="font-size:.68rem;padding:2px 9px;border-radius:20px;background:'+(skelActive?'rgba(var(--c-ok),.1)':'rgba(var(--c-bad),.1)')+';color:'+(skelActive?'rgb(var(--c-ok))':'rgb(var(--c-bad))')+';margin-top:5px;display:inline-block;">'+(skelActive?'● Activo':'○ Inactivo')+'</span>' +
             '</div>' +
           '</div>' +
@@ -6881,8 +6884,8 @@ function viewStudentProfile(id) {
             (p.avatar_url ? '<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;">' : (p.full_name ? p.full_name[0].toUpperCase() : '?')) +
           '</div>' +
           '<div>' +
-            '<div style="font-size:1rem;font-weight:700;color:var(--c-text);">'+(p.full_name||'Sin nombre')+'</div>' +
-            '<div style="font-size:.78rem;color:var(--c-muted);margin-top:2px;">'+(p.email||'')+'</div>' +
+            '<div style="font-size:1rem;font-weight:700;color:var(--c-text);">'+_mkEsc(p.full_name||'Sin nombre')+'</div>' +
+            '<div style="font-size:.78rem;color:var(--c-muted);margin-top:2px;">'+_mkEsc(p.email||'')+'</div>' +
             '<span style="font-size:.68rem;padding:2px 9px;border-radius:20px;background:'+(active?'rgba(var(--c-ok),.1)':'rgba(var(--c-bad),.1)')+';color:'+(active?'rgb(var(--c-ok))':'rgb(var(--c-bad))')+';margin-top:5px;display:inline-block;">'+(active?'● Activo':'○ Inactivo')+'</span>' +
           '</div>' +
         '</div>' +
@@ -6902,9 +6905,9 @@ function viewStudentProfile(id) {
           '<div class="wp-card-head"><span class="wp-card-icon">📋</span><span class="wp-card-title">Datos generales</span></div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
             '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Edad</div><div style="font-size:.86rem;color:var(--c-text);">'+(p.age || (p.date_of_birth ? (function(){ var b=new Date(p.date_of_birth),t=new Date(),a=t.getFullYear()-b.getFullYear(); if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--; return a; })() : '—'))+'</div></div>' +
-            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">País</div><div style="font-size:.86rem;color:var(--c-text);">'+(p.country||'—')+'</div></div>' +
-            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Experiencia</div><div style="font-size:.86rem;color:var(--c-text);">'+(p.trading_experience||'—')+'</div></div>' +
-            (p.phone ? '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Teléfono</div><div style="font-size:.86rem;color:var(--c-text);">'+(p.phone_prefix||'')+'&nbsp;'+p.phone+'</div></div>' : '') +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">País</div><div style="font-size:.86rem;color:var(--c-text);">'+_mkEsc(p.country||'—')+'</div></div>' +
+            '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Experiencia</div><div style="font-size:.86rem;color:var(--c-text);">'+_mkEsc(p.trading_experience||'—')+'</div></div>' +
+            (p.phone ? '<div class="wp-stat"><div class="wp-label" style="margin-bottom:2px;">Teléfono</div><div style="font-size:.86rem;color:var(--c-text);">'+_mkEsc(p.phone_prefix||'')+'&nbsp;'+_mkEsc(p.phone)+'</div></div>' : '') +
           '</div>' +
         '</div>' +
 
@@ -6936,7 +6939,7 @@ function viewStudentProfile(id) {
         '</div>' +
 
         // Bio
-        (p.bio ? '<div class="wp-card"><div class="wp-card-head"><span class="wp-card-icon">💬</span><span class="wp-card-title">Bio</span></div><div style="font-size:.84rem;color:var(--c-text2);line-height:1.6;">'+p.bio+'</div></div>' : '') +
+        (p.bio ? '<div class="wp-card"><div class="wp-card-head"><span class="wp-card-icon">💬</span><span class="wp-card-title">Bio</span></div><div style="font-size:.84rem;color:var(--c-text2);line-height:1.6;">'+_mkEsc(p.bio)+'</div></div>' : '') +
 
         // Action buttons
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">' +
@@ -7050,7 +7053,7 @@ function openScheduleModal(studentId, studentName) {
     '<div class="wp-modal" style="max-width:440px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
         '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.cal+'</div>' +
-        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar sesión 1-1</div><div class="wp-subtitle">' + name + '</div></div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Programar sesión 1-1</div><div class="wp-subtitle">' + _mkEsc(name) + '</div></div>' +
         '<button onclick="document.getElementById(\'schedule-modal\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
       '<div class="wp-body" style="padding:16px 24px 24px;">' +
@@ -7103,7 +7106,7 @@ function openRecordingModal(studentId, studentName) {
     '<div class="wp-modal" style="max-width:440px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
         '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.video+'</div>' +
-        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Subir grabación</div><div class="wp-subtitle">' + name + '</div></div>' +
+        '<div style="flex:1;"><div class="wp-title" style="font-size:1rem;">Subir grabación</div><div class="wp-subtitle">' + _mkEsc(name) + '</div></div>' +
         '<button onclick="document.getElementById(\'recording-modal\').remove()" style="background:none;border:none;color:var(--c-muted);font-size:1.2rem;cursor:pointer;">✕</button>' +
       '</div>' +
       '<div class="wp-body" style="padding:16px 24px 24px;">' +
@@ -9233,7 +9236,7 @@ function loadCalendar() {
           html += '<div class="cal-flag-wrap"><div class="cal-flag">' + meta.flag + '</div></div>';
 
           // Name + badge inline
-          html += '<div><div class="cal-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + ev.name + '<span class="cal-impact-badge"><i></i><span class="cal-impact-text">Alto impacto</span></span></div></div>';
+          html += '<div><div class="cal-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + _mkEsc(ev.name) + '<span class="cal-impact-badge"><i></i><span class="cal-impact-text">Alto impacto</span></span></div></div>';
 
           // Values — always show all 3 columns
           html += '<div class="cal-values">';
@@ -9241,19 +9244,19 @@ function loadCalendar() {
           html += '<div class="cal-val">';
           html += '<div class="cal-val-label">Real</div>';
           if (hasAct) {
-            html += '<div class="cal-val-num ' + actualClass + '" data-cal-key="' + ev.isoDate + '|' + ev.name + '">' + ev.actual + '</div>';
+            html += '<div class="cal-val-num ' + actualClass + '" data-cal-key="' + _mkEsc(ev.isoDate + '|' + ev.name) + '">' + _mkEsc(ev.actual) + '</div>';
           } else {
-            html += '<div class="cal-val-num cal-pending" data-cal-key="' + ev.isoDate + '|' + ev.name + '">—</div>';
+            html += '<div class="cal-val-num cal-pending" data-cal-key="' + _mkEsc(ev.isoDate + '|' + ev.name) + '">—</div>';
           }
           html += '</div>';
           // Forecast
-          html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + (ev.forecast !== '—' ? ev.forecast : '—') + '</div></div>';
+          html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + (ev.forecast !== '—' ? _mkEsc(ev.forecast) : '—') + '</div></div>';
           // Previous
-          html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + (ev.previous !== '—' ? ev.previous : '—') + '</div></div>';
+          html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + (ev.previous !== '—' ? _mkEsc(ev.previous) : '—') + '</div></div>';
           // Admin edit button inside values row
           if (cProfile && cProfile.role === 'admin') {
             html += '<button onclick="event.stopPropagation();editCalReal(this.dataset.name,this.dataset.date,this.dataset.val)" ' +
-              'data-name="' + ev.name.replace(/"/g,"'") + '" data-date="' + ev.isoDate + '" data-val="' + (ev.actual||'') + '" ' +
+              'data-name="' + _mkEsc(ev.name) + '" data-date="' + _mkEsc(ev.isoDate) + '" data-val="' + _mkEsc(ev.actual||'') + '" ' +
               'class="cal-edit" title="Editar dato real">' + MK_IC.edit + '</button>';
           }
           html += '</div>';
@@ -9367,7 +9370,7 @@ function editCalReal(name, isoDate, currentVal) {
     '<div class="wp-modal" style="max-width:380px;">' +
       '<div class="wp-header" style="padding:22px 24px 4px;">' +
         '<div class="wp-header-icon" style="width:32px;height:32px;font-size:.95rem;">'+MK_IC.edit+'</div>' +
-        '<div><div class="wp-title" style="font-size:1rem;">Editar valor Real</div><div class="wp-subtitle">' + name + ' · ' + isoDate + '</div></div>' +
+        '<div><div class="wp-title" style="font-size:1rem;">Editar valor Real</div><div class="wp-subtitle">' + _mkEsc(name) + ' · ' + isoDate + '</div></div>' +
       '</div>' +
       '<div class="wp-body" style="padding:16px 24px 24px;">' +
         '<div class="wp-field"><label class="wp-label">Valor Real</label>' +

@@ -68,10 +68,21 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ data });
     }
 
+    // El equipo (staff) no puede tocar cuentas de admin ni de otro staff, ni cambiar roles
+    if ((req.method === 'PATCH' || req.method === 'DELETE') && callerProfile.role === 'staff') {
+      const t = await sb.from('profiles').select('role').eq('id', req.query.id || '').maybeSingle();
+      if (t.data && t.data.role !== 'student') return res.status(403).json({ error: 'not_authorized' });
+    }
+
     if (req.method === 'PATCH') {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: 'missing_id' });
-      const { error } = await sb.from('profiles').update(req.body).eq('id', id);
+      const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+      const upd = Object.assign({}, body);
+      delete upd.id; delete upd.email; delete upd.created_at;
+      if (callerProfile.role !== 'admin') delete upd.role;
+      else if (upd.role && ['student', 'staff', 'admin'].indexOf(upd.role) < 0) return res.status(400).json({ error: 'bad_role' });
+      const { error } = await sb.from('profiles').update(upd).eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ ok: true });
     }

@@ -517,7 +517,10 @@ async function applyCode() {
   st.disc = null; st.free = null;
   if (!code) { _codeUi(); return; }
   btn.disabled = true; btn.textContent = 'Verificando...';
-  var r = await sb.from('access_codes').select('*').eq('code', code).eq('is_used', false).maybeSingle();
+  // Se revisa solo este código (la lista de códigos no es pública)
+  var r = await sb.rpc('check_access_code', { p_code: code });
+  if (r.error) r = await sb.from('access_codes').select('*').eq('code', code).eq('is_used', false).maybeSingle();
+  else r = { data: (r.data && r.data[0]) || null };
   btn.disabled = false; btn.textContent = 'Aplicar';
   var d = r.data, sel = st.plan ? st.plan.id : '';
   var pl = d ? (d.plan || 'completo') : '';

@@ -9,6 +9,13 @@
 //   POST /api/cart  { action: 'capture', orderID }
 //     → cobra en PayPal, verifica el monto y activa todo lo comprado
 //
+// Checkout público (checkout.html, quien compra sin entrar a la app):
+//   { action: 'create', source: 'checkout', items, code } con sesión, o
+//   { action: 'guest_create', user_id, items, code } sin sesión: la cuenta recién creada
+//   aún no confirmó el correo, así que no tiene sesión. Solo se acepta para cuentas
+//   nuevas (sin confirmar o creadas hace menos de 24 h).
+//   { action: 'guest_capture', user_id, orderID } cobra y activa igual que 'capture'.
+//
 // Variables en Vercel: PAYPAL_SECRET (y PAYPAL_CLIENT_ID si cambia), SUPABASE_SERVICE_KEY,
 // TV_SESSIONID (sesión de TradingView del dueño de Kairus, para dar el acceso solo).
 
@@ -26,12 +33,19 @@ module.exports = async function handler(req, res) {
     if (!process.env.PAYPAL_SECRET) return res.status(500).json({ error: 'missing_paypal_secret' });
     const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 
+    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    if (body.action === 'guest_create' || body.action === 'guest_capture') {
+      const guest = await guestUser(sb, body.user_id);
+      if (!guest) return res.status(401).json({ error: 'no_session' });
+      if (body.action === 'guest_create') return await create(sb, guest, Object.assign({}, body, { source: 'checkout' }), res);
+      return await capture(sb, guest, body, res);
+    }
+
     const token = (req.headers.authorization || '').replace('Bearer ', '');
     const u = token ? await sb.auth.getUser(token) : null;
     const user = u && u.data && u.data.user;
     if (!user) return res.status(401).json({ error: 'no_session' });
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     if (body.action === 'create') return await create(sb, user, body, res);
     if (body.action === 'capture') return await capture(sb, user, body, res);
     if (body.action === 'tv_grant') return await adminTv(sb, user, body, res);
@@ -41,8 +55,31 @@ module.exports = async function handler(req, res) {
   }
 };
 
+// Cuenta recién creada en el checkout (todavía sin sesión porque falta confirmar el correo)
+async function guestUser(sb, id) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) return null;
+  const r = await sb.auth.admin.getUserById(id);
+  const u = r && r.data && r.data.user;
+  if (!u) return null;
+  const fresh = Date.now() - new Date(u.created_at).getTime() < 24 * 3600e3;
+  return (!u.email_confirmed_at || fresh) ? u : null;
+}
+
+// Código de descuento del checkout (tabla access_codes, code_type = 'discount')
+async function discountFor(sb, code, items) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) return null;
+  const r = await sb.from('access_codes').select('code, plan, code_type, discount_type, discount_value, is_used').eq('code', code).maybeSingle();
+  const d = r.data;
+  if (!d || d.is_used || d.code_type !== 'discount') throw new Error('bad_code');
+  const pl = d.plan || 'completo';
+  if (pl !== 'completo' && !items.some(i => i.plan_id === pl || (pl === 'live' && String(i.plan_id).indexOf('live') === 0))) throw new Error('bad_code');
+  return { code: d.code, type: d.discount_type, value: Number(d.discount_value) || 0 };
+}
+
 // ── Precios reales desde la base ──
-async function priceItems(sb, items) {
+// En el checkout público valen los planes marcados como visibles (active); en el carrito, los de "Mostrar en el carrito".
+async function priceItems(sb, items, checkout) {
   if (!Array.isArray(items) || !items.length || items.length > 10) throw new Error('empty_cart');
   const ids = [...new Set(items.map(i => String(i.plan_id || '')))];
   const pr = await sb.from('checkout_plans').select('*').in('id', ids);
@@ -51,7 +88,7 @@ async function priceItems(sb, items) {
   const vars = {}; (vr.data || []).forEach(v => { vars[v.id] = v; });
   return items.map(i => {
     const p = plans[i.plan_id];
-    if (!p || !p.in_store) throw new Error('not_in_store');
+    if (!p || !(checkout ? (p.active || p.in_store) : p.in_store)) throw new Error('not_in_store');
     const pv = (vr.data || []).filter(v => v.plan_id === p.id);
     let v = null;
     if (pv.length) { v = vars[i.variant_id]; if (!v || v.plan_id !== p.id) throw new Error('pick_variant'); }
@@ -84,12 +121,25 @@ async function paypalToken() {
 
 async function create(sb, user, body, res) {
   let items;
-  try { items = await priceItems(sb, body.items); } catch (e) { return res.status(400).json({ error: e.message }); }
+  const checkout = body.source === 'checkout';
+  let disc = null;
+  try {
+    items = await priceItems(sb, body.items, checkout);
+    if (checkout) disc = await discountFor(sb, body.code, items);
+  } catch (e) { return res.status(400).json({ error: e.message }); }
   if (items.some(i => i.tv_pine_id)) {
     const s = await sb.from('user_settings').select('tv_username').eq('id', user.id).maybeSingle();
     if (!s.data || !s.data.tv_username) return res.status(400).json({ error: 'need_tv_user' });
   }
-  const total = Math.round(items.reduce((a, i) => a + i.price, 0) * 100) / 100;
+  let total = Math.round(items.reduce((a, i) => a + i.price, 0) * 100) / 100;
+  if (disc) {
+    const off = disc.type === 'percent' ? total * disc.value / 100 : disc.value;
+    const nt = Math.max(0, Math.round((total - off) * 100) / 100);
+    // El descuento se reparte entre lo comprado para que cada compra quede con lo que se pagó
+    items.forEach(i => { i.price = Math.round(i.price * (total ? nt / total : 0) * 100) / 100; i.discount_code = disc.code; });
+    total = nt;
+  }
+  if (!(total > 0)) return res.status(400).json({ error: 'no_price' });
   const tk = await paypalToken();
   const r = await fetch(PP_API + '/v2/checkout/orders', {
     method: 'POST',

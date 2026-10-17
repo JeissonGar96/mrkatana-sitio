@@ -1,9 +1,16 @@
 // api/calendar.js — Vercel Serverless Function
 // ForexFactory feed — USD High impact only
 
+// Última respuesta buena: si ForexFactory nos limita o falla, devolvemos esta copia
+// en lugar de un error (vive mientras la función siga "caliente" en Vercel).
+let lastGood = null;
+// Resultados ya conseguidos de JB News (cada consulta a JB News cuesta 1 crédito)
+const jbFound = {};
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=300');
+  // Vercel guarda la respuesta 5 min y, si el feed falla, sigue sirviendo la anterior hasta 1 día
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=86400, stale-if-error=86400');
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -66,12 +73,41 @@ module.exports = async function handler(req, res) {
     const thisMon   = getMonday(new Date(todayStr));
     const nextMon   = new Date(new Date(thisMon).getTime() + 7*86400000).toISOString().slice(0,10);
 
-    const urls = [
-      `https://nfs.faireconomy.media/ff_calendar_thisweek.json`,
-      `https://nfs.faireconomy.media/ff_calendar_nextweek.json`,
-      `https://nfs.faireconomy.media/ff_calendar_${thisMon}.json`,
-      `https://nfs.faireconomy.media/ff_calendar_${nextMon}.json`,
-    ];
+    // ForexFactory bloquea por un rato si recibe muchas peticiones seguidas,
+    // así que solo pedimos lo necesario: esta semana, y la próxima desde el viernes.
+    const dow = new Date().getUTCDay();
+    const urls = [`https://nfs.faireconomy.media/ff_calendar_thisweek.json`];
+    if (dow === 5 || dow === 6 || dow === 0) urls.push(`https://nfs.faireconomy.media/ff_calendar_nextweek.json`);
+
+    // Resultados reales ("Actual"): el feed gratis de ForexFactory no los trae,
+    // así que los pedimos a JB News (mismo calendario de ForexFactory) si hay llave.
+    const jbKey = process.env.JBNEWS_API_KEY;
+    let jbStatus = jbKey ? 'sin respuesta' : 'sin llave';
+    let jbRaw = '';
+    const jbGet = (path, src) => fetch('https://www.jblanked.com/news/api/' + (src || 'forex-factory') + '/calendar/' + path, {
+        headers: { 'Authorization': 'Api-Key ' + jbKey.trim(), 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      }).then(r => r.ok ? r.json() : r.text().then(t => { throw new Error('HTTP ' + r.status + ' ' + String(t).replace(/\s+/g, ' ').slice(0, 160)); }))
+        .then(d => {
+          if (Array.isArray(d)) return d;
+          if (d && Array.isArray(d.data)) return d.data;
+          jbRaw = JSON.stringify(d).slice(0, 200); // respuesta inesperada: la mostramos para revisarla
+          return [];
+        });
+    // Pedimos la semana completa sin filtros (filtramos aquí); si viene vacía, probamos por rango de fechas
+    const jbFetch = () => jbKey
+      ? jbGet('week/')
+          .then(d => { jbStatus = 'week: ' + d.length; if (d.length) return d;
+            return new Promise(ok => setTimeout(ok, 1100)).then(() => jbGet('range/?from=' + thisMon + '&to=' + new Date(new Date(thisMon).getTime() + 6*86400000).toISOString().slice(0,10))
+              .then(d2 => { jbStatus += ', range: ' + d2.length; return d2; })); })
+          .catch(e => {
+            // Si ForexFactory no está permitido con esta llave, probamos el calendario de MQL5
+            jbStatus = 'forex-factory error: ' + (e && e.message);
+            return new Promise(ok => setTimeout(ok, 1100)).then(() => jbGet('week/', 'mql5'))
+              .then(d => { jbStatus += ' | mql5 week: ' + d.length; return d; })
+              .catch(e2 => { jbStatus += ' | mql5 error: ' + (e2 && e2.message); return []; });
+          })
+      : Promise.resolve([]);
 
     const results = await Promise.allSettled(
       urls.map(url =>
@@ -88,6 +124,8 @@ module.exports = async function handler(req, res) {
 
     // If all fetches failed return error so client keeps cached data
     if (!all.length) {
+      if (lastGood) return res.status(200).json(Object.assign({}, lastGood, { stale: true }));
+      res.setHeader('Cache-Control', 'no-store');
       return res.status(503).json({ ok: false, error: 'Feed unavailable', events: [] });
     }
 
@@ -106,6 +144,33 @@ module.exports = async function handler(req, res) {
 
     const s = v => (v!=null && String(v).trim()!=='') ? String(v).trim() : '—';
 
+    // Índice de resultados de JB News por día + nombre del evento
+    // Solo gastamos un crédito de JB News si hay una noticia que ya salió (últimas 3 h)
+    // y todavía no tenemos su resultado.
+    const nowMs0 = Date.now();
+    const keyOf = e => toIsoDate(e.date) + '|' + String(e.title||'').toLowerCase().replace(/\s+/g, ' ').trim();
+    const needJb = display.some(e => {
+      const t = toSortKey(e.date);
+      return t <= nowMs0 && nowMs0 - t < 3 * 3600000 && s(e.actual) === '—' && jbFound[keyOf(e)] === undefined;
+    });
+    if (!needJb && jbKey) jbStatus = 'en espera (no hay noticias pendientes de resultado)';
+    const jbList = needJb ? await jbFetch() : [];
+    const norm = t => String(t||'').toLowerCase().replace(/\s+/g, ' ').trim();
+    const jbActual = {};
+    (Array.isArray(jbList) ? jbList : []).forEach(j => {
+      if (j.Currency && j.Currency !== 'USD') return;
+      const day = String(j.Date || '').slice(0, 10).replace(/\./g, '-');
+      if (j.Actual === null || j.Actual === undefined || j.Actual === '') return;
+      jbActual[day + '|' + norm(j.Name)] = j.Actual;
+      jbFound[day + '|' + norm(j.Name)] = j.Actual;
+    });
+    // Le pone al número el mismo sufijo que usa ForexFactory (%, K, M, B)
+    const withUnit = (val, like) => {
+      const m = String(like || '').match(/([%KMBT])$/i);
+      return String(val) + (m && !String(val).match(/[%KMBT]$/i) ? m[1] : '');
+    };
+    const nowMs = Date.now();
+
     const events = display.map(e => ({
       date:     toDateLabel(toIsoDate(e.date)),
       isoDate:  toIsoDate(e.date),
@@ -116,7 +181,15 @@ module.exports = async function handler(req, res) {
       impact:   'high',
       forecast: s(e.forecast),
       previous: s(e.previous),
-      actual:   s(e.actual),
+      actual:   (function() {
+        const own = s(e.actual);
+        if (own !== '—') return own;
+        // Solo si la noticia ya salió (evita mostrar un 0 antes de tiempo)
+        if (toSortKey(e.date) > nowMs) return own;
+        const k = toIsoDate(e.date) + '|' + norm(e.title);
+        const v = jbActual[k] !== undefined ? jbActual[k] : jbFound[k];
+        return (v === undefined) ? own : withUnit(v, e.forecast || e.previous);
+      })(),
     }))
     .filter(e => e.name)
     .sort((a, b) => a.sortKey - b.sortKey);
@@ -130,15 +203,19 @@ module.exports = async function handler(req, res) {
       })
       .map(e => { delete e.sortKey; return e; });
 
-    res.status(200).json({
+    lastGood = {
       ok:       true,
       updated:  new Date().toISOString(),
       timezone: 'UTC-5 (Ecuador)',
       today:    todayStr,
       events:   final,
-    });
+      jbnews:   jbStatus + (jbRaw ? ' · ' + jbRaw : ''), // para revisar en /api/calendar si JB News responde
+    };
+    res.status(200).json(lastGood);
 
   } catch(err) {
+    if (lastGood) return res.status(200).json(Object.assign({}, lastGood, { stale: true }));
+    res.setHeader('Cache-Control', 'no-store');
     res.status(500).json({ ok: false, error: err.message, events: [] });
   }
 };

@@ -8,7 +8,6 @@
 <script>
 // Mismo tema que el panel: modo claro/oscuro del visitante y colores de Admin > Apariencia
 try { if (localStorage.getItem('mk-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
-try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write('<style id="mk-custom-theme">' + _css + '</style>'); } catch (e) {}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -1423,6 +1422,10 @@ html{scrollbar-width:auto;}
 body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111;}
 .overlay{position:relative!important;inset:auto!important;background:transparent!important;display:flex!important;}
 </style>
+<script>
+// Colores de Admin > Apariencia (copia guardada); va después de los estilos para que mande sobre ellos
+try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write('<style id="mk-custom-theme">' + _css + '</style>'); } catch (e) {}
+</script>
 </head>
 <body>
 <!-- LOGIN / REGISTRO -->
@@ -1692,7 +1695,8 @@ function _lgTheme() {
   // Colores guardados por el admin (los mismos del panel)
   fetch('/api/site-theme').then(function(r) { return r.json(); }).then(function(d) {
     var el = document.getElementById('mk-custom-theme');
-    if (!d || !d.theme) { if (el) el.remove(); try { localStorage.removeItem('mk-theme-css'); } catch (e) {} return; }
+    if (!d || !d.ok) return; // el servidor no pudo leer los colores: se queda la copia guardada
+    if (!d.theme) { if (el) el.remove(); try { localStorage.removeItem('mk-theme-css'); } catch (e) {} return; }
     var css = _mkThemeCss(d.theme);
     if (!el) { el = document.createElement('style'); el.id = 'mk-custom-theme'; document.head.appendChild(el); }
     el.textContent = css;

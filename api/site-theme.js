@@ -9,12 +9,13 @@ const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 
 module.exports = async function handler(req, res) {
   try {
-    if (!process.env.SUPABASE_SERVICE_KEY) return res.status(200).json({ theme: null });
+    if (!process.env.SUPABASE_SERVICE_KEY) return res.status(200).json({ ok: false, error: 'missing_service_key' });
     const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
     const r = await sb.from('site_settings').select('theme').eq('id', 1).maybeSingle();
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=3600');
-    return res.status(200).json({ theme: (r.data && r.data.theme) || null });
+    if (r.error) return res.status(200).json({ ok: false, error: r.error.message });
+    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=300');
+    return res.status(200).json({ ok: true, theme: (r.data && r.data.theme) || null });
   } catch (e) {
-    return res.status(200).json({ theme: null });
+    return res.status(200).json({ ok: false });
   }
 };

@@ -444,7 +444,7 @@ var HS = {
         '</div><div class="d">' + _hEsc(c.d) + '</div></div>';
       if (c.big) return '<div class="' + cls + '"><div class="bh2"><div class="big serif gold">' + _hEsc(c.big) + '</div><div class="t">' + _hEsc(c.t) + '</div></div>' +
         '<div class="wk"><div class="row2"><b>Semana 3 de 6</b><span>Challenge</span></div><div class="bars"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div><div class="d">' + _hEsc(c.d) + '</div></div>';
-      return '<div class="' + cls + ' tp"><div class="bh"><div class="ic">' + (HI.card[i] || HI.card[1]) + '</div><div class="t">' + _hEsc(c.t) + '</div></div>' + (HI.mini[i] || '') + '<div class="d">' + _hEsc(c.d) + '</div></div>';
+      return '<div class="' + cls + ' tp"><div class="bh"><div class="ic">' + (HI.card[i] || HI.card[1]) + '</div><div class="t">' + _hEsc(c.t) + '</div></div>' + (_hUrl(c.img) ? '<div class="mini"><img class="ui" src="' + _hUrl(c.img) + '" alt="' + _hEsc(c.t) + '" loading="lazy"></div>' : (HI.mini[i] || '')) + '<div class="d">' + _hEsc(c.d) + '</div></div>';
     }
     return '<section class="sec" id="oferta"><div class="in">' + _hHead(o) + '<div class="bento">' + it.map(function(_, i) { return card(i); }).join('') + '</div></div></section>';
   },

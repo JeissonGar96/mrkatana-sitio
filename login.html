@@ -1347,6 +1347,7 @@ nav{
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--lg-pg);color:var(--lg-tx);}
 html body{display:block;background:var(--lg-pg);padding:20px;min-height:100vh;}
 .lg-wrap{min-height:calc(100vh - 40px);width:auto;margin:0;border:1px solid var(--lg-ln);border-radius:22px;background:var(--lg-bg);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
+.lg-wrap{zoom:var(--fz,1);min-height:calc((100vh - 40px) / var(--fz,1));}
 .lg-left{position:relative;padding:48px 56px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;background:radial-gradient(120% 80% at 0% 100%,rgba(var(--lg-acc),.10),transparent 60%),var(--lg-pn);border-right:1px solid var(--lg-ln);}
 .lg-llogo img{height:38px;display:block;}
 body:not(.is-reg) .lg-llogo{visibility:hidden;}
@@ -1685,6 +1686,26 @@ function _mkThemeCss(cfg) {
     MK_BTN_SEL + '{background:rgb(var(--c-btn)) !important;color:var(--c-ongold) !important;border-color:transparent !important;}' +
     '.snav.on{background:var(--c-soft) !important;}';
 }
+// Pantallas bajas (laptops): achica toda la caja, letra incluida, para que quepa sin scroll
+function _lgFit() {
+  var w = document.querySelector('.lg-wrap'); if (!w) return;
+  w.style.setProperty('--fz', 1);
+  if (window.innerWidth <= 900) return;
+  var need = 40;
+  [].forEach.call(w.children, function(c) { if (c.offsetParent !== null) need = Math.max(need, c.scrollHeight + 40); });
+  var z = Math.max(.72, Math.min(1, window.innerHeight / (need + 10)));
+  if (z < .985) w.style.setProperty("--fz", z.toFixed(3));
+}
+function _lgFitInit() {
+  var w = document.querySelector('.lg-wrap'); if (!w) return;
+  var t = 0, run = function() { cancelAnimationFrame(t); t = requestAnimationFrame(_lgFit); };
+  window.addEventListener('resize', run);
+  new MutationObserver(function(ms) { if (ms.some(function(m) { return m.target !== w; })) run(); })
+    .observe(w, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] });
+  new MutationObserver(run).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+  run();
+}
 function _lgTheme() {
   var b = document.getElementById('lg-theme');
   if (b) b.onclick = function() {
@@ -1715,6 +1736,7 @@ function _fillDob() {
 window.onload = function() {
   _fillDob();
   _lgTheme();
+  _lgFitInit();
   _capLoad();
   if (location.hash === '#registro' || new URLSearchParams(location.search).get('registro') !== null) switchTab('reg');
   var sb_check = supabase.createClient(SB_URL, SB_KEY);

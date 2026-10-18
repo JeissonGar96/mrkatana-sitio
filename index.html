@@ -236,6 +236,100 @@ body.mopen .mnav{opacity:1;pointer-events:auto;}body.mopen{overflow:hidden;}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s ease;}
 .reveal.in-view{opacity:1;transform:none;}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none;}}
+
+/* ===== Estilo del panel (2026-10-18): misma letra, tarjetas y piezas reales del panel ===== */
+:root{--pnl:#131316;--pln:#26262c;}
+.serif{font-family:inherit;font-style:normal;font-weight:inherit;letter-spacing:inherit;background:linear-gradient(180deg,var(--gl),rgba(var(--g),.5));-webkit-background-clip:text;background-clip:text;color:transparent!important;padding-bottom:.06em;}
+.hero h1 .serif,.hd h2 .serif,.end-box h2 .serif,.tr .v .serif,.ab-tx h2 .serif,.faq h2 .serif{font-size:inherit;}
+.hero:before{opacity:.55;}
+.hero{padding-top:176px;}
+.hero h1{font-size:4.6rem;font-weight:700;letter-spacing:-2.6px;line-height:1.04;max-width:900px;}
+.eyebrow{letter-spacing:1.6px;font-size:.7rem;font-weight:700;}
+.eyebrow:before{width:6px;height:6px;border-radius:50%;background:var(--gl);}
+.btn{border-radius:12px;}
+.bar .btn{border-radius:999px;}
+.shot{padding:0;border-radius:20px;border:1px solid var(--pln);background:var(--pnl);box-shadow:0 50px 120px -40px rgba(0,0,0,.9);overflow:hidden;max-width:1160px;}
+.shot img{border-radius:0;}
+.shot:after{height:28%;}
+.trust{margin-top:-40px;}
+.tr .v{font-weight:700;letter-spacing:-1.2px;font-size:2.4rem;}
+.hd h2,.ab-tx h2,.faq h2{font-weight:700;letter-spacing:-1.6px;}
+.hd h2{font-size:3.1rem;}
+#metodo .hd h2 .serif{display:block;}
+.bx,.b1{background:var(--pnl);border:1px solid var(--pln);border-radius:18px;}
+.bx .ic{border-radius:50%;background:rgba(255,255,255,.03);}
+.bx .t{font-size:1.15rem;font-weight:700;}
+.bx{justify-content:flex-start;}
+.bx>.d{margin-top:16px;}
+.mini{margin-top:20px;padding-top:0;}
+.mini img.ui{display:block;width:100%;border-radius:14px;border:1px solid var(--pln);}
+.b1{display:flex;flex-direction:column;}
+.b1 .live{position:relative;top:auto;left:auto;right:auto;margin-top:20px;}
+.chart{margin-top:0;background:#0e0e10;border-color:var(--pln);}
+.xb{margin-top:16px;border:1px solid var(--pln);border-radius:14px;background:#0e0e10;overflow:hidden;font-size:.8rem;}
+.xb .xh{display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--pln);font-size:.68rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--mu);}
+.xb .xr{display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--pln);color:var(--t2);}
+.xb .xh+.xr{border-top:0;}
+.xb .xr b{color:var(--t);font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.xb .tm{font-variant-numeric:tabular-nums;color:var(--mu);flex-shrink:0;}
+.dt2{width:34px;height:34px;border-radius:50%;border:1px solid var(--pln);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gl);font-size:.62rem;font-weight:700;}
+.bh2{display:flex;align-items:center;gap:16px;}
+.bh2 .big{font-size:2.6rem;margin:0;letter-spacing:-1px;font-weight:300;}
+.wk{margin-top:20px;}
+.wk .row2{display:flex;justify-content:space-between;font-size:.76rem;color:var(--t2);}
+.wk .row2 b{color:var(--t);font-weight:600;}
+.wk .bars{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px;}
+.wk .bars i{height:6px;border-radius:9px;background:rgba(255,255,255,.08);}
+.wk .bars i.on{background:linear-gradient(90deg,var(--btn1),var(--btn2));}
+.stp .n{font-family:inherit;font-style:normal;font-size:.95rem;font-weight:700;width:52px;height:52px;border-radius:50%;border:1px solid var(--pln);background:var(--pnl);display:flex;align-items:center;justify-content:center;color:var(--gl);}
+.stp .t{font-weight:700;}
+.about{background:var(--pnl);border-color:var(--pln);border-radius:20px;}
+.ab-ph{background:#0e0e10;}
+.ab-ph .sig{display:none;}
+.end-box{border-color:var(--pln);border-radius:20px;}
+.end-box h2{font-weight:700;letter-spacing:-2px;font-size:3.8rem;}
+.rc{border-radius:18px;}
+/* Pie de página */
+.foot{padding:80px 0 34px;}
+.foot .in.ft3{display:block;text-align:left;color:var(--mu);}
+.ftop{display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:40px;}
+.fbrand img{height:30px;opacity:1;display:block;}
+.fbrand p{margin-top:18px;font-size:.86rem;color:var(--t2);max-width:300px;line-height:1.6;}
+.soc{display:flex;gap:10px;margin-top:22px;}
+.soc a{width:38px;height:38px;border-radius:50%;border:1px solid var(--pln);display:flex;align-items:center;justify-content:center;color:var(--t2);}
+.soc a:hover,.fcol a:hover,.fbot a:hover{color:var(--t);}
+.soc svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.fcol{display:flex;flex-direction:column;gap:14px;font-size:.86rem;}
+.fcol b{color:var(--t);font-weight:600;font-size:.9rem;margin-bottom:4px;}
+.fcol a{color:var(--t2);}
+.frisk{margin-top:64px;padding-top:36px;border-top:1px solid var(--ln);}
+.frisk b{display:block;color:var(--t);font-weight:600;font-size:.86rem;margin-bottom:10px;}
+.frisk p{font-size:.8rem;line-height:1.75;color:var(--mu);max-width:1000px;}
+.fpay{display:flex;justify-content:center;padding:30px 0;margin-top:36px;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln);}
+.pp{font-style:italic;font-weight:800;font-size:1.25rem;letter-spacing:-.5px;color:#77746e;}
+.fbot{display:flex;justify-content:space-between;align-items:center;padding-top:26px;font-size:.8rem;}
+.fbot nav{display:flex;gap:26px;}
+@media(max-width:760px){
+  .hero{padding-top:120px;}
+  .hero h1{font-size:2.2rem;letter-spacing:-1.2px;}
+  .hero h1 .serif{display:block;white-space:nowrap;}
+  .hd h2{font-size:1.9rem;letter-spacing:-.8px;}
+  .hd h2 .serif{display:block;}
+  .end-box h2{font-size:2.1rem;letter-spacing:-1px;}
+  .shot{border-radius:14px;}
+  .stp .n{width:44px;height:44px;margin:0 auto;}
+  .b1 .xb{display:none;}
+  .b1{min-height:0;}
+  .foot{padding:56px 0 30px;}
+  .foot .in.ft3{text-align:left;align-items:stretch;}
+  .ftop{grid-template-columns:1fr 1fr;gap:34px 20px;}
+  .fbrand{grid-column:1/-1;}
+  .fcol{font-size:.84rem;gap:12px;}
+  .frisk{margin-top:44px;}
+  .frisk p{font-size:.76rem;}
+  .fbot{flex-direction:column;gap:14px;text-align:center;}
+  .fbot nav{justify-content:center;}
+}
 </style>
 <script>
 try { var _hc = localStorage.getItem('mk-home-css'); if (_hc) document.write('<style id="mk-home-theme">' + _hc + '</style>'); } catch (e) {}
@@ -253,10 +347,19 @@ try { var _hc = localStorage.getItem('mk-home-css'); if (_hc) document.write('<s
 
 <main id="home"></main>
 
-<footer class="foot"><div class="in">
-  <img src="/img/logo.png" alt="Mr Katana FX">
-  <nav><a href="/legal">Términos</a><a href="/legal#privacidad">Privacidad</a><a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener">Instagram</a></nav>
-  <div>© <span id="yr">2026</span> Mr. Katana FX</div>
+<footer class="foot"><div class="in ft3">
+  <div class="ftop">
+    <div class="fbrand"><img src="/img/logo.png" alt="Mr Katana FX"><p>Trading institucional en oro, con un camino claro hacia tu cuenta fondeada.</p>
+      <div class="soc"><a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg></a><a class="js-wa" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-11.8 7L4 20l1-4.6A8 8 0 1121 12z"/></svg></a></div>
+    </div>
+    <div class="fcol"><b>Formación</b><a href="#oferta">El curso</a><a href="#oferta">Sesiones en vivo</a><a href="#oferta">Reuniones 1-1</a><a href="#metodo">El método</a></div>
+    <div class="fcol"><b>Plataforma</b><a href="/login#registro">Crear cuenta gratis</a><a href="/login">Entrar</a></div>
+    <div class="fcol"><b>Comunidad</b><a class="js-wa" href="#" target="_blank" rel="noopener">WhatsApp</a><a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener">Instagram</a><a href="#faq">Preguntas frecuentes</a></div>
+    <div class="fcol"><b>Legal</b><a href="/legal">Términos y condiciones</a><a href="/legal#privacidad">Política de privacidad</a></div>
+  </div>
+  <div class="frisk"><b>Aviso de riesgo</b><p>El contenido de Mr Katana FX es educativo y no constituye asesoría financiera ni una recomendación de compra o venta. Operar en los mercados financieros, incluido el oro (XAUUSD), conlleva un alto riesgo de pérdida. Los resultados pasados, propios o de alumnos, no garantizan resultados futuros. Opera solo con dinero que puedas permitirte perder. Servicio solo para mayores de 18 años.</p></div>
+  <div class="fpay"><span class="pp">PayPal</span></div>
+  <div class="fbot"><span>© <span id="yr">2026</span> Mr Katana FX. Todos los derechos reservados.</span><nav><a href="/legal">Términos</a><a href="/legal#privacidad">Privacidad</a></nav></div>
 </div></footer>
 
 <a class="wa" id="wa-float" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.8 7L4 20l1-4.6A8 8 0 1121 12z"/></svg></a>
@@ -284,9 +387,13 @@ function _hWa(H) { return 'https://wa.me/' + String(H.whatsapp || '').replace(/\
 var HI = {
   arrow: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   chat: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.8 7L4 20l1-4.6A8 8 0 1121 12z"/></svg>',
-  // Detalle decorativo al pie de las tarjetas altas (imita la plataforma)
-  mini: { 1: '<div class="mini"><div class="ln"><b>Estructura del mercado</b><span class="pb"><i style="width:100%"></i></span></div><div class="ln"><b>Liquidez institucional</b><span class="pb"><i style="width:60%"></i></span></div></div>',
-    2: '<div class="mini"><div class="ln"><span class="av">MK</span><b>Tu reunión 1-1</b><span class="dt">Jue · 8:00 PM</span></div></div>' },
+  // Piezas reales del panel debajo del título de cada tarjeta
+  mini: { 1: '<div class="mini"><img class="ui" src="/img/inicio/panel-clase.webp" alt="Clase del curso en la plataforma" loading="lazy"></div>',
+    2: '<div class="mini"><img class="ui" src="/img/inicio/panel-1a1.webp" alt="Próxima reunión 1-1" loading="lazy"></div>',
+    4: '<div class="mini"><img class="ui" src="/img/inicio/panel-calendario.webp" alt="Calendario económico" loading="lazy"></div>',
+    5: '<div class="mini"><img class="ui" src="/img/inicio/panel-ranking.webp" alt="Ranking del mes" loading="lazy"></div>' },
+  // Agenda de ejemplo debajo del gráfico (solo en PC)
+  agenda: [['LUN', 'Pre-mercado Nueva York', '8:00 AM'], ['MIÉ', 'Operativa en vivo · XAUUSD', '9:30 AM'], ['VIE', 'Revisión semanal de operaciones', '7:00 PM']],
   card: [
     '',
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5l4.5 2.5-4.5 2.5z"/></svg>',
@@ -317,11 +424,13 @@ var HS = {
     function card(i) {
       var c = it[i]; if (!c) return '';
       var cls = 'bx reveal b' + (i + 1);
-      if (i === 0) return '<div class="' + cls + '"><div class="live"><div class="lbl"><i></i>Sesión en vivo · Oro</div>' +
-        '<div class="chart"><div class="ch-h"><span class="sy">XAUUSD</span><span class="tf">1m</span><span class="px" id="nq-px"></span><span class="ch" id="nq-ch"></span></div><div id="nq"></div></div></div>' +
-        '<div class="t">' + _hEsc(c.t) + '</div><div class="d">' + _hEsc(c.d) + '</div></div>';
-      if (c.big) return '<div class="' + cls + '"><div class="big serif gold">' + _hEsc(c.big) + '</div><div class="t">' + _hEsc(c.t) + '</div><div class="d">' + _hEsc(c.d) + '</div></div>';
-      return '<div class="' + cls + ' tp"><div class="bh"><div class="ic">' + (HI.card[i] || HI.card[1]) + '</div><div class="t">' + _hEsc(c.t) + '</div></div><div class="d">' + _hEsc(c.d) + '</div>' + (HI.mini[i] || '') + '</div>';
+      if (i === 0) return '<div class="' + cls + '"><div class="t">' + _hEsc(c.t) + '</div><div class="live">' +
+        '<div class="chart"><div class="ch-h"><span class="sy">XAUUSD</span><span class="tf">1m</span><span class="px" id="nq-px"></span><span class="ch" id="nq-ch"></span></div><div id="nq"></div></div>' +
+        '<div class="xb"><div class="xh"><span>Agenda en vivo · esta semana</span><span>Hora Ecuador</span></div>' + HI.agenda.map(function(a) { return '<div class="xr"><span class="dt2">' + a[0] + '</span><b>' + a[1] + '</b><span class="tm">' + a[2] + '</span></div>'; }).join('') + '</div>' +
+        '</div><div class="d">' + _hEsc(c.d) + '</div></div>';
+      if (c.big) return '<div class="' + cls + '"><div class="bh2"><div class="big serif gold">' + _hEsc(c.big) + '</div><div class="t">' + _hEsc(c.t) + '</div></div>' +
+        '<div class="wk"><div class="row2"><b>Semana 3 de 6</b><span>Challenge</span></div><div class="bars"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div><div class="d">' + _hEsc(c.d) + '</div></div>';
+      return '<div class="' + cls + ' tp"><div class="bh"><div class="ic">' + (HI.card[i] || HI.card[1]) + '</div><div class="t">' + _hEsc(c.t) + '</div></div>' + (HI.mini[i] || '') + '<div class="d">' + _hEsc(c.d) + '</div></div>';
     }
     return '<section class="sec" id="oferta"><div class="in">' + _hHead(o) + '<div class="bento">' + it.map(function(_, i) { return card(i); }).join('') + '</div></div></section>';
   },
@@ -390,6 +499,7 @@ function _homeRender(H) {
   document.getElementById('nav').innerHTML = nav.join('');
   document.getElementById('mnav-links').innerHTML = nav.join('');
   document.getElementById('wa-float').href = _hWa(H);
+  document.querySelectorAll('.js-wa').forEach(function(a) { a.href = _hWa(H); });
   m.querySelectorAll('.q .h').forEach(function(h) {
     function tg() { var q = h.parentNode, on = !q.classList.contains('open'); q.classList.toggle('open', on); h.querySelector('span').textContent = on ? '−' : '+'; }
     h.addEventListener('click', tg);

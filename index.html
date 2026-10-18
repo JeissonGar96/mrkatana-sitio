@@ -227,6 +227,7 @@ body.mopen .mnav{opacity:1;pointer-events:auto;}body.mopen{overflow:hidden;}
 /* Página real: extras sobre la maqueta */
 #home{opacity:0;transition:opacity .35s ease;}
 #home.ready{opacity:1;}
+#home:not(.ready) ~ .foot{display:none;}
 .rc .img img{width:100%;height:100%;object-fit:cover;display:block;}
 .q .h{cursor:pointer;user-select:none;}
 .q .a{display:none;}

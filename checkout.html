@@ -107,6 +107,9 @@ html{scrollbar-width:auto;}
 *::-webkit-scrollbar-thumb:hover{background:rgba(var(--c-ov),.26);border:2px solid transparent;background-clip:padding-box;}
 @supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:rgba(128,128,128,.3) transparent;}}
 @media (max-width:900px){html body{padding:0;}.lg-wrap{grid-template-columns:1fr;margin:0;border:0;border-radius:0;min-height:100vh;}.lg-left{display:none;}.lg-right{padding:32px 18px;}body.is-reg .lg-flogo{display:block;}.lg-flogo img{height:38px;}}
+/* Celular: 100dvh = alto visible real (sin la barra de Chrome), evita el scroll de sobra */
+html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz,1));}
+@media (max-width:900px){html body{min-height:100dvh;}.lg-wrap{min-height:100dvh;}}
 @media (max-width:480px){.lg-row2{grid-template-columns:1fr;gap:0;}}
 .msg{border-radius:10px;padding:10px 12px;font-size:.8rem;margin-bottom:16px;display:none;line-height:1.5;}
 .msg.err{background:rgba(var(--c-bad),.08);border:1px solid rgba(var(--c-bad),.25);color:rgb(var(--c-bad));}

@@ -740,8 +740,10 @@ function _lgFitInit() {
     .observe(w, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] });
   new MutationObserver(run).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
-  run();
+  _lgFit();
 }
+// Se ajusta apenas carga la caja, sin esperar a que termine de cargar toda la página
+_lgFitInit();
 function _lgTheme() {
   var b = document.getElementById('lg-theme');
   if (b) b.onclick = function() {
@@ -764,7 +766,6 @@ function _lgTheme() {
 window.onload = async function() {
   _fillDob();
   _lgTheme();
-  _lgFitInit();
   _capLoad();
   var q = new URLSearchParams(location.search);
   if (q.get('name')) _el('rg-n').value = q.get('name');

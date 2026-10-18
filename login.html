@@ -1711,8 +1711,10 @@ function _lgFitInit() {
     .observe(w, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] });
   new MutationObserver(run).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
-  run();
+  _lgFit();
 }
+// Se ajusta apenas carga la caja, sin esperar a que termine de cargar toda la página
+_lgFitInit();
 function _lgTheme() {
   var b = document.getElementById('lg-theme');
   if (b) b.onclick = function() {
@@ -1743,7 +1745,6 @@ function _fillDob() {
 window.onload = function() {
   _fillDob();
   _lgTheme();
-  _lgFitInit();
   _capLoad();
   if (location.hash === '#registro' || new URLSearchParams(location.search).get('registro') !== null) switchTab('reg');
   var sb_check = supabase.createClient(SB_URL, SB_KEY);

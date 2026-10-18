@@ -5137,7 +5137,8 @@ function _buildAdminTabs() {
     ['codes','Planes', ['access_plans','access_discord','access_codes']],
     // ['roadmap','Roadmap','access_roadmap'], // oculto 2026-10-13: Plan de la semana retirado (datos se conservan)
     ['ads','Anuncios','__admin_only'],
-    ['apar','Apariencia','__admin_only']
+    ['apar','Apariencia','__admin_only'],
+    ['home','Página de inicio','__admin_only']
   ];
   var visibleTabs = allTabs.filter(function(item) {
     var perm = item[2];
@@ -5876,8 +5877,8 @@ function rAdmApar() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes','roadmap','1on1','ads','apar'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='ads') rAdmAds(); else if(sec==='apar') rAdmApar(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+  ['st','cl','se','codes','roadmap','1on1','ads','apar','home'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='ads') rAdmAds(); else if(sec==='apar') rAdmApar(); else if(sec==='home') rAdmHome(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
 }
 // ── PLANES: caché compartida (planes + sus variantes) ──
 function _loadPlansCache(cb) {
@@ -5910,6 +5911,253 @@ function _fmtExpiry(dateStr) {
   if (!dateStr) return '—';
   if (_isUnlimitedDate(dateStr)) return 'Ilimitado';
   return new Date(dateStr).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ===== Página de inicio: secciones que el admin activa, ordena y edita (2026-10-18) =====
+// Se guarda en site_settings fila id=2 (columna theme). index.html lo lee por /api/site-home
+// y lo mezcla encima de /js/home-default.js.
+var HM_SECS = {
+  hero:       { n: 'Portada', s: 'Título, texto e imagen de la plataforma' },
+  stats:      { n: 'Cifras', s: '4 datos destacados' },
+  oferta:     { n: 'La formación', s: '6 tarjetas' },
+  video:      { n: 'Video de presentación', s: 'YouTube, Vimeo o Bunny' },
+  metodo:     { n: 'El método', s: 'Etapas de la ruta' },
+  resultados: { n: 'Resultados', s: 'Capturas con testimonio' },
+  sobre:      { n: 'Sobre mí', s: 'Foto y texto' },
+  faq:        { n: 'Preguntas frecuentes', s: 'Preguntas y respuestas' },
+  cierre:     { n: 'Cierre', s: 'Cuenta gratis y WhatsApp' }
+};
+// Campos de cada sección: [clave, etiqueta, tipo]; tipo: '' texto, 'ta' párrafo, 'img' imagen
+var HM_HEAD = [['eyebrow', 'Texto pequeño de arriba'], ['title', 'Título'], ['gold', 'Parte del título en dorado'], ['text', 'Texto', 'ta']];
+var HM_FIELDS = {
+  hero: [['eyebrow', 'Texto pequeño de arriba'], ['title', 'Título'], ['gold', 'Parte del título en dorado'], ['text', 'Texto', 'ta'], ['note', 'Nota debajo de los botones'], ['img', 'Imagen de la plataforma', 'img']],
+  stats: [],
+  oferta: HM_HEAD,
+  video: HM_HEAD.concat([['url', 'Link del video (YouTube, Vimeo o Bunny)']]),
+  metodo: HM_HEAD,
+  resultados: HM_HEAD,
+  sobre: [['eyebrow', 'Texto pequeño de arriba'], ['title', 'Título'], ['gold', 'Parte del título en dorado'], ['p1', 'Primer párrafo', 'ta'], ['p2', 'Segundo párrafo', 'ta'], ['firma', 'Firma sobre la foto'], ['img', 'Foto', 'img']],
+  faq: HM_HEAD,
+  cierre: [['title', 'Título'], ['gold', 'Parte del título en dorado'], ['text', 'Texto', 'ta']]
+};
+// Listas dentro de cada sección: clave, nombre de cada elemento, campos, ¿se pueden agregar/quitar?
+var HM_LISTS = {
+  stats: { k: 'items', one: 'Dato', f: [['v', 'Número o dato'], ['l', 'Descripción']], fixed: true },
+  oferta: { k: 'items', one: 'Tarjeta', f: [['t', 'Título'], ['d', 'Texto', 'ta']], fixed: true },
+  metodo: { k: 'steps', one: 'Etapa', f: [['w', 'Tiempo (ej. Semanas 1 a 4)'], ['t', 'Título'], ['d', 'Texto', 'ta'], ['goal', 'Meta en dorado (opcional)']] },
+  resultados: { k: 'items', one: 'Resultado', f: [['img', 'Captura', 'img'], ['q', 'Testimonio', 'ta'], ['n', 'Nombre del alumno'], ['r', 'País o resultado']] },
+  sobre: { k: 'facts', one: 'Dato', f: [['v', 'Dato'], ['l', 'Descripción']], fixed: true },
+  faq: { k: 'items', one: 'Pregunta', f: [['q', 'Pregunta'], ['a', 'Respuesta', 'ta']] }
+};
+var _hm = null; // { cfg, sel, dirty }
+
+(function(){
+  if (document.getElementById('hm-css')) return;
+  var st = document.createElement('style'); st.id = 'hm-css';
+  st.textContent =
+  '.hm-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;}' +
+  '.hm-top h3{font-size:1.05rem;font-weight:700;margin:0;}.hm-top p{font-size:.8rem;color:var(--c-muted);margin:4px 0 0;}' +
+  '.hm-acts{display:flex;gap:8px;align-items:center;}' +
+  '.hm-btn{height:38px;padding:0 16px;border-radius:10px;border:1px solid var(--k-line);background:var(--c-card);color:var(--c-text);font-weight:600;font-size:.8rem;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:7px;text-decoration:none;}' +
+  '.hm-btn:hover{border-color:rgba(var(--c-acc),.4);}' +
+  '.hm-btn.g{background:rgb(var(--c-acc));border-color:transparent;color:var(--c-on,#151309);}' +
+  '.hm-btn.g:disabled{opacity:.45;cursor:default;}' +
+  '.hm-msg{font-size:.78rem;color:var(--c-muted);}' +
+  '.hm-cols{display:grid;grid-template-columns:minmax(260px,.9fr) 1.1fr;gap:18px;align-items:start;}' +
+  '.hm-list{background:var(--c-card);border:1px solid var(--k-line);border-radius:16px;overflow:hidden;box-shadow:var(--k-sh);}' +
+  '.hm-row{display:grid;grid-template-columns:18px 1fr auto auto;gap:12px;align-items:center;padding:13px 16px;border-bottom:1px solid var(--k-line);cursor:pointer;transition:background .15s;}' +
+  '.hm-row:last-child{border-bottom:0;}' +
+  '.hm-row:hover{background:rgba(var(--c-ov),.025);}' +
+  '.hm-row.sel{background:rgba(var(--c-acc),.07);box-shadow:inset 2px 0 0 rgb(var(--c-acc));}' +
+  '.hm-row.drag{opacity:.4;}.hm-row.over{box-shadow:inset 0 2px 0 rgb(var(--c-acc));}' +
+  '.hm-grip{color:var(--c-faint);cursor:grab;display:flex;}' +
+  '.hm-row b{display:block;font-size:.86rem;font-weight:600;}.hm-row small{display:block;font-size:.72rem;color:var(--c-muted);}' +
+  '.hm-row.off b{color:var(--c-muted);}' +
+  '.hm-mv{display:flex;gap:2px;}.hm-mv button{width:26px;height:26px;border-radius:7px;border:0;background:none;color:var(--c-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;}' +
+  '.hm-mv button:hover{background:rgba(var(--c-ov),.06);color:var(--c-text);}.hm-mv button:disabled{opacity:.25;cursor:default;}' +
+  '.hm-gen{background:var(--c-card);border:1px solid var(--k-line);border-radius:16px;padding:16px 18px;margin-top:14px;}' +
+  '.hm-gen h4,.hm-form h4{font-size:.92rem;font-weight:700;margin:0 0 14px;}' +
+  '.hm-form{background:var(--c-card);border:1px solid var(--k-line);border-radius:16px;padding:20px 22px;box-shadow:var(--k-sh);}' +
+  '.hm-form .hm-ft{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}.hm-form .hm-ft h4{margin:0;}' +
+  '.hm-form .hm-ft span{font-size:.74rem;color:var(--c-muted);}' +
+  '.hm-fg{margin-bottom:14px;}' +
+  '.hm-fg label{display:block;font-size:.74rem;font-weight:600;color:var(--c-muted);margin-bottom:6px;}' +
+  '.hm-fg input,.hm-fg textarea{width:100%;box-sizing:border-box;border:1px solid var(--k-line);background:var(--c-bg);color:var(--c-text);border-radius:10px;padding:10px 12px;font-weight:500;font-size:.84rem;font-family:inherit;outline:none;}' +
+  '.hm-fg textarea{min-height:70px;resize:vertical;line-height:1.5;}' +
+  '.hm-fg input:focus,.hm-fg textarea:focus{border-color:rgba(var(--c-acc),.45);}' +
+  '.hm-img{display:flex;gap:12px;align-items:center;}' +
+  '.hm-img .pv{width:96px;height:62px;border-radius:9px;border:1px solid var(--k-line);background:var(--c-bg) center/cover no-repeat;flex-shrink:0;}' +
+  '.hm-img .pv.empty{background-image:repeating-linear-gradient(135deg,rgba(var(--c-ov),.05) 0 8px,transparent 8px 16px);}' +
+  '.hm-img .bt{display:flex;flex-direction:column;gap:6px;align-items:flex-start;}' +
+  '.hm-lk{background:none;border:0;padding:0;color:var(--c-muted);font-weight:600;font-size:.74rem;font-family:inherit;cursor:pointer;}' +
+  '.hm-lk:hover{color:var(--c-text);}' +
+  '.hm-sub{font-size:.7rem;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--c-muted);margin:22px 0 10px;padding-top:16px;border-top:1px solid var(--k-line);}' +
+  '.hm-it{border:1px solid var(--k-line);border-radius:12px;padding:14px 14px 2px;margin-bottom:10px;}' +
+  '.hm-it-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:.78rem;font-weight:700;}' +
+  '.hm-it-h div{display:flex;gap:10px;}' +
+  '.hm-note{font-size:.74rem;color:var(--c-muted);margin:-6px 0 12px;}' +
+  '.hm-btn{white-space:nowrap;}' +
+  '@media (max-width:900px){.hm-cols{grid-template-columns:1fr;}.hm-form{padding:18px 16px;}.hm-acts{flex-wrap:wrap;}.hm-msg{width:100%;}}';
+  document.head.appendChild(st);
+})();
+
+function _hmLoadDefaults(cb) {
+  if (window.HOME_DEFAULT) return cb();
+  var s = document.createElement('script'); s.src = '/js/home-default.js'; s.onload = cb; s.onerror = cb; document.head.appendChild(s);
+}
+function _hmClone(o) { return JSON.parse(JSON.stringify(o)); }
+function _hmMerge(base, over) {
+  if (!over || typeof over !== 'object' || Array.isArray(over)) return over === undefined ? base : over;
+  var out = Object.assign({}, base);
+  Object.keys(over).forEach(function(k) { out[k] = (base && base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) ? _hmMerge(base[k], over[k]) : over[k]; });
+  return out;
+}
+
+function rAdmHome() {
+  var c = document.getElementById('a-home'); if (!c) return;
+  c.innerHTML = '<p style="color:var(--c-muted);font-size:.84rem;padding:12px 0;">Cargando…</p>';
+  _hmLoadDefaults(function() {
+    if (!window.HOME_DEFAULT) { c.innerHTML = '<p style="color:var(--c-muted);font-size:.84rem;">No se pudo cargar la página de inicio.</p>'; return; }
+    sb.from('site_settings').select('theme').eq('id', 2).maybeSingle().then(function(r) {
+      var cfg = _hmMerge(_hmClone(HOME_DEFAULT), (r.data && r.data.theme) || {});
+      cfg.order = (cfg.order || []).filter(function(k) { return HM_SECS[k]; });
+      Object.keys(HM_SECS).forEach(function(k) { if (cfg.order.indexOf(k) < 0) cfg.order.push(k); });
+      cfg.off = cfg.off || [];
+      _hm = { cfg: cfg, sel: (_hm && _hm.sel) || 'hero', dirty: false };
+      _hmDraw();
+    });
+  });
+}
+
+function _hmDraw() {
+  var c = document.getElementById('a-home'); if (!c || !_hm) return;
+  var cfg = _hm.cfg;
+  var grip = '<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="9" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="9" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="9" cy="13" r="1.4"/></svg>';
+  var up = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 15l6-6 6 6"/></svg>';
+  var dn = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>';
+  var rows = cfg.order.map(function(k, i) {
+    var on = cfg.off.indexOf(k) < 0;
+    return '<div class="hm-row' + (k === _hm.sel ? ' sel' : '') + (on ? '' : ' off') + '" draggable="true" data-k="' + k + '" onclick="_hmSel(\'' + k + '\')">' +
+      '<span class="hm-grip">' + grip + '</span><div><b>' + HM_SECS[k].n + '</b><small>' + (on ? HM_SECS[k].s : 'Oculta') + '</small></div>' +
+      '<div class="hm-mv" onclick="event.stopPropagation()"><button type="button" title="Subir" ' + (i === 0 ? 'disabled' : '') + ' onclick="_hmMove(\'' + k + '\',-1)">' + up + '</button><button type="button" title="Bajar" ' + (i === cfg.order.length - 1 ? 'disabled' : '') + ' onclick="_hmMove(\'' + k + '\',1)">' + dn + '</button></div>' +
+      '<label class="wp-toggle" onclick="event.stopPropagation()"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="_hmOn(\'' + k + '\',this.checked)"><span class="wp-toggle-track"></span></label></div>';
+  }).join('');
+  c.innerHTML =
+    '<div class="hm-top"><div><h3>Página de inicio</h3><p>Activa, ordena y edita lo que ven las personas en mrkatanafx.com</p></div>' +
+    '<div class="hm-acts"><span class="hm-msg" id="hm-msg">' + (_hm.dirty ? 'Tienes cambios sin publicar' : '') + '</span><a class="hm-btn" href="/" target="_blank" rel="noopener">Ver la página</a><button class="hm-btn g" id="hm-pub" onclick="_hmSave()" ' + (_hm.dirty ? '' : 'disabled') + '>Publicar cambios</button></div></div>' +
+    '<div class="hm-cols"><div><div class="hm-list" id="hm-list">' + rows + '</div>' +
+    '<div class="hm-gen"><h4>WhatsApp</h4>' + _hmIn('Número (con código de país, sin +)', 'g:whatsapp', cfg.whatsapp) + _hmIn('Mensaje que aparece escrito', 'g:wa_text', cfg.wa_text) + '</div></div>' +
+    '<div class="hm-form">' + _hmForm(_hm.sel) + '</div></div>';
+  _hmDrag();
+}
+
+function _hmIn(label, path, val, type) {
+  var v = _mkEsc(val == null ? '' : val);
+  var a = ' data-p="' + path + '" oninput="_hmSet(this)"';
+  if (type === 'ta') return '<div class="hm-fg"><label>' + label + '</label><textarea' + a + '>' + v + '</textarea></div>';
+  if (type === 'img') {
+    return '<div class="hm-fg"><label>' + label + '</label><div class="hm-img"><div class="pv' + (val ? '' : ' empty') + '" style="' + (val ? 'background-image:url(\'' + v.replace(/'/g, '%27') + '\')' : '') + '"></div>' +
+      '<div class="bt"><button type="button" class="hm-btn" onclick="_hmPick(\'' + path + '\')">' + (val ? 'Cambiar imagen' : 'Subir imagen') + '</button>' +
+      (val ? '<button type="button" class="hm-lk" onclick="_hmSetPath(\'' + path + '\',\'\');_hmDraw()">Quitar</button>' : '') + '</div></div></div>';
+  }
+  return '<div class="hm-fg"><label>' + label + '</label><input type="text"' + a + ' value="' + v + '"></div>';
+}
+
+function _hmForm(k) {
+  var o = _hm.cfg[k] || {}, on = _hm.cfg.off.indexOf(k) < 0;
+  var h = '<div class="hm-ft"><h4>' + HM_SECS[k].n + '</h4><span>' + (on ? 'Visible en la página' : 'Oculta') + '</span></div>';
+  if (k === 'resultados' && !(o.items || []).length) h += '<p class="hm-note">Mientras no agregues ningún resultado, esta sección no aparece en la página.</p>';
+  if (k === 'video') h += '<p class="hm-note">Mientras no pongas un link de video, esta sección no aparece en la página.</p>';
+  if (k === 'oferta') h += '<p class="hm-note">La primera tarjeta lleva el gráfico del oro en vivo y la cuarta lleva el número grande.</p>';
+  (HM_FIELDS[k] || []).forEach(function(f) { h += _hmIn(f[1], k + '.' + f[0], o[f[0]], f[2]); });
+  if (k === 'oferta') h += _hmIn('Número grande de la cuarta tarjeta', 'oferta.items.3.big', ((o.items || [])[3] || {}).big);
+  var L = HM_LISTS[k];
+  if (L) {
+    var arr = o[L.k] || [];
+    h += '<div class="hm-sub">' + (L.fixed ? L.one + 's' : L.one + 's · ' + arr.length) + '</div>';
+    arr.forEach(function(it, i) {
+      h += '<div class="hm-it"><div class="hm-it-h">' + L.one + ' ' + (i + 1) + (L.fixed ? '' : '<div>' +
+        (i > 0 ? '<button type="button" class="hm-lk" onclick="_hmItem(\'' + k + '\',' + i + ',-1)">Subir</button>' : '') +
+        '<button type="button" class="hm-lk" onclick="_hmItem(\'' + k + '\',' + i + ',0)">Quitar</button></div>') + '</div>';
+      L.f.forEach(function(f) { h += _hmIn(f[1], k + '.' + L.k + '.' + i + '.' + f[0], it[f[0]], f[2]); });
+      h += '</div>';
+    });
+    if (!L.fixed) h += '<button type="button" class="hm-btn" onclick="_hmItem(\'' + k + '\',-1,1)">+ Agregar ' + L.one.toLowerCase() + '</button>';
+  }
+  return h;
+}
+
+function _hmSetPath(path, val) {
+  var cfg = _hm.cfg, ps = path.replace(/^g:/, '').split('.'), o = cfg;
+  for (var i = 0; i < ps.length - 1; i++) { var p = /^\d+$/.test(ps[i]) ? +ps[i] : ps[i]; if (o[p] == null) o[p] = /^\d+$/.test(ps[i + 1]) ? [] : {}; o = o[p]; }
+  o[ps[ps.length - 1]] = val;
+  _hmDirty();
+}
+function _hmSet(el) { _hmSetPath(el.getAttribute('data-p'), el.value); }
+function _hmDirty() {
+  _hm.dirty = true;
+  var b = document.getElementById('hm-pub'); if (b) b.disabled = false;
+  var m = document.getElementById('hm-msg'); if (m) m.textContent = 'Tienes cambios sin publicar';
+}
+function _hmSel(k) { _hm.sel = k; _hmDraw(); }
+function _hmOn(k, on) {
+  var off = _hm.cfg.off.filter(function(x) { return x !== k; });
+  if (!on) off.push(k);
+  _hm.cfg.off = off; _hmDirty(); _hmDraw();
+}
+function _hmMove(k, d) {
+  var o = _hm.cfg.order, i = o.indexOf(k), j = i + d;
+  if (j < 0 || j >= o.length) return;
+  o.splice(i, 1); o.splice(j, 0, k); _hmDirty(); _hmDraw();
+}
+function _hmItem(k, i, op) {
+  var L = HM_LISTS[k], o = _hm.cfg[k] = _hm.cfg[k] || {}, arr = o[L.k] = o[L.k] || [];
+  if (op === 1) { var n = {}; L.f.forEach(function(f) { n[f[0]] = ''; }); arr.push(n); }
+  else if (op === 0) { if (!confirm('¿Quitar ' + L.one.toLowerCase() + ' ' + (i + 1) + '?')) return; arr.splice(i, 1); }
+  else if (op === -1 && i > 0) { var t = arr[i]; arr[i] = arr[i - 1]; arr[i - 1] = t; }
+  _hmDirty(); _hmDraw();
+}
+// Arrastrar para ordenar (en PC); en celular se usan las flechas
+function _hmDrag() {
+  var list = document.getElementById('hm-list'); if (!list) return;
+  var from = null;
+  list.querySelectorAll('.hm-row').forEach(function(r) {
+    r.addEventListener('dragstart', function(e) { from = r.getAttribute('data-k'); r.classList.add('drag'); try { e.dataTransfer.setData('text/plain', from); } catch (x) {} });
+    r.addEventListener('dragend', function() { r.classList.remove('drag'); });
+    r.addEventListener('dragover', function(e) { e.preventDefault(); r.classList.add('over'); });
+    r.addEventListener('dragleave', function() { r.classList.remove('over'); });
+    r.addEventListener('drop', function(e) {
+      e.preventDefault(); r.classList.remove('over');
+      var to = r.getAttribute('data-k'), o = _hm.cfg.order;
+      if (!from || from === to) return;
+      o.splice(o.indexOf(from), 1); o.splice(o.indexOf(to), 0, from);
+      _hmDirty(); _hmDraw();
+    });
+  });
+}
+function _hmPick(path) {
+  var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async function() {
+    var f = inp.files && inp.files[0]; if (!f) return;
+    if (f.size > 6 * 1024 * 1024) { alert('La imagen pesa más de 6 MB. Usa una más liviana.'); return; }
+    var m = document.getElementById('hm-msg'); if (m) m.textContent = 'Subiendo imagen…';
+    var ext = (f.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    var p = 'inicio/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+    var up = await sb.storage.from('course-images').upload(p, f, { upsert: true, contentType: f.type || undefined });
+    if (up.error) { if (m) m.textContent = 'No se pudo subir la imagen (' + up.error.message + ')'; return; }
+    _hmSetPath(path, sb.storage.from('course-images').getPublicUrl(p).data.publicUrl);
+    _hmDraw();
+  };
+  inp.click();
+}
+function _hmSave() {
+  var b = document.getElementById('hm-pub'), m = document.getElementById('hm-msg');
+  if (b) b.disabled = true; if (m) m.textContent = 'Publicando…';
+  sb.from('site_settings').upsert({ id: 2, theme: _hm.cfg, updated_at: new Date().toISOString() }).then(function(r) {
+    if (r.error) { if (b) b.disabled = false; if (m) m.textContent = 'No se pudo publicar (' + r.error.message + ')'; return; }
+    _hm.dirty = false;
+    if (m) m.textContent = 'Publicado. La página se actualiza en menos de un minuto.';
+  });
 }
 
 // ===== Alumnos: lista y ficha (rediseño 2026-10-17) =====

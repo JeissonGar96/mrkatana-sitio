@@ -2211,17 +2211,22 @@ function _parseUrlToState(path) {
   return state;
 }
 
+// Manda al login recordando la página que se quería abrir, para volver ahí al entrar
+function _toLogin() {
+  var p = location.pathname;
+  window.location.href = (p.indexOf('/app/') === 0 && p !== '/app/' && p !== '/app/dash') ? '/login?volver=' + encodeURIComponent(p) : '/login';
+}
 // popstate — browser back/forward
 window.addEventListener('popstate', function(e) {
   var state = e.state;
   if (!state || !state.section) {
-    window.location.href = '/login';
+    _toLogin();
     return;
   }
   if (!cUser) {
     sb.auth.getSession().then(function(r) {
       if (r.data && r.data.session) loadApp(r.data.session.user);
-      else window.location.href = '/login';
+      else _toLogin();
     });
     return;
   }
@@ -2251,7 +2256,7 @@ window.onload = function() {
     if (r.data && r.data.session) {
       loadApp(r.data.session.user);
     } else {
-      window.location.href = '/login';
+      _toLogin();
     }
   });
 

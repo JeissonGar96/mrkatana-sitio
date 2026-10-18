@@ -1556,7 +1556,7 @@ function doLogin() {
       }
       btn.disabled = false; btn.textContent = 'Iniciar sesión';
     } else if (r.data && r.data.user) {
-      window.location.href = '/app/dash';
+      window.location.href = _lgDest() === '/app' ? '/app/dash' : _lgDest();
     }
   });
 }
@@ -1613,7 +1613,7 @@ async function doRegContinue() {
   btn.disabled = false; btn.textContent = 'Crear cuenta gratis';
   _capReset();
   if (reg.error) return showMsg(reg.error.message.indexOf('already') >= 0 ? 'Este email ya está registrado. Inicia sesión con tu cuenta.' : 'No se pudo crear la cuenta: ' + reg.error.message, true);
-  if (reg.data && reg.data.session) { window.location.href = '/app'; return; }
+  if (reg.data && reg.data.session) { window.location.href = _lgDest(); return; }
   showMsg('Listo. Te enviamos un correo a ' + e + '. Ábrelo para confirmar tu cuenta y luego inicia sesión.', false);
 }
 
@@ -1741,6 +1741,11 @@ function _fillDob() {
   for (var yr = new Date().getFullYear() - 18; yr >= 1940; yr--) y.insertAdjacentHTML('beforeend', '<option value="' + yr + '">' + yr + '</option>');
 }
 
+// Después de entrar, vuelve a la página que la persona quería abrir (ej. /login?volver=/app/sesiones)
+function _lgDest() {
+  var v = new URLSearchParams(location.search).get('volver') || '';
+  return /^\/app(\/[\w\-\/]*)?$/.test(v) ? v : '/app';
+}
 // On load — check if already logged in
 window.onload = function() {
   _fillDob();
@@ -1750,7 +1755,7 @@ window.onload = function() {
   var sb_check = supabase.createClient(SB_URL, SB_KEY);
   sb_check.auth.getSession().then(function(r) {
     if (r.data && r.data.session) {
-      window.location.href = '/app';
+      window.location.href = _lgDest();
     }
   });
   

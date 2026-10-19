@@ -140,7 +140,10 @@ module.exports = async function handler(req, res) {
 
     const future = usdHigh.filter(e => toIsoDate(e.date) >= todayStr);
     const past   = usdHigh.filter(e => toIsoDate(e.date) <  todayStr);
-    const display = future.length > 0 ? future : past;
+    // Semanas tranquilas sin noticias USD de alto impacto: mostramos las de impacto medio
+    const usdMed = usdHigh.length ? [] : unique_raw.filter(e => e.country === 'USD' && e.impact === 'Medium');
+    const medFuture = usdMed.filter(e => toIsoDate(e.date) >= todayStr);
+    const display = future.length > 0 ? future : past.length ? past : medFuture.length ? medFuture : usdMed;
 
     const s = v => (v!=null && String(v).trim()!=='') ? String(v).trim() : '—';
 
@@ -178,7 +181,7 @@ module.exports = async function handler(req, res) {
       time:     toTimeLabel(e.date),
       currency: 'USD',
       name:     (e.title||'').trim(),
-      impact:   'high',
+      impact:   e.impact === 'Medium' ? 'medium' : 'high',
       forecast: s(e.forecast),
       previous: s(e.previous),
       actual:   (function() {

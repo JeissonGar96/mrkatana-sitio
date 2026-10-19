@@ -70,6 +70,8 @@ body{font-family:sans-serif;background:var(--c-bg);color:var(--c-text);overflow-
 
 /* APP */
 #appdash{display:none;position:fixed;inset:0;background:var(--c-bg);z-index:500;overflow-y:auto;scrollbar-width:none;overscroll-behavior-y:contain;}
+html,body{overscroll-behavior-y:none;}
+#ptr-indicator{display:none !important;}
 /* Pull-to-refresh indicator */
 #ptr-indicator{
   position:fixed;top:0;left:0;right:0;z-index:9999;
@@ -1246,6 +1248,8 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 #econ-cal .cal-flag img{width:24px !important;height:24px !important;border-radius:50% !important;object-fit:cover;box-shadow:0 0 0 2px var(--c-card),0 0 0 3px var(--k-line);}
 #econ-cal .cal-name{font-size:.9rem;font-weight:600;}
 #econ-cal .cal-impact-badge{background:transparent;border:none;padding:0;font-size:.72rem;font-weight:600;letter-spacing:0;text-transform:none;color:rgb(var(--c-bad));gap:6px;}
+#econ-cal .cal-impact-badge.med{color:rgb(var(--c-acc));}
+#econ-cal .cal-impact-badge.med i{background:rgb(var(--c-acc));box-shadow:0 0 0 3px rgba(var(--c-acc),.18);}
 #econ-cal .cal-impact-badge i{width:7px;height:7px;border-radius:50%;background:rgb(var(--c-bad));box-shadow:0 0 0 3px rgba(var(--c-bad),.18);}
 #econ-cal .cal-values{gap:6px;min-width:0;}
 #econ-cal .cal-val{min-width:58px;}
@@ -2036,7 +2040,13 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .adp-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .adp-bd{padding:18px 20px 16px;}
 .adp-bd p{font-size:.8rem;line-height:1.5;color:var(--k-muted);margin:0 0 16px;}
-.adp-go{display:flex;align-items:center;justify-content:center;height:48px;border-radius:14px;background:linear-gradient(180deg,rgb(var(--c-acc2)),rgb(var(--c-accd)));color:var(--k-ongold);font-weight:700;font-size:.86rem;text-decoration:none;}
+.adp-go{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 8px 0 20px;border-radius:16px;background:linear-gradient(180deg,rgb(var(--c-acc2)) 0%,rgb(var(--c-acc)) 55%,rgb(var(--c-accd)) 100%);color:var(--k-ongold);font-weight:700;font-size:.86rem;letter-spacing:.2px;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.18),0 12px 28px -12px rgba(var(--c-acc),.75);transition:transform .2s,box-shadow .2s;}
+.adp-go:active{transform:scale(.985);}
+.adp-go:before{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-18deg);animation:adpSheen 3.2s ease-in-out 1s infinite;}
+@keyframes adpSheen{0%{left:-60%}35%,100%{left:130%}}
+.adp-go .ar{position:relative;width:36px;height:36px;border-radius:12px;background:rgba(0,0,0,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;}
+.adp-c:before{content:"";position:absolute;left:30px;right:30px;top:0;height:1px;z-index:2;background:linear-gradient(90deg,transparent,rgba(var(--c-acc2),.6),transparent);}
+@media (prefers-reduced-motion:reduce){.adp-go:before{animation:none;display:none;}}
 .adp-no{display:block;width:100%;margin-top:6px;padding:10px;background:none;border:0;font:inherit;font-size:.76rem;color:var(--k-muted);cursor:pointer;}
 /* ── Celular: diseño B (progreso semanal arriba, cuadros de vidrio, barra con dorado que se desliza) (2026-10-19) ── */
 .mpw,.mt-cw,.mt-rk,.mn-ink{display:none;}
@@ -2113,13 +2123,13 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   /* barra de arriba */
   .mav{width:40px;height:40px;border-radius:14px;border:0;box-shadow:0 0 0 1.5px rgba(var(--c-acc),.7);}
   .mav:after{display:none;}
-  .atop-b{border-radius:14px !important;background:rgba(var(--c-ov),.06) !important;border:1px solid rgba(var(--c-ov),.08) !important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+  .atop-b{border-radius:14px !important;background:rgba(var(--c-ov),.06) !important;border:1px solid rgba(var(--c-ov),.08) !important;}
   /* barra de abajo: píldora flotante, solo íconos; la activa muestra su nombre */
   .mob-nav{left:50% !important;right:auto !important;transform:translateX(-50%);width:auto !important;height:62px !important;border-radius:999px !important;padding:7px !important;gap:0 !important;background:color-mix(in srgb,var(--k-frame) 80%,transparent) !important;border:1px solid rgba(var(--c-ov),.1) !important;box-shadow:0 20px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07) !important;}
-  .mob-nav-btn{flex:none !important;width:56px;height:48px !important;border-radius:999px !important;flex-direction:row !important;gap:8px !important;font-size:.78rem !important;font-weight:700 !important;position:relative;z-index:2;background:none !important;box-shadow:none !important;transition:color .35s;}
+  .mob-nav-btn{flex:none !important;width:50px;height:48px !important;border-radius:999px !important;flex-direction:row !important;gap:8px !important;font-size:.78rem !important;font-weight:700 !important;position:relative;z-index:2;background:none !important;box-shadow:none !important;transition:color .35s;}
   .mob-nav-btn span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .45s cubic-bezier(.2,.8,.2,1),opacity .3s;}
-  .mob-nav-btn.on{width:auto;padding:0 16px !important;color:var(--k-ongold) !important;}
-  .mob-nav-btn.on span{max-width:110px;opacity:1;}
+  .mob-nav-btn.on{width:auto;padding:0 14px !important;color:var(--k-ongold) !important;}
+  .mob-nav-btn.on span{max-width:96px;opacity:1;text-overflow:ellipsis;}
   .mob-nav-btn.on svg{filter:none !important;}
   .mn-ink{display:block;position:absolute;top:7px;bottom:7px;left:7px;width:0;border-radius:999px;background:linear-gradient(180deg,rgb(var(--c-acc2)),rgb(var(--c-accd)));box-shadow:0 6px 14px -8px rgba(var(--c-acc),.6);transition:left .45s cubic-bezier(.2,.8,.2,1),width .45s cubic-bezier(.2,.8,.2,1);z-index:1;pointer-events:none;}
   .mp-pv .mob-nav{transform:none;margin:12px auto 0 !important;width:max-content !important;}
@@ -2230,9 +2240,9 @@ function _mnOpt(k) {
 }
 function _mnSlots() {
   var c = _mnLS('mk-nav-slots');
-  if (c && c.length) { c = c.filter(_mnOpt).slice(0, 3); if (c.length) return c; }
+  if (c && c.length) { c = c.filter(_mnOpt).slice(0, 4); if (c.length) return c; }
   var n = _mnLS('mk-nav-cnt') || {}, ord = _MN_BASE.map(function(o) { return o[0]; });
-  return ord.slice().sort(function(a, b) { return (n[b] || 0) - (n[a] || 0) || ord.indexOf(a) - ord.indexOf(b); }).slice(0, 3);
+  return ord.slice().sort(function(a, b) { return (n[b] || 0) - (n[a] || 0) || ord.indexOf(a) - ord.indexOf(b); }).slice(0, 4);
 }
 var _mnLast = '';
 function _mnCount(v) {
@@ -2265,9 +2275,9 @@ function _mnInk(now) {
   if (i < 0) { k.style.opacity = '0'; return; }
   if (!nav.offsetWidth) { k.dataset.pend = '1'; if (!nav._ro && window.ResizeObserver) { nav._ro = new ResizeObserver(function(){ var q = nav.querySelector('.mn-ink'); if (q && q.dataset.pend) _mnInk(true); }); nav._ro.observe(nav); } return; }
   delete k.dataset.pend;
-  var sp = bs[i].querySelector('span'), w = 32 + 20 + 8 + (sp ? sp.scrollWidth : 0);
+  var sp = bs[i].querySelector('span'), w = 28 + 20 + 8 + Math.min(sp ? sp.scrollWidth : 0, 96);
   if (now) k.style.transition = 'none';
-  k.style.opacity = '1'; k.style.left = (7 + i * 56) + 'px'; k.style.width = w + 'px';
+  k.style.opacity = '1'; k.style.left = (7 + i * 50) + 'px'; k.style.width = w + 'px';
   if (now) { k.offsetWidth; k.style.transition = ''; }
 }
 // Barra de arriba: saludo + nombre (se llama al cargar el perfil)
@@ -2327,7 +2337,7 @@ function _mdClose() {
 var _mpSel = [], _mpNames = {};
 function _mpOpen() {
   var c = _mnLS('mk-nav-slots');
-  _mpSel = c && c.length ? c.filter(_mnOpt).slice(0, 3) : [];
+  _mpSel = c && c.length ? c.filter(_mnOpt).slice(0, 4) : [];
   _mpNames = _mnLS('mk-nav-names') || {};
   document.getElementById('mpers').classList.add('on');
   _mpRender([]);
@@ -2345,7 +2355,7 @@ function _mpRender(tools) {
   var soon = function(ic, t) { return '<div class="md-r dis"><span class="ri">' + _mnSvg(ic, 16) + '</span><span class="rt">' + t + '<small>Próximamente</small></span><span class="mp-pk"></span></div>'; };
   var prev = auto ? _mnSlotsAuto() : _mpSel;
   el.innerHTML = '<div class="mp-h"><button class="bk" data-mp="back" aria-label="Volver"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button><div class="tt"><small>Preferencias</small><b>Tu barra de accesos</b></div><button class="mp-sv" data-mp="save">Guardar</button></div>' +
-    '<div class="mp-pv"><span class="md-gt" style="margin:0">Así se verá</span><nav class="mob-nav">' + _mnBtns(prev).replace('class="mob-nav-btn"', 'class="mob-nav-btn on"') + '</nav><p>Inicio siempre está. Elige hasta 3 accesos más, en el orden que quieras.</p></div>' +
+    '<div class="mp-pv"><span class="md-gt" style="margin:0">Así se verá</span><nav class="mob-nav">' + _mnBtns(prev).replace('class="mob-nav-btn"', 'class="mob-nav-btn on"') + '</nav><p>Inicio siempre está. Elige hasta 4 accesos más, en el orden que quieras.</p></div>' +
     '<div class="md-g"><div class="md-c"><button class="md-r" data-mp="auto"><span class="rt">Automático<small>Pone primero lo que más usas</small></span><span class="md-tg' + (auto ? ' on' : '') + '"></span></button></div></div>' +
     '<p class="mp-hint">Si no eliges nada, queda en automático. Al elegir tus accesos se apaga solo.</p>' +
     '<div class="md-g"><span class="md-gt">Formación</span><div class="md-c">' + pick('clases', 'clases', 'Curso') + pick('sesiones', 'sesiones', 'En vivo') + pick('reuniones', 'reuniones', 'Reuniones 1-1') + '</div></div>' +
@@ -2357,7 +2367,7 @@ function _mpRender(tools) {
     b.onclick = function() {
       var k = b.dataset.pk, i = _mpSel.indexOf(k);
       if (i >= 0) _mpSel.splice(i, 1);
-      else if (_mpSel.length >= 3) return tst('Puedes elegir hasta 3 accesos', true);
+      else if (_mpSel.length >= 4) return tst('Puedes elegir hasta 4 accesos', true);
       else _mpSel.push(k);
       _mpRender(tools);
     };
@@ -3100,7 +3110,7 @@ function rDash(liveOnly) {
       '<div class="mpw-dl">' + ['L','M','M','J','V','S','D'].map(function(d, i){ return '<span' + (i === (new Date().getDay() + 6) % 7 ? ' class="hoy"' : '') + '>' + d + '</span>'; }).join('') + '</div>' +
       '<a class="mpw-rk" href="#" onclick="openProgreso();return false;"><span class="mpw-cr"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg></span><span class="mpw-rt"><small>Ranking del mes</small><b>' + _mpwRankTx() + '</b></span><em>Ver detalle ›</em></a></div>') +
     '<div class="mk-stats">' +
-      (liveOnly ? '' : '<div class="mhero" onclick="goToLastLesson()"><small>Tu curso</small><b id="mh-pct">0%</b><p id="mh-sub">…</p><div class="mh-ring"><svg viewBox="0 0 64 64"><defs><linearGradient id="mh-gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgb(var(--c-acc2))"/><stop offset="1" stop-color="rgb(var(--c-accd))"/></linearGradient></defs><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="5"/><circle id="mh-ring" cx="32" cy="32" r="27" fill="none" stroke="url(#mh-gr)" stroke-width="5" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" transform="rotate(-90 32 32)"/></svg></div></div>') +
+      (liveOnly ? '' : '<div class="mhero" onclick="navigateTo(\'clases\')"><small>Tu curso</small><b id="mh-pct">0%</b><p id="mh-sub">…</p><div class="mh-ring"><svg viewBox="0 0 64 64"><defs><linearGradient id="mh-gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgb(var(--c-acc2))"/><stop offset="1" stop-color="rgb(var(--c-accd))"/></linearGradient></defs><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="5"/><circle id="mh-ring" cx="32" cy="32" r="27" fill="none" stroke="url(#mh-gr)" stroke-width="5" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" transform="rotate(-90 32 32)"/></svg></div></div>') +
       (liveOnly ? '' : '<div class="mk-stat" id="st-prog" onclick="goToLastLesson()"><div class="mk-ic">' + MK_IC.chart + '</div><div style="flex:1;min-width:0;"><span>Progreso del curso</span><b><span id="prog-pct">0%</span><small id="prog-sub">…</small></b><div class="mk-stat-bar"><i id="prog-bar"></i></div></div></div>') +
       '<div class="mk-stat" id="st-group-card" onclick="navigateTo(\'sesiones\')"><div class="mk-ic b">' + MK_IC.live + '</div><div style="min-width:0;"><span id="st-group-lbl">Próxima sesión grupal</span><b id="st-group">Sin agendar</b></div></div>' +
       '<div class="mk-stat" id="card-1on1" onclick="navigateTo(\'reuniones\')"><div class="mk-ic g">' + MK_IC.cal + '</div><div><span>Próxima sesión 1-1</span><b id="st-1on1">Sin agendar</b></div></div>' +
@@ -6010,7 +6020,7 @@ function _mkAdPop(a) {
       : '<div class="adp-im adp-tx">' + (a.tag ? '<small>' + _mkEsc(a.tag) + '</small>' : '') + '<b>' + _mkEsc(a.title || '') + '</b></div>') +
     '<button class="adp-x" aria-label="Cerrar">✕</button>' +
     '<div class="adp-bd">' + (a.subtitle ? '<p>' + _mkEsc(a.subtitle) + '</p>' : '') +
-      '<a class="adp-go" href="' + url + '" target="_blank" rel="noopener sponsored">' + _mkEsc(a.cta_text || 'Abrir cuenta') + '</a>' +
+      '<a class="adp-go" href="' + url + '" target="_blank" rel="noopener sponsored"><span style="position:relative">' + _mkEsc(a.cta_text || 'Abrir cuenta') + '</span><span class="ar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>' +
       '<button class="adp-no">Ahora no</button></div></div>';
   var close = function() { d.classList.remove('in'); setTimeout(function(){ d.remove(); }, 250); };
   d.addEventListener('click', function(e) { if (e.target === d || e.target.closest('.adp-x,.adp-no')) close(); });
@@ -9690,8 +9700,9 @@ function tst(m, err) {
   setTimeout(function(){ t.classList.remove('show'); }, 3000);
 }
 
-// ── PULL TO REFRESH ──
+// ── PULL TO REFRESH ── (desactivado 2026-10-19: Jeisson no lo quiere en ninguna parte)
 (function() {
+  return;
   var PTR_THRESHOLD = 80;   // px to pull before triggering reload
   var PTR_MAX       = 120;  // max visual pull distance
 
@@ -10035,7 +10046,7 @@ function loadCalendar() {
           html += '<div class="cal-flag-wrap"><div class="cal-flag">' + meta.flag + '</div></div>';
 
           // Name + badge inline
-          html += '<div><div class="cal-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + _mkEsc(ev.name) + '<span class="cal-impact-badge"><i></i><span class="cal-impact-text">Alto impacto</span></span></div></div>';
+          html += '<div><div class="cal-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + _mkEsc(ev.name) + '<span class="cal-impact-badge' + (ev.impact === 'medium' ? ' med' : '') + '"><i></i><span class="cal-impact-text">' + (ev.impact === 'medium' ? 'Impacto medio' : 'Alto impacto') + '</span></span></div></div>';
 
           // Values — always show all 3 columns
           html += '<div class="cal-values">';

@@ -2012,8 +2012,8 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .mob-nav-btn.on{background:var(--k-goldsoft);color:var(--k-gold) !important;}
   #appdash{padding-bottom:0 !important;}
   /* app instalada en iPhone: el fondo llega hasta el borde de abajo (zona de la rayita de inicio) */
-  html,body{min-height:100%;background:var(--k-bg);}
-  #appdash{bottom:auto !important;height:100lvh;min-height:100%;}
+  html,body{height:100%;background:var(--k-bg);}
+  #appdash{bottom:calc(-1 * env(safe-area-inset-bottom,0px)) !important;}
   .amain{padding-bottom:112px !important;}
   .toast2{bottom:96px;left:16px;right:16px;text-align:center;}
   /* menú lateral */

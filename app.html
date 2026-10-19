@@ -2047,6 +2047,14 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .ajl-r .rt small{display:block;font-size:.68rem;font-weight:500;color:var(--k-faint);margin-top:2px;}
   .ajl-r .chev{color:var(--k-faint);flex-shrink:0;}
   .ajl-bk{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:4px 0;margin-bottom:10px;font-family:inherit;font-size:.8rem;font-weight:600;color:rgb(var(--c-acc));cursor:pointer;}
+  /* Ajustes: que nada se salga del borde */
+  #appdash{overflow-x:hidden;}
+  .aj2{grid-template-columns:minmax(0,1fr) !important;}
+  #aj2-body,.aj2-g,.aj2-r{min-width:0;max-width:100%;}
+  .aj2-r{padding:13px 14px !important;gap:10px !important;}
+  .aj2-l{width:96px !important;font-size:.78rem !important;}
+  .aj2-v{font-size:.82rem !important;overflow-wrap:anywhere;}
+  .aj2-b{padding:6px 10px !important;font-size:.74rem !important;flex-shrink:0;}
   /* barra de arriba fija junto con sus botones */
   .anav{position:fixed !important;top:0;left:0;right:0;}
   #appdash>.alay{padding-top:calc(env(safe-area-inset-top,0px) + 64px);}

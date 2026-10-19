@@ -2064,8 +2064,17 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   @keyframes mdnSpin{from{transform:rotate(-90deg) scale(.6);opacity:0}to{transform:none;opacity:1}}
   /* Ajustes en lista */
   .ajl{background:var(--k-sheen),var(--c-card);border:1px solid var(--k-line);box-shadow:var(--k-sh);border-radius:20px;overflow:hidden;margin-bottom:14px;}
-  .ajl-r{display:flex;align-items:center;gap:13px;width:100%;padding:13px 14px;border:0;border-top:1px solid rgba(var(--c-ov),.06);background:none;font-family:inherit;text-align:left;color:var(--k-text);font-size:.86rem;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .ajl-r{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border:0;border-top:1px solid rgba(var(--c-ov),.06);background:none;font-family:inherit;text-align:left;color:var(--k-text);font-size:.86rem;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .ajl-r:first-child{border-top:0;}
+  .ajl-pf{display:flex;align-items:center;gap:14px;width:100%;padding:16px;margin-bottom:6px;border-radius:20px;background:var(--k-sheen),var(--c-card);border:1px solid var(--k-line);box-shadow:var(--k-sh);font-family:inherit;text-align:left;color:var(--k-text);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .ajl-pf .mav{width:52px;height:52px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(var(--c-ov),.06) center/cover;border:1.5px solid rgba(var(--c-acc),.6);font-weight:800;font-size:.95rem;color:rgb(var(--c-acc));}
+  .ajl-pf .rt{flex:1;min-width:0;}
+  .ajl-pf b{display:block;font-size:.95rem;font-weight:700;}
+  .ajl-pf small{display:block;font-size:.72rem;color:var(--k-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ajl-gt{font-size:.6rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--k-muted);margin:22px 4px 8px;}
+  .ajl-r>svg:first-child{color:var(--k-muted);flex-shrink:0;}
+  .ajl-r em{font-style:normal;font-size:.74rem;font-weight:500;color:var(--k-faint);flex-shrink:0;}
+  .ajl-out{display:block;width:100%;margin:22px 0 6px;padding:10px;border:0;background:none;font-family:inherit;font-size:.82rem;font-weight:600;color:rgb(var(--c-bad));cursor:pointer;}
   .ajl-r .ri{width:34px;height:34px;border-radius:11px;background:rgba(var(--c-ov),.05);display:flex;align-items:center;justify-content:center;color:var(--k-muted);flex-shrink:0;}
   .ajl-r .rt{flex:1;min-width:0;}
   .ajl-r .rt small{display:block;font-size:.68rem;font-weight:500;color:var(--k-faint);margin-top:2px;}
@@ -4798,9 +4807,19 @@ function rPerfil() {
   var mob = window.matchMedia && matchMedia('(max-width:860px)').matches;
   if (mob && _ajList) {
     var ch = '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>';
-    m.innerHTML = '<div class="atit">Ajustes</div><div class="asub" style="margin-bottom:20px;">Tu cuenta, tu membresía y tus preferencias</div>' +
-      '<div class="ajl">' + _AJ_TABS.map(function(t) { return '<button class="ajl-r" data-aj="' + t[0] + '"><span class="ri">' + _mnSvg(_AJ_IC[t[0]] || 'cfg', 17) + '</span><span class="rt">' + t[1] + '<small>' + (_AJ_SUB[t[0]] || '') + '</small></span>' + ch + '</button>'; }).join('') + '</div>' +
-      '<div class="ajl"><button class="ajl-r" data-aj="_pers"><span class="ri">' + _mnSvg('dash', 17) + '</span><span class="rt">Personalizar barra<small>Elige tus accesos directos</small></span>' + ch + '</button></div>';
+    // Opción A: tu perfil arriba y la lista en dos grupos, con el estado de cada cosa a la derecha
+    var p = cProfile || {}, full = (p.full_name || 'Alumno').trim(), ini = full.split(/\s+/).map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+    var end = p.membership_end ? new Date(p.membership_end) : null, act = end && end > new Date();
+    var dk = document.documentElement.getAttribute('data-theme') !== 'light';
+    var st = { membresia: act ? (end.getFullYear() >= 2099 ? 'Ilimitada' : 'Activa') : 'Sin plan', conexiones: p.discord_id ? 'Discord' : '', pref: dk ? 'Oscuro' : 'Claro' };
+    var row = function(k) { var t = _AJ_TABS.find(function(x) { return x[0] === k; }); if (!t) return ''; return '<button class="ajl-r" data-aj="' + k + '">' + _mnSvg(_AJ_IC[k] || 'cfg', 18) + '<span class="rt">' + t[1] + '</span>' + (st[k] ? '<em>' + st[k] + '</em>' : '') + ch + '</button>'; };
+    m.innerHTML = '<div class="atit">Ajustes</div><div class="asub" style="margin-bottom:18px;">Tu cuenta, tu membresía y tus preferencias</div>' +
+      '<button class="ajl-pf" data-aj="perfil"><span class="mav"' + (p.avatar_url ? ' style="background-image:url(\'' + _mkEsc(p.avatar_url) + '\')"' : '') + '>' + (p.avatar_url ? '' : _mkEsc(ini)) + '</span><span class="rt"><b>' + _mkEsc(full) + '</b><small>' + _mkEsc(p.email || (cUser && cUser.email) || '') + '</small></span>' + ch + '</button>' +
+      '<div class="ajl-gt">Cuenta</div><div class="ajl">' + ['perfil', 'cuenta', 'membresia'].map(row).join('') + '</div>' +
+      '<div class="ajl-gt">App</div><div class="ajl">' + ['conexiones', 'notif', 'pref'].map(row).join('') + '</div>' +
+      '<button class="ajl-out" id="ajl-out">Cerrar sesión</button>';
+    document.getElementById('ajl-out').onclick = function() { var o = document.getElementById('btn-out'); if (o) o.click(); };
+    m.querySelectorAll('.ajl-pf').forEach(function(b) { b.addEventListener('click', function() { _ajList = false; _ajTab = 'perfil'; rPerfil(); }); });
     m.querySelectorAll('.ajl-r').forEach(function(b) { b.addEventListener('click', function() {
       if (b.dataset.aj === '_pers') return _mpOpen();
       _ajList = false; _ajTab = b.dataset.aj; rPerfil(); var sc = document.getElementById('appdash'); if (sc) sc.scrollTop = 0;
@@ -4861,6 +4880,7 @@ function _ajRender() {
     var dark = document.documentElement.getAttribute('data-theme') !== 'light';
     html = '<div class="aj2-h">Preferencias</div><div class="aj2-s">Cómo se ve la plataforma para ti.</div>' +
       _ajGroup('', _ajRow('Tema', '<span class="aj2-seg"><button class="' + (dark ? 'on' : '') + '" onclick="mkToggleTheme(event,\'dark\',_ajRender)">Dark</button><button class="' + (dark ? '' : 'on') + '" onclick="mkToggleTheme(event,\'light\',_ajRender)">Light</button></span>') +
+        (window.matchMedia && matchMedia('(max-width:860px)').matches ? '<div class="aj2-r"><div class="aj2-l">Barra de abajo</div><div class="aj2-v">Elige tus accesos directos</div><button class="aj2-b" onclick="_mpOpen()">Personalizar</button></div>' : '') +
         _ajRow('Zona horaria', '(UTC' + (off >= 0 ? '+' : '') + off + ') ' + _mkEsc(tz.replace(/_/g, ' ')) + '<small>Se detecta sola desde tu dispositivo. Los horarios de en vivo y 1-1 se muestran en tu hora.</small>'));
   }
   box.innerHTML = html;

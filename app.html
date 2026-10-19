@@ -1157,6 +1157,7 @@ a.snav{text-decoration:none;}
 .cw-dur{z-index:1;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
 .mk-skel{background:linear-gradient(90deg,rgba(var(--c-ov),.05) 0%,rgba(var(--c-ov),.11) 50%,rgba(var(--c-ov),.05) 100%);background-size:200% 100%;animation:mkSkel 1.3s ease-in-out infinite;border-radius:6px;}
 .mk-skel-card{cursor:default;pointer-events:none;}
+.mk-lsk{max-width:900px;}
 @keyframes mkSkel{from{background-position:200% 0}to{background-position:-200% 0}}
 .rp-chart{position:relative;}
 .rp-chart.is-empty::after{content:'Completa una clase y aquí verás tu avance del día';position:absolute;left:0;right:0;top:28%;text-align:center;font-size:.72rem;color:var(--c-muted);padding:0 10px;}
@@ -1260,6 +1261,7 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 #econ-cal .cal-val-num.cal-actual.better{background:rgba(var(--c-ok),.14);color:rgb(var(--c-ok));}
 #econ-cal .cal-val-num.cal-actual.worse{background:rgba(var(--c-bad),.14);color:rgb(var(--c-bad));}
 #econ-cal .cal-edit{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--k-line);background:transparent;color:var(--c-muted);cursor:pointer;align-self:center;margin-left:4px;transition:color .2s,border-color .2s;}
+#econ-cal .cal-rv{display:flex;align-items:center;justify-content:center;gap:6px;}
 #econ-cal .cal-edit:hover{color:rgb(var(--c-acc));border-color:rgba(var(--c-acc),.5);}
 #econ-cal .cal-edit svg{width:14px;height:14px;}
 #econ-cal .cal-explain{background:var(--c-bg);border:1px solid var(--k-line);border-radius:14px;padding:14px 16px;margin-top:12px;font-size:.8rem;}
@@ -2063,12 +2065,16 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   /* Calendario: limpio; al tocar una noticia se ven Real, Pronóstico y Previo centrados */
   #econ-cal .cal-impact-badge,#econ-cal .cal-foot>div:first-child{display:none !important;}
   #econ-cal .cal-foot{justify-content:flex-end !important;}
-  #econ-cal .cal-event .cal-values{display:none !important;}
-  #econ-cal .cal-event.open .cal-values{display:grid !important;grid-template-columns:repeat(3,1fr);grid-column:1/-1 !important;padding:12px 0 4px !important;margin:10px 0 0 !important;border-top:1px solid rgba(var(--c-ov),.07);position:relative;}
-  #econ-cal .cal-event.open .cal-val{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;border:0 !important;padding:0 !important;}
-  #econ-cal .cal-event.open .cal-val+.cal-val{border-left:1px solid rgba(var(--c-ov),.07) !important;}
-  #econ-cal .cal-event.open .cal-val-num{font-size:1rem !important;}
-  #econ-cal .cal-event.open .cal-edit{position:static !important;grid-column:1/-1;justify-self:center;margin-top:10px;}
+  #econ-cal .cal-values{display:grid !important;grid-template-columns:repeat(3,1fr);grid-column:1/-1 !important;padding:10px 0 2px !important;margin:8px 0 0 !important;border-top:1px solid rgba(var(--c-ov),.06);}
+  #econ-cal .cal-val{text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;border:0 !important;padding:0 !important;}
+  #econ-cal .cal-val+.cal-val{border-left:1px solid rgba(var(--c-ov),.06) !important;}
+  #econ-cal .cal-val-label{font-size:.58rem !important;color:var(--k-faint) !important;letter-spacing:.3px;}
+  #econ-cal .cal-val-num{font-size:.76rem !important;font-weight:500;color:var(--k-muted) !important;}
+  #econ-cal .cal-val-num.cal-actual{color:var(--k-text) !important;}
+  #econ-cal .cal-val-num.cal-actual.better{color:rgb(var(--c-ok)) !important;}
+  #econ-cal .cal-val-num.cal-actual.worse{color:rgb(var(--c-bad)) !important;}
+  #econ-cal .cal-edit{width:22px !important;height:22px !important;margin:0 !important;}
+  #econ-cal .cal-edit svg{width:11px !important;height:11px !important;}
   /* barra de arriba fija junto con sus botones */
   .anav{position:fixed !important;top:0;left:0;right:0;}
   #appdash>.alay{padding-top:calc(env(safe-area-inset-top,0px) + 64px);}
@@ -3409,7 +3415,7 @@ function goToLastLesson() {
   courseState = { levelId: null, moduleId: null, lessonId: null, progress: {} };
 
   var m = document.getElementById('amain');
-  m.innerHTML = '<div style="padding:40px;text-align:center;color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando tu clase...</div>';
+  m.innerHTML = '<div class="mk-lsk"><div class="mk-skel" style="aspect-ratio:16/9;border-radius:18px;"></div><div class="mk-skel" style="height:18px;width:55%;margin-top:18px;"></div><div class="mk-skel" style="height:11px;width:80%;margin-top:10px;"></div><div class="mk-skel" style="height:11px;width:40%;margin-top:8px;"></div></div>';
 
   // Get all published lessons with their module and level info, ordered
   sb.from('course_levels').select('*, course_modules(*, course_lessons(*))').eq('is_published', true).order('sort_order').then(function(lr) {
@@ -3457,7 +3463,7 @@ function showLevels() {
   _mkRP(false);
   pushRoute({ section: 'clases' });
   var m = document.getElementById('amain');
-  m.innerHTML = '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub" id="lvl-sub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div><div id="lvl-grid" class="lvl-grid"><span class="spin"></span></div>';
+  m.innerHTML = '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub" id="lvl-sub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div><div id="lvl-grid" class="lvl-grid">' + [0,1,2,3].map(function(){ return '<div class="lvl-card mk-skel-card"><div class="lvl-thumb mk-skel"></div><div class="lvl-info"><div class="lvl-title mk-skel" style="height:14px;width:60%;"></div><div class="lvl-desc mk-skel" style="height:10px;width:85%;margin-top:8px;"></div><div class="lvl-meta mk-skel" style="height:6px;width:100%;margin-top:14px;"></div></div></div>'; }).join('') + '</div>';
   var ed = _canEditCourse();
   var lq = sb.from('course_levels').select('*, course_modules(id, course_lessons(id, is_published))');
   if (!ed) lq = lq.eq('is_published', true);
@@ -3546,7 +3552,7 @@ function openLevel(level) {
   courseState.levelId = level.id;
   pushRoute({ section: 'clases', levelId: level.id });
   var m = document.getElementById('amain');
-  m.innerHTML = '<div style="padding:40px;text-align:center;"><span class="spin"></span></div>';
+  m.innerHTML = '<div class="mk-lsk"><div class="mk-skel" style="aspect-ratio:16/9;border-radius:18px;"></div><div class="mk-skel" style="height:18px;width:55%;margin-top:18px;"></div><div class="mk-skel" style="height:11px;width:80%;margin-top:10px;"></div><div class="mk-skel" style="height:11px;width:40%;margin-top:8px;"></div></div>';
 
   // Load first module to pass to showLessons
   sb.from('course_modules').select('id').eq('level_id', level.id).eq('is_published', true).order('sort_order').limit(1).then(function(r) {
@@ -3575,7 +3581,7 @@ function showLessons(mod, level, progress) {
           '<div class="lp-prog-bar"><i id="lp-prog-bar"></i></div>' +
         '</div>' +
         (_canEditCourse() ? '<div class="ce-side"><button class="ce-btn" id="ce-add-mod">' + CE_IC.plus + ' Módulo</button><button class="ce-btn gh" id="ce-edit-lvl">' + CE_IC.edit + ' Editar nivel</button></div>' : '') +
-        '<div id="lesson-list"><span class="spin"></span></div>' +
+        '<div id="lesson-list">' + [0,1,2,3,4].map(function(){ return '<div class="mk-skel" style="height:44px;border-radius:12px;margin-bottom:8px;"></div>'; }).join('') + '</div>' +
       '</div>' +
       (!isMobile
         ? '<div class="lesson-main" id="lesson-main">' +
@@ -10180,23 +10186,23 @@ function loadCalendar() {
           html += '<div class="cal-values">';
           // Real — always visible, shows "—" if not published yet
           html += '<div class="cal-val">';
-          html += '<div class="cal-val-label">Real</div>';
+          html += '<div class="cal-val-label">Real</div><div class="cal-rv">';
           if (hasAct) {
             html += '<div class="cal-val-num ' + actualClass + '" data-cal-key="' + _mkEsc(ev.isoDate + '|' + ev.name) + '">' + _mkEsc(ev.actual) + '</div>';
           } else {
             html += '<div class="cal-val-num cal-pending" data-cal-key="' + _mkEsc(ev.isoDate + '|' + ev.name) + '">—</div>';
           }
-          html += '</div>';
-          // Forecast
-          html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + (ev.forecast !== '—' ? _mkEsc(ev.forecast) : '—') + '</div></div>';
-          // Previous
-          html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + (ev.previous !== '—' ? _mkEsc(ev.previous) : '—') + '</div></div>';
-          // Admin edit button inside values row
+          // Lápiz del admin junto al dato Real (el único que se edita)
           if (cProfile && cProfile.role === 'admin') {
             html += '<button onclick="event.stopPropagation();editCalReal(this.dataset.name,this.dataset.date,this.dataset.val)" ' +
               'data-name="' + _mkEsc(ev.name) + '" data-date="' + _mkEsc(ev.isoDate) + '" data-val="' + _mkEsc(ev.actual||'') + '" ' +
               'class="cal-edit" title="Editar dato real">' + MK_IC.edit + '</button>';
           }
+          html += '</div></div>';
+          // Forecast
+          html += '<div class="cal-val"><div class="cal-val-label">Pronós</div><div class="cal-val-num">' + (ev.forecast !== '—' ? _mkEsc(ev.forecast) : '—') + '</div></div>';
+          // Previous
+          html += '<div class="cal-val"><div class="cal-val-label">Previo</div><div class="cal-val-num">' + (ev.previous !== '—' ? _mkEsc(ev.previous) : '—') + '</div></div>';
           html += '</div>';
 
           // Explanation panel (hidden by default, shown on click)

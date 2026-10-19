@@ -2009,6 +2009,30 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .md-tg.on{background:var(--k-gold);}
   .md-tg.on:after{left:20px;background:var(--k-ongold);}
   .md-logo{display:block;margin:26px auto 0;height:20px;opacity:.5;}
+  /* menú lateral diseño B (2026-10-19) */
+  #mdrw{display:none;flex-direction:column;width:min(82%,330px) !important;background:radial-gradient(140% 36% at 0% 0%,rgba(var(--c-acc),.12),transparent 60%),var(--k-bg) !important;border-right:1px solid rgba(var(--c-ov),.07) !important;box-shadow:30px 0 60px rgba(0,0,0,.5) !important;padding:calc(env(safe-area-inset-top,0px) + 22px) 18px calc(env(safe-area-inset-bottom,0px) + 20px) !important;}
+  #mdrw.on{display:flex !important;}
+  .md-x{border-radius:12px !important;border:1px solid rgba(var(--c-ov),.08) !important;background:rgba(var(--c-ov),.05) !important;}
+  .mdb-pf .mav{display:flex;width:64px;height:64px;font-size:1.1rem;border-radius:20px;}
+  .mdb-pf b{display:block;margin-top:14px;font-size:1.1rem;font-weight:700;letter-spacing:-.02em;color:var(--k-text);}
+  .mdb-pf small{display:block;font-size:.72rem;color:var(--k-muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mdb-acc{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:.6rem;font-weight:700;letter-spacing:1.4px;color:rgb(var(--c-acc));}
+  .mdb-acc i{flex:1;height:1px;background:linear-gradient(90deg,rgba(var(--c-acc),.5),transparent);}
+  .mdb-nv{display:flex;flex-direction:column;gap:2px;margin-top:20px;}
+  .mdn{display:flex;align-items:center;gap:14px;width:100%;padding:11px 10px;border:0;border-radius:14px;background:none;font-family:inherit;font-size:.86rem;font-weight:600;color:var(--k-text);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .mdn svg{color:var(--k-muted);flex-shrink:0;}
+  .mdn span{flex:1;min-width:0;}
+  .mdn em{font-style:normal;font-size:.64rem;font-weight:500;color:var(--k-faint);}
+  .mdn.on{background:linear-gradient(90deg,rgba(var(--c-acc),.14),rgba(var(--c-acc),0));color:rgb(var(--c-acc));}
+  .mdn.on svg{color:rgb(var(--c-acc));}
+  .mdn .md-tg{flex:none;}
+  .mdn:active{background:rgba(var(--c-ov),.05);}
+  .mdb-sep{height:1px;background:rgba(var(--c-ov),.07);margin:10px 10px;}
+  .mdb-soc{display:flex;gap:10px;margin:12px 0 0;}
+  .mdb-soc a{flex:1;height:44px;border-radius:14px;background:rgba(var(--c-ov),.05);border:1px solid rgba(var(--c-ov),.08);display:flex;align-items:center;justify-content:center;gap:8px;font-size:.76rem;font-weight:600;color:var(--k-muted);text-decoration:none;}
+  .mdb-ft{margin-top:auto;padding:22px 10px 0;display:flex;align-items:center;justify-content:space-between;}
+  .mdb-ft button{display:flex;align-items:center;gap:8px;border:0;background:none;padding:0;font-family:inherit;font-size:.8rem;font-weight:600;color:rgb(var(--c-bad));cursor:pointer;}
+  .mdb-ft span{font-size:.58rem;font-weight:600;letter-spacing:1.4px;color:var(--k-faint);}
   /* personalizar barra */
   #mpers{position:fixed;inset:0;z-index:910;background:var(--k-bg);overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px);}
   #mpers.on{display:block;}
@@ -2300,19 +2324,24 @@ function _mdOpen() {
   var end = p.membership_end ? new Date(p.membership_end) : null, acc = '';
   if (end && end > new Date()) acc = end.getFullYear() >= 2099 ? 'ACCESO ILIMITADO' : 'ACTIVA HASTA ' + end.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase();
   var inBar = _mnSlots(), staff = p.role === 'admin' || p.role === 'staff';
-  var secs = _MN_BASE.filter(function(o) { return inBar.indexOf(o[0]) < 0; }).map(function(o) { return _mdRow(o[0], o[2], 'go:' + o[0], ''); });
-  if (staff) secs.push(_mdRow('admin', 'Admin', 'go:admin', ''));
   var link = function(re) { var a = [].slice.call(document.querySelectorAll('.aside a.snav[href]')).find(function(x) { return re.test(x.href); }); return a ? a.href : ''; };
   var dc = link(/discord/), wa = link(/wa\.me|whatsapp/), dark = document.documentElement.getAttribute('data-theme') !== 'light';
   var logo = document.querySelector('.anav img');
+  // Menú lateral (diseño B): perfil arriba, todas las secciones en lista, la actual en dorado
+  var sOn = document.querySelector('.snav.on'), cur = sOn ? sOn.getAttribute('data-v') : 'dash';
+  var nav = function(k, ic, t, hint) { return '<button class="mdn' + (cur === k ? ' on' : '') + '" data-act="go:' + k + '">' + _mnSvg(ic, 19) + '<span>' + t + '</span>' + (hint ? '<em>' + _mnEsc(hint) + '</em>' : '') + '</button>'; };
+  var cHint = ((document.getElementById('mh-sub') || {}).textContent || '').replace(' clases', '');
   d.innerHTML = '<button class="md-x" data-act="x" aria-label="Cerrar menú"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
-    '<div class="md-pf"><span class="mav"' + av + '>' + (p.avatar_url ? '' : _mnEsc(ini)) + '</span><div style="min-width:0"><b>' + _mnEsc(full) + '</b><small>' + _mnEsc(p.email || (cUser && cUser.email) || '') + '</small>' + (acc ? '<em>' + acc + '</em>' : '') + '</div></div>' +
-    (secs.length ? '<div class="md-g"><span class="md-gt">Secciones</span><div class="md-c">' + secs.join('') + '</div></div>' : '') +
-    '<div class="md-g"><span class="md-gt">Cuenta</span><div class="md-c">' + _mdRow('user', 'Mi perfil', 'aj:perfil') + _mdRow('card', 'Membresía y pagos', 'aj:membresia') + '</div></div>' +
-    (dc || wa ? '<div class="md-g"><span class="md-gt">Comunidad</span><div class="md-c">' + (dc ? _mdRow('dc', 'Discord', dc, null, p.discord_id ? 'Conectado' : '') : '') + (wa ? _mdRow('wa', 'WhatsApp', wa) : '') + '</div></div>' : '') +
-    '<div class="md-g"><span class="md-gt">Preferencias</span><div class="md-c">' + _mdRow('moon', 'Modo oscuro', 'theme', '<span class="md-tg' + (dark ? ' on' : '') + '"></span>') +
-      _mdRow('dash', 'Personalizar barra', 'pers', null, 'Elige tus accesos directos') + _mdRow('out', 'Cerrar sesión', 'out', '', '', 'out') + '</div></div>' +
-    (logo ? '<img class="md-logo" src="' + logo.src + '" alt="">' : '');
+    '<div class="mdb-pf"><span class="mav"' + av + '>' + (p.avatar_url ? '' : _mnEsc(ini)) + '</span><b>' + _mnEsc(full) + '</b><small>' + _mnEsc(p.email || (cUser && cUser.email) || '') + '</small>' + (acc ? '<div class="mdb-acc">' + acc + '<i></i></div>' : '') + '</div>' +
+    '<nav class="mdb-nv">' + nav('dash', 'dash', 'Inicio') + nav('clases', 'clases', 'Curso', cHint) + nav('sesiones', 'sesiones', 'En vivo') + nav('reuniones', 'reuniones', 'Reuniones 1-1') + nav('herramientas', 'herramientas', 'Herramientas') +
+      (staff ? nav('admin', 'admin', 'Admin') : '') +
+      '<div class="mdb-sep"></div>' +
+      '<button class="mdn" data-act="aj:perfil">' + _mnSvg('user', 19) + '<span>Mi perfil</span></button>' +
+      '<button class="mdn" data-act="aj:membresia">' + _mnSvg('card', 19) + '<span>Membresía y pagos</span></button>' +
+      '<button class="mdn" data-act="pers">' + _mnSvg('dash', 19) + '<span>Personalizar barra</span></button>' +
+      '<button class="mdn" data-act="theme">' + _mnSvg('moon', 19) + '<span>Modo oscuro</span><span class="md-tg' + (dark ? ' on' : '') + '"></span></button></nav>' +
+    (dc || wa ? '<div class="mdb-soc">' + (dc ? '<a href="' + dc + '" target="_blank" rel="noopener">' + _mnSvg('dc', 16) + 'Discord</a>' : '') + (wa ? '<a href="' + wa + '" target="_blank" rel="noopener">' + _mnSvg('wa', 16) + 'WhatsApp</a>' : '') + '</div>' : '') +
+    '<div class="mdb-ft"><button data-act="out">' + _mnSvg('out', 16) + 'Cerrar sesión</button><span>MR KATANA FX</span></div>';
   d.querySelectorAll('[data-act]').forEach(function(b) {
     b.onclick = function() {
       var a = b.dataset.act;

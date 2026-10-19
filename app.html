@@ -2055,6 +2055,20 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .aj2-l{width:96px !important;font-size:.78rem !important;}
   .aj2-v{font-size:.82rem !important;overflow-wrap:anywhere;}
   .aj2-b{padding:6px 10px !important;font-size:.74rem !important;flex-shrink:0;}
+  /* toggles sin caja */
+  .aj2-b:has(.aj2-t){border:0 !important;padding:0 !important;background:none !important;}
+  /* Inicio sin "Próximas actividades" (ya están en la campana) */
+  .alay.with-rp.sec-dash .rpanel{display:none !important;}
+  .alay.with-rp.sec-dash .amain{padding-bottom:112px !important;}
+  /* Calendario: limpio; al tocar una noticia se ven Real, Pronóstico y Previo centrados */
+  #econ-cal .cal-impact-badge,#econ-cal .cal-foot>div:first-child{display:none !important;}
+  #econ-cal .cal-foot{justify-content:flex-end !important;}
+  #econ-cal .cal-event .cal-values{display:none !important;}
+  #econ-cal .cal-event.open .cal-values{display:grid !important;grid-template-columns:repeat(3,1fr);grid-column:1/-1 !important;padding:12px 0 4px !important;margin:10px 0 0 !important;border-top:1px solid rgba(var(--c-ov),.07);position:relative;}
+  #econ-cal .cal-event.open .cal-val{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;border:0 !important;padding:0 !important;}
+  #econ-cal .cal-event.open .cal-val+.cal-val{border-left:1px solid rgba(var(--c-ov),.07) !important;}
+  #econ-cal .cal-event.open .cal-val-num{font-size:1rem !important;}
+  #econ-cal .cal-event.open .cal-edit{position:static !important;grid-column:1/-1;justify-self:center;margin-top:10px;}
   /* barra de arriba fija junto con sus botones */
   .anav{position:fixed !important;top:0;left:0;right:0;}
   #appdash>.alay{padding-top:calc(env(safe-area-inset-top,0px) + 64px);}
@@ -2347,9 +2361,21 @@ function _mnInk(now) {
   if (!nav.offsetWidth) { k.dataset.pend = '1'; if (!nav._ro && window.ResizeObserver) { nav._ro = new ResizeObserver(function(){ var q = nav.querySelector('.mn-ink'); if (q && q.dataset.pend) _mnInk(true); }); nav._ro.observe(nav); } return; }
   delete k.dataset.pend;
   var sp = bs[i].querySelector('span'), w = 28 + 20 + 8 + Math.min(sp ? sp.scrollWidth : 0, 96);
-  if (now) k.style.transition = 'none';
-  k.style.opacity = '1'; k.style.left = (7 + i * 50) + 'px'; k.style.width = w + 'px';
-  if (now) { k.offsetWidth; k.style.transition = ''; }
+  var L = 7 + i * 50, pL = parseFloat(k.style.left), pW = parseFloat(k.style.width);
+  clearTimeout(k._t);
+  if (now || isNaN(pL) || !pW || k.style.opacity !== '1' || (pL === L && pW === w)) {
+    k.style.transition = 'none'; k.style.opacity = '1'; k.style.left = L + 'px'; k.style.width = w + 'px'; k.style.transform = '';
+    k.offsetWidth; k.style.transition = ''; return;
+  }
+  // Efecto "slime": primero se estira hacia el nuevo ícono (se aplana un poco) y luego la cola lo alcanza con un pequeño rebote
+  var l1 = Math.min(pL, L), r1 = Math.max(pL + pW, L + w), e1 = 'cubic-bezier(.5,0,.75,0)';
+  k.style.transition = 'left .2s ' + e1 + ',width .2s ' + e1 + ',transform .2s ease';
+  k.style.left = l1 + 'px'; k.style.width = (r1 - l1) + 'px'; k.style.transform = 'scaleY(.82)';
+  k._t = setTimeout(function() {
+    var e2 = 'cubic-bezier(.2,1.4,.4,1)';
+    k.style.transition = 'left .42s ' + e2 + ',width .42s ' + e2 + ',transform .42s ' + e2;
+    k.style.left = L + 'px'; k.style.width = w + 'px'; k.style.transform = '';
+  }, 190);
 }
 // Barra de arriba: saludo + nombre (se llama al cargar el perfil)
 function _mnFill() {
@@ -10320,6 +10346,7 @@ function toggleCalExplain(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle('open');
+  if (el.parentNode) el.parentNode.classList.toggle('open', el.classList.contains('open'));
 }
 
 

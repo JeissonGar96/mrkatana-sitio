@@ -2024,6 +2024,20 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .md-r.dis .rt small{color:var(--k-gold);}
   .md-r.dis .mp-pk{opacity:.4;}
 }
+/* Aviso del anuncio al entrar (2026-10-19) */
+#adpop{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s;}
+#adpop.in{opacity:1;pointer-events:auto;}
+.adp-c{position:relative;width:100%;max-width:400px;border-radius:26px;overflow:hidden;background:var(--c-card);border:1px solid rgba(var(--c-ov),.09);box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);transform:translateY(14px) scale(.98);transition:transform .35s cubic-bezier(.2,.8,.2,1);}
+#adpop.in .adp-c{transform:none;}
+.adp-im img{display:block;width:100%;height:auto;}
+.adp-tx{aspect-ratio:16/10;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;background:radial-gradient(120% 120% at 100% 0%,rgba(var(--c-acc),.55),transparent 60%),linear-gradient(135deg,#1a1610,#3a2d12);}
+.adp-tx small{font-size:.58rem;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:rgb(var(--c-acc2));}
+.adp-tx b{font-size:1.3rem;font-weight:700;letter-spacing:-.02em;line-height:1.2;color:#fff;margin-top:6px;max-width:280px;}
+.adp-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.adp-bd{padding:18px 20px 16px;}
+.adp-bd p{font-size:.8rem;line-height:1.5;color:var(--k-muted);margin:0 0 16px;}
+.adp-go{display:flex;align-items:center;justify-content:center;height:48px;border-radius:14px;background:linear-gradient(180deg,rgb(var(--c-acc2)),rgb(var(--c-accd)));color:var(--k-ongold);font-weight:700;font-size:.86rem;text-decoration:none;}
+.adp-no{display:block;width:100%;margin-top:6px;padding:10px;background:none;border:0;font:inherit;font-size:.76rem;color:var(--k-muted);cursor:pointer;}
 /* ── Celular: diseño B (progreso semanal arriba, cuadros de vidrio, barra con dorado que se desliza) (2026-10-19) ── */
 .mpw,.mt-cw,.mt-rk,.mn-ink{display:none;}
 @media(max-width:860px){
@@ -2051,10 +2065,12 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .mpw-bars i.f{border-radius:9px;opacity:var(--a);background:linear-gradient(0deg,rgba(var(--c-accd),.75),rgb(var(--c-acc2)));}
   .mpw-dl{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-top:9px;font-size:.6rem;font-weight:600;color:var(--k-faint);text-align:center;}
   .mpw-dl .hoy{color:rgb(var(--c-acc));}
-  .mpw-lg{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(var(--c-ov),.07);font-size:.66rem;color:var(--k-muted);}
-  .mpw-lg span{display:flex;align-items:center;gap:7px;}
-  .mpw-lg i{width:22px;height:8px;border-radius:3px;background:linear-gradient(90deg,rgba(var(--c-acc2),.3),rgb(var(--c-acc2)));}
-  .mpw-lg a{margin-left:auto;color:rgb(var(--c-acc));font-weight:600;text-decoration:none;}
+  .mpw-rk{display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(var(--c-ov),.07);text-decoration:none;color:inherit;}
+  .mpw-cr{width:34px;height:34px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgb(var(--c-acc2)),rgb(var(--c-accd)));color:var(--k-ongold);}
+  .mpw-rt{flex:1;min-width:0;}
+  .mpw-rt small{display:block;font-size:.56rem;letter-spacing:1.3px;color:var(--k-muted);}
+  .mpw-rt b{display:block;font-size:.86rem;font-weight:700;color:var(--k-text);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mpw-rk em{font-style:normal;font-size:.7rem;font-weight:600;color:rgb(var(--c-acc));flex-shrink:0;}
   /* cuadros de vidrio */
   #amain .mk-stats{grid-template-columns:1fr 1fr !important;gap:12px !important;margin-bottom:22px !important;}
   #amain .mk-stats>.mk-stat,#amain .mk-stats>.mhero,#amain .mk-stats>.mt-cw,.mt-rk .rp-rank{border-radius:24px !important;background:linear-gradient(160deg,rgba(var(--c-ov),.07),rgba(var(--c-ov),.02)),var(--c-card) !important;border:1px solid rgba(var(--c-ov),.08) !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 14px 30px -22px rgba(0,0,0,.9) !important;}
@@ -3082,14 +3098,13 @@ function rDash(liveOnly) {
     (liveOnly ? '' : '<div class="mpw" id="mpw"><div class="mpw-tp"><div><small>Tu progreso semanal</small><h2>' + _mpwRange() + '</h2></div><div class="mpw-sk"><b id="mpw-n">0</b><small>días activos</small></div></div>' +
       '<div class="mpw-bars" id="mpw-bars">' + [0,1,2,3,4,5,6].map(function(){ return '<div><i style="height:6%"></i></div>'; }).join('') + '</div>' +
       '<div class="mpw-dl">' + ['L','M','M','J','V','S','D'].map(function(d, i){ return '<span' + (i === (new Date().getDay() + 6) % 7 ? ' class="hoy"' : '') + '>' + d + '</span>'; }).join('') + '</div>' +
-      '<div class="mpw-lg"><span><i></i>Más avance, más dorado</span><a href="#" onclick="openProgreso();return false;">Ver detalle ›</a></div></div>') +
+      '<a class="mpw-rk" href="#" onclick="openProgreso();return false;"><span class="mpw-cr"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg></span><span class="mpw-rt"><small>Ranking del mes</small><b>' + _mpwRankTx() + '</b></span><em>Ver detalle ›</em></a></div>') +
     '<div class="mk-stats">' +
       (liveOnly ? '' : '<div class="mhero" onclick="goToLastLesson()"><small>Tu curso</small><b id="mh-pct">0%</b><p id="mh-sub">…</p><div class="mh-ring"><svg viewBox="0 0 64 64"><defs><linearGradient id="mh-gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgb(var(--c-acc2))"/><stop offset="1" stop-color="rgb(var(--c-accd))"/></linearGradient></defs><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="5"/><circle id="mh-ring" cx="32" cy="32" r="27" fill="none" stroke="url(#mh-gr)" stroke-width="5" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" transform="rotate(-90 32 32)"/></svg></div></div>') +
       (liveOnly ? '' : '<div class="mk-stat" id="st-prog" onclick="goToLastLesson()"><div class="mk-ic">' + MK_IC.chart + '</div><div style="flex:1;min-width:0;"><span>Progreso del curso</span><b><span id="prog-pct">0%</span><small id="prog-sub">…</small></b><div class="mk-stat-bar"><i id="prog-bar"></i></div></div></div>') +
       '<div class="mk-stat" id="st-group-card" onclick="navigateTo(\'sesiones\')"><div class="mk-ic b">' + MK_IC.live + '</div><div style="min-width:0;"><span id="st-group-lbl">Próxima sesión grupal</span><b id="st-group">Sin agendar</b></div></div>' +
       '<div class="mk-stat" id="card-1on1" onclick="navigateTo(\'reuniones\')"><div class="mk-ic g">' + MK_IC.cal + '</div><div><span>Próxima sesión 1-1</span><b id="st-1on1">Sin agendar</b></div></div>' +
-      (liveOnly ? '' : '<div class="mt-cw" id="mt-cw" onclick="goToLastLesson()"><div class="mt-th" id="mt-th"><span class="mt-pl"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><small>Continuar viendo</small><b id="mt-tit">Cargando…</b><div class="mt-pb"><i id="mt-pb"></i></div></div>' +
-        '<div class="mt-rk">' + _rpRankCard() + '</div>') +
+      (liveOnly ? '' : '<div class="mt-cw" id="mt-cw" onclick="goToLastLesson()"><div class="mt-th" id="mt-th"><span class="mt-pl"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><small>Continuar viendo</small><b id="mt-tit">Cargando…</b><div class="mt-pb"><i id="mt-pb"></i></div></div>') +
     '</div>' +
 
     (liveOnly ? '' :
@@ -5862,6 +5877,11 @@ function _mpwRange() {
   var a = new Date(); a.setDate(a.getDate() - ((a.getDay() + 6) % 7)); var b = new Date(a); b.setDate(a.getDate() + 6);
   return 'Semana del ' + a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + ms[a.getMonth()] : '') + ' al ' + b.getDate() + ' ' + ms[b.getMonth()];
 }
+function _mpwRankTx() {
+  var rows = (window._pgRank || []).slice().sort(function(a, b) { return b.days - a.days; });
+  var i = rows.findIndex(function(r) { return r.me; });
+  return i < 0 ? 'Sin puesto aún' : 'Vas ' + (i + 1) + '.º de ' + rows.length;
+}
 function _mpwFill() {
   var cnt = window._mpwCnt, box = document.getElementById('mpw-bars'); if (!box || !cnt) return;
   var max = Math.max.apply(null, cnt.concat([1])), today = (new Date().getDay() + 6) % 7;
@@ -5979,6 +5999,25 @@ function _mkRenderRPanel(liveOnly) {
 var _mkAdTimer = null;
 function _mkEsc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function _mkSafeUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : '#'; }
+// Aviso del anuncio al entrar: una vez por visita a la app (se cierra con la X, "Ahora no" o tocando afuera)
+function _mkAdPop(a) {
+  try { if (sessionStorage.getItem('mk-ad-pop')) return; sessionStorage.setItem('mk-ad-pop', '1'); } catch (e) {}
+  if (!a || document.getElementById('adpop')) return;
+  var url = _mkEsc(_mkSafeUrl(a.url)), d = document.createElement('div');
+  d.id = 'adpop';
+  d.innerHTML = '<div class="adp-c" role="dialog" aria-label="' + _mkEsc(a.title || 'Anuncio') + '">' +
+    (a.banner_url ? '<div class="adp-im"><img src="' + _mkEsc(a.banner_url) + '" alt="' + _mkEsc(a.title || '') + '"></div>'
+      : '<div class="adp-im adp-tx">' + (a.tag ? '<small>' + _mkEsc(a.tag) + '</small>' : '') + '<b>' + _mkEsc(a.title || '') + '</b></div>') +
+    '<button class="adp-x" aria-label="Cerrar">✕</button>' +
+    '<div class="adp-bd">' + (a.subtitle ? '<p>' + _mkEsc(a.subtitle) + '</p>' : '') +
+      '<a class="adp-go" href="' + url + '" target="_blank" rel="noopener sponsored">' + _mkEsc(a.cta_text || 'Abrir cuenta') + '</a>' +
+      '<button class="adp-no">Ahora no</button></div></div>';
+  var close = function() { d.classList.remove('in'); setTimeout(function(){ d.remove(); }, 250); };
+  d.addEventListener('click', function(e) { if (e.target === d || e.target.closest('.adp-x,.adp-no')) close(); });
+  d.querySelector('.adp-go').addEventListener('click', function() { sb.rpc('ad_click', { p_id: Number(a.id) }).then(function(){}); close(); });
+  document.body.appendChild(d);
+  setTimeout(function(){ d.classList.add('in'); }, 600);
+}
 function _mkRenderAds() {
   var box = document.getElementById('mk-ads');
   if (!box) return;
@@ -6011,6 +6050,7 @@ function _mkRenderAds() {
     }
     html += '</div>';
     box.innerHTML = html;
+    _mkAdPop(ads[0]);
     var cur = 0, slides = box.querySelectorAll('.mk-ad'), dots = box.querySelectorAll('.mk-ad-dots button');
     function go(i) {
       cur = (i + slides.length) % slides.length;

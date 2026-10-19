@@ -1903,14 +1903,28 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .push-ask{bottom:96px !important;left:16px !important;right:16px !important;}
   .atit{font-size:1.35rem !important;letter-spacing:-.02em;}
   .asub{font-size:.76rem !important;}
-  /* Curso: niveles en fila (imagen pequeña + texto) */
-  .lvl-grid{gap:12px !important;}
-  .lvl-card{display:grid !important;grid-template-columns:112px minmax(0,1fr);gap:4px 14px;align-items:center;padding:12px !important;border-radius:18px !important;}
-  .lvl-thumb{height:auto !important;aspect-ratio:16/9;border-radius:10px !important;overflow:hidden;}
-  .lvl-info{padding:0 !important;min-width:0;display:contents;}
-  .lvl-title{grid-column:2;font-size:.9rem !important;text-transform:none !important;letter-spacing:-.01em !important;line-height:1.3 !important;margin:0 !important;align-self:end;}
-  .lvl-desc{grid-column:2;font-size:.72rem !important;line-height:1.4 !important;margin:0 !important;align-self:start;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .lvl-meta{grid-column:1/-1;margin-top:10px !important;font-size:.66rem !important;}
+  /* Curso: anillo de progreso arriba + niveles con imagen grande y texto debajo */
+  .lvl-hd{display:none !important;}
+  .lvm-hero{display:flex !important;align-items:center;gap:16px;margin:4px 0 0;padding:16px 18px;border-radius:20px;background:var(--k-sheen),var(--c-card);border:1px solid var(--k-line);box-shadow:var(--k-sh);}
+  .lvm-hero .mh-ring{width:64px;height:64px;}
+  .lvm-hero .mh-ring b{font-size:.92rem;}
+  .lvm-hero small{display:block;font-size:.6rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--k-muted);}
+  .lvm-hero>div:last-child>b{display:block;font-size:.95rem;font-weight:700;margin-top:4px;letter-spacing:-.01em;}
+  .lvm-sh{display:flex !important;justify-content:space-between;align-items:baseline;margin:26px 2px 12px;}
+  .lvm-sh h3{font-size:1.08rem;font-weight:700;letter-spacing:-.02em;margin:0;}
+  .lvm-sh span{font-size:.74rem;font-weight:600;color:rgb(var(--c-acc));}
+  .lvl-grid{gap:14px !important;}
+  .lvl-card{padding:9px !important;border-radius:24px !important;}
+  .lvl-thumb{height:auto !important;aspect-ratio:16/8;border-radius:17px !important;overflow:hidden;}
+  .lvl-info{padding:12px 8px 6px !important;}
+  .lvl-tag{display:block !important;font-size:.6rem;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:rgb(var(--c-acc));}
+  .lvl-title{font-size:1.08rem !important;text-transform:none !important;letter-spacing:-.02em !important;line-height:1.3 !important;margin:6px 0 0 !important;}
+  .lvl-desc{font-size:.72rem !important;line-height:1.45 !important;margin:3px 0 0 !important;color:var(--k-muted) !important;min-height:0 !important;}
+  .lvl-meta{margin-top:12px !important;font-size:.68rem !important;font-weight:500 !important;color:var(--k-muted) !important;gap:10px !important;}
+  .lvl-mc{display:none;}
+  .lvl-cc{display:inline !important;}
+  .lvl-meta .lvl-bar{height:3px;}
+  .lvl-prog span{font-size:.68rem !important;}
   /* 1-1: tarjetas una debajo de otra, el plan primero */
   .mk-row2{grid-template-columns:1fr !important;gap:10px !important;}
   .mk-row2>.mk-card:not(.mk-next){order:-1;}
@@ -1958,6 +1972,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 }
 /* ── Celular: barra de arriba, barra flotante, menú lateral y "Personalizar barra" (2026-10-18) ── */
 .mtb-who,.mtb-ic,#mdrw,#mscrim,#mpers{display:none;}
+.lvm-hero,.lvm-sh,.lvl-tag,.lvl-cc{display:none;}
 @media(max-width:860px){
   .anav{padding:calc(env(safe-area-inset-top,0px) + 12px) 18px 12px !important;min-height:64px;background:color-mix(in srgb,var(--k-bg) 72%,transparent) !important;backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid transparent !important;z-index:20 !important;}
   .anav>img,.anav>div{display:none !important;}
@@ -3457,7 +3472,9 @@ function showLevels() {
   _mkRP(false);
   pushRoute({ section: 'clases' });
   var m = document.getElementById('amain');
-  m.innerHTML = '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub" id="lvl-sub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div><div id="lvl-grid" class="lvl-grid">' + [0,1,2,3].map(function(){ return '<div class="lvl-card mk-skel-card"><div class="lvl-thumb mk-skel"></div><div class="lvl-info"><div class="lvl-title mk-skel" style="height:14px;width:60%;"></div><div class="lvl-desc mk-skel" style="height:10px;width:85%;margin-top:8px;"></div><div class="lvl-meta mk-skel" style="height:6px;width:100%;margin-top:14px;"></div></div></div>'; }).join('') + '</div>';
+  m.innerHTML = '<div class="lvl-hd" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;"><div><div class="atit">Curso Completo</div><div class="asub" id="lvl-sub">Selecciona un módulo para comenzar</div></div><div id="lvl-total" style="width:240px;margin-bottom:26px;"></div></div>' +
+    // Celular: tarjeta de progreso con anillo + encabezado "Niveles"
+    '<div class="lvm-hero"><div class="mh-ring"><svg viewBox="0 0 64 64"><defs><linearGradient id="lvm-gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgb(var(--c-acc2))"/><stop offset="1" stop-color="rgb(var(--c-accd))"/></linearGradient></defs><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(var(--c-ov),.08)" stroke-width="5"/><circle id="lvm-ring" cx="32" cy="32" r="27" fill="none" stroke="url(#lvm-gr)" stroke-width="5" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" transform="rotate(-90 32 32)"/></svg><b id="lvm-pct">0%</b></div><div><small id="lvm-lbl">Tu progreso</small><b id="lvm-sub">…</b></div></div><div class="lvm-sh"><h3>Niveles</h3><span id="lvm-n"></span></div><div id="lvl-grid" class="lvl-grid">' + [0,1,2,3].map(function(){ return '<div class="lvl-card mk-skel-card"><div class="lvl-thumb mk-skel"></div><div class="lvl-info"><div class="lvl-title mk-skel" style="height:14px;width:60%;"></div><div class="lvl-desc mk-skel" style="height:10px;width:85%;margin-top:8px;"></div><div class="lvl-meta mk-skel" style="height:6px;width:100%;margin-top:14px;"></div></div></div>'; }).join('') + '</div>';
   var ed = _canEditCourse();
   var lq = sb.from('course_levels').select('*, course_modules(id, course_lessons(id, is_published))');
   if (!ed) lq = lq.eq('is_published', true);
@@ -3480,7 +3497,18 @@ function showLevels() {
         var pct = ids.length ? Math.round(n / ids.length * 100) : 0;
         var el = document.getElementById('lvl-prog-' + id);
         if (el) el.innerHTML = '<div class="lvl-bar"><i style="width:' + pct + '%"></i></div><span>' + pct + '%</span>';
+        var tg = document.getElementById('lvl-tag-' + id);
+        if (tg && pct >= 100) tg.textContent += ' · Completado';
+        else if (tg && pct > 0) tg.textContent += ' · En curso';
       });
+      var lp = document.getElementById('lvm-pct'), lr = document.getElementById('lvm-ring'), ll = document.getElementById('lvm-lbl'), lsb = document.getElementById('lvm-sub');
+      if (lp && all) {
+        var p2 = Math.round(ok / all * 100);
+        lp.textContent = p2 + '%';
+        if (lr) lr.setAttribute('stroke-dashoffset', (169.6 * (1 - p2 / 100)).toFixed(1));
+        if (ll) ll.textContent = p2 >= 100 ? 'Curso completado' : p2 > 0 ? 'Vas muy bien' : 'Empieza tu curso';
+        if (lsb) lsb.textContent = ok + ' de ' + all + ' clases completadas';
+      } else if (lsb) lsb.textContent = 'Aún no hay clases publicadas';
       var tot = document.getElementById('lvl-total');
       var lsub = document.getElementById('lvl-sub'); if (lsub && all) lsub.textContent = 'Selecciona un módulo para comenzar · ' + ok + ' de ' + all + ' clases completadas';
       if (tot && all) { var tp = Math.round(ok / all * 100); tot.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--c-muted);margin-bottom:6px;"><span>Progreso total</span><b style="color:rgb(var(--c-acc));">' + tp + '%</b></div><div class="lvl-bar"><i style="width:' + tp + '%"></i></div>'; }
@@ -3488,16 +3516,19 @@ function showLevels() {
     if ((!r.data || !r.data.length) && !ed) { g.innerHTML = '<div class="empty-state">Sin contenido publicado aún.</div>'; return; }
     g.innerHTML = '';
     window._ceLevels = r.data || [];
-    r.data.forEach(function(lv) {
+    var lvN = document.getElementById('lvm-n'); if (lvN) lvN.textContent = r.data.length + (r.data.length === 1 ? ' nivel' : ' niveles');
+    r.data.forEach(function(lv, li) {
       var card = document.createElement('div');
       card.className = 'lvl-card';
       var modCount = lv.course_modules ? lv.course_modules.length : 0;
+      var nCls = (lvLessons[lv.id] || []).length;
       card.innerHTML =
         '<div class="lvl-thumb"' + (lv.thumbnail_url ? ' style="background-image:url(\'' + lv.thumbnail_url + '\')"' : '') + '><div class="lvl-overlay"></div></div>' +
         '<div class="lvl-info">' +
+          '<span class="lvl-tag" id="lvl-tag-' + lv.id + '">Nivel ' + (li + 1) + '</span>' +
           '<div class="lvl-title">' + lv.title + '</div>' +
           '<div class="lvl-desc">' + (lv.description || '') + '</div>' +
-          '<div class="lvl-meta"><span>' + modCount + ' módulo' + (modCount !== 1 ? 's' : '') + '</span><div class="lvl-prog" id="lvl-prog-' + lv.id + '"></div></div>' +
+          '<div class="lvl-meta"><span class="lvl-mc">' + modCount + ' módulo' + (modCount !== 1 ? 's' : '') + '</span><span class="lvl-cc">' + nCls + ' clase' + (nCls !== 1 ? 's' : '') + '</span><div class="lvl-prog" id="lvl-prog-' + lv.id + '"></div></div>' +
         '</div>';
       if (ed) {
         if (lv.is_published === false) card.insertAdjacentHTML('beforeend', '<span class="ce-draft ce-draft-card">Borrador</span>');

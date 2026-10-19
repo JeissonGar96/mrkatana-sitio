@@ -1249,8 +1249,9 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 #econ-cal .cal-flag img{width:24px !important;height:24px !important;border-radius:50% !important;object-fit:cover;box-shadow:0 0 0 2px var(--c-card),0 0 0 3px var(--k-line);}
 #econ-cal .cal-name{font-size:.9rem;font-weight:600;}
 #econ-cal .cal-impact-badge{background:transparent;border:none;padding:0;font-size:.72rem;font-weight:600;letter-spacing:0;text-transform:none;color:rgb(var(--c-bad));gap:6px;}
-#econ-cal .cal-impact-badge.med{color:rgb(var(--c-acc));}
-#econ-cal .cal-impact-badge.med i{background:rgb(var(--c-acc));box-shadow:0 0 0 3px rgba(var(--c-acc),.18);}
+#econ-cal .cal-impact-badge.med{color:#ee9440;}
+#econ-cal .cal-impact-badge.med i{background:#ee9440;box-shadow:0 0 0 3px rgba(238,148,64,.18);}
+.cal-lg{display:inline-flex;align-items:center;gap:5px;margin-left:10px;}.cal-lg i{width:6px;height:6px;border-radius:50%;background:rgb(var(--c-bad));display:inline-block;}.cal-lg i.m{background:#ee9440;margin-left:6px;}
 #econ-cal .cal-impact-badge i{width:7px;height:7px;border-radius:50%;background:rgb(var(--c-bad));box-shadow:0 0 0 3px rgba(var(--c-bad),.18);}
 #econ-cal .cal-values{gap:6px;min-width:0;}
 #econ-cal .cal-val{min-width:58px;}
@@ -1973,6 +1974,12 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 /* ── Celular: barra de arriba, barra flotante, menú lateral y "Personalizar barra" (2026-10-18) ── */
 .mtb-who,.mtb-ic,#mdrw,#mscrim,#mpers{display:none;}
 .lvm-hero,.lvm-sh,.lvl-tag,.lvl-cc{display:none;}
+.adm-st{display:inline-flex;align-items:center;gap:6px;font-size:.7rem;color:var(--c-muted);}
+.adm-st::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;}
+.adm-st.on{color:var(--c-text2);}
+.adm-st.on::before{background:rgb(var(--c-ok));opacity:1;}
+.adm-lk{background:none;border:1px solid var(--k-line);color:var(--c-text2);padding:5px 11px;border-radius:8px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.adm-lk:hover{color:var(--c-text);border-color:rgba(var(--c-ov),.2);}
 @media(max-width:860px){
   .anav{padding:calc(env(safe-area-inset-top,0px) + 12px) 18px 12px !important;min-height:64px;background:color-mix(in srgb,var(--k-bg) 72%,transparent) !important;backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid transparent !important;z-index:20 !important;}
   .anav>img,.anav>div{display:none !important;}
@@ -2056,7 +2063,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .mdn-th.spin svg{animation:mdnSpin .5s cubic-bezier(.2,.8,.2,1);}
   @keyframes mdnSpin{from{transform:rotate(-90deg) scale(.6);opacity:0}to{transform:none;opacity:1}}
   /* Ajustes en lista */
-  .ajl{background:linear-gradient(160deg,rgba(var(--c-ov),.05),rgba(var(--c-ov),.015)),var(--c-card);border:1px solid rgba(var(--c-ov),.08);border-radius:20px;overflow:hidden;margin-bottom:14px;}
+  .ajl{background:var(--k-sheen),var(--c-card);border:1px solid var(--k-line);box-shadow:var(--k-sh);border-radius:20px;overflow:hidden;margin-bottom:14px;}
   .ajl-r{display:flex;align-items:center;gap:13px;width:100%;padding:13px 14px;border:0;border-top:1px solid rgba(var(--c-ov),.06);background:none;font-family:inherit;text-align:left;color:var(--k-text);font-size:.86rem;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .ajl-r:first-child{border-top:0;}
   .ajl-r .ri{width:34px;height:34px;border-radius:11px;background:rgba(var(--c-ov),.05);display:flex;align-items:center;justify-content:center;color:var(--k-muted);flex-shrink:0;}
@@ -2071,14 +2078,25 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .aj2-r{padding:13px 14px !important;gap:10px !important;}
   .aj2-l{width:96px !important;font-size:.78rem !important;}
   .aj2-v{font-size:.82rem !important;overflow-wrap:anywhere;}
-  .aj2-b{padding:6px 10px !important;font-size:.74rem !important;flex-shrink:0;}
+  .aj2-r .aj2-b:not(.aj2-seg){padding:6px 0 6px 8px !important;font-size:.76rem !important;font-weight:600 !important;flex-shrink:0;border:0 !important;background:none !important;color:rgb(var(--c-acc)) !important;}
+  /* mismas tarjetas que la lista de Ajustes */
+  .aj2-g{background:var(--k-sheen),var(--c-card) !important;border:1px solid var(--k-line) !important;box-shadow:var(--k-sh);border-radius:20px !important;overflow:hidden;margin-bottom:18px !important;}
+  .aj2-r{border-color:rgba(var(--c-ov),.06) !important;}
+  .aj2-gt{font-size:.6rem !important;font-weight:700;letter-spacing:1.4px !important;color:var(--k-muted) !important;margin:0 0 8px 4px !important;}
   /* toggles sin caja */
   .aj2-b:has(.aj2-t){border:0 !important;padding:0 !important;background:none !important;}
   /* Inicio sin "Próximas actividades" (ya están en la campana) */
   .alay.with-rp.sec-dash .rpanel{display:none !important;}
   .alay.with-rp.sec-dash .amain{padding-bottom:112px !important;}
   /* Calendario: limpio; al tocar una noticia se ven Real, Pronóstico y Previo centrados */
-  #econ-cal .cal-impact-badge,#econ-cal .cal-foot>div:first-child{display:none !important;}
+  #econ-cal .cal-foot>div:first-child,#econ-cal .cal-impact-text{display:none !important;}
+  /* solo el punto de color junto al nombre: rojo = alto, naranja = medio */
+  .mk-sh:has(.cal-lg){flex-wrap:wrap;row-gap:4px;}
+  .mk-sh .mk-note:has(.cal-lg){flex-basis:100%;text-align:left;font-size:.66rem;}
+  .mk-sh .cal-lg{display:flex;margin:4px 0 0;}
+  #econ-cal .cal-impact-badge{display:inline-flex !important;padding:0 !important;margin:0 !important;}
+  #econ-cal .cal-impact-badge i{width:6px;height:6px;box-shadow:0 0 0 2px rgba(var(--c-bad),.16);}
+  #econ-cal .cal-impact-badge.med i{box-shadow:0 0 0 2px rgba(238,148,64,.16);}
   #econ-cal .cal-foot{justify-content:flex-end !important;}
   #econ-cal .cal-values{display:grid !important;grid-template-columns:repeat(3,1fr);grid-column:1/-1 !important;padding:10px 0 2px !important;margin:8px 0 0 !important;border-top:1px solid rgba(var(--c-ov),.06);}
   #econ-cal .cal-val{text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;border:0 !important;padding:0 !important;}
@@ -2094,6 +2112,32 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .anav{position:fixed !important;top:0;left:0;right:0;}
   #appdash>.alay{padding-top:calc(env(safe-area-inset-top,0px) + 64px);}
   #lvl-total{width:100% !important;margin:4px 0 24px !important;}
+  /* Admin en el celular */
+  .sec-admin #amain .mk-stats>.mk-stat{min-height:0 !important;padding:14px 16px !important;}
+  .sec-admin #amain .mk-stats>.mk-stat b{margin-top:8px !important;font-size:1.2rem !important;}
+  .admtabs-wrap{gap:2px !important;padding:0 2px !important;margin:0 0 18px !important;border-bottom:1px solid rgba(var(--c-ov),.08);}
+  .admtab{background:none !important;border:0 !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:10px 12px !important;min-height:0 !important;font-family:inherit !important;font-size:.8rem !important;font-weight:600;color:var(--k-muted) !important;}
+  .admtab.on{background:none !important;box-shadow:none !important;color:var(--k-text) !important;border-bottom-color:rgb(var(--c-acc)) !important;}
+  .wp-subtabs,.wp-subtabs.has-ink{overflow-x:auto !important;overflow-y:hidden !important;scrollbar-width:none;flex-wrap:nowrap !important;}
+  .wp-subtabs::-webkit-scrollbar{display:none;}
+  .wp-subtab-btn{padding:10px 12px !important;flex-shrink:0;}
+  .wp-card-icon{display:none !important;}
+  /* 1-1: cada reunión como tarjeta en vez de tabla */
+  .a1-tbl,.a1-tbl tbody{display:block;width:100%;}
+  .a1-tbl thead{display:none;}
+  .a1-tbl tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:14px 16px;border-top:1px solid rgba(var(--c-ov),.06);}
+  .a1-tbl tr:first-child{border-top:0;}
+  .a1-tbl td{display:block;padding:0 !important;border:0 !important;white-space:normal;font-size:.74rem;color:var(--k-muted);}
+  .a1-tbl td:first-child{flex:1;min-width:0;order:0;color:var(--k-text);}
+  .a1-tbl td:last-child{order:1;}
+  .a1-tbl td.a1-d{display:block !important;color:var(--k-muted) !important;}
+  .a1-tbl td.a1-t{order:2;flex-basis:100%;font-size:.84rem;color:var(--k-text);font-weight:600;}
+  .a1-tbl td:not(:first-child):not(:last-child):not(.a1-t){order:3;}
+  .mk-tbl-wrap:has(.a1-tbl){padding:0 !important;overflow:hidden;}
+  /* Anuncios: botones debajo del texto */
+  .adr{flex-wrap:wrap;}
+  .adr-tx{flex:1 1 calc(100% - 80px) !important;}
+  .adr>.abtn2:first-of-type{margin-left:76px;}
   /* personalizar barra */
   #mpers{position:fixed;inset:0;z-index:910;background:var(--k-bg);overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px);}
   #mpers.on{display:block;}
@@ -2215,11 +2259,11 @@ html.th-anim,html.th-anim *{transition:background-color .45s ease,color .45s eas
   /* barra de abajo: píldora flotante, solo íconos; la activa muestra su nombre */
   .mob-nav{left:50% !important;right:auto !important;transform:translateX(-50%);width:auto !important;height:62px !important;border-radius:999px !important;padding:7px !important;gap:0 !important;background:color-mix(in srgb,var(--k-frame) 80%,transparent) !important;border:1px solid rgba(var(--c-ov),.1) !important;box-shadow:0 20px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07) !important;}
   .mob-nav-btn{flex:none !important;width:50px;height:48px !important;border-radius:999px !important;flex-direction:row !important;gap:8px !important;font-size:.78rem !important;font-weight:700 !important;position:relative;z-index:2;background:none !important;box-shadow:none !important;transition:color .35s;}
-  .mob-nav-btn span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .45s cubic-bezier(.2,.8,.2,1),opacity .3s;}
+  .mob-nav-btn span{display:inline-block;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .52s cubic-bezier(.45,0,.2,1),opacity .35s;}
   .mob-nav-btn.on{width:auto;padding:0 14px !important;color:var(--k-ongold) !important;}
   .mob-nav-btn.on span{max-width:96px;opacity:1;text-overflow:ellipsis;}
   .mob-nav-btn.on svg{filter:none !important;}
-  .mn-ink{display:block;position:absolute;top:7px;bottom:7px;left:7px;width:0;border-radius:999px;background:linear-gradient(180deg,rgb(var(--c-acc2)),rgb(var(--c-accd)));box-shadow:0 6px 14px -8px rgba(var(--c-acc),.6);transition:left .45s cubic-bezier(.2,.8,.2,1),width .45s cubic-bezier(.2,.8,.2,1);z-index:1;pointer-events:none;}
+  .mn-ink{display:block;position:absolute;top:7px;bottom:7px;left:7px;width:0;border-radius:999px;background:linear-gradient(180deg,rgb(var(--c-acc2)),rgb(var(--c-accd)));box-shadow:0 6px 14px -8px rgba(var(--c-acc),.6);z-index:1;pointer-events:none;will-change:left,width;}
   .mp-pv .mob-nav{transform:none;margin:12px auto 0 !important;width:max-content !important;}
   .mp-pv .mob-nav-btn.on{background:linear-gradient(180deg,rgb(var(--c-acc2)),rgb(var(--c-accd))) !important;}
 }
@@ -2234,21 +2278,24 @@ function mkSetTheme(t) {
   try { localStorage.setItem('mk-theme', t); } catch (e) {}
 }
 // Cambio de modo con animación: un círculo que se expande desde donde tocaste (o un fundido si el navegador no lo soporta)
-function mkToggleTheme(ev) {
-  var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light', h = document.documentElement;
+function mkToggleTheme(ev, want, after) {
+  var cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark', h = document.documentElement;
+  if (want && want === cur) return;
+  var next = cur === 'light' ? 'dark' : 'light';
+  var set = function() { mkSetTheme(next); if (after) after(); };
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (document.startViewTransition && !calm) {
     var r = ev && ev.currentTarget && ev.currentTarget.getBoundingClientRect ? ev.currentTarget.getBoundingClientRect() : null;
     var x = ev && ev.clientX ? ev.clientX : r ? r.left + r.width / 2 : innerWidth / 2, y = ev && ev.clientY ? ev.clientY : r ? r.top + r.height / 2 : innerHeight / 2;
     var R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-    var t = document.startViewTransition(function() { mkSetTheme(next); });
+    var t = document.startViewTransition(set);
     t.ready.then(function() {
       h.animate({ clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + R + 'px at ' + x + 'px ' + y + 'px)'] }, { duration: 650, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' });
     }).catch(function() {});
     return;
   }
   if (!calm) { h.classList.add('th-anim'); setTimeout(function() { h.classList.remove('th-anim'); }, 500); }
-  mkSetTheme(next);
+  set();
 }
 </script>
 </head>
@@ -2284,7 +2331,7 @@ function mkToggleTheme(ev) {
         <a class="snav" href="https://wa.me/593995014247" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5l1.300-4.100A8.500 8.500 0 1 1 7.600 19.300z"/><path d="M9 8.500c0 3.500 3 6.500 6.500 6.500l1-1.600-2-1-1 1c-1.200-.5-2.300-1.600-2.800-2.800l1-1-1-2z"/></svg> WhatsApp</a>
       </div>
       <div class="aside-foot">
-        <div class="snav-sec" style="margin-top:4px;">Apariencia</div><div class="theme-tgl"><button onclick="mkSetTheme('dark')" class="tg-dark">● Dark</button><button onclick="mkSetTheme('light')" class="tg-light">○ Light</button></div>
+        <div class="snav-sec" style="margin-top:4px;">Apariencia</div><div class="theme-tgl"><button onclick="mkToggleTheme(event,'dark')" class="tg-dark">● Dark</button><button onclick="mkToggleTheme(event,'light')" class="tg-light">○ Light</button></div>
         <button class="snav" data-v="perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg> Ajustes</button>
         <div class="aside-user" style="display:none;">Hola, <strong id="uname2">Alumno</strong></div>
         <button class="snav snav-out" onclick="document.getElementById('btn-out').click()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg> Cerrar sesión</button>
@@ -2384,20 +2431,21 @@ function _mnInk(now) {
   delete k.dataset.pend;
   var sp = bs[i].querySelector('span'), w = 28 + 20 + 8 + Math.min(sp ? sp.scrollWidth : 0, 96);
   var L = 7 + i * 50, pL = parseFloat(k.style.left), pW = parseFloat(k.style.width);
-  clearTimeout(k._t);
+  clearTimeout(k._t); if (k._a && now) { k._a.cancel(); k._a = null; }
   if (now || isNaN(pL) || !pW || k.style.opacity !== '1' || (pL === L && pW === w)) {
     k.style.transition = 'none'; k.style.opacity = '1'; k.style.left = L + 'px'; k.style.width = w + 'px'; k.style.transform = '';
     k.offsetWidth; k.style.transition = ''; return;
   }
-  // Efecto "slime": primero se estira hacia el nuevo ícono (se aplana un poco) y luego la cola lo alcanza con un pequeño rebote
-  var l1 = Math.min(pL, L), r1 = Math.max(pL + pW, L + w), e1 = 'cubic-bezier(.5,0,.75,0)';
-  k.style.transition = 'left .2s ' + e1 + ',width .2s ' + e1 + ',transform .2s ease';
-  k.style.left = l1 + 'px'; k.style.width = (r1 - l1) + 'px'; k.style.transform = 'scaleY(.82)';
-  k._t = setTimeout(function() {
-    var e2 = 'cubic-bezier(.2,1.4,.4,1)';
-    k.style.transition = 'left .42s ' + e2 + ',width .42s ' + e2 + ',transform .42s ' + e2;
-    k.style.left = L + 'px'; k.style.width = w + 'px'; k.style.transform = '';
-  }, 190);
+  // Efecto "slime" en una sola animación continua: el frente se estira hacia el nuevo ícono y la cola lo alcanza suave
+  var l1 = Math.min(pL, L), r1 = Math.max(pL + pW, L + w), fwd = L > pL;
+  if (k._a) { k._a.cancel(); }
+  k.style.transition = 'none'; k.style.left = L + 'px'; k.style.width = w + 'px';
+  if (!k.animate) return;
+  k._a = k.animate([
+    { left: pL + 'px', width: pW + 'px', easing: 'cubic-bezier(.45,0,.55,1)' },
+    { left: (fwd ? pL : l1) + 'px', width: (r1 - l1) * .92 + 'px', offset: .42, easing: 'cubic-bezier(.25,.9,.3,1)' },
+    { left: L + 'px', width: w + 'px' }
+  ], { duration: 520 });
 }
 // Barra de arriba: saludo + nombre (se llama al cargar el perfil)
 function _mnFill() {
@@ -2621,6 +2669,7 @@ function _renderSection(state) {
   if (typeof _lvApi !== 'undefined' && _lvApi) { try { _lvApi.dispose(); } catch (e) {} _lvApi = null; }
   if (_alay) _alay.classList.toggle('with-rp', _rpOn);
   if (_alay) _alay.classList.toggle('sec-dash', state.section === 'dash');
+  if (_alay) _alay.classList.toggle('sec-admin', state.section === 'admin');
   if (_rpOn) _mkRenderRPanel(!_hasClasesAccess());
   else if (state.section === 'admin' && cProfile && cProfile.role === 'admin') { if (_alay) _alay.classList.add('with-rp'); _mkRenderAdminRP(); }
   var _q = document.getElementById('mk-q');
@@ -3243,7 +3292,7 @@ function rDash(liveOnly) {
       '<div class="mk-sh" id="mk-cw-h"><h3>Continuar viendo</h3><div class="mk-arr"><button onclick="document.getElementById(\'mk-cw\').scrollBy({left:-320,behavior:\'smooth\'})">‹</button><button onclick="document.getElementById(\'mk-cw\').scrollBy({left:320,behavior:\'smooth\'})">›</button></div></div>' +
       '<div class="mk-cw" id="mk-cw">' + [0,1,2].map(function(){ return '<div class="cw-card mk-skel-card"><div class="mk-skel" style="aspect-ratio:16/8.5;border-radius:12px;"></div><div class="mk-skel" style="height:12px;width:55%;"></div><div class="mk-skel" style="height:14px;width:85%;"></div><div class="mk-skel" style="height:10px;width:40%;"></div></div>'; }).join('') + '</div>') +
 
-    '<div class="mk-sh"><h3>Calendario económico</h3><span class="mk-note">Solo USD · Horario Ecuador (UTC-5)</span></div>' +
+    '<div class="mk-sh"><h3>Calendario económico</h3><span class="mk-note">Solo USD · Horario Ecuador (UTC-5)<span class="cal-lg"><i></i>Alto<i class="m"></i>Medio</span></span></div>' +
     '<div id="econ-cal"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando noticias...</div></div>' +
 
     (liveOnly ? '' :
@@ -4811,7 +4860,7 @@ function _ajRender() {
     var off = -new Date().getTimezoneOffset() / 60;
     var dark = document.documentElement.getAttribute('data-theme') !== 'light';
     html = '<div class="aj2-h">Preferencias</div><div class="aj2-s">Cómo se ve la plataforma para ti.</div>' +
-      _ajGroup('', _ajRow('Tema', '<span class="aj2-seg"><button class="' + (dark ? 'on' : '') + '" onclick="mkSetTheme(\'dark\');_ajRender()">Dark</button><button class="' + (dark ? '' : 'on') + '" onclick="mkSetTheme(\'light\');_ajRender()">Light</button></span>') +
+      _ajGroup('', _ajRow('Tema', '<span class="aj2-seg"><button class="' + (dark ? 'on' : '') + '" onclick="mkToggleTheme(event,\'dark\',_ajRender)">Dark</button><button class="' + (dark ? '' : 'on') + '" onclick="mkToggleTheme(event,\'light\',_ajRender)">Light</button></span>') +
         _ajRow('Zona horaria', '(UTC' + (off >= 0 ? '+' : '') + off + ') ' + _mkEsc(tz.replace(/_/g, ' ')) + '<small>Se detecta sola desde tu dispositivo. Los horarios de en vivo y 1-1 se muestran en tu hora.</small>'));
   }
   box.innerHTML = html;
@@ -5436,7 +5485,7 @@ function rPerfilOld() { // diseño anterior de Ajustes (ya no se usa)
       '</div>' +
     '</div></div>' +
     '<div class="aj-pane" data-aj="apariencia"><div class="mk-card"><h3 class="mk-ct">Tema</h3><p class="aj-help">Elige cómo quieres ver la plataforma.</p>' +
-      '<div class="theme-tgl" style="max-width:320px;margin:0;"><button onclick="mkSetTheme(\'dark\')" class="tg-dark">● Dark</button><button onclick="mkSetTheme(\'light\')" class="tg-light">○ Light</button></div></div></div>' +
+      '<div class="theme-tgl" style="max-width:320px;margin:0;"><button onclick="mkToggleTheme(event,\'dark\')" class="tg-dark">● Dark</button><button onclick="mkToggleTheme(event,\'light\')" class="tg-light">○ Light</button></div></div></div>' +
     '</div></div>';
   _ajShow(_ajTab);
   m.querySelectorAll('.aj-nav button').forEach(function(b) { b.addEventListener('click', function() { _ajShow(b.dataset.aj); }); });
@@ -6246,9 +6295,9 @@ function rAdmAds() {
     }
     var ads = r.data || [];
     var list = ads.length ? ads.map(function(a) {
-      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--c-line);">' +
+      return '<div class="adr" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--c-line);">' +
         '<div style="width:64px;height:40px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">' + (a.banner_url ? '<img src="' + _mkEsc(a.banner_url) + '" style="width:100%;height:100%;object-fit:cover;">' : a.image_url ? '<img src="' + _mkEsc(a.image_url) + '" style="max-width:90%;max-height:80%;object-fit:contain;">' : '') + '</div>' +
-        '<div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.88rem;">' + _mkEsc(a.title) + '</div>' +
+        '<div class="adr-tx" style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.88rem;">' + _mkEsc(a.title) + '</div>' +
         '<div style="font-size:.75rem;color:var(--c-muted);">' + _mkEsc(a.tag || '') + ' · ' + (a.clicks || 0) + ' clics · orden ' + (a.sort_order || 0) + '</div></div>' +
         '<button class="abtn2" data-act="toggle" data-id="' + a.id + '" style="padding:6px 12px;font-size:.72rem;' + (a.active ? '' : 'background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;') + '">' + (a.active ? 'Activo' : 'Pausado') + '</button>' +
         '<button class="abtn2" data-act="edit" data-id="' + a.id + '" style="padding:6px 12px;font-size:.72rem;background:transparent !important;color:var(--c-text2) !important;border:1px solid var(--c-line) !important;">Editar</button>' +
@@ -8708,7 +8757,7 @@ function rAdmCodes() {
     '<div id="codes-subtab-plans" class="codes-subtab-panel" style="display:none;">' +
       '<div class="aform">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-          '<div style="font-size:.86rem;font-weight:600;">🛒 Gestión de Planes</div>' +
+          '<div style="font-size:.86rem;font-weight:600;">Gestión de Planes</div>' +
           '<button onclick="openPlanModal(null)" style="background:rgba(var(--c-ok),.1);border:1px solid rgba(var(--c-ok),.3);color:rgb(var(--c-ok));padding:5px 12px;border-radius:5px;font-size:.71rem;cursor:pointer;">+ Crear plan</button>' +
         '</div>' +
         '<div style="font-size:.74rem;color:var(--c-muted);margin-bottom:14px;">Crea, edita o elimina planes — precio, duración, accesos y roles de Discord. Se refleja automáticamente en el checkout y en toda la plataforma.</div>' +
@@ -8889,8 +8938,8 @@ function loadDiscordRoles() {
             '<div style="font-size:.83rem;font-weight:600;color:var(--c-text);">' + role.name + '</div>' +
           '</div>' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (role.active ? 'rgba(var(--c-ok),.1)' : 'rgba(var(--c-ov),.05)') + ';color:' + (role.active ? 'rgb(var(--c-ok))' : 'var(--c-muted)') + ';">' + (role.active ? 'Disponible' : 'Oculto') + '</span>' +
-            '<button onclick="toggleDiscordRole(\'' + role.id + '\',' + role.active + ')" style="background:' + (role.active ? 'rgba(var(--c-bad),.08)' : 'rgba(var(--c-ok),.08)') + ';border:1px solid ' + (role.active ? 'rgba(var(--c-bad),.25)' : 'rgba(var(--c-ok),.25)') + ';color:' + (role.active ? 'rgb(var(--c-bad))' : 'rgb(var(--c-ok))') + ';padding:4px 12px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
+            '<span class="adm-st' + (role.active ? ' on' : '') + '">' + (role.active ? 'Disponible' : 'Oculto') + '</span>' +
+            '<button onclick="toggleDiscordRole(\'' + role.id + '\',' + role.active + ')" class="adm-lk">' +
               (role.active ? 'Ocultar' : 'Mostrar') +
             '</button>' +
           '</div>' +
@@ -8964,11 +9013,11 @@ function loadPlansAdmin() {
             '<div style="font-size:.72rem;color:var(--c-muted);margin-top:2px;">$' + Number(p.price).toLocaleString() + ' · ' + (p.period||'—') + variantTxt + '</div>' +
           '</div>' +
           '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (p.active ? 'rgba(var(--c-ok),.1)' : 'rgba(var(--c-ov),.05)') + ';color:' + (p.active ? 'rgb(var(--c-ok))' : 'var(--c-muted)') + ';">' + (p.active ? 'Visible' : 'Oculto') + '</span>' +
-            '<button onclick="togglePlan(\'' + p.id + '\',' + p.active + ')" style="background:' + (p.active ? 'rgba(var(--c-bad),.08)' : 'rgba(var(--c-ok),.08)') + ';border:1px solid ' + (p.active ? 'rgba(var(--c-bad),.25)' : 'rgba(var(--c-ok),.25)') + ';color:' + (p.active ? 'rgb(var(--c-bad))' : 'rgb(var(--c-ok))') + ';padding:4px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">' +
+            '<span class="adm-st' + (p.active ? ' on' : '') + '">' + (p.active ? 'Visible' : 'Oculto') + '</span>' +
+            '<button onclick="togglePlan(\'' + p.id + '\',' + p.active + ')" class="adm-lk">' +
               (p.active ? 'Ocultar' : 'Publicar') +
             '</button>' +
-            '<button onclick="openPlanModal(\''+p.id+'\')" style="background:rgba(var(--c-acc),.08);border:1px solid rgba(var(--c-acc),.25);color:var(--sl);padding:4px 10px;border-radius:4px;font-size:.71rem;cursor:pointer;">Editar</button>' +
+            '<button onclick="openPlanModal(\''+p.id+'\')" class="adm-lk">Editar</button>' +
           '</div>' +
         '</div>';
       }).join('') +

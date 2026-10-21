@@ -1683,6 +1683,11 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 #pg-modal .pg-nm,#pg-modal .pg-n{font-size:.8rem;font-variant-numeric:tabular-nums;}
 #pg-modal .pg-you{border-radius:14px;border-color:rgba(var(--c-acc),.22);background:linear-gradient(135deg,rgba(var(--c-acc),.10),rgba(var(--c-acc),.02) 60%);box-shadow:0 1px 0 rgba(255,255,255,.05) inset;}
 #pg-modal .pg-you-n{font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+:root[data-theme="light"] #pg-modal .sum-box{box-shadow:0 24px 60px -30px rgba(40,30,10,.25);background:radial-gradient(120% 60% at 50% -10%,rgba(var(--c-acc),.07),transparent 60%),var(--c-bg);}
+:root[data-theme="light"] #pg-modal .pg-tile,:root[data-theme="light"] #pg-modal .pg-prize,:root[data-theme="light"] #pg-modal .pg-pick,:root[data-theme="light"] #pg-modal .pg-rk{background:rgba(var(--c-ov),.015);box-shadow:0 1px 2px rgba(40,30,10,.04);}
+:root[data-theme="light"] #pg-modal .pg-av{box-shadow:none;}
+:root[data-theme="light"] #pg-modal .pg-pd.p1 .pg-pd-b{box-shadow:0 6px 16px -10px rgba(var(--c-acc),.5);}
+:root[data-theme="light"] #pg-modal .lvl-bar i{box-shadow:none;}
 @media(max-width:620px){#pg-modal .sum-top{padding:18px 18px 14px;}#pg-modal .sum-body{padding:16px 16px 22px;}#pg-modal .pg-prize,#pg-modal .pg-pick,#pg-modal .pg-rk{padding:16px;}#pg-modal .pg-tiles{grid-template-columns:1fr 1fr;}}
 .sum-ov.has-vid .sum-box{max-width:860px;}
 .sum-vid{aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin-bottom:18px;}
@@ -1787,6 +1792,8 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .pg-pd.p3 .pg-pd-b{height:36px;}
 .pg-list{margin-top:16px;padding-top:10px;border-top:1px solid rgba(var(--c-ov),.08);}
 .pg-list .pg-row{grid-template-columns:22px 1fr 90px 34px;}
+.pg-av.has-img{padding:0;overflow:hidden;}.pg-av img{width:100%;height:100%;object-fit:cover;display:block;}
+.pg-list .pg-nm{display:flex;align-items:center;gap:10px;}.pg-nm .pg-av{width:26px;height:26px;font-size:.6rem;}
 .pg-list .pg-bar i{background:rgba(var(--c-ov),.28) !important;}
 .pg-you{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--c-acc),.25);background:rgba(var(--c-acc),.05);}
 .pg-you div{flex:1;min-width:0;}.pg-you b{display:block;font-size:.9rem;color:var(--c-text);}.pg-you small{font-size:.74rem;color:var(--c-muted);}
@@ -5218,7 +5225,7 @@ function _pgLoad(force) {
   _pgAt = Date.now();
   var d = new Date(), m0 = new Date(d.getFullYear(), d.getMonth(), 1), dk = function(x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
   return Promise.all([
-    sb.rpc('journal_ranking_v2'),
+    sb.rpc('journal_ranking_v3'),
     sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap').gte('close_time', m0.toISOString()).limit(5000),
     sb.from('journal_days').select('day').eq('no_trade', true).gte('day', dk(m0)),
     sb.from('journal_accounts').select('id, nickname, broker, server, login, balance, currency, created_at').order('created_at'),
@@ -5230,7 +5237,7 @@ function _pgLoad(force) {
     });
     var pk = ((r[4].data || [])[0] || {}).account_id, eff = el.find(function(a) { return a.id === pk; }) || el[0];
     // Puntos: +1 por día hábil operado, −1 por día hábil sin operar y sin marcar "No operé"
-    if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me }; });
+    if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me, avatar: x.avatar }; });
     var T = (r[1].data || []).filter(function(t) { return !eff || t.account_id === eff.id; }), ok = {}, td = {}, res = 0;
     // Un día cuenta como operado solo si sus operaciones suman 5 minutos o más abiertas
     var dur = {};
@@ -5259,6 +5266,12 @@ function _rpRankCard() {
 }
 // Ranking del mes en podio: top 3 arriba, del 4 al 10 en lista y abajo "Vas N.º". Filas: {name, days (puntos), me}
 function _pgIni(n) { var p = String(n || '').split(' '); return _mkEsc((p[0] || '?').charAt(0) + (p[1] || '').charAt(0)).toUpperCase(); }
+// Foto de perfil del alumno; si no tiene (o no carga), sus iniciales
+function _pgAv(r) {
+  var ini = _pgIni(r.name);
+  if (!r.avatar || !/^https:\/\//.test(r.avatar)) return '<span class="pg-av">' + ini + '</span>';
+  return '<span class="pg-av has-img"><img src="' + _mkEsc(r.avatar) + '" alt="" loading="lazy" onerror="this.parentNode.classList.remove(\'has-img\');this.parentNode.textContent=\'' + ini.replace(/[^A-Za-zÀ-ÿ]/g, '') + '\'"></span>';
+}
 function _pgRanking(rows) {
   var d = new Date(), left = 0, last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   for (var k = d.getDate(); k <= last; k++) { var w = new Date(d.getFullYear(), d.getMonth(), k).getDay(); if (w > 0 && w < 6) left++; }
@@ -5270,19 +5283,19 @@ function _pgRanking(rows) {
   var pts = function(n) { return n + (Math.abs(n) === 1 ? ' punto' : ' puntos'); };
   var pod = [1, 0, 2].map(function(i) {
     var r = rows[i]; if (!r) return '<div class="pg-pd"></div>';
-    return '<div class="pg-pd p' + (i + 1) + (r.me ? ' me' : '') + '"><span class="pg-av">' + _pgIni(r.name) + '</span><b>' + nm(r) + (r.me ? ' <em>Tú</em>' : '') + '</b><small>' + pts(r.days) + '</small><div class="pg-pd-b">' + (i + 1) + '</div></div>';
+    return '<div class="pg-pd p' + (i + 1) + (r.me ? ' me' : '') + '">' + _pgAv(r) + '<b>' + nm(r) + (r.me ? ' <em>Tú</em>' : '') + '</b><small>' + pts(r.days) + '</small><div class="pg-pd-b">' + (i + 1) + '</div></div>';
   }).join('');
   var max = Math.max(1, rows[0].days), meI = rows.findIndex(function(r) { return r.me; });
   var rest = rows.slice(3, 10); if (meI >= 10) rest.push(rows[meI]);
   var list = rest.map(function(r) {
-    return '<div class="pg-row' + (r.me ? ' me' : '') + '"><span class="pg-pos">' + (rows.indexOf(r) + 1) + '</span><span class="pg-nm">' + nm(r) + (r.me ? ' <em>Tú</em>' : '') + '</span>' +
+    return '<div class="pg-row' + (r.me ? ' me' : '') + '"><span class="pg-pos">' + (rows.indexOf(r) + 1) + '</span><span class="pg-nm">' + _pgAv(r) + nm(r) + (r.me ? ' <em>Tú</em>' : '') + '</span>' +
       '<div class="lvl-bar pg-bar"><i style="width:' + Math.max(0, Math.round(r.days / max * 100)) + '%"></i></div><span class="pg-n">' + r.days + '</span></div>';
   }).join('');
   var you = '';
   if (meI >= 0) {
     var me = rows[meI], up = rows[meI - 1];
     var tx = !up ? 'Vas primero, sigue así' : (up.days - me.days + 1) + (up.days - me.days + 1 === 1 ? ' punto más' : ' puntos más') + ' para pasar a ' + nm(up).split(' ')[0];
-    you = '<div class="pg-you"><span class="pg-av">' + _pgIni(me.name) + '</span><div><b>Vas ' + (meI + 1) + '.º</b><small>' + tx + '</small></div><span class="pg-you-n">' + me.days + '<small>/' + _pgDays() + '</small></span></div>';
+    you = '<div class="pg-you">' + _pgAv(me) + '<div><b>Vas ' + (meI + 1) + '.º</b><small>' + tx + '</small></div><span class="pg-you-n">' + me.days + '<small>/' + _pgDays() + '</small></span></div>';
   }
   return head + '<div class="pg-pod">' + pod + '</div>' + (list ? '<div class="pg-list">' + list + '</div>' : '') + you + '</div>';
 }

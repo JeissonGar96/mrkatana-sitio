@@ -1168,7 +1168,10 @@ a.snav{text-decoration:none;}
 .mk-lsk{max-width:900px;}
 @keyframes mkSkel{from{background-position:200% 0}to{background-position:-200% 0}}
 .rp-chart{position:relative;}
-.rp-chart.is-empty::after{content:'Completa una clase y aquí verás tu avance del día';position:absolute;left:0;right:0;top:28%;text-align:center;font-size:.72rem;color:var(--c-muted);padding:0 10px;}
+.rp-chart i.f{opacity:var(--a);background:linear-gradient(0deg,rgba(var(--c-accd),.75),rgb(var(--c-acc2)));}
+.rp-chart span.hoy{color:rgb(var(--c-acc));font-weight:600;}
+.rp-chart[onclick]{cursor:pointer;}
+.rp-chart.is-empty::after{content:attr(data-empty);position:absolute;left:0;right:0;top:28%;text-align:center;font-size:.72rem;color:var(--c-muted);padding:0 10px;}
 .rp-qa a{transition:transform .2s,box-shadow .2s;}
 .rp-qa a:hover{transform:translateY(-2px);box-shadow:var(--k-sh-hi);}
 .rp-all,.mk-wk-btn{transition:background .2s,transform .2s;}
@@ -5224,10 +5227,11 @@ function _pgLoad(force) {
   if (!cUser || (!force && Date.now() - _pgAt < 60000)) return Promise.resolve();
   _pgAt = Date.now();
   var d = new Date(), m0 = new Date(d.getFullYear(), d.getMonth(), 1), dk = function(x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
+  var mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7), s0 = mon < m0 ? mon : m0; // lunes de esta semana (puede ser del mes anterior)
   return Promise.all([
-    sb.rpc('journal_ranking_v3'),
-    sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap').gte('close_time', m0.toISOString()).limit(5000),
-    sb.from('journal_days').select('day').eq('no_trade', true).gte('day', dk(m0)),
+    sb.rpc('journal_ranking_v3').then(function(x) { return x.error ? sb.rpc('journal_ranking_v2') : x; }), // si falla la versión con foto, usa la anterior
+    sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap').gte('close_time', s0.toISOString()).limit(5000),
+    sb.from('journal_days').select('day').eq('no_trade', true).gte('day', dk(s0)),
     sb.from('journal_accounts').select('id, nickname, broker, server, login, balance, currency, created_at').order('created_at'),
     sb.from('journal_rank_picks').select('account_id').eq('month', dk(m0))
   ]).then(function(r) {
@@ -5238,12 +5242,16 @@ function _pgLoad(force) {
     var pk = ((r[4].data || [])[0] || {}).account_id, eff = el.find(function(a) { return a.id === pk; }) || el[0];
     // Puntos: +1 por día hábil operado, −1 por día hábil sin operar y sin marcar "No operé"
     if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me, avatar: x.avatar }; });
-    var T = (r[1].data || []).filter(function(t) { return !eff || t.account_id === eff.id; }), ok = {}, td = {}, res = 0;
+    var TA = (r[1].data || []).filter(function(t) { return !eff || t.account_id === eff.id; }), ok = {}, td = {}, res = 0, nt = {};
+    var T = TA.filter(function(t) { return new Date(t.close_time) >= m0; });
     // Un día cuenta como operado solo si sus operaciones suman 5 minutos o más abiertas
     var dur = {};
-    T.forEach(function(t) { var c = new Date(t.close_time), k = dk(c); dur[k] = (dur[k] || 0) + (c - new Date(t.open_time)); res += (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); });
-    Object.keys(dur).forEach(function(k) { if (dur[k] >= 3e5) ok[k] = td[k] = 1; });
-    (r[2].data || []).forEach(function(x) { ok[x.day] = 1; });
+    TA.forEach(function(t) { var c = new Date(t.close_time), k = dk(c); dur[k] = (dur[k] || 0) + (c - new Date(t.open_time)); if (c >= m0) res += (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); });
+    Object.keys(dur).forEach(function(k) { if (dur[k] >= 3e5) { ok[k] = 1; if (k >= dk(m0)) td[k] = 1; } });
+    (r[2].data || []).forEach(function(x) { ok[x.day] = nt[x.day] = 1; });
+    // "Tu progreso semanal": minutos operados por día (lunes a domingo); cuenta si operó 5 min o marcó "No operé"
+    window._wk = { acc: A.length > 0, d: [0,1,2,3,4,5,6].map(function(i) { var k = dk(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)); return { min: Math.round((dur[k] || 0) / 6e4), ok: !!ok[k], nt: !!nt[k] && !(dur[k] >= 3e5) }; }) };
+    _wkFill();
     var wd = function(x) { var w = x.getDay(); return w > 0 && w < 6; }, met = 0;
     for (var x = new Date(m0); x <= d; x.setDate(x.getDate() + 1)) if (wd(x) && ok[dk(x)]) met++;
     // Racha: días hábiles seguidos cumplidos (si hoy aún no, cuenta desde ayer)
@@ -6425,13 +6433,34 @@ function _mpwRankTx() {
   var i = rows.findIndex(function(r) { return r.me; });
   return i < 0 ? 'Sin puesto aún' : 'Vas ' + (i + 1) + '.º de ' + rows.length;
 }
-function _mpwFill() {
-  var cnt = window._mpwCnt, box = document.getElementById('mpw-bars'); if (!box || !cnt) return;
-  var max = Math.max.apply(null, cnt.concat([1])), today = (new Date().getDay() + 6) % 7;
-  box.innerHTML = cnt.map(function(n, i) {
-    return '<div' + (i === today ? ' class="hoy"' : '') + ' title="' + n + ' clases"><i' + (n ? ' class="f"' : '') + ' style="height:' + (n ? Math.max(12, Math.round(n / max * 100)) : 6) + '%;--a:' + (n ? (.28 + .72 * n / max).toFixed(2) : 0) + '"></i></div>';
+function _mpwFill() { _wkFill(); }
+// Barras de "Tu progreso semanal" (panel derecho y celular) con el journal: más minutos operados, más alta y más dorada.
+// "No operé" marcado = barrita tenue (cuenta como día cumplido). Sin cuenta conectada = aviso para conectarla.
+function _wkFill() {
+  var w = window._wk, today = (new Date().getDay() + 6) % 7, L = ['L','M','M','J','V','S','D'];
+  var max = w ? Math.max.apply(null, w.d.map(function(x) { return x.ok && !x.nt ? x.min : 0; }).concat([1])) : 1;
+  var bar = function(x) {
+    if (x.ok && !x.nt) { var t = Math.min(1, x.min / max); return { h: Math.round(35 + 65 * t), a: (.28 + .72 * t).toFixed(2), tt: x.min + ' min operados' }; }
+    if (x.nt) return { h: 18, a: '.28', tt: 'No operé (cuenta)' };
+    return null;
+  };
+  var act = w ? w.d.filter(function(x) { return x.ok; }).length : 0;
+  var ch = document.getElementById('rp-chart');
+  if (ch) {
+    ch.classList.toggle('is-empty', !act);
+    ch.setAttribute('data-empty', !w ? '' : !w.acc ? 'Conecta tu cuenta de trading y aquí verás tu semana' : 'Opera o marca "No operé" y aquí verás tu semana');
+    ch.innerHTML = (w ? w.d : [0,0,0,0,0,0,0]).map(function(x, i) {
+      var b = w && bar(x);
+      return '<div title="' + (b ? b.tt : 'Sin actividad') + '"><i class="' + (b ? 'f' : '') + (i === today ? ' hoy' : '') + '" style="height:' + (b ? b.h : 6) + '%' + (b ? ';--a:' + b.a : '') + '"></i><span' + (i === today ? ' class="hoy"' : '') + '>' + L[i] + '</span></div>';
+    }).join('');
+    if (w && !w.acc) ch.onclick = function() { navigateTo('herramientas'); rJournalDash(); }; else ch.onclick = null;
+  }
+  var box = document.getElementById('mpw-bars');
+  if (box && w) box.innerHTML = w.d.map(function(x, i) {
+    var b = bar(x);
+    return '<div' + (i === today ? ' class="hoy"' : '') + ' title="' + (b ? b.tt : 'Sin actividad') + '"><i' + (b ? ' class="f"' : '') + ' style="height:' + (b ? b.h : 6) + '%' + (b ? ';--a:' + b.a : '') + '"></i></div>';
   }).join('');
-  var d = document.getElementById('mpw-n'); if (d) d.textContent = cnt.filter(function(n){ return n > 0; }).length;
+  var n = document.getElementById('mpw-n'); if (n && w) n.textContent = act;
 }
 function _mkRPanelProgress(pct) {
   var ring = document.getElementById('rp-ring');
@@ -6497,25 +6526,14 @@ function _mkRenderRPanel(liveOnly) {
       '<a href="https://discord.com/app" target="_blank" rel="noopener" title="Discord">' + MK_IC.discord + '</a>' +
       '<a href="https://wa.me/593995014247" target="_blank" rel="noopener" title="WhatsApp">' + MK_IC.wa + '</a>' +
     '</div>' +
-    (liveOnly ? '' : '<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span style="font-size:.78rem;color:var(--c-muted);font-weight:400;">lecciones</span></div>' +
+    (liveOnly ? '' : '<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span style="font-size:.78rem;color:var(--c-muted);font-weight:400;">trading</span></div>' +
       '<div class="rp-chart" id="rp-chart">' + days.map(function(d){ return '<div><i style="height:4%"></i><span>' + d + '</span></div>'; }).join('') + '</div>') +
     _rpRankCard() +
     '<div class="rp-h" id="rp-up-h" style="font-size:1.1rem;">Próximas actividades</div><div id="rp-up"><div style="font-size:.8rem;color:var(--c-muted);">Cargando...</div></div>' +
     '<button class="rp-all" onclick="navigateTo(\'sesiones\')">Ver todo</button>';
 
   if (!liveOnly) {
-    // Clases completadas por día (lunes a domingo de esta semana)
-    var mon = new Date(); mon.setHours(0,0,0,0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
-    sb.from('lesson_progress').select('completed_at').eq('user_id', cUser.id).eq('completed', true).gte('completed_at', mon.toISOString()).then(function(r) {
-      var cnt = [0,0,0,0,0,0,0];
-      ((r && r.data) || []).forEach(function(x){ if (x.completed_at) cnt[(new Date(x.completed_at).getDay() + 6) % 7]++; });
-      var max = Math.max.apply(null, cnt.concat([1]));
-      var today = (new Date().getDay() + 6) % 7;
-      var ch = document.getElementById('rp-chart');
-      if (ch) ch.classList.toggle('is-empty', !cnt.some(function(n){ return n > 0; }));
-      if (ch) ch.innerHTML = cnt.map(function(n, i){ return '<div title="' + n + ' clases"><i class="' + (i === today ? 'on' : '') + '" style="height:' + Math.max(6, Math.round(n / max * 100)) + '%"></i><span>' + days[i] + '</span></div>'; }).join('');
-      window._mpwCnt = cnt; _mpwFill();
-    });
+    _wkFill();
   }
 
   _mkUpcoming(function(items) {

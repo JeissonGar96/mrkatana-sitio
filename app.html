@@ -1710,6 +1710,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .jn-seg button.on{border-color:rgb(var(--c-acc));color:var(--c-text);box-shadow:0 0 0 3px rgba(var(--c-acc),.14);}
 .jn-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
 .jn-err{color:#d9776f;font-size:.8rem;min-height:1em;}
+@media (max-width:600px){.jn-ov{align-items:flex-end;padding:0;} .jn-md{border-radius:20px 20px 0 0 !important;max-height:92dvh;padding-bottom:calc(20px + env(safe-area-inset-bottom)) !important;} .jn-f .ai{font-size:16px !important;} .jn-ft .mk-btn,.jn-ft .jn-lk{flex:1;padding:12px;justify-content:center;text-align:center;} .jn-acc .jn-nm{min-width:0;flex-basis:100%;} .jn-act{width:100%;} .jn-act .jn-lk{flex:1;}}
 /* ── Menú de 3 puntos del panel derecho ── */
 .rp-h.rp-hm{display:flex;align-items:center;justify-content:space-between;position:relative;}
 .rp-dots{background:none;border:0;width:30px;height:30px;border-radius:8px;color:var(--c-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -2439,6 +2440,7 @@ function _mnLS(k, v) { try { if (v === undefined) return JSON.parse(localStorage
 function _mnOpt(k) {
   var b = _MN_BASE.find(function(o) { return o[0] === k; });
   if (b) return { k: k, t: b[1], l: b[2], i: k };
+  if (k === 'journal') return { k: k, t: 'Journal', l: 'Journal automático', i: 'jou' };
   if (k.indexOf('tool:') === 0) { var n = (_mnLS('mk-nav-names') || {})[k]; return n ? { k: k, t: n, l: n, i: 'tool' } : null; }
   return null;
 }
@@ -2455,13 +2457,14 @@ function _mnCount(v) {
 }
 function _mnGo(b) {
   _mdClose();
-  if (b.dataset.tool) { navigateTo('herramientas'); rTools(b.dataset.tool); }
+  if (b.dataset.tool === 'journal') { navigateTo('herramientas'); rJournalDash(); }
+  else if (b.dataset.tool) { navigateTo('herramientas'); rTools(b.dataset.tool); }
   else navigateTo(b.getAttribute('data-v'));
 }
 function _mnBtns(keys) {
   return ['dash'].concat(keys).map(function(k) {
-    var o = k === 'dash' ? { t: 'Inicio', i: 'dash' } : _mnOpt(k), tl = k.indexOf('tool:') === 0;
-    return '<button class="mob-nav-btn" data-v="' + (tl ? 'herramientas' : k) + '"' + (tl ? ' data-tool="' + _mnEsc(k.slice(5)) + '"' : '') + '>' + _mnSvg(o.i) + '<span>' + _mnEsc(o.t) + '</span></button>';
+    var o = k === 'dash' ? { t: 'Inicio', i: 'dash' } : _mnOpt(k), tl = k.indexOf('tool:') === 0 || k === 'journal';
+    return '<button class="mob-nav-btn" data-v="' + (tl ? 'herramientas' : k) + '"' + (tl ? ' data-tool="' + _mnEsc(k === 'journal' ? k : k.slice(5)) + '"' : '') + '>' + _mnSvg(o.i) + '<span>' + _mnEsc(o.t) + '</span></button>';
   }).join('');
 }
 function _mnRender() {
@@ -2587,7 +2590,7 @@ function _mpRender(tools) {
     '<p class="mp-hint">Si no eliges nada, queda en automático. Al elegir tus accesos se apaga solo.</p>' +
     '<div class="md-g"><span class="md-gt">Formación</span><div class="md-c">' + pick('clases', 'clases', 'Curso') + pick('sesiones', 'sesiones', 'En vivo') + pick('reuniones', 'reuniones', 'Reuniones 1-1') + '</div></div>' +
     '<div class="md-g"><span class="md-gt">Herramientas</span><div class="md-c">' + pick('herramientas', 'herramientas', 'Herramientas', 'Todas tus herramientas') +
-      tools.map(function(t) { return pick('tool:' + t.id, 'tool', t.name, 'Indicador'); }).join('') + soon('jou', 'Journal automático') + soon('cop', 'Copiador de operaciones') + '</div></div>' +
+      tools.map(function(t) { return pick('tool:' + t.id, 'tool', t.name, 'Indicador'); }).join('') + pick('journal', 'jou', 'Journal automático', 'Tus operaciones y estadísticas') + soon('cop', 'Copiador de operaciones') + '</div></div>' +
     '<p class="mp-hint">Lo que no esté en la barra sigue en el menú de tu nombre.</p>';
   el.scrollTop = keep;
   el.querySelectorAll('[data-pk]').forEach(function(b) {
@@ -4908,7 +4911,7 @@ function _ajRender() {
     html = '<div class="aj2-h">Conexiones</div><div class="aj2-s">Cuentas vinculadas a la plataforma.</div>' +
       _ajGroup('', _ajRow('Discord', p.discord_id ? '<span class="aj2-dot"></span>Conectado' : _ajEmpty('Sin conectar'), p.discord_id ? 'Reconectar' : 'Conectar', 'discord') +
         _ajRow('TradingView', tv ? _mkEsc(tv) + '<small>Usuario para recibir el acceso al indicador Kairus</small>' : _ajEmpty('Agrega tu usuario para recibir el indicador Kairus'), tv ? 'Editar' : 'Agregar', 'tv_username') +
-        _ajRow('Cuenta de trading', 'Exness o empresa de fondeo<small>Pronto: tu journal y el ranking se llenarán solos</small>', 'Próximamente', '', 'off'));
+        _ajRow('Cuenta de trading', 'Exness o Funding Pips<small>Conéctala para que tu journal se llene solo</small>', 'Ver cuentas', 'journal'));
   } else if (t === 'notif') {
     var s = _ajSet || {};
     var v = function(k, d) { return s[k] == null ? d : s[k]; };
@@ -5015,6 +5018,7 @@ async function _discordGo() {
 function _ajEdit(k) {
   var p = cProfile || {};
   if (k === 'foto') return _rpPhoto();
+  if (k === 'journal') { navigateTo('herramientas'); rJournal(); return; }
   if (k === 'pushdev') return _pushSubscribe(true).then(function(ok) { tst(ok ? '✓ Avisos activados en este dispositivo' : 'No se activaron los avisos', !ok); _ajRender(); });
   if (k === 'discord') {
     _discordGo(); return;

@@ -102,6 +102,8 @@
     '.jx-tbl th{font-weight:600;color:var(--c-muted);text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:11px 22px;border-block:1px solid var(--k-line);}',
     '.jx-tbl td{padding:14px 22px;border-bottom:1px solid rgba(var(--c-ov),.05);color:var(--c-text2);white-space:nowrap;}',
     '.jx-tbl tr:last-child td{border-bottom:0;} .jx-tbl tbody tr:hover td{background:rgba(var(--c-ov),.018);}',
+    '.jx-hm{display:none;margin-top:6px;padding:0 22px 4px;} .jx-hr{display:flex;align-items:center;gap:12px;width:100%;padding:13px 2px;background:none;border:0;border-bottom:1px solid rgba(var(--c-ov),.05);color:inherit;font:inherit;text-align:left;cursor:pointer;} .jx-hr:last-child{border-bottom:0;}',
+    '.jx-hr .a{flex:1;min-width:0;} .jx-hr b{display:block;font-size:13.5px;color:var(--c-text);} .jx-hr b span{font-weight:500;font-size:12.5px;margin-left:6px;} .jx-hr small{display:block;font-size:11.5px;color:var(--c-muted);margin-top:3px;} .jx-hr .v{font-size:13.5px;font-weight:700;}',
     '.jx-tbl .r{text-align:right;} .jx-tbl .sym{font-weight:700;color:var(--c-text);}',
     '.jx .sb,.jx-ov .sb{color:var(--jx-win);font-weight:600;} .jx .ss,.jx-ov .ss{color:var(--c-text2);font-weight:600;}',
     '.jx-more{display:flex;justify-content:center;padding:14px;}',
@@ -169,7 +171,7 @@
     '.jx-nod{padding:22px;text-align:center;color:var(--c-text2);font-size:12.5px;line-height:1.6;}',
     '.jx-wait{padding:44px 24px;text-align:center;} .jx-wait h3{margin:0 0 8px;font-size:1.05rem;color:var(--c-text);} .jx-wait p{margin:0 auto 18px;max-width:460px;color:var(--c-text2);font-size:.86rem;line-height:1.6;}',
     '@media (max-width:1020px){.jx-top,.jx-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .jx-calw,.jx-two,.jx-g3{grid-template-columns:minmax(0,1fr);} .jx-weeks{border-left:0;border-top:1px solid var(--k-line);margin:0;}}',
-    '@media (max-width:620px){.jx-trb{grid-template-columns:1fr;} .jx-accbtn{min-width:0;width:100%;} .jx-acts,.jx-accsel{width:100%;} .jx-accsel{flex:1;}}',
+    '@media (max-width:620px){.jx input,.jx textarea,.jx-ov input,.jx-ov textarea{font-size:16px!important;} .jx-tbl{display:none;} .jx-hm{display:block;} .jx-trb{grid-template-columns:1fr;} .jx-accbtn{min-width:0;width:100%;} .jx-acts,.jx-accsel{width:100%;} .jx-accsel{flex:1;}}',
     '@media (max-width:560px){.jx-days,.jx-dows{gap:4px;} .jx-day{padding:5px;border-radius:8px;} .jx-day .tc{display:none;} .jx-day .pn{font-size:10px;} .jx-st .v{font-size:19px;} .jx-curve svg{height:230px;} .jx-kv{grid-template-columns:repeat(2,1fr);}}',
     '@media (prefers-reduced-motion:reduce){.jx *,.jx-ov *{transition:none!important;}}'
   ].join('\n');
@@ -705,9 +707,13 @@
     }).join('');
     var box = document.getElementById('jx-hist');
     box.innerHTML = '<div class="jx-ch"><h2>Historial de operaciones</h2><span class="jx-lbl">' + T.length + (T.length === 1 ? ' operación cerrada' : ' operaciones cerradas') + '</span></div>' +
+      '<div class="jx-hm">' + T.slice(0, n).map(function(t, i) {
+        return '<button class="jx-hr" data-i="' + i + '"><span class="a"><b>' + esc(t.symbol) + sideLbl(t) + '</b><small>' + dt(t._c) + ' · ' + (+t.volume) + ' lotes</small></span><span class="v num ' + cls(t._n) + '">' + money(t._n) + '</span></button>';
+      }).join('') + '</div>' +
       '<div class="jx-tbl"><table><thead><tr><th>Símbolo</th><th>Tipo</th><th>Apertura</th><th class="r">Precio</th><th>Cierre</th><th class="r">Precio</th><th class="r">TP</th><th class="r">SL</th><th class="r">Lotes</th><th class="r">Comisión</th><th class="r">Resultado</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       (n < T.length ? '<div class="jx-more"><button class="jx-btn" id="jx-more">Ver más</button></div>' : '');
     var mb = document.getElementById('jx-more'); if (mb) mb.onclick = function() { JX.hist += 50; renderHist(); };
+    box.querySelector('.jx-hm').onclick = function(e) { var r = e.target.closest('[data-i]'); if (!r) return; var k = T[+r.dataset.i]._k; openDay(k, T.filter(function(t) { return t._k === k; })); };
   }
 
   /* ── Personalizar: paneles y colores ── */

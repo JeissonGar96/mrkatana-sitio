@@ -1704,6 +1704,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .jn-md h3{margin:0 0 4px;font-size:1.15rem;color:var(--c-text);} .jn-md > p{margin:0 0 18px;color:var(--c-muted);font-size:.84rem;}
 .jn-f{display:grid;gap:14px;}
 .jn-f .hint{font-size:.74rem;color:var(--c-muted);margin-top:5px;line-height:1.45;}
+.jn-f .hint a{color:rgb(var(--c-acc));font-weight:600;text-decoration:none;}.jn-f .hint a:hover{text-decoration:underline;}.jn-f .hint b{color:var(--c-text);}
 .jn-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .jn-seg button{border:1px solid var(--k-line);background:var(--c-bg);color:var(--c-text2);font-weight:600;font-size:.86rem;padding:11px;border-radius:12px;cursor:pointer;}
 .jn-seg button.on{border-color:rgb(var(--c-acc));color:var(--c-text);box-shadow:0 0 0 3px rgba(var(--c-acc),.14);}
@@ -5418,7 +5419,7 @@ function _jnForm(acc) {
   ov.innerHTML = '<div class="mk-card jn-md" role="dialog" aria-modal="true" aria-labelledby="jn-t"><h3 id="jn-t">' + (fix ? 'Cambiar contraseña de inversor' : 'Conectar cuenta') + '</h3><p>' + (fix ? _mkEsc(acc.nickname) + ' · #' + _mkEsc(acc.login) : 'Solo cuentas MT5 de Exness o Funding Pips.') + '</p><form class="jn-f" id="jn-f" novalidate>' +
     (fix ? '' :
     '<div><label class="al" for="jn-nm">Nombre de la cuenta</label><input class="ai" id="jn-nm" maxlength="28" placeholder="Ej. Fondeo principal" required></div>' +
-    '<div><span class="al">Bróker</span><div class="jn-seg" id="jn-br"><button type="button" data-b="exness">Exness</button><button type="button" data-b="fundingpips">Funding Pips</button></div></div>' +
+    '<div><span class="al">Bróker</span><div class="jn-seg" id="jn-br"><button type="button" data-b="exness">Exness</button><button type="button" data-b="fundingpips">Funding Pips</button></div><div class="hint" id="jn-ref"></div></div>' +
     '<div><label class="al" for="jn-sv">Servidor</label><input class="ai" id="jn-sv" list="jn-svl" placeholder="Ej. Exness-MT5Real8" autocomplete="off" required><datalist id="jn-svl"></datalist><div class="hint">Lo encuentras en MT5, en Archivo › Iniciar sesión, o en el correo que te llegó al abrir la cuenta.</div></div>' +
     '<div><label class="al" for="jn-lg">Número de cuenta</label><input class="ai" id="jn-lg" inputmode="numeric" placeholder="Ej. 81234567" required></div>' +
     '<div id="jn-szw"><label class="al" for="jn-sz">Tamaño de la cuenta (opcional)</label><input class="ai" id="jn-sz" inputmode="decimal" placeholder="Ej. 50000"></div>') +
@@ -5436,6 +5437,7 @@ function _jnForm(acc) {
     var setB = function(b) {
       broker = b; $('jn-br').querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x.dataset.b === b); });
       $('jn-sv').placeholder = b === 'exness' ? 'Ej. Exness-MT5Real8' : 'Ej. FundingPips-SIM1';
+      $('jn-ref').innerHTML = b === 'exness' ? '¿No tienes cuenta? <a href="https://one.exnessonelink.com/a/tr942ze99o" target="_blank" rel="noopener">Ábrela aquí</a>' : '¿No tienes cuenta? <a href="https://app.fundingpips.com/register?referral_code=MRKATANA" target="_blank" rel="noopener">Ábrela aquí</a> y usa el código de descuento <b>MRKATANA</b>';
       $('jn-svl').innerHTML = b === 'exness' ? '' : ['SIM1', 'Prime', 'SIM', 'Trial'].map(function(x) { return '<option value="FundingPips-' + x + '">'; }).join('');
     };
     $('jn-br').onclick = function(e) { var x = e.target.closest('[data-b]'); if (x) setB(x.dataset.b); };

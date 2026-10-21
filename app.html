@@ -2012,6 +2012,8 @@ a.mk-pill:hover{color:var(--c-text) !important;}
   .mob-nav-btn.on{background:var(--k-goldsoft);color:var(--k-gold) !important;}
   #appdash{padding-bottom:0 !important;}
   /* app instalada en iPhone: el fondo llega hasta el borde de abajo (zona de la rayita de inicio) */
+  /* en el celular no hay marco: el fondo es el color "Fondo" elegido en Apariencia */
+  :root,:root[data-theme="light"]{--k-bg:var(--c-bg);}
   html,body{height:100%;background:var(--k-bg);}
   #appdash{bottom:calc(-1 * env(safe-area-inset-bottom,0px)) !important;}
   .amain{padding-bottom:112px !important;}

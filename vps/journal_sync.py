@@ -36,7 +36,7 @@ SB_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 JOURNAL_KEY = os.environ.get("JOURNAL_KEY", "")
 INTERVAL_MIN = int(os.environ.get("INTERVAL_MIN", "60"))
 PENDING_MIN = int(os.environ.get("PENDING_MIN", "2"))  # cada cuánto buscar cuentas recién conectadas
-FIRST_SYNC_DAYS = int(os.environ.get("FIRST_SYNC_DAYS", "90"))
+FIRST_SYNC_DAYS = int(os.environ.get("FIRST_SYNC_DAYS", "3650"))
 MT5_PATHS = {
     "exness": os.environ.get("MT5_PATH_EXNESS", ""),
     "fundingpips": os.environ.get("MT5_PATH_FUNDINGPIPS", ""),
@@ -131,6 +131,23 @@ def to_utc(ts, off):
     return dt.datetime.fromtimestamp(ts - off * 3600, dt.timezone.utc)
 
 
+def wait_history(mt5, balance, limit=40):
+    """Después de entrar, MT5 baja el historial en segundo plano. Espera hasta que los movimientos sumen el balance."""
+    last = -1
+    for _ in range(limit):
+        deals = mt5.history_deals_get(dt.datetime(2000, 1, 1), dt.datetime.now() + dt.timedelta(days=2)) or ()
+        total = sum(d.profit + d.commission + d.swap + getattr(d, "fee", 0) for d in deals)
+        if deals and abs(total - balance) < 0.05:
+            return
+        if deals and len(deals) == last:
+            time.sleep(1)  # dos lecturas iguales seguidas: probablemente ya terminó
+            if len(mt5.history_deals_get(dt.datetime(2000, 1, 1), dt.datetime.now() + dt.timedelta(days=2)) or ()) == last:
+                return
+        last = len(deals)
+        time.sleep(1)
+    log.info("El historial no terminó de cargar a tiempo (%d movimientos)", max(last, 0))
+
+
 def read_positions(mt5, date_from, off, acc):
     """Agrupa los deals por posición y devuelve las operaciones cerradas."""
     deals = mt5.history_deals_get(date_from, dt.datetime.now() + dt.timedelta(days=2)) or []
@@ -203,22 +220,25 @@ def sync_account(mt5, acc, partner_logins):
         return update_account(acc["id"], status="error", last_error=MSG_PARTNER)
 
     off = server_offset(mt5)
-    if acc.get("last_sync_at"):
+    wait_history(mt5, info.balance)
+    full = not acc.get("last_sync_at") or "--full" in sys.argv
+    if not full:
         since = dt.datetime.fromisoformat(acc["last_sync_at"].replace("Z", "+00:00")).replace(tzinfo=None) - dt.timedelta(days=3)
     else:
+        # Primera lectura: todo el historial, desde el primer movimiento de la cuenta
         since = dt.datetime.now() - dt.timedelta(days=FIRST_SYNC_DAYS)
-        # La curva empieza el día del primer movimiento de la cuenta (no antes de que existiera)
-        all_deals = mt5.history_deals_get(dt.datetime(2000, 1, 1), dt.datetime.now() + dt.timedelta(days=1)) or ()
+        all_deals = mt5.history_deals_get(dt.datetime(2000, 1, 1), dt.datetime.now() + dt.timedelta(days=2)) or ()
         if all_deals:
             since = max(since, to_utc(min(d.time for d in all_deals), off).replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0))
         else:
-            since = dt.datetime.now()
+            since = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        sb("DELETE", "journal_snapshots?account_id=eq.%s&day=lt.%s" % (acc["id"], since.date().isoformat()))
     trades, deals = read_positions(mt5, since, off, acc)
     if trades:
         upsert("journal_trades", trades, "account_id,ticket")
     snaps = daily_balances(deals, info.balance, off, since, acc)
     snaps[0]["equity"] = round(info.equity, 2)  # hoy: equidad real
-    if not acc.get("last_sync_at"):
+    if full:
         upsert("journal_snapshots", snaps, "account_id,day")
     else:
         upsert("journal_snapshots", snaps[:4], "account_id,day")

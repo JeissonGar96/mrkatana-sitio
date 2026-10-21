@@ -5164,21 +5164,26 @@ function _pgLoad(force) {
   _pgAt = Date.now();
   var d = new Date(), m0 = new Date(d.getFullYear(), d.getMonth(), 1), dk = function(x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
   return Promise.all([
-    sb.rpc('journal_ranking'),
-    sb.from('journal_trades').select('close_time, profit, commission, swap').gte('close_time', m0.toISOString()).limit(5000),
+    sb.rpc('journal_ranking_v2'),
+    sb.from('journal_trades').select('open_time, close_time, profit, commission, swap').gte('close_time', m0.toISOString()).limit(5000),
     sb.from('journal_days').select('day').eq('no_trade', true).gte('day', dk(m0)),
     sb.from('journal_accounts').select('id', { count: 'exact', head: true })
   ]).then(function(r) {
-    if (!r[0].error) window._pgRank = r[0].data || [];
+    // Puntos: +1 por día hábil operado, −1 por día hábil sin operar y sin marcar "No operé"
+    if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me }; });
     var T = r[1].data || [], ok = {}, td = {}, res = 0;
-    T.forEach(function(t) { var k = dk(new Date(t.close_time)); ok[k] = td[k] = 1; res += (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); });
+    // Un día cuenta como operado solo si sus operaciones suman 5 minutos o más abiertas
+    var dur = {};
+    T.forEach(function(t) { var c = new Date(t.close_time), k = dk(c); dur[k] = (dur[k] || 0) + (c - new Date(t.open_time)); res += (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); });
+    Object.keys(dur).forEach(function(k) { if (dur[k] >= 3e5) ok[k] = td[k] = 1; });
     (r[2].data || []).forEach(function(x) { ok[x.day] = 1; });
     var wd = function(x) { var w = x.getDay(); return w > 0 && w < 6; }, met = 0;
     for (var x = new Date(m0); x <= d; x.setDate(x.getDate() + 1)) if (wd(x) && ok[dk(x)]) met++;
     // Racha: días hábiles seguidos cumplidos (si hoy aún no, cuenta desde ayer)
     var st = 0, c = new Date(d); if (!ok[dk(c)]) c.setDate(c.getDate() - 1);
     for (var g = 0; g < 400; g++) { if (wd(c)) { if (!ok[dk(c)]) break; st++; } c.setDate(c.getDate() - 1); }
-    window._pgMe = { acc: (r[3].count || 0) > 0, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res };
+    var mine = (window._pgRank || []).find(function(x) { return x.me; });
+    window._pgMe = { acc: (r[3].count || 0) > 0, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
     document.querySelectorAll('.rp-rank').forEach(function(e) { e.outerHTML = _rpRankCard(); });
     document.querySelectorAll('.mpw-rk b').forEach(function(e) { e.textContent = _mpwRankTx(); });
     var pg = document.querySelector('#pg-modal .sum-body'); if (pg) pg.innerHTML = _pgBody();
@@ -5189,13 +5194,13 @@ function _rpRankCard() {
   var rows = (window._pgRank || []).slice().sort(function(a, b) { return b.days - a.days; });
   var i = rows.findIndex(function(r) { return r.me; });
   var body = i < 0 ? '<b>Sin puesto aún</b><span>Conecta tu cuenta para entrar</span>'
-    : '<b>Tu puesto: #' + (i + 1) + '</b><span>' + rows[i].days + ' de ' + _pgDays() + ' días cumplidos</span>';
+    : '<b>Tu puesto: #' + (i + 1) + '</b><span>' + rows[i].days + (Math.abs(rows[i].days) === 1 ? ' punto' : ' puntos') + ' este mes</span>';
   return '<button class="rp-rank" onclick="openProgreso()"><span class="rp-rank-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg></span><span class="rp-rank-tx"><small>Ranking del mes</small>' + body + '</span><span class="rp-rank-go">›</span></button>';
 }
 // Ranking del mes: días cumplidos (operó o anotó en el journal por qué no operó). Filas: {name, days, me}
 function _pgRanking(rows) {
   var tot = _pgDays();
-  var head = '<div class="pg-rk"><div class="pg-ph"><b>Ranking del mes</b><span>Días cumplidos: operaste o anotaste por qué no operaste</span></div>';
+  var head = '<div class="pg-rk"><div class="pg-ph"><b>Ranking del mes</b><span>Puntos: días operados menos días sin marcar</span></div>';
   if (!rows.length) return head + '<div class="pg-rk-empty">El ranking empieza cuando los alumnos conecten su cuenta de trading.</div></div>';
   rows = rows.slice().sort(function(a, b) { return b.days - a.days; });
   var meI = rows.findIndex(function(r) { return r.me; });
@@ -5207,16 +5212,16 @@ function _pgRanking(rows) {
     var crown = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg>';
     return '<div class="pg-row' + (r.me ? ' me' : '') + (i < 3 ? ' p' + (i + 1) : '') + '"><span class="pg-pos">' + (i === 0 ? crown : i + 1) + '</span>' +
       '<span class="pg-nm">' + _mkEsc(nm) + (r.me ? ' <em>Tú</em>' : '') + '</span>' +
-      '<div class="lvl-bar pg-bar"><i style="width:' + Math.round(r.days / tot * 100) + '%"></i></div>' +
-      '<span class="pg-n">' + r.days + '/' + tot + '</span></div>';
+      '<div class="lvl-bar pg-bar"><i style="width:' + Math.max(0, Math.round(r.days / tot * 100)) + '%"></i></div>' +
+      '<span class="pg-n">' + r.days + ' pts</span></div>';
   }).join('') + '</div>';
 }
 function _pgBody() {
-  var me = window._pgMe, tot = _pgDays(), met = me ? me.met : 0;
+  var me = window._pgMe, tot = _pgDays(), pts = me ? me.pts : 0, emp = me ? me.empty : 0;
   var money = function(v) { return (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
   var tiles = [['Días operados', me ? me.traded : '—', 'este mes'], ['Racha actual', me ? me.streak : '—', 'días hábiles seguidos'], ['Operaciones', me ? me.ops : '—', 'este mes'], ['Resultado', me ? money(me.res) : '—', 'este mes']];
   return '<div class="pg-tiles">' + tiles.map(function(t) { return '<div class="pg-tile"><span>' + t[0] + '</span><b>' + t[1] + '</b><small>' + t[2] + '</small></div>'; }).join('') + '</div>' +
-    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>' + met + ' de ' + tot + ' días cumplidos' + (met < tot ? ' · te faltan ' + (tot - met) : '') + '</span></div><div class="lvl-bar"><i style="width:' + Math.round(met / tot * 100) + '%"></i></div><small>Un día cuenta si operaste o si marcaste "No operé" en tu journal. Cumple todos los días hábiles del mes para ganar el premio. Si hay empate, gana quien mejor cuidó su cuenta.</small></div>' +
+    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>' + pts + (Math.abs(pts) === 1 ? ' punto' : ' puntos') + (emp ? ' · ' + emp + (emp === 1 ? ' día sin marcar' : ' días sin marcar') : '') + '</span></div><div class="lvl-bar"><i style="width:' + Math.max(0, Math.round(pts / tot * 100)) + '%"></i></div><small>Sumas 1 punto por cada día hábil que operas (tus operaciones de ese día tienen que sumar al menos 5 minutos abiertas). Si un día hábil no operas y no marcas "No operé" en tu journal ese mismo día, te resta 1 punto. Marcar no suma, solo evita que reste. Gana quien más puntos tenga al final del mes; si hay empate, gana quien mejor cuidó su cuenta.</small></div>' +
     _pgRanking(window._pgRank || []) +
     (me && me.acc ? '' : '<div class="pg-empty"><h4>Conecta tu cuenta de trading</h4><p>Conecta tu cuenta de Exness o Funding Pips y tus operaciones se registrarán solas. Aquí verás tu racha, tus operaciones, tus resultados y tu puesto en el ranking.</p>' +
     '<button class="mk-btn" onclick="var m=document.getElementById(\'pg-modal\');if(m)m.remove();navigateTo(\'herramientas\');rJournalDash();">Conectar mi cuenta</button></div>');

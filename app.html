@@ -5420,7 +5420,7 @@ function _jnForm(acc) {
     (fix ? '' :
     '<div><label class="al" for="jn-nm">Nombre de la cuenta</label><input class="ai" id="jn-nm" maxlength="28" placeholder="Ej. Fondeo principal" required></div>' +
     '<div><span class="al">Bróker</span><div class="jn-seg" id="jn-br"><button type="button" data-b="exness">Exness</button><button type="button" data-b="fundingpips">Funding Pips</button></div><div class="hint" id="jn-ref"></div></div>' +
-    '<div><label class="al" for="jn-sv">Servidor</label><input class="ai" id="jn-sv" list="jn-svl" placeholder="Ej. Exness-MT5Real8" autocomplete="off" required><datalist id="jn-svl"></datalist><div class="hint">Lo encuentras en MT5, en Archivo › Iniciar sesión, o en el correo que te llegó al abrir la cuenta.</div></div>' +
+    '<div><label class="al" for="jn-sv">Servidor</label><select class="ai" id="jn-ss"></select><input class="ai" id="jn-sv" placeholder="Escribe el servidor" autocomplete="off" style="display:none;margin-top:8px" required><div class="hint">Lo encuentras en MT5, en Archivo › Iniciar sesión, o en el correo que te llegó al abrir la cuenta.</div></div>' +
     '<div><label class="al" for="jn-lg">Número de cuenta</label><input class="ai" id="jn-lg" inputmode="numeric" placeholder="Ej. 81234567" required></div>' +
     '<div id="jn-szw"><label class="al" for="jn-sz">Tamaño de la cuenta (opcional)</label><input class="ai" id="jn-sz" inputmode="decimal" placeholder="Ej. 50000"></div>') +
     '<div><label class="al" for="jn-pw">Contraseña de inversor</label><input class="ai" id="jn-pw" type="password" autocomplete="off" required><div class="hint">Es la contraseña de solo lectura. Con ella podemos ver tus operaciones, pero nadie puede operar ni retirar. Se guarda cifrada.</div></div>' +
@@ -5436,10 +5436,15 @@ function _jnForm(acc) {
   if (!fix) {
     var setB = function(b) {
       broker = b; $('jn-br').querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x.dataset.b === b); });
-      $('jn-sv').placeholder = b === 'exness' ? 'Ej. Exness-MT5Real8' : 'Ej. FundingPips-SIM1';
       $('jn-ref').innerHTML = b === 'exness' ? '¿No tienes cuenta? <a href="https://one.exnessonelink.com/a/tr942ze99o" target="_blank" rel="noopener">Ábrela aquí</a>' : '¿No tienes cuenta? <a href="https://app.fundingpips.com/register?referral_code=MRKATANA" target="_blank" rel="noopener">Ábrela aquí</a> y usa el código de descuento <b>MRKATANA</b>';
-      $('jn-svl').innerHTML = b === 'exness' ? '' : ['SIM1', 'Prime', 'SIM', 'Trial'].map(function(x) { return '<option value="FundingPips-' + x + '">'; }).join('');
+      var rg = function(p, n) { var o = [p]; for (var i = 2; i <= n; i++) o.push(p + i); return o; };
+      var op = function(l) { return l.map(function(x) { return '<option>' + x + '</option>'; }).join(''); };
+      $('jn-ss').innerHTML = '<option value="">Elige tu servidor</option>' + (b === 'exness'
+        ? '<optgroup label="Cuenta real">' + op(rg('Exness-MT5Real', 40)) + '</optgroup><optgroup label="Cuenta demo">' + op(rg('Exness-MT5Trial', 20)) + '</optgroup>'
+        : op(['FundingPips-SIM1', 'FundingPips-Prime', 'FundingPips-SIM', 'FundingPips-Trial'])) + '<option value="_otro">Otro (escribirlo)</option>';
+      $('jn-sv').value = ''; $('jn-sv').style.display = 'none';
     };
+    $('jn-ss').onchange = function() { var o = this.value === '_otro'; $('jn-sv').style.display = o ? '' : 'none'; $('jn-sv').value = o ? '' : this.value; if (o) $('jn-sv').focus(); };
     $('jn-br').onclick = function(e) { var x = e.target.closest('[data-b]'); if (x) setB(x.dataset.b); };
     setB(broker); $('jn-nm').focus();
   } else $('jn-pw').focus();

@@ -1441,6 +1441,25 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 <script>
 // Colores de Admin > Apariencia (copia guardada); va después de los estilos para que mande sobre ellos
 try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write('<style id="mk-custom-theme">' + _css + '</style>'); } catch (e) {}
+// Primera visita (sin copia guardada): la página espera a los colores del admin en lugar de mostrar los dorados
+(function() {
+  var c = null; try { c = localStorage.getItem('mk-theme-css'); } catch (e) {}
+  if (c) return;
+  document.write('<style id="mk-wait">html{visibility:hidden}</style>');
+  function show() { var w = document.getElementById('mk-wait'); if (w) w.remove(); }
+  setTimeout(show, 2000);
+  fetch('/api/site-theme').then(function(r) { return r.json(); }).then(function(d) {
+    function go() {
+      if (d && d.ok && d.theme && typeof _mkThemeCss === 'function' && !document.getElementById('mk-custom-theme')) {
+        var css = _mkThemeCss(d.theme), el = document.createElement('style');
+        el.id = 'mk-custom-theme'; el.textContent = css; document.head.appendChild(el);
+        try { localStorage.setItem('mk-theme-css', css); } catch (e) {}
+      }
+      show();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  }).catch(show);
+})();
 </script>
 </head>
 <body>

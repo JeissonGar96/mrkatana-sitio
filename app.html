@@ -1735,6 +1735,11 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 @media (max-width:600px){.pg-ph{flex-direction:column;align-items:flex-start;gap:3px;} .pg-ph b{white-space:nowrap;}}
 .pg-ph b{font-size:.92rem;color:var(--c-text);}
 .pg-ph span{font-size:.78rem;color:var(--c-muted);}
+.pg-rules{margin-top:12px;display:grid;gap:2px;}
+.pg-rules div{display:grid;grid-template-columns:30px 62px 1fr;align-items:baseline;gap:8px;padding:6px 0;border-top:1px solid rgba(var(--c-ov),.06);}
+.pg-rules div:first-child{border-top:0;}
+.pg-rules b{font-size:.86rem;color:var(--c-text);}.pg-rules div:first-child b{color:rgb(var(--c-acc));}
+.pg-rules span{font-size:.8rem;color:var(--c-text2);}.pg-rules p{margin:0;font-size:.8rem;color:var(--c-muted);}
 .pg-prize small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
 .pg-pick{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
 .pg-pick small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
@@ -5258,7 +5263,11 @@ function _pgBody() {
   var money = function(v) { return (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
   var tiles = [['Días operados', me ? me.traded : '—', 'este mes'], ['Racha actual', me ? me.streak : '—', 'días hábiles seguidos'], ['Operaciones', me ? me.ops : '—', 'este mes'], ['Resultado', me ? money(me.res) : '—', 'este mes']];
   return '<div class="pg-tiles">' + tiles.map(function(t) { return '<div class="pg-tile"><span>' + t[0] + '</span><b>' + t[1] + '</b><small>' + t[2] + '</small></div>'; }).join('') + '</div>' +
-    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>' + pts + (Math.abs(pts) === 1 ? ' punto' : ' puntos') + (emp ? ' · ' + emp + (emp === 1 ? ' día sin marcar' : ' días sin marcar') : '') + '</span></div><div class="lvl-bar"><i style="width:' + Math.max(0, Math.round(pts / tot * 100)) + '%"></i></div><small>Sumas 1 punto por cada día hábil que operas (tus operaciones de ese día tienen que sumar al menos 5 minutos abiertas). Si un día hábil no operas y no marcas "No operé" en tu journal ese mismo día, te resta 1 punto. Marcar no suma, solo evita que reste. Gana quien más puntos tenga al final del mes; si hay empate, gana quien mejor cuidó su cuenta. Las cuentas demo no participan, y las cuentas reales de Exness necesitan un balance de al menos $100.</small></div>' +
+    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>' + pts + (Math.abs(pts) === 1 ? ' punto' : ' puntos') + (emp ? ' · ' + emp + (emp === 1 ? ' día sin marcar' : ' días sin marcar') : '') + '</span></div><div class="lvl-bar"><i style="width:' + Math.max(0, Math.round(pts / tot * 100)) + '%"></i></div><div class="pg-rules">' +
+      '<div><b>+1</b><span>Suma</span><p>Día hábil operado (mínimo 5 min en total)</p></div>' +
+      '<div><b>0</b><span>No suma</span><p>Marcar "No operé" ese mismo día</p></div>' +
+      '<div><b>−1</b><span>Resta</span><p>Día hábil sin operar y sin marcar</p></div></div>' +
+      '<small>Gana quien más puntos tenga. Empate: quien mejor cuidó su cuenta. No cuentan demos; Exness mínimo $100.</small></div>' +
     _pgPick(me) + _pgRanking(window._pgRank || []) +
     (me && me.acc ? '' : '<div class="pg-empty"><h4>Conecta tu cuenta de trading</h4><p>Conecta tu cuenta de Exness o Funding Pips y tus operaciones se registrarán solas. Aquí verás tu racha, tus operaciones, tus resultados y tu puesto en el ranking.</p>' +
     '<button class="mk-btn" onclick="var m=document.getElementById(\'pg-modal\');if(m)m.remove();navigateTo(\'herramientas\');rJournalDash();">Conectar mi cuenta</button></div>');

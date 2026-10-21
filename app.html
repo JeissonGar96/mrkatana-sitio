@@ -5351,7 +5351,7 @@ function rTools(detail) {
       '<button class="mk-card tl-card tl-go" id="tl-jn"><div class="tl-top"><h3>Journal automático</h3><span class="tl-arrow">Ver</span></div><p>Tus operaciones se registran solas desde tu cuenta de trading. Estadísticas, racha y progreso.</p></button>' +
       '<div class="mk-card tl-card"><div class="tl-top"><h3>Copiador de operaciones</h3><span class="mk-pill">Próximamente</span></div><p>Copia las operaciones del mentor en tu cuenta de forma automática.</p></div>';
     g.querySelectorAll('[data-tool]').forEach(function(b) { b.onclick = function() { rTools(b.dataset.tool); }; });
-    document.getElementById('tl-jn').onclick = function() { rJournal(); };
+    document.getElementById('tl-jn').onclick = function() { rJournalDash(); };
   });
 }
 /* ── Journal automático: cuentas conectadas ── */
@@ -5364,10 +5364,12 @@ function rJournal() {
     '<button class="mk-btn" id="jn-add">Conectar cuenta</button></div><div id="jn-body"><div class="mk-card" style="color:var(--c-muted)">Cargando…</div></div>';
   document.getElementById('jn-back').onclick = function() { rTools(); };
   document.getElementById('jn-add').onclick = function() { _jnForm(); };
+  var _jnDash = function() { var bk = document.getElementById('jn-back'); if (bk) { bk.textContent = '‹ Journal'; bk.onclick = function() { rJournalDash(); }; } };
   sb.from('journal_accounts').select(JN_COLS).order('created_at').then(function(r) {
     var b = document.getElementById('jn-body'); if (!b) return;
     var acc = r.data || [];
     if (r.error) { b.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">No se pudieron cargar tus cuentas. Recarga la página.</div>'; return; }
+    if (acc.length) _jnDash();
     if (!acc.length) {
       b.innerHTML = '<div class="mk-card jn-empty"><h3>Conecta tu primera cuenta</h3><p>Usa tu cuenta MT5 de Exness o de Funding Pips con la contraseña de inversor. Es de solo lectura: con ella nadie puede operar ni retirar.</p><button class="mk-btn" id="jn-add2">Conectar cuenta</button></div>';
       document.getElementById('jn-add2').onclick = function() { _jnForm(); };
@@ -5417,7 +5419,7 @@ function _jnForm(acc) {
     (fix ? '' :
     '<div><label class="al" for="jn-nm">Nombre de la cuenta</label><input class="ai" id="jn-nm" maxlength="28" placeholder="Ej. Fondeo principal" required></div>' +
     '<div><span class="al">Bróker</span><div class="jn-seg" id="jn-br"><button type="button" data-b="exness">Exness</button><button type="button" data-b="fundingpips">Funding Pips</button></div></div>' +
-    '<div><label class="al" for="jn-sv">Servidor</label><input class="ai" id="jn-sv" placeholder="Ej. Exness-MT5Real8" autocomplete="off" required><div class="hint">Lo encuentras en MT5, en Archivo › Iniciar sesión, o en el correo que te llegó al abrir la cuenta.</div></div>' +
+    '<div><label class="al" for="jn-sv">Servidor</label><input class="ai" id="jn-sv" list="jn-svl" placeholder="Ej. Exness-MT5Real8" autocomplete="off" required><datalist id="jn-svl"></datalist><div class="hint">Lo encuentras en MT5, en Archivo › Iniciar sesión, o en el correo que te llegó al abrir la cuenta.</div></div>' +
     '<div><label class="al" for="jn-lg">Número de cuenta</label><input class="ai" id="jn-lg" inputmode="numeric" placeholder="Ej. 81234567" required></div>' +
     '<div id="jn-szw"><label class="al" for="jn-sz">Tamaño de la cuenta (opcional)</label><input class="ai" id="jn-sz" inputmode="decimal" placeholder="Ej. 50000"></div>') +
     '<div><label class="al" for="jn-pw">Contraseña de inversor</label><input class="ai" id="jn-pw" type="password" autocomplete="off" required><div class="hint">Es la contraseña de solo lectura. Con ella podemos ver tus operaciones, pero nadie puede operar ni retirar. Se guarda cifrada.</div></div>' +
@@ -5431,7 +5433,11 @@ function _jnForm(acc) {
   ov.onclick = function(e) { if (e.target === ov) close(); };
   $('jn-c').onclick = close;
   if (!fix) {
-    var setB = function(b) { broker = b; $('jn-br').querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x.dataset.b === b); }); };
+    var setB = function(b) {
+      broker = b; $('jn-br').querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x.dataset.b === b); });
+      $('jn-sv').placeholder = b === 'exness' ? 'Ej. Exness-MT5Real8' : 'Ej. FundingPips-SIM1';
+      $('jn-svl').innerHTML = b === 'exness' ? '' : ['SIM1', 'Prime', 'SIM', 'Trial'].map(function(x) { return '<option value="FundingPips-' + x + '">'; }).join('');
+    };
     $('jn-br').onclick = function(e) { var x = e.target.closest('[data-b]'); if (x) setB(x.dataset.b); };
     setB(broker); $('jn-nm').focus();
   } else $('jn-pw').focus();
@@ -5450,7 +5456,7 @@ function _jnForm(acc) {
       var r = await fetch('/api/journal-account', { method: fix ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify(body) });
       var j = await r.json().catch(function() { return {}; });
       if (!r.ok) throw new Error(j.detail || 'No se pudo conectar la cuenta. Intenta de nuevo.');
-      close(); tst(fix ? 'Contraseña actualizada.' : 'Cuenta conectada. La revisaremos en la próxima hora.'); rJournal();
+      close(); tst(fix ? 'Contraseña actualizada.' : 'Cuenta conectada. La revisaremos en la próxima hora.'); rJournalDash();
     } catch (err) { $('jn-e').textContent = err.message; $('jn-s').disabled = false; }
   };
 }
@@ -10589,5 +10595,6 @@ function toggleCalExplain(id) {
 
 
 </script>
+<script src="js/journal.js"></script>
 </body>
 </html>

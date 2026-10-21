@@ -41,6 +41,7 @@ MT5_PATHS = {
     "fundingpips": os.environ.get("MT5_PATH_FUNDINGPIPS", ""),
 }
 # Palabras que deben aparecer en el nombre de la empresa o del servidor que reporta MT5
+SERVER_PREFIX = {"exness": "exness-", "fundingpips": "fundingpips-"}  # ej. FundingPips-SIM1, -Prime, -SIM, -Trial
 BROKER_MARKS = {"exness": ("exness",), "fundingpips": ("funding pips", "fundingpips", "funding-pips")}
 PARTNER_API = "https://my.exnessaffiliates.com"
 
@@ -194,7 +195,7 @@ def sync_account(mt5, acc, partner_logins):
         return update_account(acc["id"], status="error", last_error=MSG_LOGIN)
     info = mt5.account_info()
     who = ((info.company or "") + " " + (info.server or "")).lower()
-    if not any(m in who for m in BROKER_MARKS[acc["broker"]]):
+    if not any(m in who for m in BROKER_MARKS[acc["broker"]]) or not str(acc["server"]).lower().startswith(SERVER_PREFIX[acc["broker"]]):
         log.info("Bróker no coincide %s: %s", acc["login"], who)
         return update_account(acc["id"], status="error", last_error=MSG_BROKER[acc["broker"]])
     if acc["broker"] == "exness" and partner_logins is not None and str(acc["login"]) not in partner_logins:

@@ -13,6 +13,8 @@ const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4eWV6Ynl2d3F3aWhnZ2VjaHNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzA3NDEsImV4cCI6MjA4ODk0Njc0MX0.1JSsDMb08NiHwrRtzgp46UZ5pqTuUTGTkpKIOmm9WRc';
 const BROKERS = ['exness', 'fundingpips'];
 const MAX_ACCOUNTS = 5;
+// Servidores MT5 de cada bróker (ej. Exness-MT5Real8, FundingPips-SIM1 / -Prime / -SIM / -Trial)
+const SERVER_PREFIX = { exness: /^Exness-/i, fundingpips: /^FundingPips-/i };
 const PUBLIC_COLS = 'id, nickname, broker, server, login, account_size, status, last_error, last_sync_at, balance, equity, currency, created_at';
 
 function encrypt(text) {
@@ -59,6 +61,7 @@ module.exports = async function handler(req, res) {
     if (!nickname) return res.status(400).json({ error: 'bad_nickname', detail: 'Ponle un nombre a la cuenta' });
     if (!BROKERS.includes(broker)) return res.status(400).json({ error: 'bad_broker' });
     if (!/^[\w.\-]{3,64}$/.test(server)) return res.status(400).json({ error: 'bad_server', detail: 'Revisa el servidor MT5' });
+    if (!SERVER_PREFIX[broker].test(server)) return res.status(400).json({ error: 'bad_server', detail: broker === 'exness' ? 'El servidor de Exness empieza por "Exness-"' : 'El servidor de Funding Pips empieza por "FundingPips-"' });
     if (!/^\d{4,15}$/.test(login)) return res.status(400).json({ error: 'bad_login', detail: 'El número de cuenta solo lleva números' });
     if (size != null && !(size > 0 && size < 1e8)) return res.status(400).json({ error: 'bad_size' });
 

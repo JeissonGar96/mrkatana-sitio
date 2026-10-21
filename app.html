@@ -1736,6 +1736,10 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .pg-ph b{font-size:.92rem;color:var(--c-text);}
 .pg-ph span{font-size:.78rem;color:var(--c-muted);}
 .pg-prize small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
+.pg-pick{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
+.pg-pick small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
+.pg-pick-row{display:flex;gap:8px;margin-top:10px;}.pg-pick-row .ai{flex:1;min-width:0;}
+@media(max-width:620px){.pg-pick-row{flex-direction:column;}.pg-pick-row .ai{font-size:16px;}}
 .pg-rk{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
 .pg-rk-empty{font-size:.82rem;color:var(--c-muted);padding:6px 0 2px;}
 .pg-row{display:grid;grid-template-columns:26px 130px 1fr 44px;align-items:center;gap:12px;padding:7px 8px;border-radius:8px;}
@@ -5165,13 +5169,19 @@ function _pgLoad(force) {
   var d = new Date(), m0 = new Date(d.getFullYear(), d.getMonth(), 1), dk = function(x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
   return Promise.all([
     sb.rpc('journal_ranking_v2'),
-    sb.from('journal_trades').select('open_time, close_time, profit, commission, swap').gte('close_time', m0.toISOString()).limit(5000),
+    sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap').gte('close_time', m0.toISOString()).limit(5000),
     sb.from('journal_days').select('day').eq('no_trade', true).gte('day', dk(m0)),
-    sb.from('journal_accounts').select('id', { count: 'exact', head: true })
+    sb.from('journal_accounts').select('id, nickname, broker, server, login, balance, currency, created_at').order('created_at'),
+    sb.from('journal_rank_picks').select('account_id').eq('month', dk(m0))
   ]).then(function(r) {
+    // Cuenta del ranking: la elegida este mes, o la válida más antigua (no demo; Exness con balance de $100 o más)
+    var A = r[3].data || [], el = A.filter(function(a) {
+      return !/trial/i.test(a.server || '') && (a.broker !== 'exness' || (+a.balance || 0) / ((a.currency || '').toUpperCase() === 'USC' ? 100 : 1) >= 100);
+    });
+    var pk = ((r[4].data || [])[0] || {}).account_id, eff = el.find(function(a) { return a.id === pk; }) || el[0];
     // Puntos: +1 por día hábil operado, −1 por día hábil sin operar y sin marcar "No operé"
     if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me }; });
-    var T = r[1].data || [], ok = {}, td = {}, res = 0;
+    var T = (r[1].data || []).filter(function(t) { return !eff || t.account_id === eff.id; }), ok = {}, td = {}, res = 0;
     // Un día cuenta como operado solo si sus operaciones suman 5 minutos o más abiertas
     var dur = {};
     T.forEach(function(t) { var c = new Date(t.close_time), k = dk(c); dur[k] = (dur[k] || 0) + (c - new Date(t.open_time)); res += (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); });
@@ -5183,7 +5193,7 @@ function _pgLoad(force) {
     var st = 0, c = new Date(d); if (!ok[dk(c)]) c.setDate(c.getDate() - 1);
     for (var g = 0; g < 400; g++) { if (wd(c)) { if (!ok[dk(c)]) break; st++; } c.setDate(c.getDate() - 1); }
     var mine = (window._pgRank || []).find(function(x) { return x.me; });
-    window._pgMe = { acc: (r[3].count || 0) > 0, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
+    window._pgMe = { acc: A.length > 0, el: el, eff: eff, picked: !!pk && eff && eff.id === pk, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
     document.querySelectorAll('.rp-rank').forEach(function(e) { e.outerHTML = _rpRankCard(); });
     document.querySelectorAll('.mpw-rk b').forEach(function(e) { e.textContent = _mpwRankTx(); });
     var pg = document.querySelector('#pg-modal .sum-body'); if (pg) pg.innerHTML = _pgBody();
@@ -5222,9 +5232,29 @@ function _pgBody() {
   var tiles = [['Días operados', me ? me.traded : '—', 'este mes'], ['Racha actual', me ? me.streak : '—', 'días hábiles seguidos'], ['Operaciones', me ? me.ops : '—', 'este mes'], ['Resultado', me ? money(me.res) : '—', 'este mes']];
   return '<div class="pg-tiles">' + tiles.map(function(t) { return '<div class="pg-tile"><span>' + t[0] + '</span><b>' + t[1] + '</b><small>' + t[2] + '</small></div>'; }).join('') + '</div>' +
     '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>' + pts + (Math.abs(pts) === 1 ? ' punto' : ' puntos') + (emp ? ' · ' + emp + (emp === 1 ? ' día sin marcar' : ' días sin marcar') : '') + '</span></div><div class="lvl-bar"><i style="width:' + Math.max(0, Math.round(pts / tot * 100)) + '%"></i></div><small>Sumas 1 punto por cada día hábil que operas (tus operaciones de ese día tienen que sumar al menos 5 minutos abiertas). Si un día hábil no operas y no marcas "No operé" en tu journal ese mismo día, te resta 1 punto. Marcar no suma, solo evita que reste. Gana quien más puntos tenga al final del mes; si hay empate, gana quien mejor cuidó su cuenta. Las cuentas demo no participan, y las cuentas reales de Exness necesitan un balance de al menos $100.</small></div>' +
-    _pgRanking(window._pgRank || []) +
+    _pgPick(me) + _pgRanking(window._pgRank || []) +
     (me && me.acc ? '' : '<div class="pg-empty"><h4>Conecta tu cuenta de trading</h4><p>Conecta tu cuenta de Exness o Funding Pips y tus operaciones se registrarán solas. Aquí verás tu racha, tus operaciones, tus resultados y tu puesto en el ranking.</p>' +
     '<button class="mk-btn" onclick="var m=document.getElementById(\'pg-modal\');if(m)m.remove();navigateTo(\'herramientas\');rJournalDash();">Conectar mi cuenta</button></div>');
+}
+// Elegir con qué cuenta participa en el ranking del mes (solo si tiene más de una válida; queda fija hasta el mes siguiente)
+function _pgAccName(a) { return _mkEsc((a.nickname || (a.broker === 'exness' ? 'Exness' : 'Funding Pips')) + ' · ' + (a.login || '')); }
+function _pgPick(me) {
+  if (!me || !me.acc) return '';
+  var head = '<div class="pg-pick"><div class="pg-ph"><b>Cuenta del ranking</b>';
+  if (!me.el.length) return head + '</div><small>Tus cuentas conectadas no participan: las demo no cuentan y las de Exness necesitan un balance de al menos $100.</small></div>';
+  if (me.el.length < 2) return '';
+  var nx = new Date(); nx = new Date(nx.getFullYear(), nx.getMonth() + 1, 1);
+  var fin = '1 de ' + nx.toLocaleDateString('es-MX', { month: 'long' });
+  if (me.picked) return head + '<span>' + _pgAccName(me.eff) + '</span></div><small>Esta es tu cuenta del ranking este mes. No se puede cambiar hasta el ' + fin + '.</small></div>';
+  return head + '<span>Ahora cuenta: ' + _pgAccName(me.eff) + '</span></div>' +
+    '<div class="pg-pick-row"><select class="ai" id="pg-acc">' + me.el.map(function(a) { return '<option value="' + a.id + '"' + (a.id === me.eff.id ? ' selected' : '') + '>' + _pgAccName(a) + '</option>'; }).join('') + '</select>' +
+    '<button class="mk-btn" onclick="_pgPickSave()">Participar con esta cuenta</button></div>' +
+    '<small>Tienes varias cuentas: elige con cuál participas este mes. Una vez elegida no podrás cambiarla hasta el ' + fin + '. Si eliges otra distinta a la que cuenta ahora, tus días cuentan desde hoy.</small></div>';
+}
+function _pgPickSave() {
+  var s = document.getElementById('pg-acc'); if (!s) return;
+  if (!confirm('¿Participar con esta cuenta? No podrás cambiarla hasta que termine el mes.')) return;
+  sb.rpc('journal_rank_pick', { p_account: s.value }).then(function() { _pgLoad(true); });
 }
 function openProgreso() {
   var old = document.getElementById('pg-modal'); if (old) old.remove();

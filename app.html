@@ -1680,6 +1680,37 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .tl-card h3{font-size:1rem;margin:0;color:var(--c-text);}
 .tl-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;}
 .tl-card p{font-size:.84rem;color:var(--c-muted);line-height:1.55;margin:0;}
+/* ── Journal automático ── */
+.jn-back{background:none;border:none;color:var(--c-text2);font-size:.82rem;cursor:pointer;padding:0;margin-bottom:8px;}
+.jn-back:hover{color:var(--c-text);}
+.jn-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+.jn-list{display:grid;gap:12px;}
+.jn-acc{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.jn-acc .jn-nm{flex:1;min-width:200px;}
+.jn-acc b{display:block;font-size:.98rem;color:var(--c-text);}
+.jn-acc small{font-size:.8rem;color:var(--c-muted);}
+.jn-st{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;color:var(--c-text2);}
+.jn-st i{width:7px;height:7px;border-radius:50%;background:var(--c-muted);}
+.jn-st.ok i{background:rgb(var(--c-acc));} .jn-st.error{color:#d9776f;} .jn-st.error i{background:#d9776f;}
+.jn-act{display:flex;gap:6px;}
+.jn-lk{background:none;border:1px solid var(--k-line);color:var(--c-text2);font-size:.78rem;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;}
+.jn-lk:hover{color:var(--c-text);border-color:rgba(var(--c-acc),.5);}
+.jn-lk.del:hover{color:#d9776f;border-color:rgba(217,119,111,.5);}
+.jn-empty{text-align:center;padding:44px 24px !important;}
+.jn-empty h3{margin:0 0 8px;font-size:1.1rem;color:var(--c-text);} .jn-empty p{margin:0 auto 20px;max-width:440px;color:var(--c-muted);font-size:.88rem;line-height:1.6;}
+.jn-note{font-size:.8rem;color:var(--c-muted);margin-top:16px;line-height:1.55;}
+.jn-ov{position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;}
+.jn-md{width:min(480px,100%);max-height:100%;overflow:auto;position:relative;}
+.jn-md h3{margin:0 0 4px;font-size:1.15rem;color:var(--c-text);} .jn-md > p{margin:0 0 18px;color:var(--c-muted);font-size:.84rem;}
+.jn-f{display:grid;gap:14px;}
+.jn-f .hint{font-size:.74rem;color:var(--c-muted);margin-top:5px;line-height:1.45;}
+.jn-f .hint a{color:rgb(var(--c-acc));font-weight:600;text-decoration:none;}.jn-f .hint a:hover{text-decoration:underline;}.jn-f .hint b{color:var(--c-text);}
+.jn-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.jn-seg button{border:1px solid var(--k-line);background:var(--c-bg);color:var(--c-text2);font-weight:600;font-size:.86rem;padding:11px;border-radius:12px;cursor:pointer;}
+.jn-seg button.on{border-color:rgb(var(--c-acc));color:var(--c-text);box-shadow:0 0 0 3px rgba(var(--c-acc),.14);}
+.jn-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.jn-err{color:#d9776f;font-size:.8rem;min-height:1em;}
+@media (max-width:600px){.jn-ov{align-items:flex-end;padding:0;} .jn-md{border-radius:20px 20px 0 0 !important;max-height:92dvh;padding-bottom:calc(20px + env(safe-area-inset-bottom)) !important;} .jn-f .ai{font-size:16px !important;} .jn-ft .mk-btn,.jn-ft .jn-lk{flex:1;padding:12px;justify-content:center;text-align:center;} .jn-acc .jn-nm{min-width:0;flex-basis:100%;} .jn-act{width:100%;} .jn-act .jn-lk{flex:1;}}
 /* ── Menú de 3 puntos del panel derecho ── */
 .rp-h.rp-hm{display:flex;align-items:center;justify-content:space-between;position:relative;}
 .rp-dots{background:none;border:0;width:30px;height:30px;border-radius:8px;color:var(--c-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -2411,6 +2442,7 @@ function _mnLS(k, v) { try { if (v === undefined) return JSON.parse(localStorage
 function _mnOpt(k) {
   var b = _MN_BASE.find(function(o) { return o[0] === k; });
   if (b) return { k: k, t: b[1], l: b[2], i: k };
+  if (k === 'journal') return { k: k, t: 'Journal', l: 'Journal automático', i: 'jou' };
   if (k.indexOf('tool:') === 0) { var n = (_mnLS('mk-nav-names') || {})[k]; return n ? { k: k, t: n, l: n, i: 'tool' } : null; }
   return null;
 }
@@ -2427,13 +2459,14 @@ function _mnCount(v) {
 }
 function _mnGo(b) {
   _mdClose();
-  if (b.dataset.tool) { navigateTo('herramientas'); rTools(b.dataset.tool); }
+  if (b.dataset.tool === 'journal') { navigateTo('herramientas'); rJournalDash(); }
+  else if (b.dataset.tool) { navigateTo('herramientas'); rTools(b.dataset.tool); }
   else navigateTo(b.getAttribute('data-v'));
 }
 function _mnBtns(keys) {
   return ['dash'].concat(keys).map(function(k) {
-    var o = k === 'dash' ? { t: 'Inicio', i: 'dash' } : _mnOpt(k), tl = k.indexOf('tool:') === 0;
-    return '<button class="mob-nav-btn" data-v="' + (tl ? 'herramientas' : k) + '"' + (tl ? ' data-tool="' + _mnEsc(k.slice(5)) + '"' : '') + '>' + _mnSvg(o.i) + '<span>' + _mnEsc(o.t) + '</span></button>';
+    var o = k === 'dash' ? { t: 'Inicio', i: 'dash' } : _mnOpt(k), tl = k.indexOf('tool:') === 0 || k === 'journal';
+    return '<button class="mob-nav-btn" data-v="' + (tl ? 'herramientas' : k) + '"' + (tl ? ' data-tool="' + _mnEsc(k === 'journal' ? k : k.slice(5)) + '"' : '') + '>' + _mnSvg(o.i) + '<span>' + _mnEsc(o.t) + '</span></button>';
   }).join('');
 }
 function _mnRender() {
@@ -2559,7 +2592,7 @@ function _mpRender(tools) {
     '<p class="mp-hint">Si no eliges nada, queda en automático. Al elegir tus accesos se apaga solo.</p>' +
     '<div class="md-g"><span class="md-gt">Formación</span><div class="md-c">' + pick('clases', 'clases', 'Curso') + pick('sesiones', 'sesiones', 'En vivo') + pick('reuniones', 'reuniones', 'Reuniones 1-1') + '</div></div>' +
     '<div class="md-g"><span class="md-gt">Herramientas</span><div class="md-c">' + pick('herramientas', 'herramientas', 'Herramientas', 'Todas tus herramientas') +
-      tools.map(function(t) { return pick('tool:' + t.id, 'tool', t.name, 'Indicador'); }).join('') + soon('jou', 'Journal automático') + soon('cop', 'Copiador de operaciones') + '</div></div>' +
+      tools.map(function(t) { return pick('tool:' + t.id, 'tool', t.name, 'Indicador'); }).join('') + pick('journal', 'jou', 'Journal automático', 'Tus operaciones y estadísticas') + soon('cop', 'Copiador de operaciones') + '</div></div>' +
     '<p class="mp-hint">Lo que no esté en la barra sigue en el menú de tu nombre.</p>';
   el.scrollTop = keep;
   el.querySelectorAll('[data-pk]').forEach(function(b) {
@@ -2600,6 +2633,7 @@ function buildUrl(state) {
     if (state.moduleId)  return base + '/m/' + state.moduleId;
     if (state.levelId)   return base + '/lv/' + state.levelId;
   }
+  if (state.section === 'herramientas' && state.tool) return base + '/' + state.tool;
   return base;
 }
 
@@ -2719,7 +2753,7 @@ function _renderSection(state) {
   else if (state.section === 'sesiones')  { if (_secOpen('sesiones')) rSes(); else _rLocked('sesiones'); }
   else if (state.section === 'reuniones') { if (_secOpen('reuniones')) rReun(); else _rLocked('reuniones'); }
   else if (state.section === 'perfil')    rPerfil();
-  else if (state.section === 'herramientas') rTools();
+  else if (state.section === 'herramientas') { if (state.tool === 'journal') rJournalDash(); else rTools(state.tool); }
   else if (state.section === 'admin') {
     // Solo admin y staff pueden abrir el panel (aunque escriban /app/admin a mano)
     if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) rAdmin();
@@ -2847,6 +2881,8 @@ function _parseUrlToState(path) {
     if (m[2] === 'm')  state.moduleId  = m[3];
     if (m[2] === 'lv') state.levelId   = m[3];
   }
+  var t = section === 'herramientas' && path.match(/^\/app\/herramientas\/([^\/?#]+)/);
+  if (t) state.tool = t[1];
   return state;
 }
 
@@ -4877,7 +4913,7 @@ function _ajRender() {
     html = '<div class="aj2-h">Conexiones</div><div class="aj2-s">Cuentas vinculadas a la plataforma.</div>' +
       _ajGroup('', _ajRow('Discord', p.discord_id ? '<span class="aj2-dot"></span>Conectado' : _ajEmpty('Sin conectar'), p.discord_id ? 'Reconectar' : 'Conectar', 'discord') +
         _ajRow('TradingView', tv ? _mkEsc(tv) + '<small>Usuario para recibir el acceso al indicador Kairus</small>' : _ajEmpty('Agrega tu usuario para recibir el indicador Kairus'), tv ? 'Editar' : 'Agregar', 'tv_username') +
-        _ajRow('Cuenta de trading', 'Exness o empresa de fondeo<small>Pronto: tu journal y el ranking se llenarán solos</small>', 'Próximamente', '', 'off'));
+        _ajRow('Cuenta de trading', 'Exness o Funding Pips<small>Conéctala para que tu journal se llene solo</small>', 'Ver cuentas', 'journal'));
   } else if (t === 'notif') {
     var s = _ajSet || {};
     var v = function(k, d) { return s[k] == null ? d : s[k]; };
@@ -4984,6 +5020,7 @@ async function _discordGo() {
 function _ajEdit(k) {
   var p = cProfile || {};
   if (k === 'foto') return _rpPhoto();
+  if (k === 'journal') { navigateTo('herramientas'); rJournal(); return; }
   if (k === 'pushdev') return _pushSubscribe(true).then(function(ok) { tst(ok ? '✓ Avisos activados en este dispositivo' : 'No se activaron los avisos', !ok); _ajRender(); });
   if (k === 'discord') {
     _discordGo(); return;
@@ -5306,6 +5343,7 @@ function _tvState(p) {
   return { a: a, active: active, days: days, pending: !!(a && a.status === 'error') };
 }
 function rTools(detail) {
+  pushRoute(detail ? { section: 'herramientas', tool: detail } : { section: 'herramientas' });
   var m = document.getElementById('amain');
   if (!detail) m.innerHTML = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div><div class="tl-grid" id="tl-grid"></div>';
   _storeLoad(function(st) {
@@ -5320,14 +5358,124 @@ function rTools(detail) {
       return '<button class="mk-card tl-card tl-go" data-tool="' + _mkEsc(p.id) + '"><div class="tl-top"><h3>' + _mkEsc(p.name) + '</h3>' +
         (t.active ? '<span class="mk-pill g">Activo</span>' : t.pending ? '<span class="mk-pill">Activando</span>' : '<span class="tl-arrow">Ver</span>') + '</div><p>' + line + '</p>' +
         (t.active && t.days != null ? '<div class="lvl-bar" style="margin-top:12px;"><i style="width:' + Math.max(4, Math.min(100, Math.round(t.days / 30 * 100))) + '%"></i></div>' : '') + '</button>';
-    }).join('') + [
-      ['Journal automático', 'Tus operaciones se registran solas desde tu cuenta de trading. Estadísticas, racha y progreso.'],
-      ['Copiador de operaciones', 'Copia las operaciones del mentor en tu cuenta de forma automática.']
-    ].map(function(t) {
-      return '<div class="mk-card tl-card"><div class="tl-top"><h3>' + t[0] + '</h3><span class="mk-pill">Próximamente</span></div><p>' + t[1] + '</p></div>';
-    }).join('');
+    }).join('') +
+      '<button class="mk-card tl-card tl-go" id="tl-jn"><div class="tl-top"><h3>Journal automático</h3><span class="tl-arrow">Ver</span></div><p>Tus operaciones se registran solas desde tu cuenta de trading. Estadísticas, racha y progreso.</p></button>' +
+      '<div class="mk-card tl-card"><div class="tl-top"><h3>Copiador de operaciones</h3><span class="mk-pill">Próximamente</span></div><p>Copia las operaciones del mentor en tu cuenta de forma automática.</p></div>';
     g.querySelectorAll('[data-tool]').forEach(function(b) { b.onclick = function() { rTools(b.dataset.tool); }; });
+    document.getElementById('tl-jn').onclick = function() { rJournalDash(); };
   });
+}
+/* ── Journal automático: cuentas conectadas ── */
+var JN_BROKER = { exness: 'Exness', fundingpips: 'Funding Pips' };
+var JN_COLS = 'id, nickname, broker, server, login, account_size, status, last_error, last_sync_at, created_at';
+function rJournal() {
+  var m = document.getElementById('amain');
+  m.innerHTML = '<button class="jn-back" id="jn-back">‹ Herramientas</button>' +
+    '<div class="jn-head"><div><div class="atit">Journal</div><div class="asub">Tus operaciones se registran solas desde tus cuentas MT5.</div></div>' +
+    '<button class="mk-btn" id="jn-add">Conectar cuenta</button></div><div id="jn-body"><div class="mk-card" style="color:var(--c-muted)">Cargando…</div></div>';
+  document.getElementById('jn-back').onclick = function() { rTools(); };
+  document.getElementById('jn-add').onclick = function() { _jnForm(); };
+  var _jnDash = function() { var bk = document.getElementById('jn-back'); if (bk) { bk.textContent = '‹ Journal'; bk.onclick = function() { rJournalDash(); }; } };
+  sb.from('journal_accounts').select(JN_COLS).order('created_at').then(function(r) {
+    var b = document.getElementById('jn-body'); if (!b) return;
+    var acc = r.data || [];
+    if (r.error) { b.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">No se pudieron cargar tus cuentas. Recarga la página.</div>'; return; }
+    if (acc.length) _jnDash();
+    if (!acc.length) {
+      b.innerHTML = '<div class="mk-card jn-empty"><h3>Conecta tu primera cuenta</h3><p>Usa tu cuenta MT5 de Exness o de Funding Pips con la contraseña de inversor. Es de solo lectura: con ella nadie puede operar ni retirar.</p><button class="mk-btn" id="jn-add2">Conectar cuenta</button></div>';
+      document.getElementById('jn-add2').onclick = function() { _jnForm(); };
+      return;
+    }
+    var st = function(a) {
+      if (a.status === 'ok') return '<span class="jn-st ok"><i></i>Conectada</span>';
+      if (a.status === 'error') return '<span class="jn-st error"><i></i>' + _mkEsc(a.last_error || 'No pudimos entrar a la cuenta') + '</span>';
+      if (a.status === 'paused') return '<span class="jn-st"><i></i>En pausa</span>';
+      return '<span class="jn-st"><i></i>Conectando…</span>';
+    };
+    b.innerHTML = '<div class="jn-list">' + acc.map(function(a) {
+      return '<div class="mk-card jn-acc" data-id="' + _mkEsc(a.id) + '"><div class="jn-nm"><b>' + _mkEsc(a.nickname) + '</b><small>' + (JN_BROKER[a.broker] || '') + ' · #' + _mkEsc(a.login) + ' · ' + _mkEsc(a.server) + '</small></div>' + st(a) +
+        '<div class="jn-act">' + (a.status === 'error' ? '<button class="jn-lk" data-pw>Cambiar contraseña</button>' : '') + '<button class="jn-lk" data-ren>Renombrar</button><button class="jn-lk del" data-del>Quitar</button></div></div>';
+    }).join('') + '</div><div class="jn-note">Las cuentas nuevas se leen en unos minutos y después se actualizan cada hora. Tus estadísticas, el calendario y la curva aparecerán aquí después de la primera lectura.</div>';
+    b.querySelectorAll('.jn-acc').forEach(function(row) {
+      var id = row.dataset.id, a = acc.find(function(x) { return x.id === id; });
+      var q = function(s) { return row.querySelector(s); };
+      if (q('[data-pw]')) q('[data-pw]').onclick = function() { _jnForm(a); };
+      q('[data-ren]').onclick = function() {
+        var nm = row.querySelector('b'), inp = document.createElement('input');
+        inp.className = 'ai'; inp.value = a.nickname; inp.maxLength = 28; nm.replaceWith(inp); inp.focus(); inp.select();
+        var done = function(save) {
+          var v = inp.value.trim();
+          if (!save || !v || v === a.nickname) return rJournal();
+          sb.from('journal_accounts').update({ nickname: v }).eq('id', id).then(function(u) { if (u.error) tst('No se pudo cambiar el nombre.', 1); rJournal(); });
+        };
+        inp.onkeydown = function(e) { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); };
+        inp.onblur = function() { done(true); };
+      };
+      q('[data-del]').onclick = function() {
+        var act = q('.jn-act');
+        act.innerHTML = '<span style="font-size:.8rem;color:var(--c-text2);align-self:center;">¿Quitar esta cuenta y sus operaciones?</span><button class="jn-lk" data-no>No</button><button class="jn-lk del" data-yes>Sí, quitar</button>';
+        act.querySelector('[data-no]').onclick = function() { rJournal(); };
+        act.querySelector('[data-yes]').onclick = function() {
+          sb.from('journal_accounts').delete().eq('id', id).then(function(d) { if (d.error) tst('No se pudo quitar la cuenta.', 1); else tst('Cuenta quitada.'); rJournal(); });
+        };
+      };
+    });
+  });
+}
+// Formulario para conectar una cuenta (o cambiar la contraseña de una que falló)
+function _jnForm(acc) {
+  var fix = !!acc, broker = (acc && acc.broker) || 'exness';
+  var ov = document.createElement('div'); ov.className = 'jn-ov';
+  ov.innerHTML = '<div class="mk-card jn-md" role="dialog" aria-modal="true" aria-labelledby="jn-t"><h3 id="jn-t">' + (fix ? 'Cambiar contraseña de inversor' : 'Conectar cuenta') + '</h3><p>' + (fix ? _mkEsc(acc.nickname) + ' · #' + _mkEsc(acc.login) : 'Solo cuentas MT5 de Exness o Funding Pips.') + '</p><form class="jn-f" id="jn-f" novalidate>' +
+    (fix ? '' :
+    '<div><label class="al" for="jn-nm">Nombre de la cuenta</label><input class="ai" id="jn-nm" maxlength="28" placeholder="Ej. Fondeo principal" required></div>' +
+    '<div><span class="al">Bróker</span><div class="jn-seg" id="jn-br"><button type="button" data-b="exness">Exness</button><button type="button" data-b="fundingpips">Funding Pips</button></div><div class="hint" id="jn-ref"></div></div>' +
+    '<div><label class="al" for="jn-sv">Servidor</label><select class="ai" id="jn-ss"></select><input class="ai" id="jn-sv" placeholder="Escribe el servidor" autocomplete="off" style="display:none;margin-top:8px" required><div class="hint">Lo encuentras en MT5, en Archivo › Iniciar sesión, o en el correo que te llegó al abrir la cuenta.</div></div>' +
+    '<div><label class="al" for="jn-lg">Número de cuenta</label><input class="ai" id="jn-lg" inputmode="numeric" placeholder="Ej. 81234567" required></div>' +
+    '<div id="jn-szw"><label class="al" for="jn-sz">Tamaño de la cuenta (opcional)</label><input class="ai" id="jn-sz" inputmode="decimal" placeholder="Ej. 50000"></div>') +
+    '<div><label class="al" for="jn-pw">Contraseña de inversor</label><input class="ai" id="jn-pw" type="password" autocomplete="off" required><div class="hint">Es la contraseña de solo lectura. Con ella podemos ver tus operaciones, pero nadie puede operar ni retirar. Se guarda cifrada.</div></div>' +
+    '<div class="jn-err" id="jn-e"></div>' +
+    '<div class="jn-ft"><button type="button" class="jn-lk" id="jn-c">Cancelar</button><button type="submit" class="mk-btn" id="jn-s">' + (fix ? 'Guardar' : 'Conectar') + '</button></div></form></div>';
+  document.body.appendChild(ov);
+  var $ = function(id) { return document.getElementById(id); };
+  var close = function() { ov.remove(); document.removeEventListener('keydown', esc); };
+  var esc = function(e) { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', esc);
+  ov.onclick = function(e) { if (e.target === ov) close(); };
+  $('jn-c').onclick = close;
+  if (!fix) {
+    var setB = function(b) {
+      broker = b; $('jn-br').querySelectorAll('button').forEach(function(x) { x.classList.toggle('on', x.dataset.b === b); });
+      $('jn-ref').innerHTML = b === 'exness' ? '¿No tienes cuenta? <a href="https://one.exnessonelink.com/a/tr942ze99o" target="_blank" rel="noopener">Ábrela aquí</a>' : '¿No tienes cuenta? <a href="https://app.fundingpips.com/register?referral_code=MRKATANA" target="_blank" rel="noopener">Ábrela aquí</a> y usa el código de descuento <b>MRKATANA</b>';
+      var rg = function(p, n) { var o = [p]; for (var i = 2; i <= n; i++) o.push(p + i); return o; };
+      var op = function(l) { return l.map(function(x) { return '<option>' + x + '</option>'; }).join(''); };
+      $('jn-ss').innerHTML = '<option value="">Elige tu servidor</option>' + (b === 'exness'
+        ? '<optgroup label="Cuenta real">' + op(rg('Exness-MT5Real', 40)) + '</optgroup><optgroup label="Cuenta demo">' + op(rg('Exness-MT5Trial', 20)) + '</optgroup>'
+        : op(['FundingPips-SIM1', 'FundingPips-Prime', 'FundingPips-SIM', 'FundingPips-Trial'])) + '<option value="_otro">Otro (escribirlo)</option>';
+      $('jn-sv').value = ''; $('jn-sv').style.display = 'none';
+    };
+    $('jn-ss').onchange = function() { var o = this.value === '_otro'; $('jn-sv').style.display = o ? '' : 'none'; $('jn-sv').value = o ? '' : this.value; if (o) $('jn-sv').focus(); };
+    $('jn-br').onclick = function(e) { var x = e.target.closest('[data-b]'); if (x) setB(x.dataset.b); };
+    setB(broker); $('jn-nm').focus();
+  } else $('jn-pw').focus();
+  $('jn-f').onsubmit = async function(e) {
+    e.preventDefault();
+    var body = fix ? { id: acc.id, password: $('jn-pw').value } : {
+      nickname: $('jn-nm').value.trim(), broker: broker, server: $('jn-sv').value.trim(),
+      login: $('jn-lg').value.trim(), account_size: $('jn-sz').value.replace(/[^\d.]/g, ''), password: $('jn-pw').value
+    };
+    if (!fix && (!body.nickname || !body.server || !body.login)) { $('jn-e').textContent = 'Completa el nombre, el servidor y el número de cuenta.'; return; }
+    if (!body.password) { $('jn-e').textContent = 'Escribe la contraseña de inversor.'; return; }
+    $('jn-s').disabled = true; $('jn-e').textContent = '';
+    try {
+      var s = await sb.auth.getSession();
+      var tk = s.data && s.data.session && s.data.session.access_token;
+      var r = await fetch('/api/journal-account', { method: fix ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify(body) });
+      var j = await r.json().catch(function() { return {}; });
+      if (!r.ok) throw new Error(j.detail || 'No se pudo conectar la cuenta. Intenta de nuevo.');
+      close(); tst(fix ? 'Contraseña actualizada.' : 'Cuenta conectada. En unos minutos verás tus operaciones.'); rJournalDash();
+    } catch (err) { $('jn-e').textContent = err.message; $('jn-s').disabled = false; }
+  };
 }
 function _toolDetail(p) {
   var m = document.getElementById('amain');
@@ -10464,5 +10612,6 @@ function toggleCalExplain(id) {
 
 
 </script>
+<script src="/js/journal.js"></script>
 </body>
 </html>

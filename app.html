@@ -5384,7 +5384,7 @@ function rJournal() {
     b.innerHTML = '<div class="jn-list">' + acc.map(function(a) {
       return '<div class="mk-card jn-acc" data-id="' + _mkEsc(a.id) + '"><div class="jn-nm"><b>' + _mkEsc(a.nickname) + '</b><small>' + (JN_BROKER[a.broker] || '') + ' · #' + _mkEsc(a.login) + ' · ' + _mkEsc(a.server) + '</small></div>' + st(a) +
         '<div class="jn-act">' + (a.status === 'error' ? '<button class="jn-lk" data-pw>Cambiar contraseña</button>' : '') + '<button class="jn-lk" data-ren>Renombrar</button><button class="jn-lk del" data-del>Quitar</button></div></div>';
-    }).join('') + '</div><div class="jn-note">Revisamos tus cuentas cada hora. Tus estadísticas, el calendario y la curva aparecerán aquí después de la primera lectura.</div>';
+    }).join('') + '</div><div class="jn-note">Las cuentas nuevas se leen en unos minutos y después se actualizan cada hora. Tus estadísticas, el calendario y la curva aparecerán aquí después de la primera lectura.</div>';
     b.querySelectorAll('.jn-acc').forEach(function(row) {
       var id = row.dataset.id, a = acc.find(function(x) { return x.id === id; });
       var q = function(s) { return row.querySelector(s); };
@@ -5456,7 +5456,7 @@ function _jnForm(acc) {
       var r = await fetch('/api/journal-account', { method: fix ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify(body) });
       var j = await r.json().catch(function() { return {}; });
       if (!r.ok) throw new Error(j.detail || 'No se pudo conectar la cuenta. Intenta de nuevo.');
-      close(); tst(fix ? 'Contraseña actualizada.' : 'Cuenta conectada. La revisaremos en la próxima hora.'); rJournalDash();
+      close(); tst(fix ? 'Contraseña actualizada.' : 'Cuenta conectada. En unos minutos verás tus operaciones.'); rJournalDash();
     } catch (err) { $('jn-e').textContent = err.message; $('jn-s').disabled = false; }
   };
 }

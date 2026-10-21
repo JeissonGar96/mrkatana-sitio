@@ -363,7 +363,7 @@
     } else if (a.status === 'ok') {
       h = 'Todavía no hay operaciones'; p = 'La cuenta está conectada. Cuando cierres tu primera operación aparecerá aquí sola, con tu calendario, tu curva y tus estadísticas.';
     } else {
-      h = 'Estamos conectando tu cuenta'; p = 'Revisamos las cuentas cada hora. Cuando terminemos la primera lectura vas a ver aquí tus operaciones, tu curva y tus estadísticas.';
+      h = 'Estamos conectando tu cuenta'; p = 'La primera lectura tarda unos minutos. Cuando termine vas a ver aquí tus operaciones, tu curva y tus estadísticas.';
     }
     body.innerHTML = '<div class="jx-card jx-wait"><h3>' + h + '</h3><p>' + p + '</p>' + btn + '</div>';
     var f = document.getElementById('jx-fix'); if (f) f.onclick = function() { _jnForm(a); };

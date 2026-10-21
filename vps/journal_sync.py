@@ -35,6 +35,7 @@ SB_URL = os.environ.get("SUPABASE_URL", "https://rxyezbyvwqwihggechsc.supabase.c
 SB_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 JOURNAL_KEY = os.environ.get("JOURNAL_KEY", "")
 INTERVAL_MIN = int(os.environ.get("INTERVAL_MIN", "60"))
+PENDING_MIN = int(os.environ.get("PENDING_MIN", "2"))  # cada cuánto buscar cuentas recién conectadas
 FIRST_SYNC_DAYS = int(os.environ.get("FIRST_SYNC_DAYS", "90"))
 MT5_PATHS = {
     "exness": os.environ.get("MT5_PATH_EXNESS", ""),
@@ -220,9 +221,9 @@ def sync_account(mt5, acc, partner_logins):
     log.info("OK %s %s: %d operaciones", acc["broker"], acc["login"], len(trades))
 
 
-def run_once():
+def run_once(only_pending=False):
     import MetaTrader5 as mt5  # solo existe en Windows
-    accounts = sb("GET", "journal_accounts?select=*&status=neq.paused&order=broker")
+    accounts = sb("GET", "journal_accounts?select=*&order=broker&status=" + ("eq.pending" if only_pending else "neq.paused"))
     partner_logins = exness_partner_logins() if any(a["broker"] == "exness" for a in accounts) else None
     for broker in ("exness", "fundingpips"):
         group = [a for a in accounts if a["broker"] == broker]
@@ -252,7 +253,15 @@ def main():
             log.exception("Fallo general: %s", e)
         if "--once" in sys.argv:
             break
-        time.sleep(max(60, INTERVAL_MIN * 60 - (time.time() - start)))
+        # Entre lecturas completas, cada PENDING_MIN minutos se leen solo las cuentas recién conectadas
+        while time.time() - start < INTERVAL_MIN * 60:
+            time.sleep(min(PENDING_MIN * 60, max(1, INTERVAL_MIN * 60 - (time.time() - start))))
+            if time.time() - start >= INTERVAL_MIN * 60:
+                break
+            try:
+                run_once(only_pending=True)
+            except Exception as e:
+                log.exception("Fallo leyendo cuentas nuevas: %s", e)
 
 
 if __name__ == "__main__":

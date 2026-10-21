@@ -207,6 +207,12 @@ def sync_account(mt5, acc, partner_logins):
         since = dt.datetime.fromisoformat(acc["last_sync_at"].replace("Z", "+00:00")).replace(tzinfo=None) - dt.timedelta(days=3)
     else:
         since = dt.datetime.now() - dt.timedelta(days=FIRST_SYNC_DAYS)
+        # La curva empieza el día del primer movimiento de la cuenta (no antes de que existiera)
+        all_deals = mt5.history_deals_get(dt.datetime(2000, 1, 1), dt.datetime.now() + dt.timedelta(days=1)) or ()
+        if all_deals:
+            since = max(since, to_utc(min(d.time for d in all_deals), off).replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0))
+        else:
+            since = dt.datetime.now()
     trades, deals = read_positions(mt5, since, off, acc)
     if trades:
         upsert("journal_trades", trades, "account_id,ticket")

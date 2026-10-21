@@ -159,17 +159,22 @@ def read_positions(mt5, date_from, off, acc):
     pos = {}
     for d in deals:
         if not d.position_id or d.type not in (mt5.DEAL_TYPE_BUY, mt5.DEAL_TYPE_SELL):
+            if d.profit or d.commission:
+                log.info("Movimiento aparte: tipo %s, posición %s, resultado %.2f, comisión %.2f", d.type, d.position_id, d.profit, d.commission)
             continue
         p = pos.setdefault(d.position_id, {"ins": [], "outs": []})
         (p["ins"] if d.entry == mt5.DEAL_ENTRY_IN else p["outs"]).append(d)
     rows = []
     for pid, p in pos.items():
         if not p["ins"] or not p["outs"]:
+            if p["outs"]:
+                log.info("Saltada %s: cierre sin apertura en el rango (%.2f)", pid, sum(x.profit for x in p["outs"]))
             continue  # sigue abierta o empezó antes del rango
         fi, lo = min(p["ins"], key=lambda x: x.time_msc), max(p["outs"], key=lambda x: x.time_msc)
         vol = sum(x.volume for x in p["ins"])
         out_vol = sum(x.volume for x in p["outs"])
         if out_vol + 1e-9 < vol:
+            log.info("Saltada %s: cerrada en parte (%.2f de %.2f lotes)", pid, out_vol, vol)
             continue  # cerrada solo en parte: se guarda cuando cierre completa
         all_d = p["ins"] + p["outs"]
         sl, tp = sltp.get(pid, (None, None))

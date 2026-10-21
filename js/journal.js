@@ -259,6 +259,7 @@
 
   /* ── Entrada: Herramientas › Journal ── */
   window.rJournalDash = function() {
+    pushRoute({ section: 'herramientas', tool: 'journal' });
     css();
     var m = document.getElementById('amain');
     m.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">Cargando tu journal…</div>';

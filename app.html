@@ -2628,6 +2628,7 @@ function buildUrl(state) {
     if (state.moduleId)  return base + '/m/' + state.moduleId;
     if (state.levelId)   return base + '/lv/' + state.levelId;
   }
+  if (state.section === 'herramientas' && state.tool) return base + '/' + state.tool;
   return base;
 }
 
@@ -2747,7 +2748,7 @@ function _renderSection(state) {
   else if (state.section === 'sesiones')  { if (_secOpen('sesiones')) rSes(); else _rLocked('sesiones'); }
   else if (state.section === 'reuniones') { if (_secOpen('reuniones')) rReun(); else _rLocked('reuniones'); }
   else if (state.section === 'perfil')    rPerfil();
-  else if (state.section === 'herramientas') rTools();
+  else if (state.section === 'herramientas') { if (state.tool === 'journal') rJournalDash(); else rTools(state.tool); }
   else if (state.section === 'admin') {
     // Solo admin y staff pueden abrir el panel (aunque escriban /app/admin a mano)
     if (cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff')) rAdmin();
@@ -2875,6 +2876,8 @@ function _parseUrlToState(path) {
     if (m[2] === 'm')  state.moduleId  = m[3];
     if (m[2] === 'lv') state.levelId   = m[3];
   }
+  var t = section === 'herramientas' && path.match(/^\/app\/herramientas\/([^\/?#]+)/);
+  if (t) state.tool = t[1];
   return state;
 }
 
@@ -5334,6 +5337,7 @@ function _tvState(p) {
   return { a: a, active: active, days: days, pending: !!(a && a.status === 'error') };
 }
 function rTools(detail) {
+  pushRoute(detail ? { section: 'herramientas', tool: detail } : { section: 'herramientas' });
   var m = document.getElementById('amain');
   if (!detail) m.innerHTML = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div><div class="tl-grid" id="tl-grid"></div>';
   _storeLoad(function(st) {

@@ -545,7 +545,7 @@
   function openDay(k, T) {
     var last = document.activeElement, p = k.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]);
     T = T.slice().sort(function(a, b) { return a._o - b._o; });
-    var tot = T.reduce(function(s, t) { return s + t._n; }, 0), no = JX.days[k];
+    var tot = T.reduce(function(s, t) { return s + t._n; }, 0), no = JX.days[k], isT = k === dk(new Date());
     var ov = document.createElement('div'); ov.className = 'jx-ov';
     var title = d.getDate() + ' de ' + MESL[d.getMonth()] + ' de ' + d.getFullYear();
     var list = T.length ? T.map(function(t, i) {
@@ -553,12 +553,13 @@
         '<div class="jx-trb"' + (i === 0 ? '' : ' hidden') + '><label class="jx-drop"><span data-ph>' + CAM + '<b>Agregar captura</b>Arrastra la imagen o toca para elegirla<br>PNG o JPG, hasta 5 MB</span><input type="file" accept="image/png,image/jpeg,image/webp"></label>' +
         '<div class="jx-nt"><label for="jx-n-' + t.id + '">¿Qué viste en esta operación?</label><textarea id="jx-n-' + t.id + '" maxlength="2000" placeholder="Por qué entraste, qué salió bien o mal…">' + esc(t.note || '') + '</textarea>' +
         '<div class="jx-kv"><span>Entrada<b class="num">' + px(t.open_price) + '</b></span><span>Salida<b class="num">' + px(t.close_price) + '</b></span><span>Stop loss<b class="num">' + px(t.sl) + '</b></span><span>Duración<b>' + dur(mins(t)) + '</b></span></div></div></div></div>';
-    }).join('') : '<div class="jx-nod">' + (no ? 'Marcaste este día como <b>No operé</b>.' : 'No hay operaciones cerradas este día en esta cuenta.<br>Si no operaste a propósito, márcalo para que cuente en tu racha.') + '</div>';
+    }).join('') : '<div class="jx-nod">' + (no ? 'Marcaste este día como <b>No operé</b>.' : 'No hay operaciones cerradas este día en esta cuenta.') +
+      (isT ? (no ? '' : '<br>Si hoy no operas, márcalo antes de que termine el día para que no te reste puntos en el ranking.') : k < dk(new Date()) ? '<br>Este día ya terminó: "No operé" solo se puede marcar o quitar el mismo día.' : '<br>Podrás marcar "No operé" ese mismo día.') + '</div>';
     ov.innerHTML = '<div class="jx-md" role="dialog" aria-modal="true" aria-labelledby="jx-mdt"><div class="jx-mh"><div><h3 id="jx-mdt">' + title + '</h3><p>' + esc(JX.cur.nickname) +
       (T.length ? ' · ' + T.length + (T.length === 1 ? ' operación' : ' operaciones') + ' · <span class="' + cls(tot) + '" style="font-weight:700">' + money(tot) + '</span>' : '') + '</p></div><button class="jx-x" data-close aria-label="Cerrar">✕</button></div>' +
       '<div class="jx-tl">' + list + '</div><div class="jx-mf">' +
       (T.length ? '<button class="jx-btn" data-close>Cerrar</button><button class="jx-btn pri" id="jx-save">Guardar notas</button>' :
-        '<button class="jx-btn" data-close>Cerrar</button><button class="jx-btn pri" id="jx-nt">' + (no ? 'Quitar "No operé"' : 'Marcar "No operé"') + '</button>') + '</div></div>';
+        '<button class="jx-btn" data-close>Cerrar</button>' + (isT ? '<button class="jx-btn pri" id="jx-nt">' + (no ? 'Quitar "No operé"' : 'Marcar "No operé"') + '</button>' : '')) + '</div></div>';
     document.body.appendChild(ov);
     var close = function() { ov.remove(); document.removeEventListener('keydown', kd); if (last) last.focus(); };
     var kd = function(e) { if (e.key === 'Escape') close(); };

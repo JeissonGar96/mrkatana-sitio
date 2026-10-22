@@ -1168,7 +1168,10 @@ a.snav{text-decoration:none;}
 .mk-lsk{max-width:900px;}
 @keyframes mkSkel{from{background-position:200% 0}to{background-position:-200% 0}}
 .rp-chart{position:relative;}
-.rp-chart.is-empty::after{content:'Completa una clase y aquí verás tu avance del día';position:absolute;left:0;right:0;top:28%;text-align:center;font-size:.72rem;color:var(--c-muted);padding:0 10px;}
+.rp-chart i.f{opacity:var(--a);background:linear-gradient(0deg,rgba(var(--c-accd),.75),rgb(var(--c-acc2)));}
+.rp-chart span.hoy{color:rgb(var(--c-acc));font-weight:600;}
+.rp-chart[onclick]{cursor:pointer;}
+.rp-chart.is-empty::after{content:attr(data-empty);position:absolute;left:0;right:0;top:28%;text-align:center;font-size:.72rem;color:var(--c-muted);padding:0 10px;}
 .rp-qa a{transition:transform .2s,box-shadow .2s;}
 .rp-qa a:hover{transform:translateY(-2px);box-shadow:var(--k-sh-hi);}
 .rp-all,.mk-wk-btn{transition:background .2s,transform .2s;}
@@ -1656,6 +1659,41 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .a1-tabs .wp-subtab-btn i.warn{color:rgb(var(--c-acc)) !important;}
 .mk-ic,.mk-ic.r,.mk-ic.g,.mk-ic.b{background:rgba(var(--c-ov),.05) !important;color:var(--c-text2) !important;box-shadow:inset 0 0 0 1px rgba(var(--c-ov),.09) !important;}
 .cw-tag,.cw-tag.b{background:none !important;padding:0 !important;color:var(--c-muted) !important;font-weight:600 !important;letter-spacing:.8px !important;}
+/* Mi progreso: acabado premium (profundidad, brillo dorado sutil, texto fino) */
+#pg-modal .sum-box{max-width:720px;border:1px solid rgba(var(--c-acc),.16);background:radial-gradient(120% 60% at 50% -10%,rgba(var(--c-acc),.10),transparent 60%),linear-gradient(180deg,rgba(var(--c-ov),.025),transparent 40%),var(--c-bg);box-shadow:0 40px 120px -30px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.02) inset,0 1px 0 rgba(255,255,255,.06) inset;}
+#pg-modal .sum-top{padding:22px 26px 18px;border-bottom:1px solid rgba(var(--c-ov),.05);}
+#pg-modal .sum-t{font-size:1.08rem;font-weight:600;letter-spacing:-.01em;}
+#pg-modal .sum-d{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(var(--c-acc),.8);margin-top:4px;}
+#pg-modal .sum-x{border-radius:50%;background:transparent;}
+#pg-modal .sum-body{padding:22px 26px 28px;}
+#pg-modal .pg-tile,#pg-modal .pg-prize,#pg-modal .pg-pick,#pg-modal .pg-rk{border:1px solid rgba(var(--c-ov),.07);border-radius:16px;background:linear-gradient(180deg,rgba(var(--c-ov),.04),rgba(var(--c-ov),.012));box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 18px 40px -24px rgba(0,0,0,.7);}
+#pg-modal .pg-prize,#pg-modal .pg-pick,#pg-modal .pg-rk{padding:20px 22px;margin-top:14px;}
+#pg-modal .pg-tiles{gap:12px;}
+#pg-modal .pg-tile{padding:16px 18px;}
+#pg-modal .pg-tile span{font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;}
+#pg-modal .pg-tile b{font-size:1.6rem;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:8px 0 2px;}
+#pg-modal .pg-tile small{font-size:.66rem;}
+#pg-modal .pg-ph b,#pg-modal .pg-rk-h b{font-size:.9rem;font-weight:600;letter-spacing:-.005em;}
+#pg-modal .pg-ph span,#pg-modal .pg-rk-h span{font-size:.72rem;}
+#pg-modal .lvl-bar{height:4px;background:rgba(var(--c-ov),.07);}
+#pg-modal .lvl-bar i{background:linear-gradient(90deg,rgb(var(--c-accd)),rgb(var(--c-acc2)));box-shadow:0 0 12px rgba(var(--c-acc),.45);}
+#pg-modal .pg-rules b{font-weight:600;font-variant-numeric:tabular-nums;}
+#pg-modal .pg-rules span,#pg-modal .pg-rules p{font-size:.76rem;}
+#pg-modal .pg-pd b{font-weight:600;font-size:.8rem;}
+#pg-modal .pg-av{background:linear-gradient(180deg,rgba(var(--c-ov),.10),rgba(var(--c-ov),.03));box-shadow:0 6px 16px -8px rgba(0,0,0,.8);font-weight:600;letter-spacing:.04em;}
+#pg-modal .pg-pd.p1 .pg-av{box-shadow:0 0 0 4px rgba(var(--c-acc),.08),0 8px 24px -8px rgba(var(--c-acc),.5);}
+#pg-modal .pg-list .pg-bar i{box-shadow:none;background:rgba(var(--c-ov),.28) !important;}
+#pg-modal .pg-nm,#pg-modal .pg-n{font-size:.8rem;font-variant-numeric:tabular-nums;}
+#pg-modal .pg-you{border-radius:14px;border-color:rgba(var(--c-acc),.22);background:linear-gradient(135deg,rgba(var(--c-acc),.10),rgba(var(--c-acc),.02) 60%);box-shadow:0 1px 0 rgba(255,255,255,.05) inset;}
+#pg-modal .pg-you-n{font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+:root[data-theme="light"] #pg-modal .sum-box{box-shadow:0 24px 60px -30px rgba(40,30,10,.25);background:radial-gradient(120% 60% at 50% -10%,rgba(var(--c-acc),.07),transparent 60%),var(--c-bg);}
+:root[data-theme="light"] #pg-modal .pg-tile,:root[data-theme="light"] #pg-modal .pg-prize,:root[data-theme="light"] #pg-modal .pg-pick,:root[data-theme="light"] #pg-modal .pg-rk{background:rgba(var(--c-ov),.015);box-shadow:0 1px 2px rgba(40,30,10,.04);}
+:root[data-theme="light"] #pg-modal .pg-av{box-shadow:none;}
+:root[data-theme="light"] #pg-modal .pg-pd.p1 .pg-pd-b{box-shadow:0 6px 16px -10px rgba(var(--c-acc),.5);}
+:root[data-theme="light"] #pg-modal .lvl-bar i{box-shadow:none;}
+/* Celular: la caja no toca los bordes (dvh descuenta las barras del navegador) */
+@media(max-width:620px){#pg-modal.sum-ov{padding:calc(env(safe-area-inset-top,0px) + 28px) 12px calc(env(safe-area-inset-bottom,0px) + 28px);}#pg-modal .sum-box{max-height:calc(100vh - 56px);max-height:calc(100dvh - 56px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border-radius:22px;}}
+@media(max-width:620px){#pg-modal .sum-top{padding:18px 18px 14px;}#pg-modal .sum-body{padding:16px 16px 22px;}#pg-modal .pg-prize,#pg-modal .pg-pick,#pg-modal .pg-rk{padding:16px;}#pg-modal .pg-tiles{grid-template-columns:1fr 1fr;}}
 .sum-ov.has-vid .sum-box{max-width:860px;}
 .sum-vid{aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin-bottom:18px;}
 .sum-vid iframe{width:100%;height:100%;border:0;display:block;}
@@ -1732,10 +1770,39 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 @media (max-width:600px){.pg-tiles{grid-template-columns:1fr 1fr;}}
 .pg-prize{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
 .pg-ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;}
+@media (max-width:600px){.pg-ph{flex-direction:column;align-items:flex-start;gap:3px;} .pg-ph b{white-space:nowrap;}}
 .pg-ph b{font-size:.92rem;color:var(--c-text);}
 .pg-ph span{font-size:.78rem;color:var(--c-muted);}
+.pg-rules{margin-top:12px;display:grid;gap:2px;}
+.pg-rules div{display:grid;grid-template-columns:30px 62px 1fr;align-items:baseline;gap:8px;padding:6px 0;border-top:1px solid rgba(var(--c-ov),.06);}
+.pg-rules div:first-child{border-top:0;}
+.pg-rules b{font-size:.86rem;color:var(--c-text);}.pg-rules div:first-child b{color:rgb(var(--c-acc));}
+.pg-rules span{font-size:.8rem;color:var(--c-text2);}.pg-rules p{margin:0;font-size:.8rem;color:var(--c-muted);}
 .pg-prize small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
+.pg-pick{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
+.pg-pick small{display:block;font-size:.74rem;color:var(--c-muted);margin-top:8px;}
+.pg-pick-row{display:flex;gap:8px;margin-top:10px;}.pg-pick-row .ai{flex:1;min-width:0;}
+@media(max-width:620px){.pg-pick-row{flex-direction:column;}.pg-pick-row .ai{font-size:16px;}}
 .pg-rk{margin-top:16px;border:1px solid rgba(var(--c-ov),.08);border-radius:12px;padding:14px 16px;}
+.pg-rk-h{margin-bottom:18px;}.pg-rk-h b{display:block;font-size:1rem;color:var(--c-text);}.pg-rk-h span{font-size:.76rem;color:var(--c-muted);}
+.pg-pod{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end;max-width:420px;margin:0 auto;}
+.pg-pd{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0;}
+.pg-pd b{font-size:.84rem;color:var(--c-text);margin-top:8px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pg-pd b em{font-style:normal;font-size:.68rem;color:rgb(var(--c-acc));}
+.pg-pd small{font-size:.72rem;color:var(--c-muted);margin:2px 0 10px;}
+.pg-av{width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:.78rem;font-weight:700;color:var(--c-text);background:rgba(var(--c-ov),.06);border:1px solid rgba(var(--c-ov),.14);}
+.pg-pd.p1 .pg-av{width:48px;height:48px;border:1.5px solid rgb(var(--c-acc));color:rgb(var(--c-acc));}
+.pg-pd-b{width:100%;border-radius:10px 10px 4px 4px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:var(--c-text2);height:46px;border:1px solid rgba(var(--c-ov),.08);border-bottom:0;background:linear-gradient(180deg,rgba(var(--c-ov),.14) 0%,rgba(var(--c-ov),.03) 100%);}
+.pg-pd.p1 .pg-pd-b{height:74px;border-color:rgba(var(--c-acc2),.5);color:var(--c-ongold);background:linear-gradient(180deg,rgb(var(--c-acc2)) 0%,rgb(var(--c-acc)) 45%,rgb(var(--c-accd)) 100%);box-shadow:0 10px 30px -12px rgba(var(--c-acc),.6);}
+.pg-pd.p3 .pg-pd-b{height:36px;}
+.pg-list{margin-top:16px;padding-top:10px;border-top:1px solid rgba(var(--c-ov),.08);}
+.pg-list .pg-row{grid-template-columns:22px 1fr 90px 34px;}
+.pg-av.has-img{padding:0;overflow:hidden;}.pg-av img{width:100%;height:100%;object-fit:cover;display:block;}
+.pg-list .pg-nm{display:flex;align-items:center;gap:10px;}.pg-nm .pg-av{width:26px;height:26px;font-size:.6rem;}
+.pg-list .pg-bar i{background:rgba(var(--c-ov),.28) !important;}
+.pg-you{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--c-acc),.25);background:rgba(var(--c-acc),.05);}
+.pg-you div{flex:1;min-width:0;}.pg-you b{display:block;font-size:.9rem;color:var(--c-text);}.pg-you small{font-size:.74rem;color:var(--c-muted);}
+.pg-you-n{font-size:1.3rem;font-weight:700;color:rgb(var(--c-acc));}.pg-you-n small{font-size:.8rem;font-weight:400;}
 .pg-rk-empty{font-size:.82rem;color:var(--c-muted);padding:6px 0 2px;}
 .pg-row{display:grid;grid-template-columns:26px 130px 1fr 44px;align-items:center;gap:12px;padding:7px 8px;border-radius:8px;}
 .pg-row.me{background:rgba(var(--c-acc),.08);}
@@ -3377,6 +3444,7 @@ function rDash(liveOnly) {
       '<div id="week-info" style="margin-bottom:20px;"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div></div></div>');
   _mkRenderDashExtras(liveOnly, p);
   _mpwFill();
+  if (!liveOnly) setTimeout(_pgLoad, 0); // celular: el ranking y las barras de la tarjeta semanal no dependen del panel derecho
   _mkRenderAds();
   _mkPlaceWk();
 
@@ -5175,45 +5243,132 @@ function _pgDays() { // días hábiles (lunes a viernes) del mes actual
   for (var i = 1; i <= new Date(y, mo + 1, 0).getDate(); i++) { var w = new Date(y, mo, i).getDay(); if (w > 0 && w < 6) n++; }
   return n;
 }
+// Datos del journal para el ranking y "Mi progreso detallado" (se piden como mucho una vez por minuto)
+var _pgAt = 0;
+function _pgLoad(force) {
+  if (!cUser || (!force && window._pgRank && Date.now() - _pgAt < 60000)) return Promise.resolve();
+  _pgAt = Date.now();
+  var d = new Date(), m0 = new Date(d.getFullYear(), d.getMonth(), 1), dk = function(x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
+  var mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7), s0 = mon < m0 ? mon : m0; // lunes de esta semana (puede ser del mes anterior)
+  return Promise.all([
+    sb.rpc('journal_ranking_v3').then(function(x) { return x.error ? sb.rpc('journal_ranking_v2') : x; }), // si falla la versión con foto, usa la anterior
+    sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap').gte('close_time', s0.toISOString()).limit(5000),
+    sb.from('journal_days').select('day').eq('no_trade', true).gte('day', dk(s0)),
+    sb.from('journal_accounts').select('id, nickname, broker, server, login, balance, currency, created_at').order('created_at'),
+    sb.from('journal_rank_picks').select('account_id').eq('month', dk(m0))
+  ]).then(function(r) {
+    // Cuenta del ranking: la elegida este mes, o la válida más antigua (no demo; Exness con balance de $100 o más)
+    var A = r[3].data || [], el = A.filter(function(a) {
+      return !/trial/i.test(a.server || '') && (a.broker !== 'exness' || (+a.balance || 0) / ((a.currency || '').toUpperCase() === 'USC' ? 100 : 1) >= 100);
+    });
+    var pk = ((r[4].data || [])[0] || {}).account_id, eff = el.find(function(a) { return a.id === pk; }) || el[0];
+    // Puntos: +1 por día hábil operado, −1 por día hábil sin operar y sin marcar "No operé"
+    if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me, avatar: x.avatar }; });
+    var TA = (r[1].data || []).filter(function(t) { return !eff || t.account_id === eff.id; }), ok = {}, td = {}, res = 0, nt = {};
+    var T = TA.filter(function(t) { return new Date(t.close_time) >= m0; });
+    // Un día cuenta como operado solo si sus operaciones suman 5 minutos o más abiertas
+    var dur = {};
+    TA.forEach(function(t) { var c = new Date(t.close_time), k = dk(c); dur[k] = (dur[k] || 0) + (c - new Date(t.open_time)); if (c >= m0) res += (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); });
+    Object.keys(dur).forEach(function(k) { if (dur[k] >= 3e5) { ok[k] = 1; if (k >= dk(m0)) td[k] = 1; } });
+    (r[2].data || []).forEach(function(x) { ok[x.day] = nt[x.day] = 1; });
+    // "Tu progreso semanal": minutos operados por día (lunes a domingo); cuenta si operó 5 min o marcó "No operé"
+    window._wk = { acc: A.length > 0, d: [0,1,2,3,4,5,6].map(function(i) { var k = dk(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)); return { min: Math.round((dur[k] || 0) / 6e4), ok: !!ok[k], nt: !!nt[k] && !(dur[k] >= 3e5) }; }) };
+    _wkFill();
+    var wd = function(x) { var w = x.getDay(); return w > 0 && w < 6; }, met = 0;
+    for (var x = new Date(m0); x <= d; x.setDate(x.getDate() + 1)) if (wd(x) && ok[dk(x)]) met++;
+    // Racha: días hábiles seguidos cumplidos (si hoy aún no, cuenta desde ayer)
+    var st = 0, c = new Date(d); if (!ok[dk(c)]) c.setDate(c.getDate() - 1);
+    for (var g = 0; g < 400; g++) { if (wd(c)) { if (!ok[dk(c)]) break; st++; } c.setDate(c.getDate() - 1); }
+    var mine = (window._pgRank || []).find(function(x) { return x.me; });
+    window._pgMe = { acc: A.length > 0, el: el, eff: eff, picked: !!pk && eff && eff.id === pk, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
+    document.querySelectorAll('.rp-rank').forEach(function(e) { e.outerHTML = _rpRankCard(); });
+    document.querySelectorAll('.mpw-rk b').forEach(function(e) { e.textContent = _mpwRankTx(); });
+    var pg = document.querySelector('#pg-modal .sum-body'); if (pg) pg.innerHTML = _pgBody();
+  }).catch(function() {});
+}
 // Tarjetita del panel derecho: puesto del alumno en el ranking del mes
 function _rpRankCard() {
   var rows = (window._pgRank || []).slice().sort(function(a, b) { return b.days - a.days; });
   var i = rows.findIndex(function(r) { return r.me; });
   var body = i < 0 ? '<b>Sin puesto aún</b><span>Conecta tu cuenta para entrar</span>'
-    : '<b>Tu puesto: #' + (i + 1) + '</b><span>' + rows[i].days + ' de ' + _pgDays() + ' días cumplidos</span>';
+    : '<b>Tu puesto: #' + (i + 1) + '</b><span>' + rows[i].days + (Math.abs(rows[i].days) === 1 ? ' punto' : ' puntos') + ' este mes</span>';
   return '<button class="rp-rank" onclick="openProgreso()"><span class="rp-rank-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg></span><span class="rp-rank-tx"><small>Ranking del mes</small>' + body + '</span><span class="rp-rank-go">›</span></button>';
 }
-// Ranking del mes: días cumplidos (operó o anotó en el journal por qué no operó). Filas: {name, days, me}
+// Ranking del mes en podio: top 3 arriba, del 4 al 10 en lista y abajo "Vas N.º". Filas: {name, days (puntos), me}
+function _pgIni(n) { var p = String(n || '').split(' '); return _mkEsc((p[0] || '?').charAt(0) + (p[1] || '').charAt(0)).toUpperCase(); }
+// Foto de perfil del alumno; si no tiene (o no carga), sus iniciales
+function _pgAv(r) {
+  var ini = _pgIni(r.name);
+  if (!r.avatar || !/^https:\/\//.test(r.avatar)) return '<span class="pg-av">' + ini + '</span>';
+  return '<span class="pg-av has-img"><img src="' + _mkEsc(r.avatar) + '" alt="" loading="lazy" onerror="this.parentNode.classList.remove(\'has-img\');this.parentNode.textContent=\'' + ini.replace(/[^A-Za-zÀ-ÿ]/g, '') + '\'"></span>';
+}
 function _pgRanking(rows) {
-  var tot = _pgDays();
-  var head = '<div class="pg-rk"><div class="pg-ph"><b>Ranking del mes</b><span>Días cumplidos: operaste o anotaste por qué no operaste</span></div>';
+  var d = new Date(), left = 0, last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  for (var k = d.getDate(); k <= last; k++) { var w = new Date(d.getFullYear(), d.getMonth(), k).getDay(); if (w > 0 && w < 6) left++; }
+  var mes = d.toLocaleDateString('es-MX', { month: 'long' });
+  var head = '<div class="pg-rk"><div class="pg-rk-h"><b>Ranking de ' + mes + '</b><span>Por puntos · ' + (left === 1 ? 'queda 1 día hábil' : 'quedan ' + left + ' días hábiles') + '</span></div>';
   if (!rows.length) return head + '<div class="pg-rk-empty">El ranking empieza cuando los alumnos conecten su cuenta de trading.</div></div>';
   rows = rows.slice().sort(function(a, b) { return b.days - a.days; });
-  var meI = rows.findIndex(function(r) { return r.me; });
-  var show = rows.slice(0, 10);
-  if (meI >= 10) show.push(rows[meI]);
-  return head + show.map(function(r) {
-    var i = rows.indexOf(r), parts = String(r.name || '').split(' ');
-    var nm = parts[0] + (parts[1] ? ' ' + parts[1].charAt(0) + '.' : '');
-    var crown = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg>';
-    return '<div class="pg-row' + (r.me ? ' me' : '') + (i < 3 ? ' p' + (i + 1) : '') + '"><span class="pg-pos">' + (i === 0 ? crown : i + 1) + '</span>' +
-      '<span class="pg-nm">' + _mkEsc(nm) + (r.me ? ' <em>Tú</em>' : '') + '</span>' +
-      '<div class="lvl-bar pg-bar"><i style="width:' + Math.round(r.days / tot * 100) + '%"></i></div>' +
-      '<span class="pg-n">' + r.days + '/' + tot + '</span></div>';
-  }).join('') + '</div>';
+  var nm = function(r) { var p = String(r.name || '').split(' '); return _mkEsc(p[0] + (p[1] ? ' ' + p[1].charAt(0) + '.' : '')); };
+  var pts = function(n) { return n + (Math.abs(n) === 1 ? ' punto' : ' puntos'); };
+  var pod = [1, 0, 2].map(function(i) {
+    var r = rows[i]; if (!r) return '<div class="pg-pd"></div>';
+    return '<div class="pg-pd p' + (i + 1) + (r.me ? ' me' : '') + '">' + _pgAv(r) + '<b>' + nm(r) + (r.me ? ' <em>Tú</em>' : '') + '</b><small>' + pts(r.days) + '</small><div class="pg-pd-b">' + (i + 1) + '</div></div>';
+  }).join('');
+  var max = Math.max(1, rows[0].days), meI = rows.findIndex(function(r) { return r.me; });
+  var rest = rows.slice(3, 10); if (meI >= 10) rest.push(rows[meI]);
+  var list = rest.map(function(r) {
+    return '<div class="pg-row' + (r.me ? ' me' : '') + '"><span class="pg-pos">' + (rows.indexOf(r) + 1) + '</span><span class="pg-nm">' + _pgAv(r) + nm(r) + (r.me ? ' <em>Tú</em>' : '') + '</span>' +
+      '<div class="lvl-bar pg-bar"><i style="width:' + Math.max(0, Math.round(r.days / max * 100)) + '%"></i></div><span class="pg-n">' + r.days + '</span></div>';
+  }).join('');
+  var you = '';
+  if (meI >= 0) {
+    var me = rows[meI], up = rows[meI - 1];
+    var tx = !up ? 'Vas primero, sigue así' : (up.days - me.days + 1) + (up.days - me.days + 1 === 1 ? ' punto más' : ' puntos más') + ' para pasar a ' + nm(up).split(' ')[0];
+    you = '<div class="pg-you">' + _pgAv(me) + '<div><b>Vas ' + (meI + 1) + '.º</b><small>' + tx + '</small></div><span class="pg-you-n">' + me.days + '<small>/' + _pgDays() + '</small></span></div>';
+  }
+  return head + '<div class="pg-pod">' + pod + '</div>' + (list ? '<div class="pg-list">' + list + '</div>' : '') + you + '</div>';
+}
+function _pgBody() {
+  var me = window._pgMe, tot = _pgDays(), pts = me ? me.pts : 0, emp = me ? me.empty : 0;
+  var money = function(v) { return (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var tiles = [['Días operados', me ? me.traded : '—', 'este mes'], ['Racha actual', me ? me.streak : '—', 'días hábiles seguidos'], ['Operaciones', me ? me.ops : '—', 'este mes'], ['Resultado', me ? money(me.res) : '—', 'este mes']];
+  return '<div class="pg-tiles">' + tiles.map(function(t) { return '<div class="pg-tile"><span>' + t[0] + '</span><b>' + t[1] + '</b><small>' + t[2] + '</small></div>'; }).join('') + '</div>' +
+    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>' + pts + (Math.abs(pts) === 1 ? ' punto' : ' puntos') + (emp ? ' · ' + emp + (emp === 1 ? ' día sin marcar' : ' días sin marcar') : '') + '</span></div><div class="lvl-bar"><i style="width:' + Math.max(0, Math.round(pts / tot * 100)) + '%"></i></div><div class="pg-rules">' +
+      '<div><b>+1</b><span>Suma</span><p>Día hábil operado (mínimo 5 min en total)</p></div>' +
+      '<div><b>0</b><span>No suma</span><p>Marcar "No operé" ese mismo día</p></div>' +
+      '<div><b>−1</b><span>Resta</span><p>Día hábil sin operar y sin marcar</p></div></div>' +
+      '<small>Gana quien más puntos tenga. Empate: quien mejor cuidó su cuenta. No cuentan demos; Exness mínimo $100.</small></div>' +
+    _pgPick(me) + _pgRanking(window._pgRank || []) +
+    (me && me.acc ? '' : '<div class="pg-empty"><h4>Conecta tu cuenta de trading</h4><p>Conecta tu cuenta de Exness o Funding Pips y tus operaciones se registrarán solas. Aquí verás tu racha, tus operaciones, tus resultados y tu puesto en el ranking.</p>' +
+    '<button class="mk-btn" onclick="var m=document.getElementById(\'pg-modal\');if(m)m.remove();navigateTo(\'herramientas\');rJournalDash();">Conectar mi cuenta</button></div>');
+}
+// Elegir con qué cuenta participa en el ranking del mes (solo si tiene más de una válida; queda fija hasta el mes siguiente)
+function _pgAccName(a) { return _mkEsc((a.nickname || (a.broker === 'exness' ? 'Exness' : 'Funding Pips')) + ' · ' + (a.login || '')); }
+function _pgPick(me) {
+  if (!me || !me.acc) return '';
+  var head = '<div class="pg-pick"><div class="pg-ph"><b>Cuenta del ranking</b>';
+  if (!me.el.length) return head + '</div><small>Tus cuentas conectadas no participan: las demo no cuentan y las de Exness necesitan un balance de al menos $100.</small></div>';
+  if (me.el.length < 2) return '';
+  var nx = new Date(); nx = new Date(nx.getFullYear(), nx.getMonth() + 1, 1);
+  var fin = '1 de ' + nx.toLocaleDateString('es-MX', { month: 'long' });
+  if (me.picked) return head + '<span>' + _pgAccName(me.eff) + '</span></div><small>Esta es tu cuenta del ranking este mes. No se puede cambiar hasta el ' + fin + '.</small></div>';
+  return head + '<span>Ahora cuenta: ' + _pgAccName(me.eff) + '</span></div>' +
+    '<div class="pg-pick-row"><select class="ai" id="pg-acc">' + me.el.map(function(a) { return '<option value="' + a.id + '"' + (a.id === me.eff.id ? ' selected' : '') + '>' + _pgAccName(a) + '</option>'; }).join('') + '</select>' +
+    '<button class="mk-btn" onclick="_pgPickSave()">Participar con esta cuenta</button></div>' +
+    '<small>Tienes varias cuentas: elige con cuál participas este mes. Una vez elegida no podrás cambiarla hasta el ' + fin + '. Si eliges otra distinta a la que cuenta ahora, tus días cuentan desde hoy.</small></div>';
+}
+function _pgPickSave() {
+  var s = document.getElementById('pg-acc'); if (!s) return;
+  if (!confirm('¿Participar con esta cuenta? No podrás cambiarla hasta que termine el mes.')) return;
+  sb.rpc('journal_rank_pick', { p_account: s.value }).then(function() { _pgLoad(true); });
 }
 function openProgreso() {
   var old = document.getElementById('pg-modal'); if (old) old.remove();
   var ov = document.createElement('div'); ov.id = 'pg-modal'; ov.className = 'sum-ov';
-  var tiles = [['Días operados', 'este mes'], ['Racha actual', 'días seguidos'], ['Operaciones', 'este mes'], ['Resultado', 'este mes']];
-  ov.innerHTML = '<div class="sum-box"><div class="sum-top"><div><div class="sum-t">Mi progreso detallado</div><div class="sum-d">Tu cuenta de trading</div></div><button class="sum-x" aria-label="Cerrar">✕</button></div><div class="sum-body">' +
-    '<div class="pg-tiles">' + tiles.map(function(t) { return '<div class="pg-tile"><span>' + t[0] + '</span><b>—</b><small>' + t[1] + '</small></div>'; }).join('') + '</div>' +
-    '<div class="pg-prize"><div class="pg-ph"><b>Premio del mes</b><span>0 de ' + _pgDays() + ' días cumplidos · te faltan ' + _pgDays() + '</span></div><div class="lvl-bar"><i style="width:0%"></i></div><small>Cumple todos los días hábiles del mes para ganar el premio. Si hay empate, gana quien mejor cuidó su cuenta.</small></div>' +
-    _pgRanking(window._pgRank || []) +
-    '<div class="pg-empty"><h4>Conecta tu cuenta de trading</h4><p>Cuando conectes tu cuenta de Exness o de una empresa de fondeo aliada, tus operaciones se registrarán solas. Cada día que operes se llenará una barra de <b>Tu progreso semanal</b> y aquí verás tu racha, tus operaciones y tus resultados.</p>' +
-    '<button class="mk-btn off" disabled>Próximamente</button></div>' +
-    '</div></div>';
+  ov.innerHTML = '<div class="sum-box"><div class="sum-top"><div><div class="sum-t">Mi progreso detallado</div><div class="sum-d">Tu cuenta de trading</div></div><button class="sum-x" aria-label="Cerrar">✕</button></div><div class="sum-body">' + _pgBody() + '</div></div>';
   document.body.appendChild(ov);
+  _pgLoad(true);
   var close = function() { ov.remove(); };
   ov.querySelector('.sum-x').addEventListener('click', close);
   ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
@@ -6300,13 +6455,34 @@ function _mpwRankTx() {
   var i = rows.findIndex(function(r) { return r.me; });
   return i < 0 ? 'Sin puesto aún' : 'Vas ' + (i + 1) + '.º de ' + rows.length;
 }
-function _mpwFill() {
-  var cnt = window._mpwCnt, box = document.getElementById('mpw-bars'); if (!box || !cnt) return;
-  var max = Math.max.apply(null, cnt.concat([1])), today = (new Date().getDay() + 6) % 7;
-  box.innerHTML = cnt.map(function(n, i) {
-    return '<div' + (i === today ? ' class="hoy"' : '') + ' title="' + n + ' clases"><i' + (n ? ' class="f"' : '') + ' style="height:' + (n ? Math.max(12, Math.round(n / max * 100)) : 6) + '%;--a:' + (n ? (.28 + .72 * n / max).toFixed(2) : 0) + '"></i></div>';
+function _mpwFill() { _wkFill(); }
+// Barras de "Tu progreso semanal" (panel derecho y celular) con el journal: más minutos operados, más alta y más dorada.
+// "No operé" marcado = barrita tenue (cuenta como día cumplido). Sin cuenta conectada = aviso para conectarla.
+function _wkFill() {
+  var w = window._wk, today = (new Date().getDay() + 6) % 7, L = ['L','M','M','J','V','S','D'];
+  var max = w ? Math.max.apply(null, w.d.map(function(x) { return x.ok && !x.nt ? x.min : 0; }).concat([1])) : 1;
+  var bar = function(x) {
+    if (x.ok && !x.nt) { var t = Math.min(1, x.min / max); return { h: Math.round(35 + 65 * t), a: (.28 + .72 * t).toFixed(2), tt: x.min + ' min operados' }; }
+    if (x.nt) return { h: 18, a: '.28', tt: 'No operé (cuenta)' };
+    return null;
+  };
+  var act = w ? w.d.filter(function(x) { return x.ok; }).length : 0;
+  var ch = document.getElementById('rp-chart');
+  if (ch) {
+    ch.classList.toggle('is-empty', !act);
+    ch.setAttribute('data-empty', !w ? '' : !w.acc ? 'Conecta tu cuenta de trading y aquí verás tu semana' : 'Opera o marca "No operé" y aquí verás tu semana');
+    ch.innerHTML = (w ? w.d : [0,0,0,0,0,0,0]).map(function(x, i) {
+      var b = w && bar(x);
+      return '<div title="' + (b ? b.tt : 'Sin actividad') + '"><i class="' + (b ? 'f' : '') + (i === today ? ' hoy' : '') + '" style="height:' + (b ? b.h : 6) + '%' + (b ? ';--a:' + b.a : '') + '"></i><span' + (i === today ? ' class="hoy"' : '') + '>' + L[i] + '</span></div>';
+    }).join('');
+    if (w && !w.acc) ch.onclick = function() { navigateTo('herramientas'); rJournalDash(); }; else ch.onclick = null;
+  }
+  var box = document.getElementById('mpw-bars');
+  if (box && w) box.innerHTML = w.d.map(function(x, i) {
+    var b = bar(x);
+    return '<div' + (i === today ? ' class="hoy"' : '') + ' title="' + (b ? b.tt : 'Sin actividad') + '"><i' + (b ? ' class="f"' : '') + ' style="height:' + (b ? b.h : 6) + '%' + (b ? ';--a:' + b.a : '') + '"></i></div>';
   }).join('');
-  var d = document.getElementById('mpw-n'); if (d) d.textContent = cnt.filter(function(n){ return n > 0; }).length;
+  var n = document.getElementById('mpw-n'); if (n && w) n.textContent = act;
 }
 function _mkRPanelProgress(pct) {
   var ring = document.getElementById('rp-ring');
@@ -6353,6 +6529,7 @@ function _mkWkModal() {
 function _mkRenderRPanel(liveOnly) {
   var rp = document.getElementById('rpanel');
   if (!rp || !cProfile) return;
+  setTimeout(_pgLoad, 0);
   var first = (cProfile.full_name || 'Alumno').split(' ')[0];
   var h = new Date().getHours();
   var hi = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
@@ -6371,25 +6548,14 @@ function _mkRenderRPanel(liveOnly) {
       '<a href="https://discord.com/app" target="_blank" rel="noopener" title="Discord">' + MK_IC.discord + '</a>' +
       '<a href="https://wa.me/593995014247" target="_blank" rel="noopener" title="WhatsApp">' + MK_IC.wa + '</a>' +
     '</div>' +
-    (liveOnly ? '' : '<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span style="font-size:.78rem;color:var(--c-muted);font-weight:400;">lecciones</span></div>' +
+    (liveOnly ? '' : '<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span style="font-size:.78rem;color:var(--c-muted);font-weight:400;">trading</span></div>' +
       '<div class="rp-chart" id="rp-chart">' + days.map(function(d){ return '<div><i style="height:4%"></i><span>' + d + '</span></div>'; }).join('') + '</div>') +
     _rpRankCard() +
     '<div class="rp-h" id="rp-up-h" style="font-size:1.1rem;">Próximas actividades</div><div id="rp-up"><div style="font-size:.8rem;color:var(--c-muted);">Cargando...</div></div>' +
     '<button class="rp-all" onclick="navigateTo(\'sesiones\')">Ver todo</button>';
 
   if (!liveOnly) {
-    // Clases completadas por día (lunes a domingo de esta semana)
-    var mon = new Date(); mon.setHours(0,0,0,0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
-    sb.from('lesson_progress').select('completed_at').eq('user_id', cUser.id).eq('completed', true).gte('completed_at', mon.toISOString()).then(function(r) {
-      var cnt = [0,0,0,0,0,0,0];
-      ((r && r.data) || []).forEach(function(x){ if (x.completed_at) cnt[(new Date(x.completed_at).getDay() + 6) % 7]++; });
-      var max = Math.max.apply(null, cnt.concat([1]));
-      var today = (new Date().getDay() + 6) % 7;
-      var ch = document.getElementById('rp-chart');
-      if (ch) ch.classList.toggle('is-empty', !cnt.some(function(n){ return n > 0; }));
-      if (ch) ch.innerHTML = cnt.map(function(n, i){ return '<div title="' + n + ' clases"><i class="' + (i === today ? 'on' : '') + '" style="height:' + Math.max(6, Math.round(n / max * 100)) + '%"></i><span>' + days[i] + '</span></div>'; }).join('');
-      window._mpwCnt = cnt; _mpwFill();
-    });
+    _wkFill();
   }
 
   _mkUpcoming(function(items) {

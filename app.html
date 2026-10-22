@@ -1691,6 +1691,8 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 :root[data-theme="light"] #pg-modal .pg-av{box-shadow:none;}
 :root[data-theme="light"] #pg-modal .pg-pd.p1 .pg-pd-b{box-shadow:0 6px 16px -10px rgba(var(--c-acc),.5);}
 :root[data-theme="light"] #pg-modal .lvl-bar i{box-shadow:none;}
+/* Celular: la caja no toca los bordes (dvh descuenta las barras del navegador) */
+@media(max-width:620px){#pg-modal.sum-ov{padding:calc(env(safe-area-inset-top,0px) + 28px) 12px calc(env(safe-area-inset-bottom,0px) + 28px);}#pg-modal .sum-box{max-height:calc(100vh - 56px);max-height:calc(100dvh - 56px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border-radius:22px;}}
 @media(max-width:620px){#pg-modal .sum-top{padding:18px 18px 14px;}#pg-modal .sum-body{padding:16px 16px 22px;}#pg-modal .pg-prize,#pg-modal .pg-pick,#pg-modal .pg-rk{padding:16px;}#pg-modal .pg-tiles{grid-template-columns:1fr 1fr;}}
 .sum-ov.has-vid .sum-box{max-width:860px;}
 .sum-vid{aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin-bottom:18px;}

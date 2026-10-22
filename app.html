@@ -3423,6 +3423,7 @@ function rDash(liveOnly) {
       '<div id="week-info" style="margin-bottom:20px;"><div style="color:var(--c-muted);font-size:.83rem;"><span class="spin"></span> Cargando...</div></div></div>');
   _mkRenderDashExtras(liveOnly, p);
   _mpwFill();
+  if (!liveOnly) setTimeout(_pgLoad, 0); // celular: el ranking y las barras de la tarjeta semanal no dependen del panel derecho
   _mkRenderAds();
   _mkPlaceWk();
 
@@ -5224,7 +5225,7 @@ function _pgDays() { // días hábiles (lunes a viernes) del mes actual
 // Datos del journal para el ranking y "Mi progreso detallado" (se piden como mucho una vez por minuto)
 var _pgAt = 0;
 function _pgLoad(force) {
-  if (!cUser || (!force && Date.now() - _pgAt < 60000)) return Promise.resolve();
+  if (!cUser || (!force && window._pgRank && Date.now() - _pgAt < 60000)) return Promise.resolve();
   _pgAt = Date.now();
   var d = new Date(), m0 = new Date(d.getFullYear(), d.getMonth(), 1), dk = function(x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
   var mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7), s0 = mon < m0 ? mon : m0; // lunes de esta semana (puede ser del mes anterior)

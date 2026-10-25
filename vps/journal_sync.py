@@ -36,6 +36,8 @@ SB_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 JOURNAL_KEY = os.environ.get("JOURNAL_KEY", "")
 INTERVAL_MIN = int(os.environ.get("INTERVAL_MIN", "60"))
 PENDING_MIN = int(os.environ.get("PENDING_MIN", "2"))  # cada cuánto buscar cuentas recién conectadas
+EQUITY_MIN = int(os.environ.get("EQUITY_MIN", "60"))  # sin operaciones nuevas, se escribe como mucho cada EQUITY_MIN
+LAST = {}  # última escritura por cuenta, para no reescribir lo mismo
 FIRST_SYNC_DAYS = int(os.environ.get("FIRST_SYNC_DAYS", "3650"))
 MT5_PATHS = {
     "exness": os.environ.get("MT5_PATH_EXNESS", ""),
@@ -63,6 +65,12 @@ def sb(method, path, **kw):
 
 def update_account(acc_id, **fields):
     sb("PATCH", "journal_accounts?id=eq." + acc_id, json=fields)
+
+
+def set_error(acc, msg):
+    if acc.get("status") == "error" and acc.get("last_error") == msg:
+        return  # ya está guardado: no volver a escribir lo mismo
+    update_account(acc["id"], status="error", last_error=msg)
 
 
 def upsert(table, rows, conflict):
@@ -212,17 +220,17 @@ def sync_account(mt5, acc, partner_logins):
     try:
         pwd = decrypt(acc["investor_password_enc"])
     except Exception:
-        return update_account(acc["id"], status="error", last_error="Vuelve a escribir la contraseña de inversor.")
+        return set_error(acc, "Vuelve a escribir la contraseña de inversor.")
     if not mt5.login(int(acc["login"]), password=pwd, server=acc["server"], timeout=60000):
         log.info("Login falló %s %s: %s", acc["broker"], acc["login"], mt5.last_error())
-        return update_account(acc["id"], status="error", last_error=MSG_LOGIN)
+        return set_error(acc, MSG_LOGIN)
     info = mt5.account_info()
     who = ((info.company or "") + " " + (info.server or "")).lower()
     if not any(m in who for m in BROKER_MARKS[acc["broker"]]) or not str(acc["server"]).lower().startswith(SERVER_PREFIX[acc["broker"]]):
         log.info("Bróker no coincide %s: %s", acc["login"], who)
-        return update_account(acc["id"], status="error", last_error=MSG_BROKER[acc["broker"]])
+        return set_error(acc, MSG_BROKER[acc["broker"]])
     if acc["broker"] == "exness" and partner_logins is not None and str(acc["login"]) not in partner_logins:
-        return update_account(acc["id"], status="error", last_error=MSG_PARTNER)
+        return set_error(acc, MSG_PARTNER)
 
     off = server_offset(mt5)
     wait_history(mt5, info.balance)
@@ -239,16 +247,25 @@ def sync_account(mt5, acc, partner_logins):
             since = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         sb("DELETE", "journal_snapshots?account_id=eq.%s&day=lt.%s" % (acc["id"], since.date().isoformat()))
     trades, deals = read_positions(mt5, since, off, acc)
-    if trades:
-        upsert("journal_trades", trades, "account_id,ticket")
     snaps = daily_balances(deals, info.balance, off, since, acc)
     snaps[0]["equity"] = round(info.equity, 2)  # hoy: equidad real
+    # Solo se escribe en Supabase si algo cambió: cada escritura obliga a la base a guardar
+    # un archivo de 16 MB (gasta el "Disk IO" del plan). La equidad sola se guarda cada EQUITY_MIN.
+    prev = LAST.get(acc["id"])
+    now = time.time()
+    core = (repr(trades), repr([(s["day"], s["balance"]) for s in snaps[:4]]), info.balance, acc.get("status"))
+    if not full and prev and prev["core"] == core and now - prev["at"] < EQUITY_MIN * 60:
+        log.info("Sin cambios %s %s", acc["broker"], acc["login"])
+        return
+    if trades:
+        upsert("journal_trades", trades, "account_id,ticket")
     if full:
         upsert("journal_snapshots", snaps, "account_id,day")
     else:
         upsert("journal_snapshots", snaps[:4], "account_id,day")
     update_account(acc["id"], status="ok", last_error=None, balance=info.balance, equity=info.equity,
                    currency=info.currency, last_sync_at=dt.datetime.now(dt.timezone.utc).isoformat())
+    LAST[acc["id"]] = {"core": core, "at": now}
     log.info("OK %s %s: %d operaciones", acc["broker"], acc["login"], len(trades))
 
 

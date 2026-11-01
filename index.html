@@ -115,6 +115,19 @@ body.mopen .wa{display:none;}
 .rc q{display:block;quotes:none;font-size:1.02rem;line-height:1.55;color:var(--t);}
 .rc .au{margin-top:20px;font-size:.82rem;color:var(--mu);}
 .rc .au b{color:var(--t2);font-weight:600;}
+.res{display:block;columns:3;column-gap:16px;}.res .rc{break-inside:avoid;margin-bottom:16px;}
+.rc .qm{font-family:Georgia,serif;font-size:56px;line-height:.5;height:24px;color:rgb(var(--g));opacity:.5;}
+.rc .au{display:flex;align-items:center;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--ln);}
+.rc .av{width:36px;height:36px;border-radius:50%;border:1px solid rgba(var(--g),.45);display:flex;align-items:center;justify-content:center;color:var(--gl);font-size:.8rem;font-weight:600;flex:none;}
+.rc .vc{margin-left:auto;}
+@media (max-width:900px){.res{columns:2;}}
+.rnav{display:none;}
+@media (max-width:640px){.res{columns:auto;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}.res::-webkit-scrollbar{display:none;}
+  .res .rc{flex:0 0 100%;margin:0;scroll-snap-align:center;}.res .rc .bd{min-height:100%;display:flex;flex-direction:column;}.res .rc .au{margin-top:auto;}.res .rc q{font-size:1.02rem;}
+  .rnav{display:flex;align-items:center;justify-content:space-between;margin-top:18px;}.rnav .dots{display:flex;gap:6px;}.rnav .dots i{width:14px;height:3px;border-radius:2px;background:var(--ln2);transition:all .3s;}.rnav .dots i.on{width:28px;background:rgb(var(--g));}
+  .rnav .arw{display:flex;align-items:center;gap:10px;color:var(--mu);font-size:.8rem;}.rnav button{width:40px;height:40px;border-radius:50%;border:1px solid var(--ln2);background:none;color:var(--t);font-size:1.1rem;cursor:pointer;}}
+.rc .vc{background:none;border:0;padding:0;font:inherit;font-size:.78rem;color:var(--t2);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:color .2s;}.rc .vc:hover{color:var(--gl);}
+.rlb{position:fixed;inset:0;z-index:300;background:rgba(5,5,7,.94);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;}.rlb img{max-width:min(92vw,760px);max-height:86vh;border-radius:14px;border:1px solid var(--ln2);}
 
 /* Sobre mí */
 .about{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ln);border-radius:28px;overflow:hidden;background:var(--bg2);}
@@ -388,6 +401,29 @@ try { if (!localStorage.getItem('mk-home-css')) { document.write('<style id="mk-
 var HOME_NAV = { oferta: 'La formación', metodo: 'El método', resultados: 'Resultados', sobre: 'Sobre mí', faq: 'Preguntas' };
 
 function _hEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+// Resultados: la captura se abre en grande al tocar "Ver captura"
+document.addEventListener('click', function(e) {
+  var b = e.target.closest && e.target.closest('.rc .vc'); if (!b) return;
+  var o = document.createElement('div'); o.className = 'rlb';
+  o.innerHTML = '<img src="' + b.getAttribute('data-img') + '" alt="Captura del resultado">';
+  var close = function() { o.remove(); document.removeEventListener('keydown', esc); };
+  var esc = function(k) { if (k.key === 'Escape') close(); };
+  o.onclick = close; document.addEventListener('keydown', esc); document.body.appendChild(o);
+});
+// Resultados en celular: un testimonio a la vez, se desliza o con las flechas
+function _resIdx(r) { return Math.round(r.scrollLeft / (r.clientWidth + 12)); }
+document.addEventListener('click', function(e) {
+  var b = e.target.closest && e.target.closest('.rnav button'); if (!b) return;
+  var r = document.querySelector('#resultados .res'); if (!r) return;
+  var n = r.children.length, i = Math.min(n - 1, Math.max(0, _resIdx(r) + (+b.getAttribute('data-d'))));
+  r.scrollTo({ left: i * (r.clientWidth + 12), behavior: 'smooth' });
+});
+document.addEventListener('scroll', function(e) {
+  var r = e.target; if (!r.classList || !r.classList.contains('res')) return;
+  var i = _resIdx(r), sec = r.parentNode;
+  sec.querySelectorAll('.rnav .dots i').forEach(function(d, k) { d.classList.toggle('on', k === i); });
+  var c = sec.querySelector('.rct'); if (c) c.textContent = (i + 1) + ' / ' + r.children.length;
+}, true);
 function _hUrl(u) { u = String(u || ''); return /^(https?:\/\/|\/)/.test(u) ? _hEsc(u) : ''; }
 function _hMerge(base, over) {
   if (!over || typeof over !== 'object' || Array.isArray(over)) return over === undefined ? base : over;
@@ -474,9 +510,12 @@ var HS = {
     if (!it.length) return '';
     return '<section class="sec" id="resultados" style="padding-top:40px"><div class="in">' + _hHead(o) + '<div class="res">' +
       it.map(function(r) {
-        return '<div class="rc reveal">' + (_hUrl(r.img) ? '<div class="img"><img src="' + _hUrl(r.img) + '" alt="Resultado de alumno" loading="lazy"></div>' : '') +
-          '<div class="bd">' + (r.q ? '<q>“' + _hEsc(r.q) + '”</q>' : '') + (r.n || r.r ? '<div class="au"><b>' + _hEsc(r.n) + '</b>' + (r.r ? ' · ' + _hEsc(r.r) : '') + '</div>' : '') + '</div></div>';
-      }).join('') + '</div></div></section>';
+        var u = _hUrl(r.img);
+        var ini = String(r.n || '').replace(/\./g, '').split(/\s+/).map(function(w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
+        return '<div class="rc reveal"><div class="bd">' + (r.q ? '<div class="qm">“</div><q>' + _hEsc(r.q) + '</q>' : '') +
+          '<div class="au">' + (ini ? '<div class="av">' + _hEsc(ini) + '</div>' : '') + '<b>' + _hEsc(r.n || '') + '</b>' + (u ? '<button type="button" class="vc" data-img="' + u + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Ver captura</button>' : '') + '</div></div></div>';
+      }).join('') + '</div><div class="rnav"><div class="dots">' + it.map(function(_, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') +
+      '</div><div class="arw"><span class="rct">1 / ' + it.length + '</span><button type="button" data-d="-1" aria-label="Anterior">‹</button><button type="button" data-d="1" aria-label="Siguiente">›</button></div></div></div></section>';
   },
   sobre: function(o) {
     return '<section class="sec" id="sobre" style="padding-top:40px"><div class="in"><div class="about reveal">' +

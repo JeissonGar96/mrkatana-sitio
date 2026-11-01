@@ -5,7 +5,7 @@ var HOME_DEFAULT = {
   whatsapp: '593995014247',
   wa_text: 'Hola Jeisson, quiero información sobre la mentoría',
   order: ['hero', 'stats', 'oferta', 'video', 'metodo', 'resultados', 'sobre', 'faq', 'cierre'],
-  off: ['video', 'resultados'],
+  off: ['video'],
   hero: { eyebrow: 'Trading institucional en oro', title: 'Opera como los grandes.', gold: 'Con precisión.', text: 'El método, las sesiones en vivo y el acompañamiento para llevarte a tu primera cuenta fondeada.', note: 'Entra gratis y mira la plataforma por dentro.', img: '/img/plataforma.jpg' },
   stats: { items: [ { v: '6+', l: 'Años en los mercados' }, { v: '45 días', l: 'Meta para fondearte' }, { v: 'Diario', l: 'Sesiones en vivo' }, { v: '1:1', l: 'Mentoría personal' } ] },
   oferta: { eyebrow: 'La formación', title: 'Todo lo que necesitas,', gold: 'en un solo lugar.', text: 'Una plataforma propia, pensada para que aprendas, practiques y operes acompañado desde el primer día.',
@@ -25,7 +25,17 @@ var HOME_DEFAULT = {
       { w: 'Meses 2 a 4', t: 'Consistencia', d: 'Operas con capital de la firma y construyes consistencia con gestión de riesgo real.', goal: '' },
       { w: 'Meses 5 y 6', t: 'Primeros retiros', d: 'Haces tus primeros retiros de la cuenta fondeada.', goal: 'Meta: $1,000 a $3,000' }
     ] },
-  resultados: { eyebrow: 'Resultados', title: 'Alumnos que ya', gold: 'están operando.', text: 'Capturas reales de cuentas fondeadas y retiros de alumnos.', items: [] },
+  resultados: { eyebrow: 'Resultados', title: 'Alumnos que ya', gold: 'están operando.', text: 'Capturas reales de cuentas fondeadas y retiros de alumnos.', items: [
+      { img: '/img/resultados/frank.webp', q: 'Tu operativa en las sesiones en vivo se asemeja mucho a la mía, eso me ha ayudado a tener mayor confianza a la hora de operar por mi cuenta.', n: 'Frank F.', r: 'Fase 1 superada' },
+      { q: 'La mentoría 1-1 me ayuda a salir de las dudas y profundizar los temas importantes. Cada sesión en vivo me deja un aprendizaje más, aparte de obtener ganancias.', n: 'José I.', r: 'Alumno' },
+      { img: '/img/resultados/josimar.webp', q: 'Gracias profe, por los videos. Vamos por la fase 2, a real y a facturar.', n: 'Josimar S.', r: 'Retiro aprobado' },
+      { q: 'Las sesiones en vivo son de gran ayuda, me permiten ganar mientras aprendo, y las mentorías 1-1 me ayudaron a mejorar en esas pequeñas cosas que fallaba.', n: 'Cristian T.', r: 'Alumno' },
+      { q: 'Un excelente seguimiento y aprendizaje total. Las sesiones en vivo enseñan demasiado, al ver todo en tiempo real.', n: 'Jorge T.', r: 'Alumno' },
+      { img: '/img/resultados/erika.webp', q: 'Profe, ya me llegaron las credenciales. Qué emoción, justo en el momento preciso.', n: 'Erika', r: 'Cuenta fondeada' },
+      { img: '/img/resultados/stefano.webp', q: 'Este gran momento se llama felicidad.', n: 'Stefano C.', r: 'Verificación superada' },
+      { img: '/img/resultados/danny.webp', q: 'Gracias a ese trade y a Mr Katana.', n: 'Danny S.', r: 'Fase 1 superada' },
+      { img: '/img/resultados/cristian.webp', q: 'Voy así, ahora espero el correo.', n: 'Cristian R.', r: 'Fase 1 superada' }
+    ] },
   sobre: { eyebrow: 'Sobre mí', title: 'La katana no golpea.', gold: 'Corta con precisión.', firma: 'Mr. Katana', img: '/img/jeisson.webp',
     p1: 'Soy Jeisson García, trader de oro con enfoque institucional. Mi camino me llevó a entender cómo se mueven los grandes: bancos, fondos y market makers.',
     p2: 'Hoy mi misión es acortar tu curva de aprendizaje con un método claro y acompañamiento real. Así opero, y así enseño.',

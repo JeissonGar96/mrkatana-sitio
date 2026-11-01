@@ -69,7 +69,7 @@ select.lg-fi{appearance:none;-webkit-appearance:none;cursor:pointer;}
 .lg-pw{position:relative;}.lg-pw .lg-fi{padding-right:40px;}
 .lg-pw button{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:var(--lg-mu);display:flex;}
 .lg-row3{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;}
-.lg-row2{display:grid;grid-template-columns:1fr 1.3fr;gap:12px;}.lg-row2.eq{grid-template-columns:1fr 1fr;}.lg-chk em{color:var(--lg-mu);font-style:normal;}#rg-cap:not(:empty){margin:8px 0;}
+.lg-row2{display:grid;grid-template-columns:1fr 1.3fr;gap:12px;}.lg-row2.eq{grid-template-columns:1fr 1fr;}.lg-chk em{color:var(--lg-mu);font-style:normal;}#rg-cap:not(:empty),#li-cap:not(:empty){margin:8px 0;}
 .lg-ph{display:flex;gap:6px;}.lg-ph select{width:84px;flex-shrink:0;padding:12px 8px;}
 .lg-note{font-size:.72rem;color:var(--lg-mu);margin-top:5px;}
 .lg-lnk{text-align:right;margin:-4px 0 6px;}.lg-lnk a{font-size:.8rem;color:var(--lg-t2);text-decoration:none;}
@@ -271,6 +271,7 @@ try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write(
         <div class="lg-fg"><label>Correo</label><input type="email" id="li-e" class="lg-fi" placeholder="tu@correo.com" autocomplete="email"></div>
         <div class="lg-fg"><label>Contraseña</label><div class="lg-pw"><input type="password" id="li-p" class="lg-fi" placeholder="••••••••" autocomplete="current-password"><button type="button" onclick="togglePassVis('li-p')"><svg id="eye-li-p" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
         <div class="lg-lnk"><a href="#" id="lnk-forgot">¿Olvidaste tu contraseña?</a></div>
+        <div id="li-cap"></div>
         <button class="lg-btn" id="btn-in">Iniciar sesión y continuar</button>
         <div class="lg-alt">¿No tienes cuenta? <a href="#" id="to-reg">Créala aquí</a></div>
       </div>
@@ -507,9 +508,11 @@ async function doIn() {
   hideMsg();
   var e = _v('li-e').trim(), p = _v('li-p');
   if (!e || !p) return showMsg('Ingresa tu correo y contraseña.', true);
+  if (_liCapWait()) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
   var btn = _el('btn-in');
   btn.disabled = true; btn.textContent = 'Entrando...';
-  var r = await sb.auth.signInWithPassword({ email: e, password: p });
+  var r = await sb.auth.signInWithPassword({ email: e, password: p, options: { captchaToken: _liToken || undefined } });
+  _liCapReset();
   btn.disabled = false; btn.textContent = 'Iniciar sesión y continuar';
   if (r.error) {
     var m = r.error.message || '';
@@ -669,10 +672,14 @@ var TS_SITEKEY = '';
 var _capToken = null, _capId = null;
 function _capLoad() {
   if (!TS_SITEKEY || window.turnstile) return;
-  window._tsReady = function() { _capId = turnstile.render('#rg-cap', { sitekey: TS_SITEKEY, theme: 'dark', appearance: 'interaction-only', callback: function(t) { _capToken = t; }, 'expired-callback': function() { _capToken = null; } }); };
+  window._tsReady = function() { _capId = turnstile.render('#rg-cap', { sitekey: TS_SITEKEY, theme: 'dark', appearance: 'interaction-only', callback: function(t) { _capToken = t; }, 'expired-callback': function() { _capToken = null; } }); _liCapId = turnstile.render('#li-cap', { sitekey: TS_SITEKEY, theme: 'dark', appearance: 'interaction-only', callback: function(t) { _liToken = t; }, 'expired-callback': function() { _liToken = null; } }); };
   var sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_tsReady'; sc.async = true; document.head.appendChild(sc);
 }
 function _capReset() { if (window.turnstile && _capId !== null) { turnstile.reset(_capId); _capToken = null; } }
+// Verificación aparte para iniciar sesión, olvidé mi contraseña y reenviar correo (cada código sirve una sola vez)
+var _liToken = null, _liCapId = null;
+function _liCapReset() { if (window.turnstile && _liCapId !== null) { turnstile.reset(_liCapId); _liToken = null; } }
+function _liCapWait() { return TS_SITEKEY && !_liToken; }
 
 // Colores de Admin > Apariencia: copia de login.html (mantener igual que app.html)
 var MK_THEME_DEFAULT = {
@@ -812,7 +819,9 @@ window.onload = async function() {
     e.preventDefault();
     var em = _v('li-e').trim();
     if (!em) return showMsg('Escribe tu correo arriba primero.', true);
-    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + '/login' }).then(function(r) {
+    if (_liCapWait()) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
+    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + '/login', captchaToken: _liToken || undefined }).then(function(r) {
+      _liCapReset();
       if (r.error) showMsg('No se pudo enviar: ' + r.error.message, true);
       else showMsg('Te enviamos un correo para cambiar tu contraseña.', false);
     });

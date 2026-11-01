@@ -26,15 +26,15 @@ var HOME_DEFAULT = {
       { w: 'Meses 5 y 6', t: 'Primeros retiros', d: 'Haces tus primeros retiros de la cuenta fondeada.', goal: 'Meta: $1,000 a $3,000' }
     ] },
   resultados: { eyebrow: 'Resultados', title: 'Alumnos que ya', gold: 'están operando.', text: 'Capturas reales de cuentas fondeadas y retiros de alumnos.', items: [
-      { img: '/img/resultados/josimar.webp', q: 'Gracias profe, por los videos. Vamos por la fase 2, a real y a facturar.', n: 'Josimar S.', r: 'Retiro aprobado' },
-      { img: '/img/resultados/stefano.webp', q: 'Este gran momento se llama felicidad.', n: 'Stefano C.', r: 'Verificación superada' },
-      { img: '/img/resultados/erika.webp', q: 'Profe, ya me llegaron las credenciales. Qué emoción, justo en el momento preciso.', n: 'Erika', r: 'Cuenta fondeada' },
       { img: '/img/resultados/frank.webp', q: 'Tu operativa en las sesiones en vivo se asemeja mucho a la mía, eso me ha ayudado a tener mayor confianza a la hora de operar por mi cuenta.', n: 'Frank F.', r: 'Fase 1 superada' },
-      { img: '/img/resultados/cristian.webp', q: 'Voy así, ahora espero el correo.', n: 'Cristian R.', r: 'Fase 1 superada' },
-      { img: '/img/resultados/danny.webp', q: 'Gracias a ese trade y a Mr Katana.', n: 'Danny S.', r: 'Fase 1 superada' },
       { q: 'La mentoría 1-1 me ayuda a salir de las dudas y profundizar los temas importantes. Cada sesión en vivo me deja un aprendizaje más, aparte de obtener ganancias.', n: 'José I.', r: 'Alumno' },
+      { img: '/img/resultados/josimar.webp', q: 'Gracias profe, por los videos. Vamos por la fase 2, a real y a facturar.', n: 'Josimar S.', r: 'Retiro aprobado' },
+      { q: 'Las sesiones en vivo son de gran ayuda, me permiten ganar mientras aprendo, y las mentorías 1-1 me ayudaron a mejorar en esas pequeñas cosas que fallaba.', n: 'Cristian T.', r: 'Alumno' },
       { q: 'Un excelente seguimiento y aprendizaje total. Las sesiones en vivo enseñan demasiado, al ver todo en tiempo real.', n: 'Jorge T.', r: 'Alumno' },
-      { q: 'Las sesiones en vivo son de gran ayuda, me permiten ganar mientras aprendo, y las mentorías 1-1 me ayudaron a mejorar en esas pequeñas cosas que fallaba.', n: 'Cristian T.', r: 'Alumno' }
+      { img: '/img/resultados/erika.webp', q: 'Profe, ya me llegaron las credenciales. Qué emoción, justo en el momento preciso.', n: 'Erika', r: 'Cuenta fondeada' },
+      { img: '/img/resultados/stefano.webp', q: 'Este gran momento se llama felicidad.', n: 'Stefano C.', r: 'Verificación superada' },
+      { img: '/img/resultados/danny.webp', q: 'Gracias a ese trade y a Mr Katana.', n: 'Danny S.', r: 'Fase 1 superada' },
+      { img: '/img/resultados/cristian.webp', q: 'Voy así, ahora espero el correo.', n: 'Cristian R.', r: 'Fase 1 superada' }
     ] },
   sobre: { eyebrow: 'Sobre mí', title: 'La katana no golpea.', gold: 'Corta con precisión.', firma: 'Mr. Katana', img: '/img/jeisson.webp',
     p1: 'Soy Jeisson García, trader de oro con enfoque institucional. Mi camino me llevó a entender cómo se mueven los grandes: bancos, fondos y market makers.',

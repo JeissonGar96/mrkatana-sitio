@@ -58,7 +58,9 @@ function _homeThemeCss(cfg) {
 }
 // Pide los colores al servidor; si cambiaron, los aplica y los recuerda para la próxima visita
 function _homeTheme(onChange) {
+  function show() { var w = document.getElementById('mk-wait'); if (w) w.remove(); }
   fetch('/api/site-theme').then(function(r) { return r.json(); }).then(function(d) {
+    setTimeout(show, 0);
     if (!d || !d.ok) return;
     var css = _homeThemeCss(d.theme), el = document.getElementById('mk-home-theme');
     var old = el ? el.textContent : '';
@@ -67,5 +69,5 @@ function _homeTheme(onChange) {
     el.textContent = css;
     try { css ? localStorage.setItem('mk-home-css', css) : localStorage.removeItem('mk-home-css'); } catch (e) {}
     if (onChange) onChange();
-  }).catch(function() {});
+  }).catch(show);
 }

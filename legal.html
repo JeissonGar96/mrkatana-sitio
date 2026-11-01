@@ -92,6 +92,8 @@ a:hover{text-decoration:underline;}
 </style>
 <script>
 try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write('<style id="mk-custom-theme">' + _css + '</style>'); } catch (e) {}
+// Primera visita (sin copia guardada): espera los colores del admin en lugar de mostrar los dorados
+try { if (!localStorage.getItem('mk-theme-css')) { document.write('<style id="mk-wait">html{visibility:hidden}</style>'); setTimeout(function() { var w = document.getElementById('mk-wait'); if (w) w.remove(); }, 2000); } } catch (e) {}
 </script>
 </head>
 <body>
@@ -324,7 +326,9 @@ function _lgTheme() {
     try { localStorage.setItem('mk-theme', l ? 'light' : 'dark'); } catch (e) {}
   };
   // Colores guardados por el admin (los mismos del panel)
+  function show() { var w = document.getElementById('mk-wait'); if (w) w.remove(); }
   fetch('/api/site-theme').then(function(r) { return r.json(); }).then(function(d) {
+    setTimeout(show, 0);
     var el = document.getElementById('mk-custom-theme');
     if (!d || !d.ok) return; // el servidor no pudo leer los colores: se queda la copia guardada
     if (!d.theme) { if (el) el.remove(); try { localStorage.removeItem('mk-theme-css'); } catch (e) {} return; }
@@ -332,7 +336,7 @@ function _lgTheme() {
     if (!el) { el = document.createElement('style'); el.id = 'mk-custom-theme'; document.head.appendChild(el); }
     el.textContent = css;
     try { localStorage.setItem('mk-theme-css', css); } catch (e) {}
-  }).catch(function() {});
+  }).catch(show);
 }
 
 _lgTheme();

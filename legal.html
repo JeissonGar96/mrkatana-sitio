@@ -41,7 +41,7 @@ a:hover{text-decoration:underline;}
 .lgl-body{flex:1;display:grid;grid-template-columns:300px 1fr;}
 .lgl-side{border-right:1px solid var(--c-line);padding:36px 28px;background:radial-gradient(120% 60% at 0% 100%,rgba(var(--c-acc),.08),transparent 60%),var(--c-panel);}
 :root[data-theme="light"] .lgl-side{background:radial-gradient(120% 60% at 0% 100%,rgba(var(--c-acc),.10),transparent 60%),var(--c-bg);border-right-color:rgba(0,0,0,.07);}
-.lgl-sticky{position:sticky;top:36px;}
+.lgl-sticky{position:sticky;top:36px;max-height:calc(100vh - 72px);overflow-y:auto;scrollbar-width:none;}.lgl-sticky::-webkit-scrollbar{display:none;}
 .lgl-kick{font-size:.72rem;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--c-muted);}
 .lgl-side h1{font-size:1.55rem;line-height:1.2;font-weight:800;letter-spacing:-.3px;margin:8px 0 22px;}
 .lgl-seg{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:4px;border:1px solid var(--c-line);border-radius:12px;background:var(--c-bg);margin-bottom:26px;}
@@ -119,130 +119,270 @@ try { if (!localStorage.getItem('mk-theme-css')) { document.write('<style id="mk
 
   <!-- TÉRMINOS DE USO -->
   <div class="section on" id="sec-terminos">
-    <div class="page-title">Términos de uso</div>
-    <div class="page-date">Última actualización: octubre 2026</div>
-    <div class="lgl-note">Al registrarte y acceder a la plataforma Mr. Katana FX, aceptas los presentes términos en su totalidad. Lee este documento antes de continuar.</div>
+    <div class="page-title">Términos y condiciones de uso</div>
+    <div class="page-date">Última actualización: noviembre 2026</div>
+    <div class="lgl-note">Este documento es un contrato entre tú y Mr. Katana FX. Al crear una cuenta, comprar un plan o usar cualquier parte de la plataforma, declaras que leíste, entendiste y aceptas estos términos en su totalidad, junto con la Política de privacidad. Si no estás de acuerdo con alguna parte, no uses la plataforma.</div>
 
-    <h2>Descripción del servicio</h2>
-    <p>Mr. Katana FX es una plataforma de educación en trading de futuros y divisas operada por Jeisson García Anchundia. El servicio incluye acceso a clases grabadas, sesiones en vivo, reuniones 1-1, material de formación y herramientas de análisis, según el plan adquirido.</p>
-
-    <h2>Requisitos y cuenta</h2>
-    <p>Para crear una cuenta debes ser <strong>mayor de 18 años</strong> y dar datos reales. Eres responsable de mantener tu contraseña en secreto y de toda la actividad que ocurra en tu cuenta.</p>
-    <p>Puedes crear una <strong>cuenta gratuita</strong>, que da acceso limitado a la plataforma. El contenido completo requiere un plan de pago.</p>
-
-    <h2>Acceso y membresía</h2>
-    <p>El acceso al contenido de pago depende de tener un plan vigente. Cada plan indica en la página de compra qué incluye y cuánto dura:</p>
+    <h2>Definiciones</h2>
+    <p>Para efectos de este documento:</p>
     <ul>
-      <li><strong>Formación RAIN Completa</strong>: acceso de por vida al contenido grabado</li>
-      <li><strong>Sesiones en Vivo</strong>: acceso mensual, trimestral o semestral a las sesiones grupales en tiempo real</li>
-      <li><strong>Mentoría Premium</strong>: acceso completo, incluyendo sesiones 1-1 personalizadas</li>
-    </ul>
-    <p>El acceso es personal e intransferible. Está prohibido compartir credenciales con terceros.</p>
-
-    <h2>Pagos y reembolsos</h2>
-    <p>Los pagos se procesan de forma segura a través de PayPal. Una vez completado el pago, el acceso se activa automáticamente. <strong>No se realizan reembolsos</strong> una vez activado el acceso al contenido, salvo en casos de error técnico demostrable imputable a la plataforma.</p>
-    <p>En caso de duda, contáctanos antes de comprar a través de WhatsApp o Instagram.</p>
-
-    <h2>Uso permitido</h2>
-    <p>El contenido de la plataforma es para uso exclusivo del usuario registrado. Queda expresamente prohibido:</p>
-    <ul>
-      <li>Reproducir, distribuir o revender el contenido de la plataforma</li>
-      <li>Grabar sesiones en vivo o reuniones sin autorización expresa</li>
-      <li>Compartir accesos con terceros</li>
-      <li>Usar el contenido con fines comerciales sin autorización</li>
+      <li><strong>"Mr. Katana FX", "nosotros" o "la plataforma"</strong>: el servicio de formación operado por Jeisson García Anchundia, que incluye el sitio web mrkatanafx.com, el panel de alumnos, la comunidad y todas sus herramientas.</li>
+      <li><strong>"Usuario", "alumno" o "tú"</strong>: toda persona que crea una cuenta, compra un plan o accede a la plataforma de cualquier forma.</li>
+      <li><strong>"Contenido"</strong>: clases grabadas, sesiones en vivo, reuniones 1-1, textos, gráficos, plantillas, estrategias, metodologías (incluido el método RAIN), materiales descargables y cualquier otro material publicado en la plataforma.</li>
+      <li><strong>"Plan"</strong>: cada producto de pago descrito en la página de compra, con su contenido y duración.</li>
+      <li><strong>"Herramientas"</strong>: funciones adicionales como el journal automático de trading, el ranking, el calendario económico y cualquier otra que se agregue en el futuro.</li>
     </ul>
 
-    <h2>Descargo de responsabilidad financiera</h2>
-    <p>El contenido de Mr. Katana FX es estrictamente educativo. <strong>No constituye asesoramiento financiero ni una recomendación de inversión.</strong> El trading conlleva riesgos significativos de pérdida de capital. Los resultados pasados no garantizan resultados futuros. Cada usuario es responsable de sus propias decisiones de trading.</p>
+    <h2>Aceptación y capacidad legal</h2>
+    <p>Para usar la plataforma debes ser <strong>mayor de 18 años</strong> y tener plena capacidad legal para contratar según las leyes de tu país. Al registrarte declaras, bajo tu responsabilidad, que la fecha de nacimiento y los demás datos que entregas son verdaderos.</p>
+    <p>Eres responsable de verificar que el uso de la plataforma y la práctica del trading estén permitidos en tu país de residencia. Mr. Katana FX no se hace responsable si las leyes de tu jurisdicción restringen o prohíben estas actividades.</p>
 
-    <h2>Suspensión de acceso</h2>
-    <p>Nos reservamos el derecho de suspender o cancelar el acceso de cualquier usuario que incumpla estos términos, sin derecho a reembolso.</p>
+    <h2>Naturaleza del servicio</h2>
+    <p>Mr. Katana FX es un servicio <strong>exclusivamente educativo</strong> sobre análisis técnico, gestión de riesgo y psicología del trading en mercados de divisas (Forex), futuros, índices y otros instrumentos financieros.</p>
+    <p>Mr. Katana FX <strong>no es</strong> un bróker, un asesor de inversiones registrado, un gestor de fondos ni una entidad financiera. No recibimos, custodiamos ni administramos dinero de los usuarios para invertir, no abrimos ni operamos cuentas en nombre de nadie y no ofrecemos rendimientos de ningún tipo.</p>
+    <p>Los análisis, operaciones y ejemplos que se muestran en clases, sesiones en vivo, reuniones o en la comunidad se presentan solo para enseñar. <strong>No son señales, recomendaciones ni instrucciones</strong> para comprar o vender ningún instrumento.</p>
 
-    <h2>Modificaciones</h2>
-    <p>Podemos actualizar estos términos en cualquier momento. Los cambios se notificarán en la plataforma y entrarán en vigor desde su publicación.</p>
+    <h2>Advertencia de riesgo</h2>
+    <p>El trading de instrumentos financieros, especialmente los apalancados (como divisas, CFD y futuros), implica un <strong>alto nivel de riesgo</strong> y puede no ser adecuado para todas las personas. El apalancamiento puede trabajar tanto a tu favor como en tu contra: puedes perder todo el capital que deposites e incluso, en algunos casos, más.</p>
+    <ul>
+      <li>Solo debes operar con dinero que puedas permitirte perder sin afectar tu vida, tus obligaciones ni las de tu familia.</li>
+      <li>Los resultados pasados, propios o de otros alumnos, no garantizan resultados futuros.</li>
+      <li>Las operaciones simuladas o en cuentas demo no reflejan las condiciones reales de mercado, como deslizamientos, liquidez o el efecto emocional de operar con dinero real.</li>
+      <li>Las pruebas de cuentas de fondeo (prop firms) tienen reglas propias y un costo que puedes perder si no las cumples.</li>
+    </ul>
+    <p>Antes de operar, te recomendamos consultar con un asesor financiero independiente y debidamente autorizado en tu país.</p>
+
+    <h2>Sin garantía de resultados</h2>
+    <p>Mr. Katana FX <strong>no garantiza</strong> que vayas a obtener ganancias, aprobar pruebas de fondeo, alcanzar un nivel de ingresos ni ningún resultado concreto. Tu desempeño depende de factores que no controlamos: tu disciplina, tu capital, tu gestión de riesgo, las condiciones del mercado y tu propio criterio.</p>
+    <p>Los testimonios, capturas de resultados y casos de éxito que publicamos son experiencias individuales y reales, pero <strong>no son típicos ni representan lo que obtendrá cualquier alumno</strong>.</p>
+
+    <h2>Cuenta de usuario</h2>
+    <p>Para acceder debes crear una cuenta con datos reales y mantenerlos actualizados. Eres el único responsable de:</p>
+    <ul>
+      <li>Mantener en secreto tu contraseña y no compartirla con nadie.</li>
+      <li>Toda la actividad que ocurra en tu cuenta, la hagas tú o un tercero al que diste acceso.</li>
+      <li>Avisarnos de inmediato si sospechas que alguien usó tu cuenta sin permiso.</li>
+    </ul>
+    <p>Cada cuenta es <strong>personal e intransferible</strong>. Una persona solo puede tener una cuenta. Podemos detectar accesos simultáneos desde distintos lugares y, si confirmamos que una cuenta se comparte, suspenderla sin reembolso.</p>
+    <p>La <strong>cuenta gratuita</strong> da acceso limitado a la plataforma y a algunas herramientas. Podemos cambiar o retirar lo que incluye en cualquier momento.</p>
+
+    <h2>Planes y acceso</h2>
+    <p>Cada plan indica en la página de compra qué incluye, cuánto dura y cuál es su precio. Como referencia:</p>
+    <ul>
+      <li><strong>Formación RAIN Completa</strong>: acceso al contenido grabado del curso durante el tiempo que la plataforma siga en funcionamiento.</li>
+      <li><strong>Sesiones en Vivo</strong>: acceso a las sesiones grupales en tiempo real durante el periodo contratado (mensual, trimestral o semestral).</li>
+      <li><strong>Mentoría Premium</strong>: acceso completo, incluidas las reuniones 1-1 en la cantidad indicada en el plan.</li>
+    </ul>
+    <p>El "acceso de por vida" o "ilimitado" significa acceso mientras Mr. Katana FX siga operando la plataforma, y no la vida del usuario. Si en el futuro cerramos el servicio, lo avisaremos con anticipación razonable.</p>
+    <p>Los horarios de las sesiones en vivo y las reuniones 1-1 se publican en la plataforma y pueden cambiar. Una sesión o reunión a la que no asistas sin avisar a tiempo se considera realizada y no se repone. Las reuniones 1-1 no usadas dentro del periodo del plan vencen con él.</p>
+    <p>Podemos actualizar, reorganizar, ampliar o retirar partes del contenido para mejorarlo. Esto no da derecho a reembolso mientras el plan mantenga su propósito principal.</p>
+
+    <h2>Precios y pagos</h2>
+    <p>Los precios se muestran en dólares de Estados Unidos (USD) e incluyen lo indicado en la página de compra. Los pagos en línea se procesan a través de <strong>PayPal</strong>. Mr. Katana FX no recibe ni guarda datos de tu tarjeta o cuenta bancaria. También podemos aceptar otros medios, como transferencia o efectivo; en ese caso el acceso se activa cuando confirmamos el pago.</p>
+    <p>Eres responsable de las comisiones de tu banco o de PayPal, de las diferencias por tipo de cambio y de los impuestos que correspondan en tu país.</p>
+    <p>Los planes por tiempo no se renuevan solos, salvo que la página de compra diga lo contrario. Al terminar el periodo, el acceso de pago se cierra hasta que compres de nuevo. Podemos cambiar los precios en cualquier momento; el cambio no afecta a planes ya pagados. Los códigos de descuento tienen sus propias condiciones, no se acumulan y pueden retirarse.</p>
+
+    <h2>Política de reembolsos</h2>
+    <p>Por la naturaleza digital del contenido, que queda disponible apenas se activa el acceso, <strong>las compras no son reembolsables</strong> una vez activado el plan, en todo lo que permita la ley aplicable.</p>
+    <p>Solo revisaremos un reembolso, total o parcial, cuando:</p>
+    <ul>
+      <li>Se haya cobrado dos veces el mismo plan por un error técnico.</li>
+      <li>Un error técnico atribuible a la plataforma te impida acceder al contenido pagado y no lo hayamos resuelto dentro de 15 días desde que nos avisaste.</li>
+    </ul>
+    <p>Antes de comprar, escríbenos con cualquier duda. Abrir una disputa o un contracargo en PayPal o en tu banco sin habernos contactado antes puede llevar a la suspensión inmediata de la cuenta mientras se resuelve.</p>
+
+    <h2>Propiedad intelectual</h2>
+    <p>Todo el contenido, la marca "Mr. Katana FX", el logotipo, el método RAIN, el diseño de la plataforma y su código son propiedad de Jeisson García Anchundia o se usan con licencia, y están protegidos por las leyes de propiedad intelectual de Ecuador y los tratados internacionales.</p>
+    <p>Al comprar un plan recibes una <strong>licencia personal, limitada, no exclusiva, intransferible y revocable</strong> para ver el contenido con fines de aprendizaje propio. Comprar un plan no te transfiere ningún derecho de propiedad sobre el contenido.</p>
+
+    <h2>Uso permitido y conductas prohibidas</h2>
+    <p>Está prohibido, sin autorización escrita de Mr. Katana FX:</p>
+    <ul>
+      <li>Descargar, copiar, grabar, capturar en pantalla, reproducir, distribuir, revender, alquilar o publicar el contenido, total o parcialmente.</li>
+      <li>Grabar las sesiones en vivo o las reuniones 1-1, o difundir lo que se diga en ellas.</li>
+      <li>Compartir tu cuenta o vender, ceder o prestar tu acceso.</li>
+      <li>Usar el contenido para crear cursos, mentorías, señales o productos que compitan con Mr. Katana FX.</li>
+      <li>Intentar acceder a partes restringidas, a datos de otros usuarios o al código de la plataforma, o alterar su funcionamiento.</li>
+      <li>Usar bots, programas automáticos o métodos para extraer contenido de forma masiva.</li>
+      <li>Hacerse pasar por Mr. Katana FX, su equipo u otro alumno.</li>
+    </ul>
+    <p>Incumplir estas reglas puede llevar a la suspensión inmediata de la cuenta sin reembolso y a las acciones legales que correspondan, incluido el reclamo de daños y perjuicios.</p>
+
+    <h2>Comunidad y conducta</h2>
+    <p>La comunidad (Discord, chats de las sesiones en vivo y otros espacios) es para aprender. Te pedimos tratar a todos con respeto. No se permite:</p>
+    <ul>
+      <li>Insultos, acoso, discriminación ni contenido ofensivo o ilegal.</li>
+      <li>Publicidad, spam, enlaces de referido propios o la venta de productos o servicios.</li>
+      <li>Ofrecer gestión de cuentas, señales pagadas o esquemas de inversión a otros miembros.</li>
+      <li>Compartir datos personales de otras personas.</li>
+    </ul>
+    <p>Podemos borrar mensajes y retirar de la comunidad a quien no respete estas normas. Lo que otros miembros publiquen es responsabilidad de ellos y no representa la opinión de Mr. Katana FX.</p>
+
+    <h2>Herramientas y journal de trading</h2>
+    <p>El journal automático y las demás herramientas se ofrecen para ayudarte a llevar registro de tu operativa. Para el journal, nos das el número de tu cuenta MT5, su servidor y la <strong>contraseña de inversor</strong>, que solo permite ver la cuenta y no operar ni retirar fondos. Guardamos esa contraseña cifrada y la usamos únicamente para leer tus operaciones.</p>
+    <ul>
+      <li>Nunca nos des tu contraseña principal (la que permite operar) ni la de tu área personal del bróker.</li>
+      <li>Los datos se leen de forma automática y pueden tener retrasos, diferencias o errores respecto de lo que muestra tu bróker. Siempre manda lo que diga tu bróker o tu prop firm.</li>
+      <li>Las herramientas pueden dejar de funcionar si el bróker cambia su sistema o restringe el acceso, y podemos modificarlas o retirarlas.</li>
+      <li>Puedes desconectar tu cuenta cuando quieras desde la plataforma.</li>
+    </ul>
+    <p>El <strong>ranking</strong> y los premios que se anuncien se rigen por las reglas publicadas en la plataforma en cada periodo. En el ranking, otros alumnos pueden ver tu nombre con la inicial del apellido, tu foto de perfil y tu puntaje, pero nunca tus montos ni tu información de cuenta. Podemos excluir del ranking a quien intente manipularlo.</p>
+
+    <h2>Enlaces de socios y relación con terceros</h2>
+    <p>Mr. Katana FX mantiene acuerdos de afiliado o socio con algunos brókers y empresas de fondeo, como <strong>Exness</strong> y <strong>Funding Pips</strong>. Si abres una cuenta con nuestros enlaces o códigos, podemos recibir una comisión de esa empresa, sin costo adicional para ti. Algunas herramientas gratuitas pueden requerir que tu cuenta esté registrada con nuestros enlaces.</p>
+    <p>Estas empresas son independientes de Mr. Katana FX. Mencionarlas no es una recomendación de inversión ni una garantía sobre sus servicios. Tu relación con ellas (depósitos, retiros, pruebas, pagos, reglas y conflictos) se rige solo por sus propios términos, y Mr. Katana FX no responde por sus decisiones, fallas, cambios de condiciones ni por la pérdida de fondos depositados con ellas.</p>
+    <p>La plataforma también usa servicios de terceros, como PayPal, Discord, TradingView, Google Meet, 8x8 (Jitsi) y Bunny. Su funcionamiento no depende de nosotros y su uso se rige por sus propios términos.</p>
+
+    <h2>Disponibilidad del servicio</h2>
+    <p>Hacemos lo posible por mantener la plataforma disponible, pero no garantizamos que funcione sin interrupciones ni errores. Puede haber pausas por mantenimiento, actualizaciones, fallas de proveedores, de internet o causas ajenas a nosotros. Las sesiones en vivo pueden reprogramarse o cancelarse por razones de fuerza mayor o de salud; en ese caso intentaremos avisar con la mayor anticipación posible.</p>
+
+    <h2>Exclusión de garantías</h2>
+    <p>En la máxima medida permitida por la ley, la plataforma, el contenido y las herramientas se ofrecen <strong>"tal como están" y "según disponibilidad"</strong>, sin garantías de ningún tipo, expresas o implícitas, incluidas las de exactitud, utilidad para un fin concreto, resultados o ausencia de errores. La información del mercado, los calendarios económicos y los datos de terceros pueden contener errores o retrasos.</p>
+
+    <h2>Limitación de responsabilidad</h2>
+    <p>En la máxima medida permitida por la ley, Mr. Katana FX, su titular, su equipo y sus colaboradores <strong>no serán responsables</strong> por:</p>
+    <ul>
+      <li>Pérdidas de dinero, de capital o de ganancias derivadas de tus decisiones de trading, hayas usado o no el contenido de la plataforma.</li>
+      <li>Daños indirectos, incidentales, especiales o consecuentes, ni por pérdida de datos, oportunidades o reputación.</li>
+      <li>Acciones, fallas u omisiones de brókers, empresas de fondeo, procesadores de pago u otros terceros.</li>
+      <li>Accesos no autorizados a tu cuenta causados por no proteger tu contraseña.</li>
+    </ul>
+    <p>En cualquier caso, la responsabilidad total de Mr. Katana FX frente a ti, por cualquier motivo, no superará el monto que hayas pagado a la plataforma en los <strong>12 meses</strong> anteriores al hecho que dio origen al reclamo.</p>
+    <p>Nada de lo anterior limita los derechos que la ley de tu país te reconoce como consumidor y que no puedan renunciarse.</p>
+
+    <h2>Indemnidad</h2>
+    <p>Aceptas defender y mantener libre de responsabilidad a Mr. Katana FX, su titular y su equipo frente a cualquier reclamo, daño, multa o gasto (incluidos honorarios de abogados razonables) causado por tu incumplimiento de estos términos, por tu mal uso de la plataforma o por la infracción de derechos de terceros.</p>
+
+    <h2>Suspensión y terminación</h2>
+    <p>Podemos suspender o cerrar tu cuenta, con o sin aviso previo, si incumples estos términos, si das datos falsos, si detectamos fraude o un contracargo indebido, o si lo exige una autoridad. En esos casos no corresponde reembolso.</p>
+    <p>Puedes cerrar tu cuenta cuando quieras pidiéndolo por nuestros canales de contacto. Al cerrarla pierdes el acceso a los planes vigentes, sin reembolso del tiempo no usado. Las secciones sobre propiedad intelectual, limitación de responsabilidad, indemnidad y ley aplicable siguen vigentes después del cierre.</p>
+
+    <h2>Fuerza mayor</h2>
+    <p>No seremos responsables por incumplimientos o retrasos causados por hechos fuera de nuestro control razonable, como desastres naturales, cortes de energía o de internet, fallas de proveedores, ataques informáticos, conflictos, pandemias, decisiones de autoridades o enfermedad.</p>
+
+    <h2>Cambios en los términos</h2>
+    <p>Podemos actualizar estos términos para reflejar cambios en el servicio o en la ley. La fecha de la última actualización aparece arriba. Si el cambio es importante, te avisaremos en la plataforma o por correo. Si sigues usando la plataforma después del cambio, se entiende que aceptas la nueva versión.</p>
+
+    <h2>Ley aplicable y solución de conflictos</h2>
+    <p>Estos términos se rigen por las leyes de la <strong>República del Ecuador</strong>. Ante cualquier desacuerdo, ambas partes se comprometen a intentar primero una solución amistosa escribiéndonos por nuestros canales de contacto, con un plazo de 30 días para responder. Si no hay acuerdo, el conflicto se someterá a los jueces competentes de Ecuador, salvo que la ley de tu país te dé un derecho irrenunciable distinto.</p>
+
+    <h2>Disposiciones generales</h2>
+    <ul>
+      <li>Si una parte de estos términos se declara inválida, el resto sigue vigente.</li>
+      <li>Que no exijamos el cumplimiento de una regla en un momento no significa que renunciemos a ella.</li>
+      <li>No puedes ceder tus derechos ni obligaciones de este contrato sin nuestra autorización escrita.</li>
+      <li>Estos términos, junto con la Política de privacidad y las condiciones de cada plan, son el acuerdo completo entre tú y Mr. Katana FX.</li>
+    </ul>
 
     <h2>Contacto</h2>
-    <p>Para cualquier consulta relacionada con estos términos, escríbenos por Instagram <a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener">@mrkatana.fx</a> o por WhatsApp.</p>
+    <p>Para cualquier consulta sobre estos términos, escríbenos por Instagram <a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener">@mrkatana.fx</a> o por WhatsApp.</p>
   </div>
 
   <!-- POLÍTICA DE PRIVACIDAD -->
   <div class="section" id="sec-privacidad">
     <div class="page-title">Política de privacidad</div>
-    <div class="page-date">Última actualización: octubre 2026</div>
-    <div class="lgl-note">Tu privacidad es importante para nosotros. Esta política explica qué datos recopilamos, para qué los usamos y cómo los protegemos.</div>
+    <div class="page-date">Última actualización: noviembre 2026</div>
+    <div class="lgl-note">Esta política explica qué datos personales tratamos, para qué, con qué base legal, con quién los compartimos, cuánto tiempo los guardamos y cuáles son tus derechos. Está redactada conforme a la Ley Orgánica de Protección de Datos Personales del Ecuador.</div>
 
     <h2>Responsable del tratamiento</h2>
-    <p>El responsable del tratamiento de los datos personales es <strong>Jeisson García Anchundia</strong>, operador de Mr. Katana FX, con presencia en Ecuador.</p>
+    <p>El responsable de tus datos personales es <strong>Jeisson García Anchundia</strong>, titular de Mr. Katana FX, con domicilio en Ecuador. Puedes contactarlo para cualquier tema de privacidad por los canales indicados al final de esta política.</p>
 
     <h2>Datos que recopilamos</h2>
-    <p>Al registrarte y usar la plataforma recopilamos:</p>
+    <p><strong>Datos que nos das al registrarte o usar la plataforma:</strong></p>
     <ul>
-      <li>Nombre y apellido</li>
-      <li>Correo electrónico</li>
-      <li>Contraseña (guardada cifrada, nunca la vemos)</li>
-      <li>Fecha de nacimiento, para confirmar que eres mayor de 18 años</li>
-      <li>País de residencia y número de teléfono o WhatsApp</li>
-      <li>Si aceptas o no recibir promociones</li>
-      <li>Foto de perfil (opcional)</li>
-      <li>Tu usuario de Discord, si conectas tu cuenta</li>
-      <li>Tu avance en las clases y tu asistencia a sesiones y reuniones 1-1</li>
-      <li>Datos del pago procesados por PayPal (no guardamos datos de tarjetas)</li>
+      <li>Nombre y apellido, correo electrónico y contraseña (guardada cifrada; nunca la vemos).</li>
+      <li>Fecha de nacimiento, para confirmar que eres mayor de 18 años.</li>
+      <li>País de residencia y número de teléfono o WhatsApp.</li>
+      <li>Tu aceptación de estos términos y si aceptas o no recibir promociones.</li>
+      <li>Foto de perfil, si decides subirla.</li>
+      <li>Tu usuario de Discord, si conectas tu cuenta.</li>
+    </ul>
+    <p><strong>Datos de tu actividad:</strong></p>
+    <ul>
+      <li>Planes comprados, fechas y montos de pago (los datos de la tarjeta los maneja solo PayPal).</li>
+      <li>Avance en las clases, asistencia a sesiones en vivo y reuniones 1-1, y tus preferencias de la plataforma.</li>
+      <li>Grabaciones y resúmenes de las reuniones 1-1, cuando se graban.</li>
+      <li>Datos técnicos básicos, como tipo de dispositivo y navegador, que se usan para que la plataforma funcione y sea segura.</li>
+    </ul>
+    <p><strong>Datos del journal de trading (solo si conectas una cuenta):</strong></p>
+    <ul>
+      <li>Número de cuenta MT5, servidor, bróker y la contraseña de inversor, que guardamos cifrada.</li>
+      <li>Tus operaciones, saldo y resultados, leídos de la cuenta, y las notas o capturas que agregues.</li>
     </ul>
 
-    <h2>Finalidad del tratamiento</h2>
-    <p>Usamos tus datos para:</p>
+    <h2>Finalidades y base legal</h2>
+    <p>Usamos tus datos solo para lo siguiente:</p>
     <ul>
-      <li>Gestionar tu cuenta y tu acceso a la plataforma</li>
-      <li>Procesar pagos y verificar membresías</li>
-      <li>Enviarte correos sobre tu cuenta (confirmación, cambio de contraseña, avisos del servicio)</li>
-      <li>Hacer seguimiento de tu progreso y personalizar tu aprendizaje</li>
-      <li>Darte soporte técnico</li>
+      <li><strong>Prestar el servicio que contrataste</strong> (base: ejecución del contrato): crear y gestionar tu cuenta, activar planes, dar acceso al contenido, programar reuniones, mostrar tu progreso y el journal, y darte soporte.</li>
+      <li><strong>Cumplir obligaciones legales</strong> (base: obligación legal): llevar registros contables y tributarios de los pagos y responder a requerimientos de autoridades.</li>
+      <li><strong>Proteger la plataforma</strong> (base: interés legítimo): evitar fraudes, cuentas compartidas, accesos no autorizados y abusos.</li>
+      <li><strong>Enviarte promociones y novedades</strong> (base: tu consentimiento): solo si marcaste la casilla opcional al registrarte.</li>
+      <li><strong>Mostrar tu nombre en el ranking</strong> (base: ejecución del contrato al usar la herramienta): nombre con inicial del apellido, foto y puntaje.</li>
     </ul>
+    <p>No usamos tus datos para tomar decisiones automáticas que tengan efectos legales sobre ti, y no los vendemos.</p>
 
-    <h2>Correos promocionales</h2>
-    <p>Solo te enviamos promociones, novedades y ofertas si marcaste la casilla opcional al registrarte. Puedes dejar de recibirlas cuando quieras escribiéndonos o desde el enlace del propio correo. Los correos sobre tu cuenta se envían siempre, porque son necesarios para el servicio.</p>
+    <h2>Correos</h2>
+    <p>Los correos sobre tu cuenta (confirmación, cambio de contraseña, avisos del servicio y de pagos) se envían siempre, porque son necesarios para el servicio. Los correos promocionales solo se envían si los aceptaste, y puedes darte de baja cuando quieras desde el enlace del propio correo o escribiéndonos.</p>
 
     <h2>Reuniones 1-1 y sesiones en vivo</h2>
-    <p>Las reuniones 1-1 pueden grabarse y resumirse automáticamente para que tengas un registro de lo tratado. La grabación y el resumen los guarda el equipo de Mr. Katana FX y no se comparten con otros alumnos.</p>
+    <p>Las reuniones 1-1 pueden grabarse y resumirse de forma automática para que tengas un registro de lo tratado. Te lo indicaremos al inicio de la reunión. La grabación y el resumen solo los ven tú y el equipo de Mr. Katana FX.</p>
+    <p>En las sesiones en vivo grupales, otros participantes pueden ver tu nombre y lo que escribas o compartas. Si activas tu cámara o micrófono, también podrán verte u oírte.</p>
 
-    <h2>Almacenamiento y seguridad</h2>
-    <p>Tus datos se guardan en <strong>Supabase</strong>, una base de datos con cifrado en tránsito y en reposo, y con reglas que impiden que un usuario vea los datos de otro. Las contraseñas nunca se guardan en texto plano. Los pagos los procesa exclusivamente <strong>PayPal</strong>; no tenemos acceso a tus datos bancarios ni de tarjeta.</p>
-
-    <h2>Con quién compartimos datos</h2>
-    <p>No vendemos tus datos. Solo los compartimos con los servicios que hacen funcionar la plataforma, y únicamente lo necesario:</p>
+    <h2>Con quién compartimos tus datos</h2>
+    <p>Solo compartimos lo necesario con los proveedores que hacen funcionar la plataforma, que actúan como encargados del tratamiento y deben proteger tus datos:</p>
     <ul>
-      <li><strong>Supabase</strong>: base de datos y cuentas</li>
-      <li><strong>Vercel</strong>: alojamiento de la página</li>
-      <li><strong>PayPal</strong>: procesamiento de pagos</li>
-      <li><strong>Resend</strong>: envío de correos</li>
-      <li><strong>Discord</strong>: comunidad, solo si conectas tu cuenta</li>
-      <li><strong>8x8 (Jitsi)</strong>: videollamadas de sesiones en vivo y reuniones</li>
-      <li><strong>Fathom</strong>: grabación y resumen de reuniones 1-1 por Google Meet</li>
-      <li><strong>Bunny</strong>: reproducción de los videos del curso</li>
-      <li>Autoridades competentes, si así lo exige la ley</li>
+      <li><strong>Supabase</strong>: base de datos, cuentas y archivos.</li>
+      <li><strong>Vercel</strong>: alojamiento del sitio.</li>
+      <li><strong>PayPal</strong>: procesamiento de pagos.</li>
+      <li><strong>Resend</strong>: envío de correos.</li>
+      <li><strong>Discord</strong>: comunidad, solo si conectas tu cuenta.</li>
+      <li><strong>8x8 (Jitsi)</strong> y <strong>Google Meet</strong>: videollamadas.</li>
+      <li><strong>Fathom</strong>: grabación y resumen de reuniones 1-1.</li>
+      <li><strong>Bunny</strong>: reproducción de los videos del curso.</li>
+      <li><strong>Servidor del journal</strong>: equipo propio de Mr. Katana FX que lee tus operaciones con la contraseña de inversor.</li>
+    </ul>
+    <p>Para verificar que una cuenta de trading fue abierta con nuestros enlaces, podemos consultar con el bróker o la empresa de fondeo (por ejemplo, Exness o Funding Pips) el número de cuenta que conectaste. No les enviamos tu contraseña.</p>
+    <p>También podemos entregar datos a autoridades competentes cuando la ley lo exija, o en caso de una venta o reestructuración del negocio, manteniendo esta misma protección.</p>
+
+    <h2>Transferencias internacionales</h2>
+    <p>Varios de nuestros proveedores guardan los datos en servidores fuera de Ecuador, principalmente en Estados Unidos. Al usar la plataforma, tus datos pueden transferirse a esos países. Elegimos proveedores que aplican medidas de seguridad y contratos de protección de datos reconocidos internacionalmente.</p>
+
+    <h2>Seguridad</h2>
+    <p>Aplicamos medidas técnicas y organizativas razonables para proteger tus datos: cifrado en tránsito y en reposo, contraseñas guardadas con cifrado irreversible, cifrado adicional (AES-256) para las contraseñas de inversor, reglas que impiden que un usuario vea los datos de otro y acceso limitado del equipo a lo estrictamente necesario.</p>
+    <p>Ningún sistema es 100% seguro. Si ocurre un incidente que ponga en riesgo tus datos, te avisaremos y lo comunicaremos a la autoridad de protección de datos en los plazos que exige la ley.</p>
+
+    <h2>Cuánto tiempo guardamos tus datos</h2>
+    <ul>
+      <li><strong>Datos de la cuenta y del progreso</strong>: mientras tu cuenta esté activa. Si pides eliminarla, los borramos, salvo lo que debamos conservar por ley.</li>
+      <li><strong>Registros de pagos</strong>: el tiempo que exijan las normas tributarias y contables (normalmente 7 años).</li>
+      <li><strong>Grabaciones de reuniones 1-1</strong>: mientras tengas un plan activo o hasta que pidas borrarlas.</li>
+      <li><strong>Datos del journal</strong>: mientras la cuenta de trading esté conectada. Al desconectarla, dejamos de leerla y borramos la contraseña de inversor.</li>
     </ul>
 
     <h2>Tus derechos</h2>
-    <p>Tienes derecho a:</p>
+    <p>Según la Ley Orgánica de Protección de Datos Personales, tienes derecho a:</p>
     <ul>
-      <li>Ver tus datos personales desde tu perfil en la plataforma</li>
-      <li>Pedir que corrijamos datos incorrectos</li>
-      <li>Pedir que eliminemos tu cuenta y tus datos</li>
-      <li>Retirar tu permiso para recibir promociones</li>
+      <li><strong>Acceso</strong>: saber qué datos tuyos tenemos.</li>
+      <li><strong>Rectificación</strong>: corregir datos incorrectos o incompletos.</li>
+      <li><strong>Eliminación</strong>: pedir que borremos tus datos.</li>
+      <li><strong>Oposición</strong>: oponerte a ciertos usos, como las promociones.</li>
+      <li><strong>Portabilidad</strong>: recibir tus datos en un formato de uso común.</li>
+      <li><strong>Suspensión del tratamiento</strong>: pedir que dejemos de usar tus datos en ciertos casos.</li>
+      <li><strong>Retirar tu consentimiento</strong> en cualquier momento, sin que afecte lo hecho antes.</li>
     </ul>
-    <p>Para ejercer estos derechos, escríbenos por Instagram <a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener">@mrkatana.fx</a>.</p>
+    <p>Puedes ver y editar buena parte de tus datos desde Ajustes. Para el resto, escríbenos por nuestros canales de contacto. Responderemos en un plazo máximo de <strong>15 días</strong>. Si crees que no atendimos bien tu pedido, puedes acudir a la Superintendencia de Protección de Datos Personales del Ecuador.</p>
 
     <h2>Menores de edad</h2>
-    <p>La plataforma es solo para mayores de 18 años. Si detectamos una cuenta de un menor, la eliminaremos.</p>
+    <p>La plataforma es solo para mayores de 18 años y no recopilamos a sabiendas datos de menores. Si detectamos una cuenta de un menor, la cerraremos y borraremos sus datos.</p>
 
-    <h2>Cookies</h2>
-    <p>La plataforma usa el almacenamiento del navegador para mantener tu sesión abierta y recordar tus preferencias, como el modo claro u oscuro. No usamos cookies de terceros con fines publicitarios.</p>
+    <h2>Almacenamiento local y cookies</h2>
+    <p>La plataforma usa el almacenamiento de tu navegador para mantener tu sesión abierta y recordar tus preferencias, como el modo claro u oscuro, los colores y tu carrito. No usamos cookies de publicidad ni de seguimiento de terceros. Algunos proveedores, como PayPal, pueden usar sus propias cookies cuando usas sus servicios.</p>
 
-    <h2>Cambios en la política</h2>
-    <p>Podemos actualizar esta política en cualquier momento. Te avisaremos de los cambios importantes a través de la plataforma.</p>
+    <h2>Cambios en esta política</h2>
+    <p>Podemos actualizar esta política. La fecha de la última actualización aparece arriba. Si el cambio es importante, te avisaremos en la plataforma o por correo antes de que entre en vigor.</p>
 
     <h2>Contacto</h2>
-    <p>Para consultas sobre privacidad, escríbenos por Instagram <a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener">@mrkatana.fx</a> o por WhatsApp.</p>
+    <p>Para consultas de privacidad o para ejercer tus derechos, escríbenos por Instagram <a href="https://instagram.com/mrkatana.fx" target="_blank" rel="noopener">@mrkatana.fx</a> o por WhatsApp.</p>
   </div>
 
     </div></main>

@@ -346,6 +346,8 @@ async function tvCall(kind, pineId, username, expires) {
 // Variables en Vercel: WHOP_API_KEY (y WHOP_COMPANY_ID si cambia la empresa).
 const WHOP_API = 'https://api.whop.com/api/v1';
 const WHOP_COMPANY = process.env.WHOP_COMPANY_ID || 'biz_7IQpwkgU5mdr5I';
+// Producto de Whop al que se cuelgan los pagos de la página (sin Discord ni otros accesos de Whop)
+const WHOP_PRODUCT = process.env.WHOP_PRODUCT_ID || 'prod_serN8bGIueDYD';
 async function whopFetch(path, opts) {
   const r = await fetch(WHOP_API + path, Object.assign({}, opts, {
     headers: Object.assign({ Authorization: 'Bearer ' + process.env.WHOP_API_KEY, 'Content-Type': 'application/json' }, (opts && opts.headers) || {})
@@ -355,7 +357,7 @@ async function whopFetch(path, opts) {
 }
 
 async function whopCreate(sb, user, body, req, res) {
-  if (!process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_whop_key' });
+  if (!process.env.WHOP_API_KEY || !WHOP_PRODUCT) return res.status(500).json({ error: 'missing_whop_key' });
   const pr = await prepare(sb, user, body);
   if (pr.error) return res.status(400).json({ error: pr.error });
   const { items, total } = pr;
@@ -367,16 +369,15 @@ async function whopCreate(sb, user, body, req, res) {
   if (ins.error) return res.status(500).json({ error: ins.error.message });
   const orderId = ins.data.id;
   const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
-  const first = items[0];
   const c = await whopFetch('/checkout_configurations', {
     method: 'POST',
     body: JSON.stringify({
       mode: 'payment',
-      plan: {
-        company_id: WHOP_COMPANY, currency: 'usd', plan_type: 'one_time', initial_price: total,
+      account_id: WHOP_COMPANY,
+      variant: {
+        product_id: WHOP_PRODUCT, currency: 'usd', billing_type: 'one_time', initial_price: total,
         visibility: 'hidden',
-        title: ('Mr Katana FX: ' + items.map(i => i.name).join(', ')).slice(0, 100),
-        product: { external_identifier: 'mk-' + first.plan_id, title: first.name.split(' · ')[0].slice(0, 80) }
+        title: ('Mr Katana FX: ' + items.map(i => i.name).join(', ')).slice(0, 100)
       },
       metadata: { order_id: orderId, user_id: user.id },
       redirect_url: origin + '/checkout?whop=1&order=' + orderId

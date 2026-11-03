@@ -29,8 +29,9 @@ const UNLIMITED = '2099-12-31T00:00:00.000Z';
 module.exports = async function handler(req, res) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+    // Aviso de pago de Whop (/api/whop-webhook llega aquí por vercel.json; plan Hobby = máx. 12 funciones)
+    if (req.query && req.query.hook === 'whop') return await require('./_whop-webhook')(req, res);
     if (!process.env.SUPABASE_SERVICE_KEY) return res.status(500).json({ error: 'missing_service_key' });
-    if (!process.env.PAYPAL_SECRET) return res.status(500).json({ error: 'missing_paypal_secret' });
     const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -39,6 +40,12 @@ module.exports = async function handler(req, res) {
       if (!guest) return res.status(401).json({ error: 'no_session' });
       if (body.action === 'guest_create') return await create(sb, guest, Object.assign({}, body, { source: 'checkout' }), res);
       return await capture(sb, guest, body, res);
+    }
+    if (body.action === 'guest_whop_create' || body.action === 'guest_whop_status') {
+      const guest = await guestUser(sb, body.user_id);
+      if (!guest) return res.status(401).json({ error: 'no_session' });
+      if (body.action === 'guest_whop_create') return await whopCreate(sb, guest, Object.assign({}, body, { source: 'checkout' }), req, res);
+      return await whopStatus(sb, guest, body, res);
     }
 
     const token = (req.headers.authorization || '').replace('Bearer ', '');
@@ -49,6 +56,8 @@ module.exports = async function handler(req, res) {
     if (body.action === 'create') return await create(sb, user, body, res);
     if (body.action === 'capture') return await capture(sb, user, body, res);
     if (body.action === 'tv_grant') return await adminTv(sb, user, body, res);
+    if (body.action === 'whop_create') return await whopCreate(sb, user, body, req, res);
+    if (body.action === 'whop_status') return await whopStatus(sb, user, body, res);
     return res.status(400).json({ error: 'bad_action' });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
@@ -120,26 +129,10 @@ async function paypalToken() {
 }
 
 async function create(sb, user, body, res) {
-  let items;
-  const checkout = body.source === 'checkout';
-  let disc = null;
-  try {
-    items = await priceItems(sb, body.items, checkout);
-    if (checkout) disc = await discountFor(sb, body.code, items);
-  } catch (e) { return res.status(400).json({ error: e.message }); }
-  if (items.some(i => i.tv_pine_id)) {
-    const s = await sb.from('user_settings').select('tv_username').eq('id', user.id).maybeSingle();
-    if (!s.data || !s.data.tv_username) return res.status(400).json({ error: 'need_tv_user' });
-  }
-  let total = Math.round(items.reduce((a, i) => a + i.price, 0) * 100) / 100;
-  if (disc) {
-    const off = disc.type === 'percent' ? total * disc.value / 100 : disc.value;
-    const nt = Math.max(0, Math.round((total - off) * 100) / 100);
-    // El descuento se reparte entre lo comprado para que cada compra quede con lo que se pagó
-    items.forEach(i => { i.price = Math.round(i.price * (total ? nt / total : 0) * 100) / 100; i.discount_code = disc.code; });
-    total = nt;
-  }
-  if (!(total > 0)) return res.status(400).json({ error: 'no_price' });
+  if (!process.env.PAYPAL_SECRET) return res.status(500).json({ error: 'missing_paypal_secret' });
+  const pr = await prepare(sb, user, body);
+  if (pr.error) return res.status(400).json({ error: pr.error });
+  const { items, total } = pr;
   const tk = await paypalToken();
   const r = await fetch(PP_API + '/v2/checkout/orders', {
     method: 'POST',
@@ -157,6 +150,31 @@ async function create(sb, user, body, res) {
   const ins = await sb.from('cart_orders').insert({ user_id: user.id, paypal_order_id: o.id, items, total });
   if (ins.error) return res.status(500).json({ error: ins.error.message });
   return res.status(200).json({ id: o.id, total });
+}
+
+// Precios y descuento calculados en el servidor (los usan PayPal y Whop)
+async function prepare(sb, user, body) {
+  let items;
+  const checkout = body.source === 'checkout';
+  let disc = null;
+  try {
+    items = await priceItems(sb, body.items, checkout);
+    if (checkout) disc = await discountFor(sb, body.code, items);
+  } catch (e) { return { error: e.message }; }
+  if (items.some(i => i.tv_pine_id)) {
+    const s = await sb.from('user_settings').select('tv_username').eq('id', user.id).maybeSingle();
+    if (!s.data || !s.data.tv_username) return { error: 'need_tv_user' };
+  }
+  let total = Math.round(items.reduce((a, i) => a + i.price, 0) * 100) / 100;
+  if (disc) {
+    const off = disc.type === 'percent' ? total * disc.value / 100 : disc.value;
+    const nt = Math.max(0, Math.round((total - off) * 100) / 100);
+    // El descuento se reparte entre lo comprado para que cada compra quede con lo que se pagó
+    items.forEach(i => { i.price = Math.round(i.price * (total ? nt / total : 0) * 100) / 100; i.discount_code = disc.code; });
+    total = nt;
+  }
+  if (!(total > 0)) return { error: 'no_price' };
+  return { items, total };
 }
 
 async function capture(sb, user, body, res) {
@@ -248,7 +266,7 @@ async function applyItems(sb, user, ord, payerEmail) {
     }
     if (!out.lines.some(l => l.name === it.name)) out.lines.push({ name: it.name, text: 'Pago recibido' });
     purchases.push({
-      user_id: user.id, plan_id: it.plan_id, amount: it.price, currency: 'USD', payment_method: 'paypal',
+      user_id: user.id, plan_id: it.plan_id, amount: it.price, currency: 'USD', payment_method: ord.provider || 'paypal',
       paypal_order_id: ord.paypal_order_id, paypal_payer_email: payerEmail || null, status: 'completed',
       starts_at: new Date().toISOString(), expires_at: expires, extra_1on1: it.extra_1on1 || 0, cart_order_id: ord.id
     });
@@ -321,3 +339,64 @@ async function tvCall(kind, pineId, username, expires) {
   return j.status === 'ok' || (kind === 'modify_user_expiration' && r.status === 200 && !j.status);
 }
 
+// ── Pago con tarjeta por Whop ──
+// whop_create: crea el pedido y una página de pago de Whop con el total calculado aquí.
+// Al pagar, Whop avisa a /api/whop-webhook, que activa lo comprado (misma función que PayPal).
+// whop_status: el checkout pregunta si ya se activó al volver de Whop.
+// Variables en Vercel: WHOP_API_KEY (y WHOP_COMPANY_ID si cambia la empresa).
+const WHOP_API = 'https://api.whop.com/api/v1';
+const WHOP_COMPANY = process.env.WHOP_COMPANY_ID || 'biz_7IQpwkgU5mdr5I';
+async function whopFetch(path, opts) {
+  const r = await fetch(WHOP_API + path, Object.assign({}, opts, {
+    headers: Object.assign({ Authorization: 'Bearer ' + process.env.WHOP_API_KEY, 'Content-Type': 'application/json' }, (opts && opts.headers) || {})
+  }));
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  return { ok: r.ok, status: r.status, data: j };
+}
+
+async function whopCreate(sb, user, body, req, res) {
+  if (!process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_whop_key' });
+  const pr = await prepare(sb, user, body);
+  if (pr.error) return res.status(400).json({ error: pr.error });
+  const { items, total } = pr;
+  // Renovación automática elegida en el checkout (solo si lo comprado incluye en vivo)
+  const hasLive = items.some(i => i.live_months);
+  const rw = body.renew || {};
+  const renew = hasLive ? { live: !!rw.live, kairus: !!rw.kairus } : null;
+  const ins = await sb.from('cart_orders').insert({ user_id: user.id, provider: 'whop', items, total, renew }).select('id').single();
+  if (ins.error) return res.status(500).json({ error: ins.error.message });
+  const orderId = ins.data.id;
+  const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
+  const first = items[0];
+  const c = await whopFetch('/checkout_configurations', {
+    method: 'POST',
+    body: JSON.stringify({
+      mode: 'payment',
+      plan: {
+        company_id: WHOP_COMPANY, currency: 'usd', plan_type: 'one_time', initial_price: total,
+        visibility: 'hidden',
+        title: ('Mr Katana FX: ' + items.map(i => i.name).join(', ')).slice(0, 100),
+        product: { external_identifier: 'mk-' + first.plan_id, title: first.name.split(' · ')[0].slice(0, 80) }
+      },
+      metadata: { order_id: orderId, user_id: user.id },
+      redirect_url: origin + '/checkout?whop=1&order=' + orderId
+    })
+  });
+  const url = c.data && c.data.purchase_url;
+  if (!c.ok || !url) {
+    await sb.from('cart_orders').update({ status: 'error', result: { whop: c.status, detail: (c.data && (c.data.message || c.data.error)) || null } }).eq('id', orderId);
+    return res.status(502).json({ error: 'whop_checkout', detail: c.data && (c.data.message || (c.data.error && c.data.error.message) || c.data.error) });
+  }
+  await sb.from('cart_orders').update({ whop_checkout_id: c.data.id || null }).eq('id', orderId);
+  return res.status(200).json({ url: /^https?:/.test(url) ? url : 'https://whop.com' + url, order: orderId, total });
+}
+
+async function whopStatus(sb, user, body, res) {
+  const id = String(body.order || '');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: 'bad_order' });
+  const q = await sb.from('cart_orders').select('status, result, total').eq('id', id).eq('user_id', user.id).maybeSingle();
+  if (!q.data) return res.status(404).json({ error: 'order_not_found' });
+  return res.status(200).json({ status: q.data.status, result: q.data.result, total: q.data.total });
+}
+
+module.exports.applyItems = applyItems;

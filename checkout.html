@@ -173,7 +173,8 @@ html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz
 .wp-cards{display:flex;justify-content:center;gap:14px;margin-top:10px;font-size:.72rem;color:var(--lg-mu);letter-spacing:.3px;}
 .wp-rn{margin-top:12px;font-size:.72rem;color:var(--lg-mu);line-height:1.5;text-align:center;}.wp-rn a{color:var(--lg-t2);}
 .ck-sep.wp-or{margin:22px 0 14px;}
-.wp-embed{margin-top:4px;}#wp-embed-in{min-height:200px;}.wp-card{min-height:430px;margin-bottom:14px;}html{scrollbar-gutter:stable;}.lg-right{scrollbar-gutter:stable;}.wp-brand{margin-top:12px;display:flex;justify-content:center;opacity:.7;}
+.wp-embed{margin-top:4px;}#wp-embed-in{min-height:200px;}.wp-card{min-height:430px;margin-bottom:14px;}html{scrollbar-gutter:stable;}.lg-right{scrollbar-gutter:stable;}.wp-brand{margin-top:12px;display:flex;justify-content:center;opacity:.7;zoom:.8;}
+@media (min-width:901px){body.wp-on .lg-wrap{height:calc(100vh - 40px);min-height:0;}body.wp-on .lg-right{overflow-y:auto;align-items:flex-start;}}
 .ck-small{font-size:.74rem;color:var(--lg-mu);text-align:center;margin-top:12px;line-height:1.5;}
 .ck-bk{display:block;width:100%;background:none;border:0;font:.84rem 'Plus Jakarta Sans',sans-serif;color:var(--lg-t2);text-align:center;margin-top:16px;cursor:pointer;}
 .ck-bk:hover{color:var(--lg-tx);}
@@ -691,6 +692,7 @@ function _wpEmbed(r, fallback) {
       pay.create('payment', { onChange: function(ev) { _el('wp-go').disabled = !(ev && ev.complete); } }).mount('#wp-card');
       pay.create('branding').mount('#wp-brand');
       _el('wp-go').onclick = _wpConfirm;
+      document.body.classList.add('wp-on'); _lgFit();
       _el('wp-methods').style.display = 'none';
       _el('wp-embed').style.display = '';
       btn.disabled = false; lbl.textContent = 'Pagar con tarjeta';
@@ -729,6 +731,7 @@ function _wpBack() {
   _el('wp-embed').style.display = 'none';
   _el('wp-embed-in').innerHTML = '';
   _el('wp-methods').style.display = '';
+  document.body.classList.remove('wp-on'); _lgFit();
 }
 
 async function whopReturn(order) {
@@ -866,7 +869,7 @@ function _mkThemeCss(cfg) {
 function _lgFit() {
   var w = document.querySelector('.lg-wrap'); if (!w) return;
   w.style.setProperty('--fz', 1);
-  if (window.innerWidth <= 900) return;
+  if (window.innerWidth <= 900 || document.body.classList.contains('wp-on')) return;
   var need = 40;
   [].forEach.call(w.children, function(c) { if (c.offsetParent !== null) need = Math.max(need, c.scrollHeight + 40); });
   var z = Math.max(.64, Math.min(1, (window.innerHeight - 46) / (need - 40)));

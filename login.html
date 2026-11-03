@@ -1651,7 +1651,7 @@ async function doRegContinue() {
 
 // Protección anti-bots (Cloudflare Turnstile). Se activa al poner la clave pública del sitio aquí
 // y activar Turnstile en Supabase > Authentication > Attack Protection con la clave secreta.
-var TS_SITEKEY = '';
+var TS_SITEKEY = '0x4AAAAAAFyHeadDAfZdjeyz';
 var _capToken = null, _capId = null;
 function _capLoad() {
   if (!TS_SITEKEY || window.turnstile) return;

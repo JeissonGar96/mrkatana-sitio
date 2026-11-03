@@ -173,7 +173,7 @@ html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz
 .wp-cards{display:flex;justify-content:center;gap:14px;margin-top:10px;font-size:.72rem;color:var(--lg-mu);letter-spacing:.3px;}
 .wp-rn{margin-top:12px;font-size:.72rem;color:var(--lg-mu);line-height:1.5;text-align:center;}.wp-rn a{color:var(--lg-t2);}
 .ck-sep.wp-or{margin:22px 0 14px;}
-.wp-embed{margin-top:4px;}#wp-embed-in{min-height:420px;border-radius:12px;overflow:hidden;}
+.wp-embed{margin-top:4px;}#wp-embed-in{min-height:200px;}.wp-card{border:1px solid var(--lg-ln);border-radius:10px;padding:10px 12px;background:var(--lg-cd);min-height:44px;}.wp-brand{margin-top:12px;display:flex;justify-content:center;opacity:.7;}
 .ck-small{font-size:.74rem;color:var(--lg-mu);text-align:center;margin-top:12px;line-height:1.5;}
 .ck-bk{display:block;width:100%;background:none;border:0;font:.84rem 'Plus Jakarta Sans',sans-serif;color:var(--lg-t2);text-align:center;margin-top:16px;cursor:pointer;}
 .ck-bk:hover{color:var(--lg-tx);}
@@ -668,24 +668,38 @@ async function payWhop() {
   _wpEmbed(r, function() { location.href = r.url; });
 }
 
+var _wpPay = null, _wpOrder = null;
+var WP_CTY = [['EC','Ecuador'],['CO','Colombia'],['PE','Perú'],['MX','México'],['CL','Chile'],['AR','Argentina'],['VE','Venezuela'],['BO','Bolivia'],['PY','Paraguay'],['UY','Uruguay'],['GT','Guatemala'],['CR','Costa Rica'],['PA','Panamá'],['DO','Rep. Dominicana'],['HN','Honduras'],['SV','El Salvador'],['NI','Nicaragua'],['PR','Puerto Rico'],['ES','España'],['US','Estados Unidos'],['CA','Canadá']];
+function _wpDark() { var c = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [0,0,0]; return (+c[0] + +c[1] + +c[2]) < 380; }
+// Campos de tarjeta de Whop dentro de nuestro propio formulario (Whop Payment Elements)
 function _wpEmbed(r, fallback) {
   var btn = _el('btn-whop'), lbl = btn.querySelector('span');
-  var box = _el('wp-embed');
   function mount() {
     try {
-      var co = window.WhopElements({ locale: 'es' }).checkout.create({
-        checkoutConfiguration: r.ch, locale: 'es',
-        returnUrl: location.origin + '/checkout?whop=1&order=' + r.order,
-        onComplete: function(c) { if (!c || c.result === 'payment') whopReturn(r.order); }
-      });
-      co.create('checkout').mount('#wp-embed-in');
+      var W = window.WhopElements({ locale: 'es' });
+      var opts = { accountId: r.account, currency: 'usd', amount: Math.round(Number(r.total) * 100), setupFutureUsage: 'off_session',
+        paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
+        returnUrl: location.origin + '/checkout?whop=1&order=' + r.order, locale: 'es', appearance: { theme: _wpDark() ? 'dark' : 'light' } };
+      var pay;
+      try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
+      _wpPay = { W: W, pay: pay }; _wpOrder = r.order;
+      var pr = st.prof || {}, cty = String(pr.country || '').toLowerCase();
+      _el('wp-embed-in').innerHTML =
+        '<div class="lg-fg"><label>Nombre en la tarjeta</label><input class="lg-fi" id="wp-name" autocomplete="cc-name" value="' + _esc(pr.name || '') + '"></div>' +
+        '<div class="lg-fg"><label>Tarjeta</label><div id="wp-card" class="wp-card"></div></div>' +
+        '<div class="lg-fg"><label>País</label><select class="lg-fi" id="wp-cty">' + WP_CTY.map(function(c) { return '<option value="' + c[0] + '"' + (c[1].toLowerCase() === cty ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select></div>' +
+        '<div class="lg-fg"><label>Dirección</label><input class="lg-fi" id="wp-addr" autocomplete="address-line1" placeholder="Calle, número, ciudad"></div>' +
+        '<button type="button" class="lg-btn" id="wp-go" disabled>Pagar ' + money(r.total) + '</button>' +
+        '<div id="wp-brand" class="wp-brand"></div>';
+      pay.create('payment', { onChange: function(ev) { _el('wp-go').disabled = !(ev && ev.complete); } }).mount('#wp-card');
+      pay.create('branding').mount('#wp-brand');
+      _el('wp-go').onclick = _wpConfirm;
       _el('wp-methods').style.display = 'none';
-      box.style.display = '';
+      _el('wp-embed').style.display = '';
       btn.disabled = false; lbl.textContent = 'Pagar con tarjeta';
-      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (e) { fallback(); }
   }
-  if (!r.ch) return fallback();
+  if (!r.account) return fallback();
   if (window.WhopElements) return mount();
   var sc = document.createElement('script');
   sc.src = 'https://cdn.whop.com/elements/amber/elements.js';
@@ -694,6 +708,26 @@ function _wpEmbed(r, fallback) {
   sc.onerror = fallback;
   document.head.appendChild(sc);
   setTimeout(function() { if (!window.WhopElements) fallback(); }, 8000);
+}
+
+async function _wpConfirm() {
+  var go = _el('wp-go'), name = _v('wp-name').trim(), addr = _v('wp-addr').trim();
+  if (!name || !addr) return showMsg('Escribe el nombre que aparece en la tarjeta y tu dirección.', true);
+  hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...';
+  function fail(t) { go.disabled = false; go.textContent = 'Intentar de nuevo'; showMsg(t, true); }
+  try {
+    var t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email, name: name, address: { line1: addr, country: _v('wp-cty') } } });
+    var tok = t && (t.confirmationToken || (t.confirmation_token));
+    if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
+    var r = await _api(st.session ? 'whop_pay' : 'guest_whop_pay', { order: _wpOrder, token: typeof tok === 'string' ? tok : tok.id, user_id: st.user.id });
+    if (r.error) return fail('No se pudo cobrar la tarjeta' + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : '') + '. Prueba otra tarjeta o usa PayPal.');
+    if (r.client_secret && !/paid|succeeded/.test(String(r.status || ''))) {
+      var na = await (_wpPay.W.payments.handleNextAction || window.WhopElements.payments.handleNextAction)({ clientSecret: r.client_secret, returnUrl: location.origin + '/checkout?whop=1&order=' + _wpOrder });
+      if (na && na.redirected) return;
+      if (na && na.lastPaymentError) return fail('El banco no aprobó el pago. Prueba otra tarjeta o usa PayPal.');
+    }
+    whopReturn(_wpOrder);
+  } catch (e) { fail('Hubo un error con el pago. Intenta de nuevo.'); }
 }
 function _wpBack() {
   _el('wp-embed').style.display = 'none';

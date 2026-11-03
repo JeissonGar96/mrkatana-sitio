@@ -41,10 +41,11 @@ module.exports = async function handler(req, res) {
       if (body.action === 'guest_create') return await create(sb, guest, Object.assign({}, body, { source: 'checkout' }), res);
       return await capture(sb, guest, body, res);
     }
-    if (body.action === 'guest_whop_create' || body.action === 'guest_whop_status') {
+    if (body.action === 'guest_whop_create' || body.action === 'guest_whop_status' || body.action === 'guest_whop_pay') {
       const guest = await guestUser(sb, body.user_id);
       if (!guest) return res.status(401).json({ error: 'no_session' });
       if (body.action === 'guest_whop_create') return await whopCreate(sb, guest, Object.assign({}, body, { source: 'checkout' }), req, res);
+      if (body.action === 'guest_whop_pay') return await whopPay(sb, guest, body, req, res);
       return await whopStatus(sb, guest, body, res);
     }
 
@@ -58,6 +59,7 @@ module.exports = async function handler(req, res) {
     if (body.action === 'tv_grant') return await adminTv(sb, user, body, res);
     if (body.action === 'whop_create') return await whopCreate(sb, user, body, req, res);
     if (body.action === 'whop_status') return await whopStatus(sb, user, body, res);
+    if (body.action === 'whop_pay') return await whopPay(sb, user, body, req, res);
     return res.status(400).json({ error: 'bad_action' });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
@@ -389,7 +391,7 @@ async function whopCreate(sb, user, body, req, res) {
     return res.status(502).json({ error: 'whop_checkout', detail: c.data && (c.data.message || (c.data.error && c.data.error.message) || c.data.error) });
   }
   await sb.from('cart_orders').update({ whop_checkout_id: c.data.id || null }).eq('id', orderId);
-  return res.status(200).json({ url: /^https?:/.test(url) ? url : 'https://whop.com' + url, ch: c.data.id || null, order: orderId, total });
+  return res.status(200).json({ url: /^https?:/.test(url) ? url : 'https://whop.com' + url, ch: c.data.id || null, order: orderId, total, account: WHOP_COMPANY });
 }
 
 async function whopStatus(sb, user, body, res) {
@@ -398,6 +400,39 @@ async function whopStatus(sb, user, body, res) {
   const q = await sb.from('cart_orders').select('status, result, total').eq('id', id).eq('user_id', user.id).maybeSingle();
   if (!q.data) return res.status(404).json({ error: 'order_not_found' });
   return res.status(200).json({ status: q.data.status, result: q.data.result, total: q.data.total });
+}
+
+// whop_pay: cobra con los campos de tarjeta de Whop dentro del checkout (confirmation token).
+// El monto sale del pedido guardado, nunca del navegador. La tarjeta queda guardada para las renovaciones.
+async function whopPay(sb, user, body, req, res) {
+  if (!process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_whop_key' });
+  const id = String(body.order || ''), token = String(body.token || '');
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !token) return res.status(400).json({ error: 'bad_order' });
+  const q = await sb.from('cart_orders').select('id, status, total, items, provider').eq('id', id).eq('user_id', user.id).maybeSingle();
+  const ord = q.data;
+  if (!ord || ord.provider !== 'whop') return res.status(404).json({ error: 'order_not_found' });
+  if (ord.status !== 'pending') return res.status(200).json({ status: ord.status });
+  const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
+  const p = await whopFetch('/payments', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': 'mk-' + ord.id + '-' + token.slice(-12) },
+    body: JSON.stringify({
+      account_id: WHOP_COMPANY,
+      variant: {
+        product_id: WHOP_PRODUCT, currency: 'usd', billing_type: 'one_time', initial_price: Number(ord.total),
+        visibility: 'hidden', title: (ord.items || []).map(i => i.name).join(', ').slice(0, 30).trim() || 'Mr Katana FX'
+      },
+      confirmation_token: token,
+      return_url: origin + '/checkout?whop=1&order=' + ord.id,
+      metadata: { order_id: ord.id, user_id: user.id }
+    })
+  });
+  if (!p.ok || !p.data || !p.data.id) {
+    const d = p.data || {};
+    return res.status(402).json({ error: 'whop_pay', detail: d.message || (d.error && d.error.message) || d.error || p.status });
+  }
+  await sb.from('cart_orders').update({ whop_payment_id: p.data.id }).eq('id', ord.id).eq('status', 'pending');
+  return res.status(200).json({ status: p.data.status || null, client_secret: p.data.client_secret || null, payment: p.data.id });
 }
 
 module.exports.applyItems = applyItems;

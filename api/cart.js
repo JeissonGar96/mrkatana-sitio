@@ -377,7 +377,7 @@ async function whopCreate(sb, user, body, req, res) {
       variant: {
         product_id: WHOP_PRODUCT, currency: 'usd', billing_type: 'one_time', initial_price: total,
         visibility: 'hidden',
-        title: ('Mr Katana FX: ' + items.map(i => i.name).join(', ')).slice(0, 100)
+        title: items.map(i => i.name).join(', ').slice(0, 30).trim()  // Whop: máximo 30 caracteres
       },
       metadata: { order_id: orderId, user_id: user.id },
       redirect_url: origin + '/checkout?whop=1&order=' + orderId

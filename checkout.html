@@ -658,7 +658,7 @@ async function payWhop() {
   var r = await _api(st.session ? 'whop_create' : 'guest_whop_create', { source: 'checkout', user_id: st.user.id,
     items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '',
     renew: st.plan.lm ? { live: true, kairus: true } : null });
-  if (!r.url) { btn.disabled = false; lbl.textContent = 'Pagar con tarjeta'; return showMsg(CK_ERR[r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.', true); }
+  if (!r.url) { btn.disabled = false; lbl.textContent = 'Pagar con tarjeta'; return showMsg((CK_ERR[r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.') + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : ''), true); }
   try { sessionStorage.setItem('mk-whop', JSON.stringify({ order: r.order, user_id: st.user.id, email: st.user.email, name: st.plan.name })); } catch (e) {}
   location.href = r.url;
 }

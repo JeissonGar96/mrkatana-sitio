@@ -173,6 +173,7 @@ html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz
 .wp-cards{display:flex;justify-content:center;gap:14px;margin-top:10px;font-size:.72rem;color:var(--lg-mu);letter-spacing:.3px;}
 .wp-rn{margin-top:12px;font-size:.72rem;color:var(--lg-mu);line-height:1.5;text-align:center;}.wp-rn a{color:var(--lg-t2);}
 .ck-sep.wp-or{margin:22px 0 14px;}
+.wp-embed{margin-top:4px;}#wp-embed-in{min-height:420px;border-radius:12px;overflow:hidden;}
 .ck-small{font-size:.74rem;color:var(--lg-mu);text-align:center;margin-top:12px;line-height:1.5;}
 .ck-bk{display:block;width:100%;background:none;border:0;font:.84rem 'Plus Jakarta Sans',sans-serif;color:var(--lg-t2);text-align:center;margin-top:16px;cursor:pointer;}
 .ck-bk:hover{color:var(--lg-tx);}
@@ -295,11 +296,14 @@ try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write(
       </div>
       <div id="pay-card">
         <div class="ck-sep" id="pay-sep"></div>
+        <div id="wp-methods">
         <button type="button" class="lg-btn wp-btn" id="btn-whop"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Pagar con tarjeta</span></button>
         <div class="wp-cards"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span></div>
         <div id="wp-renew" class="wp-rn" style="display:none">Con tarjeta, las clases en vivo y Kairus se renuevan solos al terminar el tiempo incluido ($100 y $75 al mes). Te avisamos antes de cada cobro y puedes apagarlo en tu panel. <a href="/legal" target="_blank">Ver términos</a></div>
         <div class="ck-sep wp-or">o</div>
         <div id="paypal-button-container"></div>
+        </div>
+        <div id="wp-embed" class="wp-embed" style="display:none"><div id="wp-embed-in"></div><button type="button" class="ck-bk" onclick="_wpBack()">&larr; Elegir otro método de pago</button></div>
         <div id="pay-processing" class="ck-small" style="display:none">Procesando tu pago, no cierres esta página...</div>
         <div class="ck-small">Pagos con tarjeta procesados por Whop. Pagos con PayPal procesados por PayPal. No guardamos los datos de tu tarjeta.</div>
       </div>
@@ -660,7 +664,41 @@ async function payWhop() {
     renew: st.plan.lm ? { live: true, kairus: true } : null });
   if (!r.url) { btn.disabled = false; lbl.textContent = 'Pagar con tarjeta'; return showMsg((CK_ERR[r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.') + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : ''), true); }
   try { sessionStorage.setItem('mk-whop', JSON.stringify({ order: r.order, user_id: st.user.id, email: st.user.email, name: st.plan.name })); } catch (e) {}
-  location.href = r.url;
+  // Pago dentro de la misma página (Whop Elements); si no carga, se abre la página de Whop
+  _wpEmbed(r, function() { location.href = r.url; });
+}
+
+function _wpEmbed(r, fallback) {
+  var btn = _el('btn-whop'), lbl = btn.querySelector('span');
+  var box = _el('wp-embed');
+  function mount() {
+    try {
+      var co = window.WhopElements({ locale: 'es' }).checkout.create({
+        checkoutConfiguration: r.ch, locale: 'es',
+        returnUrl: location.origin + '/checkout?whop=1&order=' + r.order,
+        onComplete: function(c) { if (!c || c.result === 'payment') whopReturn(r.order); }
+      });
+      co.create('checkout').mount('#wp-embed-in');
+      _el('wp-methods').style.display = 'none';
+      box.style.display = '';
+      btn.disabled = false; lbl.textContent = 'Pagar con tarjeta';
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) { fallback(); }
+  }
+  if (!r.ch) return fallback();
+  if (window.WhopElements) return mount();
+  var sc = document.createElement('script');
+  sc.src = 'https://cdn.whop.com/elements/amber/elements.js';
+  sc.setAttribute('data-whop-elements', '');
+  sc.onload = function() { window.WhopElements ? mount() : fallback(); };
+  sc.onerror = fallback;
+  document.head.appendChild(sc);
+  setTimeout(function() { if (!window.WhopElements) fallback(); }, 8000);
+}
+function _wpBack() {
+  _el('wp-embed').style.display = 'none';
+  _el('wp-embed-in').innerHTML = '';
+  _el('wp-methods').style.display = '';
 }
 
 async function whopReturn(order) {

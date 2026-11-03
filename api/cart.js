@@ -389,7 +389,7 @@ async function whopCreate(sb, user, body, req, res) {
     return res.status(502).json({ error: 'whop_checkout', detail: c.data && (c.data.message || (c.data.error && c.data.error.message) || c.data.error) });
   }
   await sb.from('cart_orders').update({ whop_checkout_id: c.data.id || null }).eq('id', orderId);
-  return res.status(200).json({ url: /^https?:/.test(url) ? url : 'https://whop.com' + url, order: orderId, total });
+  return res.status(200).json({ url: /^https?:/.test(url) ? url : 'https://whop.com' + url, ch: c.data.id || null, order: orderId, total });
 }
 
 async function whopStatus(sb, user, body, res) {

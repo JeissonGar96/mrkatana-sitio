@@ -29,6 +29,8 @@ const UNLIMITED = '2099-12-31T00:00:00.000Z';
 module.exports = async function handler(req, res) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+    // Aviso de pago de Whop (/api/whop-webhook llega aquí por vercel.json; plan Hobby = máx. 12 funciones)
+    if (req.query && req.query.hook === 'whop') return await require('./_whop-webhook')(req, res);
     if (!process.env.SUPABASE_SERVICE_KEY) return res.status(500).json({ error: 'missing_service_key' });
     const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 

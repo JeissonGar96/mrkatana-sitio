@@ -1,4 +1,4 @@
-// api/whop-webhook.js
+// api/_whop-webhook.js (no es una función propia: /api/whop-webhook → /api/cart?hook=whop en vercel.json)
 // Whop avisa aquí cuando se completa un pago con tarjeta (evento payment.succeeded).
 // Se busca el pedido por metadata.order_id (lo pone /api/cart al crear el pago), se confirma
 // el pago preguntando a Whop y se activa lo comprado con la misma función que usa PayPal.

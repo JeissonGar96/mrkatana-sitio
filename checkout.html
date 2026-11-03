@@ -173,7 +173,7 @@ html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz
 .wp-cards{display:flex;justify-content:center;gap:14px;margin-top:10px;font-size:.72rem;color:var(--lg-mu);letter-spacing:.3px;}
 .wp-rn{margin-top:12px;font-size:.72rem;color:var(--lg-mu);line-height:1.5;text-align:center;}.wp-rn a{color:var(--lg-t2);}
 .ck-sep.wp-or{margin:22px 0 14px;}
-.wp-embed{margin-top:4px;}#wp-embed-in{min-height:200px;}.wp-card{border:1px solid var(--lg-ln);border-radius:10px;padding:10px 12px;background:var(--lg-cd);min-height:44px;}.wp-brand{margin-top:12px;display:flex;justify-content:center;opacity:.7;}
+.wp-embed{margin-top:4px;}#wp-embed-in{min-height:200px;}.wp-card{min-height:44px;margin-bottom:14px;}.wp-brand{margin-top:12px;display:flex;justify-content:center;opacity:.7;}
 .ck-small{font-size:.74rem;color:var(--lg-mu);text-align:center;margin-top:12px;line-height:1.5;}
 .ck-bk{display:block;width:100%;background:none;border:0;font:.84rem 'Plus Jakarta Sans',sans-serif;color:var(--lg-t2);text-align:center;margin-top:16px;cursor:pointer;}
 .ck-bk:hover{color:var(--lg-tx);}
@@ -679,16 +679,13 @@ function _wpEmbed(r, fallback) {
       var W = window.WhopElements({ locale: 'es' });
       var opts = { accountId: r.account, currency: 'usd', amount: Math.round(Number(r.total) * 100), setupFutureUsage: 'off_session',
         paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
-        returnUrl: location.origin + '/checkout?whop=1&order=' + r.order, locale: 'es', appearance: { theme: _wpDark() ? 'dark' : 'light' } };
+        returnUrl: location.origin + '/checkout?whop=1&order=' + r.order, locale: 'es', appearance: { theme: { appearance: _wpDark() ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
       var pay;
       try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
       _wpPay = { W: W, pay: pay }; _wpOrder = r.order;
       var pr = st.prof || {}, cty = String(pr.country || '').toLowerCase();
       _el('wp-embed-in').innerHTML =
-        '<div class="lg-fg"><label>Nombre en la tarjeta</label><input class="lg-fi" id="wp-name" autocomplete="cc-name" value="' + _esc(pr.name || '') + '"></div>' +
-        '<div class="lg-fg"><label>Tarjeta</label><div id="wp-card" class="wp-card"></div></div>' +
-        '<div class="lg-fg"><label>País</label><select class="lg-fi" id="wp-cty">' + WP_CTY.map(function(c) { return '<option value="' + c[0] + '"' + (c[1].toLowerCase() === cty ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select></div>' +
-        '<div class="lg-fg"><label>Dirección</label><input class="lg-fi" id="wp-addr" autocomplete="address-line1" placeholder="Calle, número, ciudad"></div>' +
+        '<div id="wp-card" class="wp-card"></div>' +
         '<button type="button" class="lg-btn" id="wp-go" disabled>Pagar ' + money(r.total) + '</button>' +
         '<div id="wp-brand" class="wp-brand"></div>';
       pay.create('payment', { onChange: function(ev) { _el('wp-go').disabled = !(ev && ev.complete); } }).mount('#wp-card');
@@ -711,12 +708,11 @@ function _wpEmbed(r, fallback) {
 }
 
 async function _wpConfirm() {
-  var go = _el('wp-go'), name = _v('wp-name').trim(), addr = _v('wp-addr').trim();
-  if (!name || !addr) return showMsg('Escribe el nombre que aparece en la tarjeta y tu dirección.', true);
+  var go = _el('wp-go');
   hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...';
   function fail(t) { go.disabled = false; go.textContent = 'Intentar de nuevo'; showMsg(t, true); }
   try {
-    var t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email, name: name, address: { line1: addr, country: _v('wp-cty') } } });
+    var t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email } });
     var tok = t && (t.confirmationToken || (t.confirmation_token));
     if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
     var r = await _api(st.session ? 'whop_pay' : 'guest_whop_pay', { order: _wpOrder, token: typeof tok === 'string' ? tok : tok.id, user_id: st.user.id });

@@ -5830,7 +5830,15 @@ function _buyBanner(section, filter, title, sub, waText) {
 // Barra fina con los días que le quedan al plan de en vivo + botón para sumar más tiempo
 function _lvPlanBar(le, liveF, fd) {
   var m = document.getElementById('amain'); if (!m || m.querySelector('.lvp')) return;
-  var left = Math.max(0, Math.ceil((le - new Date()) / 864e5)), pct = Math.max(3, Math.min(100, Math.round(left / 31 * 100)));
+  // La barra mide desde la última compra hasta la fecha de vencimiento (llena = recién comprado)
+  var msL = Math.max(0, le - new Date()), left = Math.ceil(msL / 864e5), pctOf = function(tot) { return Math.max(3, Math.min(100, Math.round(msL / tot * 100))); }, pct = pctOf(Math.max(msL, 30 * 864e5));
+  Promise.all([sb.from('purchases').select('created_at,plan_id').eq('user_id', cUser.id).order('created_at', { ascending: false }).limit(20),
+    sb.from('checkout_plans').select('id').gt('duration_live_months', 0)]).then(function(r) {
+    var ids = ((r[1] && r[1].data) || []).map(function(x) { return x.id; });
+    var pu = ((r[0] && r[0].data) || []).find(function(x) { return ids.indexOf(x.plan_id) >= 0 && new Date(x.created_at) < le; });
+    var st = pu ? new Date(pu.created_at) : null, bi = d.querySelector('.lvp-bar i');
+    if (st && le > st && bi) bi.style.width = pctOf(le - st) + '%';
+  });
   var d = document.createElement('div'); d.className = 'lvp' + (left <= 7 ? ' low' : '');
   d.innerHTML = '<div class="lvp-t"><span>Tu plan de en vivo</span><small>Te quedan ' + left + ' día' + (left === 1 ? '' : 's') + ' · vence el ' + fd(le) + '</small></div>' +
     '<div class="lvp-bar"><i style="width:' + pct + '%"></i></div><button class="lvp-add" title="Sumar más tiempo" aria-label="Sumar más tiempo">+</button>';

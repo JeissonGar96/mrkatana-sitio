@@ -657,18 +657,24 @@ CK_ERR.missing_whop_key = 'El pago con tarjeta no está disponible en este momen
 CK_ERR.whop_checkout = 'No se pudo abrir el pago con tarjeta. Intenta de nuevo o usa PayPal.';
 async function payWhop() {
   if (!st.plan || !st.user) return;
-  hideMsg();
+  hideMsg(); _wpOrder = null;
   var btn = _el('btn-whop'), lbl = btn.querySelector('span');
   btn.disabled = true; lbl.textContent = 'Abriendo pago seguro...';
-  var r = await _api(st.session ? 'whop_create' : 'guest_whop_create', { source: 'checkout', user_id: st.user.id,
+  // El formulario aparece al instante; la orden se prepara por detrás y se espera recién al pagar
+  _wpOrd = _api(st.session ? 'whop_create' : 'guest_whop_create', { source: 'checkout', user_id: st.user.id, embed: true,
     items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '',
-    renew: st.plan.lm ? { live: true, kairus: true } : null });
-  if (!r.url) { btn.disabled = false; lbl.textContent = 'Pagar con tarjeta'; return showMsg((CK_ERR[r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.') + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : ''), true); }
-  try { sessionStorage.setItem('mk-whop', JSON.stringify({ order: r.order, user_id: st.user.id, email: st.user.email, name: st.plan.name })); } catch (e) {}
-  // Pago dentro de la misma página (Whop Elements); si no carga, se abre la página de Whop
-  _wpEmbed(r, function() { location.href = r.url; });
+    renew: st.plan.lm ? { live: true, kairus: true } : null }).then(function(r) {
+      if (r && r.order) { _wpOrder = r.order; try { sessionStorage.setItem('mk-whop', JSON.stringify({ order: r.order, user_id: st.user.id, email: st.user.email, name: st.plan.name })); } catch (e) {} }
+      else if (_wpPay) { _wpBack(); showMsg((CK_ERR[r && r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.') + (r && r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : ''), true); }
+      return r || {};
+    }, function() { return { error: 'net' }; });
+  _wpEmbed({ account: 'biz_7IQpwkgU5mdr5I', total: _final(), order: '' }, function() {
+    btn.disabled = false; lbl.textContent = 'Pagar con tarjeta';
+    showMsg('No se pudo abrir el pago con tarjeta. Intenta de nuevo o usa PayPal.', true);
+  });
 }
 
+var _wpOrd = null;
 var _wpPay = null, _wpOrder = null;
 var WP_CTY = [['EC','Ecuador'],['CO','Colombia'],['PE','Perú'],['MX','México'],['CL','Chile'],['AR','Argentina'],['VE','Venezuela'],['BO','Bolivia'],['PY','Paraguay'],['UY','Uruguay'],['GT','Guatemala'],['CR','Costa Rica'],['PA','Panamá'],['DO','Rep. Dominicana'],['HN','Honduras'],['SV','El Salvador'],['NI','Nicaragua'],['PR','Puerto Rico'],['ES','España'],['US','Estados Unidos'],['CA','Canadá']];
 function _wpDark() { var c = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [0,0,0]; return (+c[0] + +c[1] + +c[2]) < 380; }
@@ -680,10 +686,10 @@ function _wpEmbed(r, fallback) {
       var W = window.WhopElements({ locale: 'es' });
       var opts = { accountId: r.account, currency: 'usd', amount: Math.round(Number(r.total) * 100), setupFutureUsage: 'off_session',
         paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
-        returnUrl: location.origin + '/checkout?whop=1&order=' + r.order, locale: 'es', appearance: { theme: { appearance: _wpDark() ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
+        returnUrl: location.origin + '/checkout?whop=1', locale: 'es', appearance: { theme: { appearance: _wpDark() ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
       var pay;
       try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
-      _wpPay = { W: W, pay: pay }; _wpOrder = r.order;
+      _wpPay = { W: W, pay: pay };
       var pr = st.prof || {}, cty = String(pr.country || '').toLowerCase();
       _el('wp-embed-in').innerHTML =
         '<div id="wp-card" class="wp-card"></div>' +
@@ -700,6 +706,7 @@ function _wpEmbed(r, fallback) {
   }
   if (!r.account) return fallback();
   if (window.WhopElements) return mount();
+  if (document.querySelector('script[data-whop-elements]')) { var n = 0, iv = setInterval(function() { if (window.WhopElements) { clearInterval(iv); mount(); } else if (++n > 80) { clearInterval(iv); fallback(); } }, 100); return; }
   var sc = document.createElement('script');
   sc.src = 'https://cdn.whop.com/elements/amber/elements.js';
   sc.setAttribute('data-whop-elements', '');
@@ -717,6 +724,7 @@ async function _wpConfirm() {
     var t; try { t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email } }); } catch (e1) { console.warn('whop token', e1); try { t = await _wpPay.pay.createConfirmationToken(); } catch (e2) { console.warn('whop token 2', e2); throw e1; } }
     var tok = t && (t.confirmationToken || (t.confirmation_token));
     if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
+    if (!_wpOrder && _wpOrd) { var o = await _wpOrd; if (!o.order) return fail(CK_ERR[o.error] || 'No se pudo preparar tu orden. Intenta de nuevo o usa PayPal.'); }
     var r = await _api(st.session ? 'whop_pay' : 'guest_whop_pay', { order: _wpOrder, token: typeof tok === 'string' ? tok : tok.id, user_id: st.user.id });
     if (r.error) return fail('No se pudo cobrar la tarjeta' + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : '') + '. Prueba otra tarjeta o usa PayPal.');
     if (r.client_secret && !/paid|succeeded/.test(String(r.status || ''))) {
@@ -732,7 +740,13 @@ function _wpBack() {
   _el('wp-embed-in').innerHTML = '';
   _el('wp-methods').style.display = '';
   document.body.classList.remove('wp-on'); _lgFit();
+  _wpPay = null; _wpOrder = null; _wpOrd = null;
 }
+// Precarga el formulario de tarjeta de Whop para que aparezca al instante
+setTimeout(function() {
+  if (window.WhopElements || document.querySelector('script[data-whop-elements]')) return;
+  var sc = document.createElement('script'); sc.src = 'https://cdn.whop.com/elements/amber/elements.js'; sc.setAttribute('data-whop-elements', ''); document.head.appendChild(sc);
+}, 1500);
 
 async function whopReturn(order) {
   var saved = {}; try { saved = JSON.parse(sessionStorage.getItem('mk-whop') || '{}'); } catch (e) {}

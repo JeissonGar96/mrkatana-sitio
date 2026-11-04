@@ -5438,8 +5438,10 @@ function openAjustes(t) { _ajTab = t || 'perfil'; navigateTo('perfil'); }
 // Los precios se recalculan en el servidor (api/cart.js); el carrito solo guarda qué eligió.
 var _store = null, _tvAcc = null, _ppLoading = false;
 var _PP_CLIENT = 'AYqmenNbm9toSrKHvVt5BxHZglY06A2a5Fgi_ffQrKbPoeLxtXlNc4wseA89j24Cv8iJjLoLYV08A0vu';
-function _cartGet() { try { return JSON.parse(localStorage.getItem('mk-cart') || '[]') || []; } catch (e) { return []; } }
-function _cartSet(c) { try { localStorage.setItem('mk-cart', JSON.stringify(c)); } catch (e) {} _cartBadge(); }
+// El carrito se guarda por cuenta: otra cuenta en el mismo navegador no ve lo de la anterior
+function _cartKey() { return 'mk-cart' + (typeof cUser !== 'undefined' && cUser && cUser.id ? '-' + cUser.id : ''); }
+function _cartGet() { try { return JSON.parse(localStorage.getItem(_cartKey()) || '[]') || []; } catch (e) { return []; } }
+function _cartSet(c) { try { localStorage.setItem(_cartKey(), JSON.stringify(c)); localStorage.removeItem('mk-cart'); } catch (e) {} _cartBadge(); }
 function _cartBadge() {
   var b = document.getElementById('mk-cart-btn'), n = _cartGet().length;
   if (b) { var i = b.querySelector('.cart-n'); if (i) { i.textContent = n; i.style.display = n ? '' : 'none'; } }

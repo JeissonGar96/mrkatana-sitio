@@ -301,7 +301,7 @@ try { var _css = localStorage.getItem('mk-theme-css'); if (_css) document.write(
         <div id="wp-methods">
         <button type="button" class="lg-btn wp-btn" id="btn-whop"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Pagar con tarjeta</span></button>
         <div class="wp-cards"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span></div>
-        <div id="wp-renew" class="wp-rn" style="display:none">Con tarjeta, las clases en vivo y Kairus se renuevan solos al terminar el tiempo incluido ($100 y $75 al mes). Te avisamos antes de cada cobro y puedes apagarlo en tu panel. <a href="/legal" target="_blank">Ver términos</a></div>
+        <div id="wp-renew" class="wp-rn" style="display:none"><span id="wp-renew-t">Con tarjeta, las clases en vivo se renuevan solas al terminar el tiempo incluido ($100 al mes)</span>. Te avisamos antes de cada cobro y puedes apagarlo en tu panel. <a href="/legal" target="_blank">Ver términos</a></div>
         <div class="ck-sep wp-or">o</div>
         <div id="paypal-button-container"></div>
         </div>
@@ -402,6 +402,8 @@ function selectPlan(i, vi) {
     price: Number(v ? v.price : p.price), period: (v ? v.period : p.period) || '', desc: p.description || '', inc: _incList(p, v),
     lm: Number(v && v.duration_live_months != null ? v.duration_live_months : p.duration_live_months) || 0 };
   _el('wp-renew').style.display = st.plan.lm ? '' : 'none';
+  var tvm = Number(v && v.duration_tv_months != null ? v.duration_tv_months : p.duration_tv_months) || 0;
+  _el('wp-renew-t').textContent = tvm ? 'Con tarjeta, las clases en vivo y Kairus se renuevan solos al terminar el tiempo incluido ($100 y $75 al mes)' : 'Con tarjeta, las clases en vivo se renuevan solas al terminar el tiempo incluido ($100 al mes)';
   // Un código aplicado era para el plan anterior
   if (st.disc || st.free) { st.disc = null; st.free = null; _el('ck-code').value = ''; _codeUi(); }
   document.querySelectorAll('.ck-plan').forEach(function(el) {

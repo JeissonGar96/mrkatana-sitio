@@ -363,10 +363,10 @@ async function whopCreate(sb, user, body, req, res) {
   const pr = await prepare(sb, user, body);
   if (pr.error) return res.status(400).json({ error: pr.error });
   const { items, total } = pr;
-  // Renovación automática elegida en el checkout (solo si lo comprado incluye en vivo)
+  // Renovación automática con tarjeta: solo lo que se compró (en vivo; Kairus solo si el pedido lo incluye).
+  // Aplica cuando lo comprado incluye en vivo. Se decide aquí, nunca desde el navegador.
   const hasLive = items.some(i => i.live_months);
-  const rw = body.renew || {};
-  const renew = hasLive ? { live: !!rw.live, kairus: !!rw.kairus } : null;
+  const renew = hasLive ? { live: true, kairus: items.some(i => i.tv_months) } : null;
   const ins = await sb.from('cart_orders').insert({ user_id: user.id, provider: 'whop', items, total, renew }).select('id').single();
   if (ins.error) return res.status(500).json({ error: ins.error.message });
   const orderId = ins.data.id;

@@ -1398,6 +1398,11 @@ select.lg-fi{appearance:none;-webkit-appearance:none;cursor:pointer;}
 .lg-alt{text-align:center;font-size:.82rem;color:var(--lg-mu);margin-top:22px;}
 .lg-alt a{color:var(--lg-tx);font-weight:600;text-decoration:none;}
 .lg-card .msg{margin-bottom:16px;border-radius:10px;}
+#msg{border-radius:12px;}#msg.info{margin-bottom:22px;}
+.msg.ok,.msg.info{background:var(--c-card);border:1px solid var(--c-line);color:var(--c-text2);}
+.msg.info{padding:14px 16px;font-size:.8rem;line-height:1.5;border-radius:12px;}.msg.info b{display:block;color:var(--c-text);font-size:.88rem;margin-bottom:3px;}
+.lg-rs{display:block;width:100%;margin-top:12px;padding:9px 14px;border-radius:10px;background:none;border:1px solid rgba(var(--c-acc),.45);color:rgb(var(--c-acc));font:inherit;font-size:.8rem;font-weight:600;cursor:pointer;}
+.lg-rs:hover{background:rgba(var(--c-acc),.08);}.lg-rs:disabled{opacity:.6;cursor:default;}
 .lg-left{align-items:center;text-align:center;}
 .lg-llogo{align-self:flex-start;}
 .lg-hero{width:100%;max-width:560px;display:flex;flex-direction:column;align-items:center;}
@@ -1568,18 +1573,19 @@ function doLogin() {
         : 'Error al iniciar sesión. Verifica tus datos.';
       // Show resend button if email not confirmed
       if (msg.indexOf('not confirmed') >= 0 || msg.indexOf('Email not confirmed') >= 0) {
-        showMsg('Tu email no está confirmado.', true);
         var msgDiv = document.getElementById('msg');
+        msgDiv.className = 'msg info'; msgDiv.style.display = 'block';
+        msgDiv.innerHTML = '<b>Confirma tu correo para entrar</b><span>Te enviamos un link a ' + e.replace(/[<>&"]/g, '') + '. Ábrelo para activar tu cuenta. Si no lo ves, revisa también la carpeta de spam.</span>';
         var resendBtn = document.createElement('button');
-        resendBtn.textContent = 'Reenviar email de confirmación';
-        resendBtn.style.cssText = 'margin-top:8px;background:rgba(91,127,166,.15);border:1px solid var(--bs);color:var(--sl);padding:7px 14px;border-radius:5px;font-size:.76rem;cursor:pointer;width:100%;';
+        resendBtn.type = 'button'; resendBtn.className = 'lg-rs';
+        resendBtn.textContent = 'Reenviar correo';
         resendBtn.onclick = function() {
           if (_liCapWait()) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
           resendBtn.disabled = true; resendBtn.textContent = 'Enviando...';
           sb.auth.resend({ type: 'signup', email: e, options: { emailRedirectTo: window.location.origin + '/app', captchaToken: _liToken || undefined } }).then(function(res) {
             _liCapReset();
-            if (res.error) { resendBtn.disabled = false; resendBtn.textContent = 'Reenviar email de confirmación'; showMsg('Error al reenviar: ' + res.error.message, true); }
-            else { showMsg('✓ Email de confirmación reenviado. Revisa tu bandeja de entrada.', false); }
+            if (res.error) { resendBtn.disabled = false; resendBtn.textContent = 'Reenviar correo'; showMsg('No se pudo reenviar el correo. Intenta de nuevo en un minuto.', true); }
+            else { showMsg('Listo, te reenviamos el correo de confirmación. Revisa tu bandeja de entrada.', false); }
           });
         };
         if (msgDiv) msgDiv.appendChild(resendBtn);

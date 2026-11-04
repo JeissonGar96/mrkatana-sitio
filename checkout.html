@@ -724,6 +724,7 @@ function _mkPaying(on) {
     if (!o) return; o._tg = 1.12; o._k = 4;
     setTimeout(function() { _mkPaying(false); }, 900); return;
   }
+  if (on === 'now') { if (o) { clearInterval(o._iv); o.remove(); } return; }
   if (!on) { if (o) { o.classList.remove('on'); setTimeout(function() { if (o.parentNode && !o.classList.contains('on')) { clearInterval(o._iv); o.remove(); } }, 300); } return; }
   if (!o) {
     o = document.createElement('div'); o.id = 'mk-paying'; o.setAttribute('role', 'status');
@@ -752,7 +753,7 @@ async function _wpConfirm() {
     var r = await _api(st.session ? 'whop_pay' : 'guest_whop_pay', { order: _wpOrder, token: typeof tok === 'string' ? tok : tok.id, user_id: st.user.id });
     if (r.error) return fail('No se pudo cobrar la tarjeta' + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : '') + '. Prueba otra tarjeta o usa PayPal.');
     if (r.client_secret && !/paid|succeeded/.test(String(r.status || ''))) {
-      _mkPaying(false);
+      _mkPaying('now'); // quitarla al instante: Whop exige ver su branding durante la verificación
       var na = await (_wpPay.W.payments.handleNextAction || window.WhopElements.payments.handleNextAction)({ clientSecret: r.client_secret, returnUrl: location.origin + '/checkout?whop=1&order=' + _wpOrder });
       if (na && na.redirected) return;
       if (na && na.lastPaymentError) return fail('El banco no aprobó el pago. Prueba otra tarjeta o usa PayPal.');

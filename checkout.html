@@ -728,6 +728,8 @@ function _mkPaying(on) {
   }
   requestAnimationFrame(function() { o.classList.add('on'); });
 }
+// Vista previa de la animación de pago: abre la página con ?vista-pago (tocar para cerrar)
+if (/[?&]vista-pago\b/.test(location.search)) setTimeout(function() { _mkPaying(true); var o = document.getElementById('mk-paying'); if (o) o.onclick = function() { _mkPaying(false); }; }, 1200);
 async function _wpConfirm() {
   var go = _el('wp-go');
   hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...'; _mkPaying(true);

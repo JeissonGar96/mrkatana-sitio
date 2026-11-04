@@ -1889,7 +1889,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .buy-a{display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
 .buy-p{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
 .buy-n{font-size:.8rem;color:var(--c-text2);}
-#mk-paying{--mkp-a:var(--c-acc,212,175,55);position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .3s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-paying.on{opacity:1;}.mkp-logo{position:relative;width:128px;height:128px;margin-bottom:26px;}.mkp-m{position:absolute;inset:0;-webkit-mask:url(/img/logo-emblema.png) center/contain no-repeat;mask:url(/img/logo-emblema.png) center/contain no-repeat;overflow:hidden;}.mkp-base{background:rgba(255,255,255,.16);}.mkp-w{position:absolute;left:-100%;width:300%;aspect-ratio:1;border-radius:43%;background:#fff;top:100%;animation:mkpRise 3s cubic-bezier(.45,.05,.4,1) infinite,mkpSpin 4s linear infinite;}@keyframes mkpRise{0%{top:104%;}80%,100%{top:-6%;}}@keyframes mkpSpin{to{transform:rotate(360deg);}}.mkp-t{color:#f4f1ea;font-size:1rem;font-weight:600;letter-spacing:.2px;}.mkp-s{color:rgba(244,241,234,.5);font-size:.8rem;margin-top:6px;}:root[data-theme="light"] #mk-paying{background:rgba(247,245,240,.92);}:root[data-theme="light"] .mkp-base{background:rgba(0,0,0,.14);}:root[data-theme="light"] .mkp-w{background:#151309;}:root[data-theme="light"] .mkp-t{color:#151309;}:root[data-theme="light"] .mkp-s{color:rgba(21,19,9,.5);}
+#mk-paying{--mkp-a:var(--c-acc,212,175,55);position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .3s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-paying.on{opacity:1;}.mkp-logo{position:relative;width:128px;height:128px;margin-bottom:26px;}.mkp-m{position:absolute;inset:0;-webkit-mask:url(/img/logo-emblema.png) center/contain no-repeat;mask:url(/img/logo-emblema.png) center/contain no-repeat;overflow:hidden;}.mkp-base{background:rgba(255,255,255,.16);}.mkp-w{position:absolute;left:-100%;width:300%;aspect-ratio:1;border-radius:41%;background:#fff;top:calc((1 - var(--lv,0)) * 100% - 3%);animation:mkpSpin 3.2s linear infinite;}.mkp-w.b{opacity:.45;border-radius:38%;top:calc((1 - var(--lv,0)) * 100% - 7%);animation-duration:4.6s;animation-direction:reverse;}@keyframes mkpSpin{to{transform:rotate(360deg);}}.mkp-t{color:#f4f1ea;font-size:1rem;font-weight:600;letter-spacing:.2px;}.mkp-s{color:rgba(244,241,234,.5);font-size:.8rem;margin-top:6px;}:root[data-theme="light"] #mk-paying{background:rgba(247,245,240,.92);}:root[data-theme="light"] .mkp-base{background:rgba(0,0,0,.14);}:root[data-theme="light"] .mkp-w{background:#151309;}:root[data-theme="light"] .mkp-t{color:#151309;}:root[data-theme="light"] .mkp-s{color:rgba(21,19,9,.5);}
 .lvp{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:10px 12px 10px 16px;border:1px solid var(--c-line);border-radius:12px;}
 .lvp-t{display:flex;flex-direction:column;gap:2px;min-width:0;}.lvp-t span{font-size:.82rem;font-weight:600;color:var(--c-text);}.lvp-t small{font-size:.74rem;color:var(--c-muted);white-space:nowrap;}
 .lvp-bar{flex:1;height:4px;border-radius:2px;background:rgba(var(--c-ov),.08);overflow:hidden;min-width:60px;}.lvp-bar i{display:block;height:100%;background:rgb(var(--c-acc));border-radius:2px;}
@@ -5604,16 +5604,24 @@ function _cwPay() {
 // Pantalla "Procesando tu pago" con el logo llenándose
 function _mkPaying(on) {
   var o = document.getElementById('mk-paying');
-  if (!on) { if (o) { o.classList.remove('on'); setTimeout(function() { if (o.parentNode && !o.classList.contains('on')) o.remove(); }, 300); } return; }
+  if (on === 'ok') { // pago confirmado: termina de llenarse y se cierra
+    if (!o) return; o._tg = 1.12; o._k = 4;
+    setTimeout(function() { _mkPaying(false); }, 900); return;
+  }
+  if (!on) { if (o) { o.classList.remove('on'); setTimeout(function() { if (o.parentNode && !o.classList.contains('on')) { clearInterval(o._iv); o.remove(); } }, 300); } return; }
   if (!o) {
     o = document.createElement('div'); o.id = 'mk-paying'; o.setAttribute('role', 'status');
-    o.innerHTML = '<div class="mkp-logo"><div class="mkp-m mkp-base"></div><div class="mkp-m"><div class="mkp-w"></div></div></div><div class="mkp-t">Procesando tu pago</div><div class="mkp-s">No cierres esta página</div>';
+    o.innerHTML = '<div class="mkp-logo"><div class="mkp-m mkp-base"></div><div class="mkp-m"><div class="mkp-w b"></div><div class="mkp-w"></div></div></div><div class="mkp-t">Procesando tu pago</div><div class="mkp-s">No cierres esta página</div>';
     document.body.appendChild(o);
+    // Sube despacio y se acerca al 88% sin llegar; se llena del todo solo cuando el pago se confirma
+    o._lv = 0.04; o._tg = 0.88; o._k = 0.15;
+    var lg = o.querySelector('.mkp-logo');
+    o._iv = setInterval(function() { o._lv += (o._tg - o._lv) * o._k * 0.05; lg.style.setProperty('--lv', o._lv.toFixed(4)); }, 50);
   }
   requestAnimationFrame(function() { o.classList.add('on'); });
 }
 // Vista previa de la animación de pago: abre la página con ?vista-pago (tocar para cerrar)
-if (/[?&]vista-pago\b/.test(location.search)) setTimeout(function() { _mkPaying(true); var o = document.getElementById('mk-paying'); if (o) o.onclick = function() { _mkPaying(false); }; }, 1200);
+if (/[?&]vista-pago\b/.test(location.search)) setTimeout(function() { _mkPaying(true); var o = document.getElementById('mk-paying'); if (o) o.onclick = function() { _mkPaying('ok'); }; }, 1200);
 async function _cwConfirm() {
   var go = document.getElementById('cdw-go'); if (!go || !_cw) return;
   go.disabled = true; go.textContent = 'Procesando pago...'; _mkPaying(true);
@@ -5660,7 +5668,7 @@ function _cwReturn() {
   _cwWait(o);
 }
 function _cartDone(res) {
-  _mkPaying(false);
+  _mkPaying('ok');
   var d = document.getElementById('cdw'); if (d) d.remove();
   _store = null; _tvAcc = null;
   sb.from('profiles').select('*').eq('id', cUser.id).single().then(function(r) {

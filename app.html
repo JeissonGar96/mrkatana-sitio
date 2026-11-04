@@ -4388,6 +4388,7 @@ function rSes() {
       if (!le) _buyBanner('sesiones', liveF, 'Aún no tienes plan de en vivo', 'Agrega un plan para entrar a los en vivo diarios de análisis y operativa.');
       else if (le < now) _buyBanner('sesiones', liveF, 'Tu plan de en vivo venció el ' + fd(le), 'Renuévalo para volver a entrar a los en vivo.');
       else if (le - now < 7 * 864e5) _buyBanner('sesiones', liveF, 'Tu plan de en vivo vence el ' + fd(le), 'Renuévalo ahora y el tiempo se suma a tu fecha actual.');
+      else _buyBanner('sesiones', liveF, 'Tu plan de en vivo está activo hasta el ' + fd(le), 'Si quieres sumar más meses, el tiempo se agrega a tu fecha actual.');
     }
     // Viene del botón "Unirme" del Dashboard: entra directo a la llamada
     if (_lvAutoJoin) { var aj = _lvAutoJoin; _lvAutoJoin = null; setTimeout(function(){ _lvJoinRoom(aj.id, aj.title); }, 0); }
@@ -5567,7 +5568,7 @@ function _cwPay() {
     try {
       var W = window.WhopElements({ locale: 'es' }), dark = document.documentElement.getAttribute('data-theme') !== 'light';
       var opts = { accountId: 'biz_7IQpwkgU5mdr5I', currency: 'usd', amount: Math.round(total * 100), setupFutureUsage: 'off_session',
-        paymentMethodConfiguration: { enabled: ['card', 'balance'], include_platform_defaults: false },
+        paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
         returnUrl: location.origin + '/app?whop=1', locale: 'es', appearance: { theme: { appearance: dark ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
       var pay; try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
       _cw = { W: W, pay: pay, ord: ord, total: total };

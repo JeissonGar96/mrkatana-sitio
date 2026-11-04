@@ -748,12 +748,11 @@ async function _wpConfirm() {
     var t; try { t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email } }); } catch (e1) { console.warn('whop token', e1); try { t = await _wpPay.pay.createConfirmationToken(); } catch (e2) { console.warn('whop token 2', e2); throw e1; } }
     var tok = t && (t.confirmationToken || (t.confirmation_token));
     if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
-    _mkPaying(true); // la animación se muestra después de leer la tarjeta: el formulario de Whop debe quedar visible hasta ese momento
+    // la animación sale una sola vez, después de la verificación del banco (mientras tanto el botón dice 'Procesando pago'), para no tapar el branding de Whop
     if (!_wpOrder && _wpOrd) { var o = await _wpOrd; if (!o.order) return fail(CK_ERR[o.error] || 'No se pudo preparar tu orden. Intenta de nuevo o usa PayPal.'); }
     var r = await _api(st.session ? 'whop_pay' : 'guest_whop_pay', { order: _wpOrder, token: typeof tok === 'string' ? tok : tok.id, user_id: st.user.id });
     if (r.error) return fail('No se pudo cobrar la tarjeta' + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : '') + '. Prueba otra tarjeta o usa PayPal.');
     if (r.client_secret && !/paid|succeeded/.test(String(r.status || ''))) {
-      _mkPaying('now'); // quitarla al instante: Whop exige ver su branding durante la verificación
       var na = await (_wpPay.W.payments.handleNextAction || window.WhopElements.payments.handleNextAction)({ clientSecret: r.client_secret, returnUrl: location.origin + '/checkout?whop=1&order=' + _wpOrder });
       if (na && na.redirected) return;
       if (na && na.lastPaymentError) return fail('El banco no aprobó el pago. Prueba otra tarjeta o usa PayPal.');

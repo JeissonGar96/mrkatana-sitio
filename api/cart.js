@@ -370,6 +370,8 @@ async function whopCreate(sb, user, body, req, res) {
   const ins = await sb.from('cart_orders').insert({ user_id: user.id, provider: 'whop', items, total, renew }).select('id').single();
   if (ins.error) return res.status(500).json({ error: ins.error.message });
   const orderId = ins.data.id;
+  // Formulario dentro de la página: no hace falta crear la página de pago de Whop (ahorra una llamada lenta)
+  if (body.embed) return res.status(200).json({ order: orderId, total, account: WHOP_COMPANY });
   const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
   const c = await whopFetch('/checkout_configurations', {
     method: 'POST',

@@ -5498,8 +5498,12 @@ function _cartOpen() {
     var close = function() { d.remove(); };
     d.querySelector('.cdw-bg').onclick = close; d.querySelector('.cdw-x').onclick = close;
     d.querySelectorAll('[data-rm]').forEach(function(a) { a.onclick = function() { var c = _cartGet(); c.splice(+a.dataset.rm, 1); _cartSet(c); _cartOpen(); }; });
-    if (items.length) _ppRender();
+    if (items.length) { _ppRender(); _cwPreload(); }
   });
+}
+function _cwPreload() {
+  if (window.WhopElements || document.querySelector('script[data-whop-elements]')) return;
+  var sc = document.createElement('script'); sc.src = 'https://cdn.whop.com/elements/amber/elements.js'; sc.setAttribute('data-whop-elements', ''); document.head.appendChild(sc);
 }
 function _cartNote(x) {
   var p = cProfile || {}, v = x.v || {}, f = function(d) { return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }); };
@@ -5554,7 +5558,7 @@ function _cwPay() {
   var errMsg = { need_tv_user: 'Agrega tu usuario de TradingView en Ajustes, Conexiones.', pick_variant: 'Elige una opción para cada producto.', not_in_store: 'Uno de los productos ya no está disponible.' };
   var NA = 'No se pudo abrir el pago con tarjeta. Prueba con PayPal.';
   var reset = function(m) { b.disabled = false; b.textContent = 'Pagar con tarjeta'; if (m) tst(m, 1); };
-  _cwCall({ action: 'whop_create', items: _cartGet(), renew: lm ? { live: true, kairus: true } : null }).then(function(r) {
+  _cwCall({ action: 'whop_create', embed: true, items: _cartGet(), renew: lm ? { live: true, kairus: true } : null }).then(function(r) {
     if (r.error) return reset(errMsg[r.error] || NA);
     if (!r.account) return reset(NA);
     var mount = function() {
@@ -5575,6 +5579,8 @@ function _cwPay() {
       } catch (e) { reset(NA); }
     };
     if (window.WhopElements) return mount();
+    var pre = document.querySelector('script[data-whop-elements]');
+    if (pre) { var n = 0, iv = setInterval(function() { if (window.WhopElements) { clearInterval(iv); mount(); } else if (++n > 80) { clearInterval(iv); reset(NA); } }, 100); return; }
     var sc = document.createElement('script'); sc.src = 'https://cdn.whop.com/elements/amber/elements.js'; sc.setAttribute('data-whop-elements', '');
     sc.onload = function() { window.WhopElements ? mount() : reset(NA); };
     sc.onerror = function() { reset(NA); };

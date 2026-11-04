@@ -1915,6 +1915,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .cdw-f{padding:20px 24px;border-top:1px solid rgba(var(--c-ov),.07);display:grid;gap:12px;}
 .cdw-t{display:flex;justify-content:space-between;font-size:.84rem;color:var(--c-text2);}.cdw-t.big{font-size:1rem;color:var(--c-text);font-weight:700;}
 .cdw-note{font-size:.74rem;color:var(--c-muted);text-align:center;}
+.cdw-wpb{width:100%;padding:13px 0;font-size:.9rem;text-align:center;}.cdw-wpb:disabled{opacity:.55;cursor:default;}.cdw-cards{text-align:center;font-size:.72rem;color:var(--c-muted);margin-top:8px;letter-spacing:.3px;}.cdw-rn{font-size:.72rem;color:var(--c-muted);line-height:1.5;text-align:center;margin-top:10px;}.cdw-rn a{color:var(--c-text2);text-decoration:underline;}.cdw-or{display:flex;align-items:center;gap:12px;font-size:.74rem;color:var(--c-muted);margin:14px 0 12px;}.cdw-or:before,.cdw-or:after{content:'';flex:1;height:1px;background:rgba(var(--c-ov),.1);}#cdw-wgo{display:grid;gap:10px;}.cdw-back{text-align:center;font-size:.78rem;color:var(--c-muted);cursor:pointer;text-decoration:underline;}.cdw-card{min-height:430px;padding-top:14px;}.cdw-brand{display:flex;justify-content:center;opacity:.7;zoom:.8;margin:10px 0;}
 .ok-box{max-width:520px;margin:40px auto;text-align:center;border:1px solid rgba(var(--c-ov),.08);border-radius:16px;background:var(--c-card);padding:36px 32px;}
 .ok-box h3{font-size:1.15rem;color:var(--c-text);margin:14px 0 6px;}.ok-box p{font-size:.85rem;color:var(--c-text2);line-height:1.55;margin:0 0 18px;}
 .ok-ic{width:44px;height:44px;border-radius:50%;border:1.5px solid rgb(var(--c-ok));margin:0 auto;display:flex;align-items:center;justify-content:center;color:rgb(var(--c-ok));font-size:1.2rem;}
@@ -3060,6 +3061,7 @@ function loadApp(user) {
     var uname2 = document.getElementById('uname2'); if (uname2) uname2.textContent = name;
     _mnFill();
     _mkLoadSiteTheme();
+    if (/[?&]whop=1/.test(location.search)) setTimeout(_cwReturn, 1500);
     // Registro gratis: los datos del formulario llegan en el usuario; se copian al perfil la primera vez
     var _um = (user && user.user_metadata) || {};
     if (cProfile && _um.date_of_birth && !cProfile.date_of_birth) {
@@ -5483,7 +5485,7 @@ function _cartOpen() {
       (items.length ? items.map(function(x, i) {
         return '<div class="cdw-i"><div><b>' + _mkEsc(x.name) + '</b><small>' + _cartNote(x) + '</small><a data-rm="' + i + '">Quitar</a></div><div class="pr">' + _money(x.price) + '</div></div>';
       }).join('') : '<div class="cdw-empty">Tu carrito está vacío.<small>Puedes agregar servicios desde En vivo, Reuniones 1-1 o Herramientas.</small></div>') + '</div>' +
-      (items.length ? '<div class="cdw-f"><div class="cdw-t big"><span>Total</span><span>' + _money(total) + ' USD</span></div><div id="cdw-pp"></div><div class="cdw-note">Pagas sin salir de la plataforma. El acceso se activa al instante.</div></div>' : '') + '</div>';
+      (items.length ? '<div class="cdw-f"><div class="cdw-t big"><span>Total</span><span>' + _money(total) + ' USD</span></div><div id="cdw-m"><button type="button" class="aj2-b gold cdw-wpb" id="cdw-wpb" onclick="_cwPay()">Pagar con tarjeta</button><div class="cdw-cards">Visa · Mastercard · Amex · Apple Pay</div>' + (items.some(function(x) { return (x.v && x.v.duration_live_months) || x.p.duration_live_months; }) ? '<div class="cdw-rn">Con tarjeta, las clases en vivo y Kairus se renuevan solos al terminar el tiempo incluido ($100 y $75 al mes). Te avisamos antes de cada cobro y puedes apagarlo en Ajustes. <a href="/legal" target="_blank">Ver términos</a></div>' : '') + '<div class="cdw-or">o</div><div id="cdw-pp"></div></div><div id="cdw-wgo" style="display:none"></div><div class="cdw-note">Pagas sin salir de la plataforma. El acceso se activa al instante.</div></div>' : '') + '</div>';
     document.body.appendChild(d);
     var close = function() { d.remove(); };
     d.querySelector('.cdw-bg').onclick = close; d.querySelector('.cdw-x').onclick = close;
@@ -5505,7 +5507,7 @@ function _cartNote(x) {
 }
 function _ppRender() {
   if (!window.paypal) {
-    if (!_ppLoading) { _ppLoading = true; var s = document.createElement('script'); s.src = 'https://www.paypal.com/sdk/js?client-id=' + _PP_CLIENT + '&currency=USD&intent=capture'; s.onload = _ppRender; document.head.appendChild(s); }
+    if (!_ppLoading) { _ppLoading = true; var s = document.createElement('script'); s.src = 'https://www.paypal.com/sdk/js?client-id=' + _PP_CLIENT + '&currency=USD&intent=capture&disable-funding=card'; s.onload = _ppRender; document.head.appendChild(s); }
     return;
   }
   var box = document.getElementById('cdw-pp'); if (!box) return;
@@ -5518,7 +5520,7 @@ function _ppRender() {
   };
   var errMsg = { need_tv_user: 'Agrega tu usuario de TradingView en Ajustes, Conexiones.', pick_variant: 'Elige una opción para cada producto.', not_in_store: 'Uno de los productos ya no está disponible.', missing_paypal_secret: 'El pago aún no está activado. Escríbenos por WhatsApp.' };
   paypal.Buttons({
-    style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' },
+    style: { layout: 'vertical', color: 'black', shape: 'rect', label: 'paypal' },
     createOrder: function() { return call({ action: 'create', items: _cartGet() }).then(function(j) { return j.id; }); },
     onApprove: function(data) {
       var b = document.getElementById('cdw-b'); if (b) b.innerHTML = '<div class="cdw-empty">Activando tu compra...</div>';
@@ -5529,6 +5531,84 @@ function _ppRender() {
     onCancel: function() { tst('Pago cancelado.', 1); }
   }).render('#cdw-pp');
 }
+var _cw = null;
+function _cwCall(body) {
+  return sb.auth.getSession().then(function(r) {
+    var t = r && r.data && r.data.session ? r.data.session.access_token : '';
+    return fetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(body) })
+      .then(function(x) { return x.json().then(function(j) { if (!x.ok) j.error = j.error || 'error'; return j; }); });
+  });
+}
+function _cwPay() {
+  var b = document.getElementById('cdw-wpb'); if (!b || b.disabled) return;
+  b.disabled = true; b.textContent = 'Cargando...';
+  var items = _cartGet().map(_storeItem).filter(Boolean), lm = items.some(function(x) { return (x.v && x.v.duration_live_months) || x.p.duration_live_months; });
+  var errMsg = { need_tv_user: 'Agrega tu usuario de TradingView en Ajustes, Conexiones.', pick_variant: 'Elige una opción para cada producto.', not_in_store: 'Uno de los productos ya no está disponible.' };
+  var NA = 'No se pudo abrir el pago con tarjeta. Prueba con PayPal.';
+  var reset = function(m) { b.disabled = false; b.textContent = 'Pagar con tarjeta'; if (m) tst(m, 1); };
+  _cwCall({ action: 'whop_create', items: _cartGet(), renew: lm ? { live: true, kairus: true } : null }).then(function(r) {
+    if (r.error) return reset(errMsg[r.error] || NA);
+    if (!r.account) return reset(NA);
+    var mount = function() {
+      try {
+        var W = window.WhopElements({ locale: 'es' }), dark = document.documentElement.getAttribute('data-theme') !== 'light';
+        var opts = { accountId: r.account, currency: 'usd', amount: Math.round(Number(r.total) * 100), setupFutureUsage: 'off_session',
+          paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
+          returnUrl: location.origin + '/app?whop=1&order=' + r.order, locale: 'es', appearance: { theme: { appearance: dark ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
+        var pay; try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
+        _cw = { W: W, pay: pay, order: r.order, total: r.total };
+        document.getElementById('cdw-b').innerHTML = '<div id="cdw-card" class="cdw-card"></div><div id="cdw-brand" class="cdw-brand"></div>';
+        document.getElementById('cdw-m').style.display = 'none';
+        var g = document.getElementById('cdw-wgo'); g.style.display = '';
+        g.innerHTML = '<button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Pagar ' + _money(r.total) + ' USD</button><a class="cdw-back" onclick="_cartOpen()">← Elegir otro método de pago</a>';
+        pay.create('payment', { onChange: function(ev) { var x = document.getElementById('cdw-go'); if (x) x.disabled = !(ev && ev.complete); } }).mount('#cdw-card');
+        pay.create('branding').mount('#cdw-brand');
+        document.getElementById('cdw-go').onclick = _cwConfirm;
+      } catch (e) { reset(NA); }
+    };
+    if (window.WhopElements) return mount();
+    var sc = document.createElement('script'); sc.src = 'https://cdn.whop.com/elements/amber/elements.js'; sc.setAttribute('data-whop-elements', '');
+    sc.onload = function() { window.WhopElements ? mount() : reset(NA); };
+    sc.onerror = function() { reset(NA); };
+    document.head.appendChild(sc);
+  }).catch(function() { reset('Error de conexión. Intenta de nuevo.'); });
+}
+async function _cwConfirm() {
+  var go = document.getElementById('cdw-go'); if (!go || !_cw) return;
+  go.disabled = true; go.textContent = 'Procesando pago...';
+  var fail = function(t) { go.disabled = false; go.textContent = 'Intentar de nuevo'; tst(t, 1); };
+  try {
+    var t = await _cw.pay.createConfirmationToken({ billingDetails: { email: cUser.email } });
+    var tok = t && (t.confirmationToken || t.confirmation_token);
+    if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
+    var r = await _cwCall({ action: 'whop_pay', order: _cw.order, token: typeof tok === 'string' ? tok : tok.id });
+    if (r.error) return fail('No se pudo cobrar la tarjeta. Prueba otra tarjeta o usa PayPal.');
+    if (r.client_secret && !/paid|succeeded/.test(String(r.status || ''))) {
+      var na = await (_cw.W.payments.handleNextAction || window.WhopElements.payments.handleNextAction)({ clientSecret: r.client_secret, returnUrl: location.origin + '/app?whop=1&order=' + _cw.order });
+      if (na && na.redirected) return;
+      if (na && na.lastPaymentError) return fail('El banco no aprobó el pago. Prueba otra tarjeta o usa PayPal.');
+    }
+    _cwWait(_cw.order);
+  } catch (e) { fail('Hubo un error con el pago. Intenta de nuevo.'); }
+}
+async function _cwWait(order) {
+  var b = document.getElementById('cdw-b'); if (b) b.innerHTML = '<div class="cdw-empty">Confirmando tu pago, no cierres esta ventana...</div>';
+  var g = document.getElementById('cdw-wgo'); if (g) g.style.display = 'none';
+  for (var i = 0; i < 40; i++) {
+    var r = await _cwCall({ action: 'whop_status', order: order });
+    if (r.status === 'applied' || (r.status === 'error' && r.result && r.result.lines)) { _cartSet([]); var res = r.result || {}; res.via = 'Tarjeta'; if (!res.total) res.total = r.total; return _cartDone(res); }
+    if (r.status === 'error' || r.error === 'order_not_found') break;
+    await new Promise(function(ok) { setTimeout(ok, 3000); });
+  }
+  tst('Todavía no recibimos la confirmación. Si te cobraron, tu acceso se activa en unos minutos. Si no, escríbenos por WhatsApp con este código: ' + order, 1);
+}
+function _cwReturn() {
+  var q = new URLSearchParams(location.search), o = q.get('order');
+  if (q.get('whop') !== '1' || !o || !cUser) return;
+  history.replaceState(null, '', location.pathname);
+  var m = document.getElementById('amain'); if (m) m.innerHTML = '<div class="ok-box"><h3>Confirmando tu pago...</h3><p>No cierres esta página.</p></div>';
+  _cwWait(o);
+}
 function _cartDone(res) {
   var d = document.getElementById('cdw'); if (d) d.remove();
   _store = null; _tvAcc = null;
@@ -5537,7 +5617,7 @@ function _cartDone(res) {
     var m = document.getElementById('amain');
     m.innerHTML = '<div class="ok-box"><div class="ok-ic">✓</div><h3>Pago recibido</h3><p>Ya tienes acceso. El recibo queda en Ajustes, Membresía y pagos.</p><div class="ok-rows">' +
       (res.lines || []).map(function(l) { return '<div><span>' + _mkEsc(l.name) + '</span><b>' + _mkEsc(l.text) + '</b></div>'; }).join('') +
-      (res.total ? '<div><span>Total pagado</span><b>' + _money(res.total) + ' USD · PayPal</b></div>' : '') + '</div>' +
+      (res.total ? '<div><span>Total pagado</span><b>' + _money(res.total) + ' USD · ' + (res.via || 'PayPal') + '</b></div>' : '') + '</div>' +
       ((res.lines || []).some(function(l) { return /TradingView/.test(l.text); }) ? '<p class="ok-tip">En TradingView: abre Indicadores, pestaña "Solo por invitación", y búscalo ahí.</p>' : '') +
       '<button class="aj2-b gold" onclick="navigateTo(\'dash\')">Ir al inicio</button></div>';
   });

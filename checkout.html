@@ -685,7 +685,7 @@ function _wpEmbed(r, fallback) {
     try {
       var W = window.WhopElements({ locale: 'es' });
       var opts = { accountId: r.account, currency: 'usd', amount: Math.round(Number(r.total) * 100), setupFutureUsage: 'off_session',
-        paymentMethodConfiguration: { enabled: ['card', 'balance'], include_platform_defaults: false },
+        paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
         returnUrl: location.origin + '/checkout?whop=1', locale: 'es', appearance: { theme: { appearance: _wpDark() ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
       var pay;
       try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }

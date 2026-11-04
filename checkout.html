@@ -176,7 +176,7 @@ html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz
 .wp-embed{margin-top:4px;}#wp-embed-in{min-height:200px;}.wp-card{min-height:430px;margin-bottom:14px;}html{scrollbar-gutter:stable;}.lg-right{scrollbar-gutter:stable;}.wp-brand{margin-top:12px;display:flex;justify-content:center;}
 @media (min-width:901px){body.wp-on .lg-wrap{height:calc(100vh - 40px);min-height:0;}body.wp-on .lg-right{overflow-y:auto;align-items:flex-start;}}
 .ck-small{font-size:.74rem;color:var(--lg-mu);text-align:center;margin-top:12px;line-height:1.5;}
-#mk-paying{--mkp-a:var(--c-acc,212,175,55);position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .3s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-paying.on{opacity:1;}.mkp-logo{position:relative;width:128px;height:128px;margin-bottom:26px;}.mkp-m{position:absolute;inset:0;-webkit-mask:url(/img/logo-emblema.png) center/contain no-repeat;mask:url(/img/logo-emblema.png) center/contain no-repeat;overflow:hidden;}.mkp-base{background:rgba(255,255,255,.16);}.mkp-w{position:absolute;left:-100%;width:300%;aspect-ratio:1;border-radius:43%;background:#fff;top:100%;animation:mkpRise 3s cubic-bezier(.45,.05,.4,1) infinite,mkpSpin 4s linear infinite;}@keyframes mkpRise{0%{top:104%;}80%,100%{top:-6%;}}@keyframes mkpSpin{to{transform:rotate(360deg);}}.mkp-t{color:#f4f1ea;font-size:1rem;font-weight:600;letter-spacing:.2px;}.mkp-s{color:rgba(244,241,234,.5);font-size:.8rem;margin-top:6px;}:root[data-theme="light"] #mk-paying{background:rgba(247,245,240,.92);}:root[data-theme="light"] .mkp-base{background:rgba(0,0,0,.14);}:root[data-theme="light"] .mkp-w{background:#151309;}:root[data-theme="light"] .mkp-t{color:#151309;}:root[data-theme="light"] .mkp-s{color:rgba(21,19,9,.5);}
+#mk-paying{--mkp-a:var(--c-acc,212,175,55);position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .3s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-paying.on{opacity:1;}.mkp-logo{position:relative;width:128px;height:128px;margin-bottom:26px;}.mkp-m{position:absolute;inset:0;-webkit-mask:url(/img/logo-emblema.png) center/contain no-repeat;mask:url(/img/logo-emblema.png) center/contain no-repeat;overflow:hidden;}.mkp-base{background:rgba(255,255,255,.16);}.mkp-w{position:absolute;left:-100%;width:300%;aspect-ratio:1;border-radius:41%;background:#fff;top:calc((1 - var(--lv,0)) * 100% - 3%);animation:mkpSpin 3.2s linear infinite;}.mkp-w.b{opacity:.45;border-radius:38%;top:calc((1 - var(--lv,0)) * 100% - 7%);animation-duration:4.6s;animation-direction:reverse;}@keyframes mkpSpin{to{transform:rotate(360deg);}}.mkp-t{color:#f4f1ea;font-size:1rem;font-weight:600;letter-spacing:.2px;}.mkp-s{color:rgba(244,241,234,.5);font-size:.8rem;margin-top:6px;}:root[data-theme="light"] #mk-paying{background:rgba(247,245,240,.92);}:root[data-theme="light"] .mkp-base{background:rgba(0,0,0,.14);}:root[data-theme="light"] .mkp-w{background:#151309;}:root[data-theme="light"] .mkp-t{color:#151309;}:root[data-theme="light"] .mkp-s{color:rgba(21,19,9,.5);}
 .ck-bk{display:block;width:100%;background:none;border:0;font:.84rem 'Plus Jakarta Sans',sans-serif;color:var(--lg-t2);text-align:center;margin-top:16px;cursor:pointer;}
 .ck-bk:hover{color:var(--lg-tx);}
 .ck-free{border:1px solid var(--lg-ln);border-radius:12px;padding:14px 16px;background:var(--lg-pn);font-size:.84rem;color:var(--lg-t2);margin-top:16px;}
@@ -720,16 +720,24 @@ function _wpEmbed(r, fallback) {
 // Pantalla "Procesando tu pago" con el logo llenándose
 function _mkPaying(on) {
   var o = document.getElementById('mk-paying');
-  if (!on) { if (o) { o.classList.remove('on'); setTimeout(function() { if (o.parentNode && !o.classList.contains('on')) o.remove(); }, 300); } return; }
+  if (on === 'ok') { // pago confirmado: termina de llenarse y se cierra
+    if (!o) return; o._tg = 1.12; o._k = 4;
+    setTimeout(function() { _mkPaying(false); }, 900); return;
+  }
+  if (!on) { if (o) { o.classList.remove('on'); setTimeout(function() { if (o.parentNode && !o.classList.contains('on')) { clearInterval(o._iv); o.remove(); } }, 300); } return; }
   if (!o) {
     o = document.createElement('div'); o.id = 'mk-paying'; o.setAttribute('role', 'status');
-    o.innerHTML = '<div class="mkp-logo"><div class="mkp-m mkp-base"></div><div class="mkp-m"><div class="mkp-w"></div></div></div><div class="mkp-t">Procesando tu pago</div><div class="mkp-s">No cierres esta página</div>';
+    o.innerHTML = '<div class="mkp-logo"><div class="mkp-m mkp-base"></div><div class="mkp-m"><div class="mkp-w b"></div><div class="mkp-w"></div></div></div><div class="mkp-t">Procesando tu pago</div><div class="mkp-s">No cierres esta página</div>';
     document.body.appendChild(o);
+    // Sube despacio y se acerca al 88% sin llegar; se llena del todo solo cuando el pago se confirma
+    o._lv = 0.04; o._tg = 0.88; o._k = 0.15;
+    var lg = o.querySelector('.mkp-logo');
+    o._iv = setInterval(function() { o._lv += (o._tg - o._lv) * o._k * 0.05; lg.style.setProperty('--lv', o._lv.toFixed(4)); }, 50);
   }
   requestAnimationFrame(function() { o.classList.add('on'); });
 }
 // Vista previa de la animación de pago: abre la página con ?vista-pago (tocar para cerrar)
-if (/[?&]vista-pago\b/.test(location.search)) setTimeout(function() { _mkPaying(true); var o = document.getElementById('mk-paying'); if (o) o.onclick = function() { _mkPaying(false); }; }, 1200);
+if (/[?&]vista-pago\b/.test(location.search)) setTimeout(function() { _mkPaying(true); var o = document.getElementById('mk-paying'); if (o) o.onclick = function() { _mkPaying('ok'); }; }, 1200);
 async function _wpConfirm() {
   var go = _el('wp-go');
   hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...'; _mkPaying(true);
@@ -783,7 +791,7 @@ async function whopReturn(order) {
   _mkPaying(false); showMsg('Todavía no recibimos la confirmación del pago. Si Whop te cobró, tu acceso se activará en unos minutos; si no, escríbenos por WhatsApp con este código: ' + order, true);
 }
 
-function done(lines) { if (typeof _mkPaying === 'function') _mkPaying(false);
+function done(lines) { if (typeof _mkPaying === 'function') _mkPaying('ok');
   _el('ck-steps').style.display = 'none';
   document.querySelectorAll('.ck-page').forEach(function(el) { el.classList.remove('on'); });
   hideMsg();

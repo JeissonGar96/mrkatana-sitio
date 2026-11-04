@@ -5241,22 +5241,64 @@ function _ajMemb() {
       vence = _ajFmtDate(p.membership_end.slice(0, 10)) + '<small>' + (active ? 'Te quedan ' + left + ' día' + (left === 1 ? '' : 's') : 'Tu plan venció') + '</small>' + (active ? '<div class="aj2-bar"><i style="width:' + pct + '%"></i></div>' : '');
     }
     var tot = (plan.sessions_1on1 != null ? plan.sessions_1on1 : 3) + _ajPays.reduce(function(a, x) { return a + (x.extra_1on1 || 0); }, 0);
-    var rows = _ajRow('Plan actual', _mkEsc(plan.name || p.plan || 'Sin plan') + (perks.length ? '<small>' + perks.join(' · ') + '</small>' : ''), active && !unl ? 'Renovar' : (active ? '' : 'Ver planes'), 'renew', 'gold') +
-      _ajRow('Vence', vence) + (p.access_1on1 ? _ajRow('Sesiones 1-1', done + ' de ' + Math.max(tot, done) + ' usadas') : '');
+    // En vivo comprado aparte (Live Sessions): tiene su propia fecha
+    var le = p.live_end ? new Date(p.live_end) : null, lvOn = le && le > now && le.getFullYear() < 2099;
+    var lvPlan = plans.find(function(x) { return x.id === 'live'; }) || {};
+    var pName = active ? (plan.name || 'Mentoría') : (lvOn ? (lvPlan.name || 'Live Sessions') : 'Cuenta gratis');
+    var lvRow = '';
+    if (lvOn && !(active && end && Math.abs(end - le) < 864e5)) {
+      var lvLeft = Math.ceil((le - now) / 86400000), lvPu = _ajPays.find(function(x) { var pl = plans.find(function(y) { return y.id === x.plan_id; }); return pl && pl.duration_live_months > 0; });
+      var lvSt = lvPu ? new Date(lvPu.created_at) : new Date(le - 30 * 864e5), lvPct = Math.max(3, Math.min(100, Math.round((le - now) / Math.max(le - lvSt, 864e5) * 100)));
+      lvRow = _ajRow('En vivo hasta', _ajFmtDate(p.live_end.slice(0, 10)) + '<small>Te quedan ' + lvLeft + ' día' + (lvLeft === 1 ? '' : 's') + '</small><div class="aj2-bar"><i style="width:' + lvPct + '%"></i></div>');
+    }
+    var rows = _ajRow('Plan actual', _mkEsc(pName) + (perks.length ? '<small>' + perks.join(' · ') + '</small>' : ''), lvOn || (active && !unl) ? 'Sumar tiempo' : (active ? '' : 'Ver planes'), lvOn || (active && !unl) ? 'addt' : 'renew', 'gold') +
+      (end || !lvOn ? _ajRow(active ? 'Vence' : 'Plan', end ? vence : _ajEmpty('Sin plan activo')) : '') + lvRow + (p.access_1on1 ? _ajRow('Sesiones 1-1', done + ' de ' + Math.max(tot, done) + ' usadas') : '');
     var pays = _ajPays.length ? _ajPays.map(function(x, i) {
       var d = new Date(x.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
       var amt = x.amount != null ? '$' + Number(x.amount).toFixed(2) + ' ' + _mkEsc(x.currency || 'USD') : '';
-      return _ajRow(d, _mkEsc(names[x.plan_id] || x.plan_id || 'Pago') + (x.payment_method ? ' · ' + _mkEsc(x.payment_method) : '') + (amt ? '<small>' + amt + '</small>' : ''), 'Recibo', 'rc' + i);
+      var pm = { whop: 'Tarjeta', paypal: 'PayPal', manual: 'Pago manual', cash: 'Efectivo' }[String(x.payment_method || '').toLowerCase()] || x.payment_method;
+      return _ajRow(d, _mkEsc(names[x.plan_id] || x.plan_id || 'Pago') + (pm ? ' · ' + _mkEsc(pm) : '') + (amt ? '<small>' + amt + '</small>' : ''), 'Recibo', 'rc' + i);
     }).join('') : _ajRow('Sin pagos', _ajEmpty('Aún no hay pagos registrados.'));
-    el.innerHTML = _ajGroup('', rows) + _ajGroup('Historial de pagos', pays) +
-      _ajGroup('Método de pago', _ajRow('PayPal o tarjeta', 'Pagas al renovar en el checkout. No guardamos los datos de tu tarjeta.'));
+    el.innerHTML = _ajGroup('', rows) + _ajGroup('Historial de pagos', pays) + '<div id="aj2-pm"></div>';
+    _ajPayMethod();
     el.querySelectorAll('[data-ed]').forEach(function(b) {
       b.addEventListener('click', function() {
         var k = b.dataset.ed;
-        if (k === 'renew') window.location.href = '/checkout?email=' + encodeURIComponent(cUser ? cUser.email : '') + '&name=' + encodeURIComponent((cProfile && cProfile.full_name) || '') + '&renew=1';
+        if (k === 'addt') _lvAddModal(p.live_end ? new Date(p.live_end) : null);
+        else if (k === 'renew') window.location.href = '/checkout?email=' + encodeURIComponent(cUser ? cUser.email : '') + '&name=' + encodeURIComponent((cProfile && cProfile.full_name) || '') + '&renew=1';
         else if (k.indexOf('rc') === 0) _ajReceipt(_ajPays[+k.slice(2)], names);
       });
     });
+  });
+}
+// Método de pago: tarjeta guardada en Whop (solo guardamos una referencia) y la renovación automática
+function _ajPayMethod() {
+  var box = document.getElementById('aj2-pm'); if (!box || !cUser) return;
+  var plain = function() { box.innerHTML = _ajGroup('Método de pago', _ajRow('Tarjeta o PayPal', 'Pagas en el checkout o en el carrito. Si pagas con tarjeta, queda guardada para tus renovaciones.')); };
+  sb.from('auto_renew').select('*').eq('user_id', cUser.id).maybeSingle().then(function(r) {
+    var a = r && r.data;
+    if (!a || !a.whop_payment_method_id) return plain();
+    var ic = '<svg width="26" height="18" viewBox="0 0 26 18" style="vertical-align:-4px;margin-right:8px"><rect x=".5" y=".5" width="25" height="17" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="0" y="4" width="26" height="3" fill="currentColor" opacity=".35"/></svg>';
+    var amt = (a.live ? 100 : 0) + (a.kairus ? 75 : 0), what = a.live && a.kairus ? 'en vivo y Kairus' : (a.live ? 'en vivo' : 'Kairus');
+    var nx = a.next_charge_at ? _ajFmtDate(String(a.next_charge_at).slice(0, 10)) : '';
+    var draw = function(card) {
+      box.innerHTML = _ajGroup('Método de pago',
+        _ajRow('Tarjeta guardada', ic + '<span id="aj2-cd">' + _mkEsc(card || 'Tarjeta') + '</span><small>Se usa para tus renovaciones</small>') +
+        _ajRow('Renovación automática', (a.active ? 'Activa' : 'Apagada') + '<small>' + (a.active ? (nx ? 'Próximo cobro: ' + nx + ' · ' : '') + '$' + amt + ' USD (' + what + '). Te avisamos 5 días antes.' : 'No se te cobrará nada. Puedes volver a activarla cuando quieras.') + '</small>') +
+        _ajRow('', '<a class="aj2-mut" id="aj2-rm" style="text-decoration:underline;cursor:pointer">Quitar tarjeta y cancelar la renovación</a>'));
+      var rws = box.querySelectorAll('.aj2-r');
+      rws[1].insertAdjacentHTML('beforeend', _ajToggle('renew', a.active));
+      rws[1].querySelector('.aj2-t').onclick = function() {
+        var on = !a.active, b = this; b.disabled = true;
+        _cwCall({ action: 'renew_set', active: on }).then(function(x) { b.disabled = false; if (x && x.ok) { a.active = on; draw(card); tst(on ? 'Renovación automática activada' : 'Renovación automática apagada'); } else tst('No se pudo guardar. Intenta de nuevo.', 1); });
+      };
+      document.getElementById('aj2-rm').onclick = function() {
+        if (!confirm('¿Quitar tu tarjeta? Se cancela la renovación automática y tu acceso sigue hasta la fecha que ya tienes.')) return;
+        _cwCall({ action: 'card_remove' }).then(function(x) { if (x && x.ok) { tst('Tarjeta quitada. No se te cobrará nada más.'); plain(); } else tst('No se pudo quitar. Intenta de nuevo.', 1); });
+      };
+    };
+    draw('');
+    _cwCall({ action: 'card_info' }).then(function(x) { if (x && x.last4) { var c = document.getElementById('aj2-cd'); if (c) c.textContent = (x.brand ? x.brand.charAt(0).toUpperCase() + x.brand.slice(1) + ' ' : 'Tarjeta ') + 'terminada en ' + x.last4; } });
   });
 }
 function _ajReceipt(x, names) {
@@ -5900,17 +5942,23 @@ function _lvPlanBar(le, liveF, fd) {
   d.innerHTML = '<div class="lvp-t"><span>Tu plan de en vivo</span><small>Te quedan ' + left + ' día' + (left === 1 ? '' : 's') + ' · vence el ' + fd(le) + '</small></div>' +
     '<div class="lvp-bar"><i style="width:' + pct + '%"></i></div><button class="lvp-add" title="Sumar más tiempo" aria-label="Sumar más tiempo"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></button>';
   m.insertBefore(d, m.firstChild);
-  d.querySelector('.lvp-add').onclick = function() {
+  d.querySelector('.lvp-add').onclick = function() { _lvAddModal(le, liveF, fd); };
+}
+// Ventana "Sumar más tiempo" de en vivo (barra de En vivo y Ajustes, Membresía)
+function _lvAddModal(le, liveF, fd) {
+  liveF = liveF || function(p) { return p.duration_live_months || (p.variants || []).some(function(v) { return v.duration_live_months; }); };
+  fd = fd || function(d) { return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }); };
+  {
     _storeLoad(function(st) {
       var ps = st.filter(liveF); if (!ps.length) return tst('No hay planes disponibles ahora', 1);
       var md = document.createElement('div'); md.className = 'mk-modal';
       md.innerHTML = '<div class="mk-modal-box lvp-m" role="dialog" aria-modal="true"><button class="mk-modal-x" aria-label="Cerrar">×</button>' +
-        '<div class="lvp-mt">Sumar más tiempo</div><div class="lvp-ms">El tiempo nuevo se agrega después del ' + fd(le) + '.</div>' +
+        '<div class="lvp-mt">Sumar más tiempo</div><div class="lvp-ms">' + (le && le > new Date() ? 'El tiempo nuevo se agrega después del ' + fd(le) + '.' : 'Elige cuánto tiempo quieres.') + '</div>' +
         ps.map(function(p) { return '<div class="buy-p">' + (ps.length > 1 ? '<span class="buy-n">' + _mkEsc(p.name) + '</span>' : '') + _storePick(p, 'gold') + '</div>'; }).join('') + '</div>';
       md.addEventListener('click', function(e) { if (e.target === md || e.target.classList.contains('mk-modal-x') || e.target.dataset.add) setTimeout(function() { md.remove(); }, 0); });
       document.body.appendChild(md); _storeBind(md);
     });
-  };
+  }
 }
 function _isTeam() { return cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff'); }
 

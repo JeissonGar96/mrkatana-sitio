@@ -60,6 +60,7 @@ module.exports = async function handler(req, res) {
     if (body.action === 'whop_create') return await whopCreate(sb, user, body, req, res);
     if (body.action === 'whop_status') return await whopStatus(sb, user, body, res);
     if (body.action === 'whop_pay') return await whopPay(sb, user, body, req, res);
+    if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
     return res.status(400).json({ error: 'bad_action' });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
@@ -435,6 +436,27 @@ async function whopPay(sb, user, body, req, res) {
   }
   await sb.from('cart_orders').update({ whop_payment_id: p.data.id }).eq('id', ord.id).eq('status', 'pending');
   return res.status(200).json({ status: p.data.status || null, client_secret: p.data.client_secret || null, payment: p.data.id });
+}
+
+// Ajustes, Membresía: ver la tarjeta guardada (últimos 4 si Whop los da), apagar/encender la renovación o quitar la tarjeta.
+async function renewCard(sb, user, body, res) {
+  const q = await sb.from('auto_renew').select('*').eq('user_id', user.id).maybeSingle();
+  const a = q.data;
+  if (!a) return res.status(404).json({ error: 'no_card' });
+  if (body.action === 'card_info') {
+    if (!a.whop_payment_method_id || !process.env.WHOP_API_KEY) return res.status(200).json({});
+    const r = await whopFetch('/payment_methods/' + encodeURIComponent(a.whop_payment_method_id), { method: 'GET' }).catch(() => null);
+    const d = (r && r.ok && r.data) || {}, c = d.card || d.card_details || d;
+    const last4 = String(c.last4 || c.last_4 || c.last_four || '').replace(/\D/g, '').slice(-4);
+    const brand = String(c.brand || c.card_brand || '').replace(/[^a-z ]/gi, '').slice(0, 20);
+    return res.status(200).json(last4.length === 4 ? { last4, brand } : {});
+  }
+  const upd = body.action === 'card_remove'
+    ? { active: false, whop_payment_method_id: null, updated_at: new Date().toISOString() }
+    : { active: !!body.active, updated_at: new Date().toISOString() };
+  const u = await sb.from('auto_renew').update(upd).eq('user_id', user.id);
+  if (u.error) return res.status(500).json({ error: u.error.message });
+  return res.status(200).json({ ok: true });
 }
 
 module.exports.applyItems = applyItems;

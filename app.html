@@ -1927,7 +1927,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .cdw-f{padding:20px 24px;border-top:1px solid rgba(var(--c-ov),.07);display:grid;gap:12px;}
 .cdw-t{display:flex;justify-content:space-between;font-size:.84rem;color:var(--c-text2);}.cdw-t.big{font-size:1rem;color:var(--c-text);font-weight:700;}
 .cdw-note{font-size:.74rem;color:var(--c-muted);text-align:center;}
-.cdw-wpb{width:100%;padding:13px 0;font-size:.9rem;text-align:center;}.cdw-wpb:disabled{opacity:.55;cursor:default;}.cdw-cards{text-align:center;font-size:.72rem;color:var(--c-muted);margin-top:8px;letter-spacing:.3px;}.cdw-rn{font-size:.72rem;color:var(--c-muted);line-height:1.5;text-align:center;margin-top:10px;}.cdw-rn a{color:var(--c-text2);text-decoration:underline;}.cdw-or{display:flex;align-items:center;gap:12px;font-size:.74rem;color:var(--c-muted);margin:14px 0 12px;}.cdw-or:before,.cdw-or:after{content:'';flex:1;height:1px;background:rgba(var(--c-ov),.1);}#cdw-wgo{display:grid;gap:10px;}.cdw-back{text-align:center;font-size:.78rem;color:var(--c-muted);cursor:pointer;text-decoration:underline;}.cdw-card{min-height:430px;padding-top:14px;}.cdw-brand{display:flex;justify-content:center;min-height:20px;}
+.cdw-wpb{width:100%;padding:13px 0;font-size:.9rem;text-align:center;}.cdw-wpb:disabled{opacity:.55;cursor:default;}.cdw-cards{text-align:center;font-size:.72rem;color:var(--c-muted);margin-top:8px;letter-spacing:.3px;}.cdw-rn{font-size:.72rem;color:var(--c-muted);line-height:1.5;text-align:center;margin-top:10px;}.cdw-rn a{color:var(--c-text2);text-decoration:underline;}.cdw-or{display:flex;align-items:center;gap:12px;font-size:.74rem;color:var(--c-muted);margin:14px 0 12px;}.cdw-or:before,.cdw-or:after{content:'';flex:1;height:1px;background:rgba(var(--c-ov),.1);}#cdw-wgo{display:grid;gap:10px;}.cdw-back{text-align:center;font-size:.78rem;color:var(--c-muted);cursor:pointer;text-decoration:underline;}.cdw-card{min-height:430px;padding-top:14px;}.cdw-brand{display:flex;justify-content:center;min-height:20px;}#cwp{position:fixed;inset:0;z-index:960;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;}.cwp-box{width:100%;max-width:460px;max-height:100%;overflow:auto;background:var(--c-panel);border:1px solid rgba(var(--c-ov),.08);border-radius:16px;padding:22px 22px 18px;display:grid;gap:12px;}.cwp-h{display:flex;justify-content:space-between;align-items:baseline;}.cwp-h b{font-size:1rem;color:var(--c-text);}.cwp-h span{font-size:.85rem;color:var(--c-text2);}#cwp .cdw-card{min-height:380px;padding-top:4px;}#cwp .cdw-brand{margin-top:2px;}#cwp .cdw-back{text-align:center;}@media (max-width:600px){#cwp{padding:8px;}.cwp-box{padding:18px 14px 14px;}}
 .ok-box{max-width:520px;margin:40px auto;text-align:center;border:1px solid rgba(var(--c-ov),.08);border-radius:16px;background:var(--c-card);padding:36px 32px;}
 .ok-box h3{font-size:1.15rem;color:var(--c-text);margin:14px 0 6px;}.ok-box p{font-size:.85rem;color:var(--c-text2);line-height:1.55;margin:0 0 18px;}
 .ok-ic{width:44px;height:44px;border-radius:50%;border:1.5px solid rgb(var(--c-ok));margin:0 auto;display:flex;align-items:center;justify-content:center;color:rgb(var(--c-ok));font-size:1.2rem;}
@@ -5584,10 +5584,14 @@ function _cwPay() {
         returnUrl: location.origin + '/app?whop=1', locale: 'es', appearance: { theme: { appearance: dark ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
       var pay; try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
       _cw = { W: W, pay: pay, ord: ord, total: total };
-      document.getElementById('cdw-b').innerHTML = '<div id="cdw-card" class="cdw-card"></div>';
-      document.getElementById('cdw-m').style.display = 'none';
-      var g = document.getElementById('cdw-wgo'); g.style.display = '';
-      g.innerHTML = '<div id="cdw-brand" class="cdw-brand"></div><button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Pagar ' + _money(total) + ' USD</button><a class="cdw-back" onclick="_cartOpen()">← Elegir otro método de pago</a>';
+      // El formulario de tarjeta va en una ventana centrada (como el checkout): tarjeta, botón y branding de Whop juntos y siempre a la vista
+      var dw = document.getElementById('cdw'); if (dw) dw.remove();
+      var old = document.getElementById('cwp'); if (old) old.remove();
+      var md = document.createElement('div'); md.id = 'cwp';
+      md.innerHTML = '<div class="cwp-box" role="dialog" aria-modal="true"><div class="cwp-h"><b>Pagar con tarjeta</b><span>' + _money(total) + ' USD</span></div>' +
+        '<div id="cdw-card" class="cdw-card"></div><button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Pagar ' + _money(total) + ' USD</button>' +
+        '<div id="cdw-brand" class="cdw-brand"></div><a class="cdw-back" onclick="_cwClose();_cartOpen()">← Volver al carrito</a></div>';
+      document.body.appendChild(md);
       pay.create('payment', { onChange: function(ev) { var x = document.getElementById('cdw-go'); if (x) x.disabled = !(ev && ev.complete); } }).mount('#cdw-card');
       pay.create('branding').mount('#cdw-brand');
       document.getElementById('cdw-go').onclick = _cwConfirm;
@@ -5670,7 +5674,9 @@ function _cwReturn() {
   var m = document.getElementById('amain'); if (m) m.innerHTML = '<div class="ok-box"><h3>Confirmando tu pago...</h3><p>No cierres esta página.</p></div>';
   _cwWait(o);
 }
+function _cwClose() { var m = document.getElementById('cwp'); if (m) m.remove(); }
 function _cartDone(res) {
+  _cwClose();
   _mkPaying('ok');
   var d = document.getElementById('cdw'); if (d) d.remove();
   _store = null; _tvAcc = null;

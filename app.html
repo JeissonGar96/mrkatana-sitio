@@ -1916,7 +1916,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .cdw-f{padding:20px 24px;border-top:1px solid rgba(var(--c-ov),.07);display:grid;gap:12px;}
 .cdw-t{display:flex;justify-content:space-between;font-size:.84rem;color:var(--c-text2);}.cdw-t.big{font-size:1rem;color:var(--c-text);font-weight:700;}
 .cdw-note{font-size:.74rem;color:var(--c-muted);text-align:center;}
-.cdw-wpb{width:100%;padding:13px 0;font-size:.9rem;text-align:center;}.cdw-wpb:disabled{opacity:.55;cursor:default;}.cdw-cards{text-align:center;font-size:.72rem;color:var(--c-muted);margin-top:8px;letter-spacing:.3px;}.cdw-rn{font-size:.72rem;color:var(--c-muted);line-height:1.5;text-align:center;margin-top:10px;}.cdw-rn a{color:var(--c-text2);text-decoration:underline;}.cdw-or{display:flex;align-items:center;gap:12px;font-size:.74rem;color:var(--c-muted);margin:14px 0 12px;}.cdw-or:before,.cdw-or:after{content:'';flex:1;height:1px;background:rgba(var(--c-ov),.1);}#cdw-wgo{display:grid;gap:10px;}.cdw-back{text-align:center;font-size:.78rem;color:var(--c-muted);cursor:pointer;text-decoration:underline;}.cdw-card{min-height:430px;padding-top:14px;}.cdw-brand{display:flex;justify-content:center;opacity:.7;zoom:.8;margin:10px 0;}
+.cdw-wpb{width:100%;padding:13px 0;font-size:.9rem;text-align:center;}.cdw-wpb:disabled{opacity:.55;cursor:default;}.cdw-cards{text-align:center;font-size:.72rem;color:var(--c-muted);margin-top:8px;letter-spacing:.3px;}.cdw-rn{font-size:.72rem;color:var(--c-muted);line-height:1.5;text-align:center;margin-top:10px;}.cdw-rn a{color:var(--c-text2);text-decoration:underline;}.cdw-or{display:flex;align-items:center;gap:12px;font-size:.74rem;color:var(--c-muted);margin:14px 0 12px;}.cdw-or:before,.cdw-or:after{content:'';flex:1;height:1px;background:rgba(var(--c-ov),.1);}#cdw-wgo{display:grid;gap:10px;}.cdw-back{text-align:center;font-size:.78rem;color:var(--c-muted);cursor:pointer;text-decoration:underline;}.cdw-card{min-height:430px;padding-top:14px;}.cdw-brand{display:flex;justify-content:center;min-height:20px;}
 .ok-box{max-width:520px;margin:40px auto;text-align:center;border:1px solid rgba(var(--c-ov),.08);border-radius:16px;background:var(--c-card);padding:36px 32px;}
 .ok-box h3{font-size:1.15rem;color:var(--c-text);margin:14px 0 6px;}.ok-box p{font-size:.85rem;color:var(--c-text2);line-height:1.55;margin:0 0 18px;}
 .ok-ic{width:44px;height:44px;border-radius:50%;border:1.5px solid rgb(var(--c-ok));margin:0 auto;display:flex;align-items:center;justify-content:center;color:rgb(var(--c-ok));font-size:1.2rem;}
@@ -5568,10 +5568,10 @@ function _cwPay() {
         returnUrl: location.origin + '/app?whop=1', locale: 'es', appearance: { theme: { appearance: dark ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
       var pay; try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
       _cw = { W: W, pay: pay, ord: ord, total: total };
-      document.getElementById('cdw-b').innerHTML = '<div id="cdw-card" class="cdw-card"></div><div id="cdw-brand" class="cdw-brand"></div>';
+      document.getElementById('cdw-b').innerHTML = '<div id="cdw-card" class="cdw-card"></div>';
       document.getElementById('cdw-m').style.display = 'none';
       var g = document.getElementById('cdw-wgo'); g.style.display = '';
-      g.innerHTML = '<button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Pagar ' + _money(total) + ' USD</button><a class="cdw-back" onclick="_cartOpen()">← Elegir otro método de pago</a>';
+      g.innerHTML = '<div id="cdw-brand" class="cdw-brand"></div><button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Pagar ' + _money(total) + ' USD</button><a class="cdw-back" onclick="_cartOpen()">← Elegir otro método de pago</a>';
       pay.create('payment', { onChange: function(ev) { var x = document.getElementById('cdw-go'); if (x) x.disabled = !(ev && ev.complete); } }).mount('#cdw-card');
       pay.create('branding').mount('#cdw-brand');
       document.getElementById('cdw-go').onclick = _cwConfirm;

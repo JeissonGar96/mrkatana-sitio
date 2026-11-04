@@ -5763,13 +5763,14 @@ function rTools(detail) {
   pushRoute(detail ? { section: 'herramientas', tool: detail } : { section: 'herramientas' });
   var m = document.getElementById('amain');
   if (!detail) m.innerHTML = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div><div class="tl-grid" id="tl-grid"></div>';
-  _storeLoad(function(st) {
+  _storeLoad(function(st) { _tvClaimable(function(clm) {
     var inds = st.filter(function(p) { return p.tv_pine_id; });
-    if (detail) return _toolDetail(inds.find(function(p) { return p.id === detail; }));
+    if (detail) return _toolDetail(inds.find(function(p) { return p.id === detail; }), clm);
     var g = document.getElementById('tl-grid'); if (!g) return;
     var f = function(d) { return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }); };
     g.innerHTML = inds.map(function(p) {
       var t = _tvState(p);
+      if (clm) return '<button class="mk-card tl-card tl-go" data-tool="' + _mkEsc(p.id) + '"><div class="tl-top"><h3>' + _mkEsc(p.name) + '</h3><span class="tl-arrow" style="color:rgb(var(--c-acc))">Reclamar</span></div><p>Tu plan incluye ' + clm + ' meses de ' + _mkEsc(p.name) + '. Reclámalos con tu usuario de TradingView.</p></button>';
       var line = t.active ? (t.days != null ? 'Te quedan ' + t.days + ' día' + (t.days === 1 ? '' : 's') + ' · vence el ' + f(t.a.expires_at) : 'Acceso de por vida')
         : t.pending ? 'Recibimos tu pago. Estamos activando tu acceso.' : 'Indicador para TradingView · ' + _priceLbl(p).replace(/<[^>]+>/g, '');
       return '<button class="mk-card tl-card tl-go" data-tool="' + _mkEsc(p.id) + '"><div class="tl-top"><h3>' + _mkEsc(p.name) + '</h3>' +
@@ -5780,6 +5781,29 @@ function rTools(detail) {
       '<div class="mk-card tl-card"><div class="tl-top"><h3>Copiador de operaciones</h3><span class="mk-pill">Próximamente</span></div><p>Copia las operaciones del mentor en tu cuenta de forma automática.</p></div>';
     g.querySelectorAll('[data-tool]').forEach(function(b) { b.onclick = function() { rTools(b.dataset.tool); }; });
     document.getElementById('tl-jn').onclick = function() { rJournalDash(); };
+  }); });
+}
+// Kairus incluido en el plan comprado (ej. Mentoría): meses por reclamar, o 0
+function _tvClaimable(cb) {
+  if (!cUser) return cb(0);
+  sb.from('checkout_plans').select('id, tv_claim_months').gt('tv_claim_months', 0).then(function(r) {
+    var mo = {}; ((r && r.data) || []).forEach(function(x) { mo[x.id] = x.tv_claim_months; });
+    var ids = Object.keys(mo); if (!ids.length) return cb(0);
+    sb.from('purchases').select('plan_id, tv_claimed_at').eq('user_id', cUser.id).in('plan_id', ids).then(function(q) {
+      var open = ((q && q.data) || []).filter(function(x) { return !x.tv_claimed_at; });
+      cb(open.length ? mo[open[0].plan_id] : 0);
+    }, function() { cb(0); });
+  }, function() { cb(0); });
+}
+function _tvClaimGo(id) {
+  var u = document.getElementById('kc-tvu'), b = document.getElementById('kc-claim'); if (!u || !b) return;
+  var v = u.value.trim().replace(/^@/, '');
+  if (!/^[A-Za-z0-9_.-]{2,40}$/.test(v)) return tst('Escribe tu usuario de TradingView (sin espacios)', 1);
+  b.disabled = true; b.textContent = 'Activando...';
+  _cwCall({ action: 'tv_claim', username: v }).then(function(r) {
+    if (r && r.ok) { if (_ajSet) _ajSet.tv_username = v; _tvAcc = null; _store = null; tst('Listo, Kairus quedó activado en tu TradingView'); return rTools(id); }
+    b.disabled = false; b.textContent = 'Reclamar';
+    tst(r && r.error === 'bad_username' ? 'Revisa tu usuario de TradingView' : 'No se pudo activar ahora. Revisa tu usuario o escríbenos por WhatsApp.', 1);
   });
 }
 /* ── Journal automático: cuentas conectadas ── */
@@ -5894,12 +5918,18 @@ function _jnForm(acc) {
     } catch (err) { $('jn-e').textContent = err.message; $('jn-s').disabled = false; }
   };
 }
-function _toolDetail(p) {
+function _toolDetail(p, clm) {
   var m = document.getElementById('amain');
   if (!p) return rTools();
-  var t = _tvState(p), a = t.a, tvu = (_ajSet && _ajSet.tv_username) || '';
+  var t = _tvState(p), a = t.a, tvu = (_ajSet && _ajSet.tv_username) || (a && a.tv_username) || '';
   var f = function(d) { return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }); };
-  var right = t.active ?
+  var right = clm ?
+    '<div class="kc-k"><span>Incluido en tu plan</span><b>' + clm + ' meses</b></div>' +
+      (t.active ? '<div class="kc-note">Se suman a tu fecha actual (' + (a.expires_at ? f(a.expires_at) : 'de por vida') + ').</div>' : '') +
+      '<input id="kc-tvu" class="ai" style="width:100%;margin:10px 0;" placeholder="Tu usuario de TradingView" value="' + _mkEsc(tvu) + '">' +
+      '<button class="aj2-b gold" id="kc-claim" onclick="_tvClaimGo(\'' + _mkEsc(p.id) + '\')">Reclamar</button>' +
+      '<div class="kc-note">El acceso se da a ese usuario de TradingView. Si ya tenías Kairus, el tiempo se suma y nunca se acorta.</div>'
+    : t.active ?
     '<div class="kc-k"><span>Estado</span><b><span class="aj2-dot"></span>Activo</b></div><div class="kc-k"><span>Vence</span><b>' + (a.expires_at ? f(a.expires_at) : 'De por vida') + '</b></div><div class="kc-k"><span>Usuario TradingView</span><b>' + _mkEsc(a.tv_username) + '</b></div>' +
       (a.expires_at ? '<div class="kc-ren">Renovar: se suma a tu fecha actual</div>' + _storePick(p, 'gold') : '')
     : (t.pending ? '<div class="kc-note">Recibimos tu pago. Estamos activando tu acceso en TradingView.</div>' : '') +

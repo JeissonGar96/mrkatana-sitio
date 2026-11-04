@@ -60,6 +60,7 @@ module.exports = async function handler(req, res) {
     if (body.action === 'whop_create') return await whopCreate(sb, user, body, req, res);
     if (body.action === 'whop_status') return await whopStatus(sb, user, body, res);
     if (body.action === 'whop_pay') return await whopPay(sb, user, body, req, res);
+    if (body.action === 'tv_claim') return await tvClaim(sb, user, body, res);
     if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
     return res.status(400).json({ error: 'bad_action' });
   } catch (e) {
@@ -291,13 +292,19 @@ async function grantTv(sb, userId, it, retry) {
   const username = s.data && s.data.tv_username;
   const prev = await sb.from('tv_access').select('expires_at').eq('user_id', userId).eq('pine_id', it.tv_pine_id).maybeSingle();
   const lifetime = !it.tv_months || (prev.data && prev.data.expires_at === null);
-  const expires = retry && prev.data ? prev.data.expires_at : (lifetime ? null : addMonths(prev.data && prev.data.expires_at, it.tv_months));
+  let expires = retry && prev.data ? prev.data.expires_at : (lifetime ? null : addMonths(prev.data && prev.data.expires_at, it.tv_months));
   let ok = false, error = null;
   if (!username) error = 'no_username';
   else if (!process.env.TV_SESSIONID) error = 'missing_tv_session';
   else {
     try {
       const pine = await resolvePine(it.tv_pine_id);
+      // Si ya tenía acceso dado directo en TradingView, se suma desde esa fecha (nunca se acorta)
+      if (!retry && expires !== null) {
+        const cur = await tvCurrent(pine, username);
+        if (cur && cur.lifetime) expires = null;
+        else if (cur && cur.expires && new Date(cur.expires) > new Date(prev.data && prev.data.expires_at || 0)) expires = addMonths(cur.expires, it.tv_months);
+      }
       ok = await tvCall('add', pine, username, expires);
       if (!ok) ok = await tvCall('modify_user_expiration', pine, username, expires);
       if (!ok) error = 'tv_rejected';
@@ -323,6 +330,22 @@ async function resolvePine(v) {
   const m = html.match(/PUB;[A-Za-z0-9]{16,}/);
   if (!m) throw new Error('pine_id_not_found');
   return (_pineCache[v] = m[0]);
+}
+
+// Acceso actual de un usuario en el script (lo que se ve en "Administrar acceso" de TradingView)
+async function tvCurrent(pineId, username) {
+  try {
+    const r = await fetch('https://www.tradingview.com/pine_perm/list_users/?limit=10&order_by=-created', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), origin: 'https://www.tradingview.com', referer: 'https://www.tradingview.com/' },
+      body: new URLSearchParams({ pine_id: pineId, username: username }).toString()
+    });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => ({}));
+    const u = (j.results || []).find(x => String(x.username || '').toLowerCase() === String(username).toLowerCase());
+    if (!u) return null;
+    return u.expiration ? { expires: u.expiration } : { lifetime: true };
+  } catch (e) { return null; }
 }
 
 async function tvCall(kind, pineId, username, expires) {
@@ -438,6 +461,32 @@ async function whopPay(sb, user, body, req, res) {
   return res.status(200).json({ status: p.data.status || null, client_secret: p.data.client_secret || null, payment: p.data.id });
 }
 
+// Kairus incluido en un plan (ej. Mentoría: 3 meses): el alumno lo reclama en Herramientas con su usuario de TradingView.
+async function tvClaim(sb, user, body, res) {
+  const username = String(body.username || '').trim().replace(/^@/, '');
+  if (!/^[A-Za-z0-9_.-]{2,40}$/.test(username)) return res.status(400).json({ error: 'bad_username' });
+  const pl = await sb.from('checkout_plans').select('id, tv_claim_months').gt('tv_claim_months', 0);
+  const months = {}; ((pl.data) || []).forEach(x => { months[x.id] = x.tv_claim_months; });
+  const ids = Object.keys(months);
+  if (!ids.length) return res.status(404).json({ error: 'nothing_to_claim' });
+  const pu = await sb.from('purchases').select('id, plan_id').eq('user_id', user.id).in('plan_id', ids).is('tv_claimed_at', null).order('created_at', { ascending: true }).limit(1);
+  const buy = pu.data && pu.data[0];
+  if (!buy) return res.status(404).json({ error: 'nothing_to_claim' });
+  const k = await sb.from('checkout_plans').select('id, tv_pine_id').not('tv_pine_id', 'is', null).eq('category', 'herramienta').limit(1);
+  const kai = (k.data && k.data[0]) || null;
+  if (!kai) return res.status(500).json({ error: 'no_indicator' });
+  // Se aparta la compra primero para que no se pueda reclamar dos veces
+  const lock = await sb.from('purchases').update({ tv_claimed_at: new Date().toISOString() }).eq('id', buy.id).is('tv_claimed_at', null).select('id');
+  if (!lock.data || !lock.data.length) return res.status(409).json({ error: 'already_claimed' });
+  await sb.from('user_settings').upsert({ id: user.id, tv_username: username }, { onConflict: 'id' });
+  const tv = await grantTv(sb, user.id, { plan_id: kai.id, tv_pine_id: kai.tv_pine_id, tv_months: months[buy.plan_id] }, false);
+  if (!tv.ok) {
+    await sb.from('purchases').update({ tv_claimed_at: null }).eq('id', buy.id);
+    return res.status(502).json({ error: tv.error || 'tv_rejected' });
+  }
+  return res.status(200).json({ ok: true, expires: tv.expires });
+}
+
 // Ajustes, Membresía: ver la tarjeta guardada (últimos 4 si Whop los da), apagar/encender la renovación o quitar la tarjeta.
 async function renewCard(sb, user, body, res) {
   const q = await sb.from('auto_renew').select('*').eq('user_id', user.id).maybeSingle();
@@ -445,11 +494,20 @@ async function renewCard(sb, user, body, res) {
   if (!a) return res.status(404).json({ error: 'no_card' });
   if (body.action === 'card_info') {
     if (!a.whop_payment_method_id || !process.env.WHOP_API_KEY) return res.status(200).json({});
-    const r = await whopFetch('/payment_methods/' + encodeURIComponent(a.whop_payment_method_id), { method: 'GET' }).catch(() => null);
-    const d = (r && r.ok && r.data) || {}, c = d.card || d.card_details || d;
-    const last4 = String(c.last4 || c.last_4 || c.last_four || '').replace(/\D/g, '').slice(-4);
-    const brand = String(c.brand || c.card_brand || '').replace(/[^a-z ]/gi, '').slice(0, 20);
-    return res.status(200).json(last4.length === 4 ? { last4, brand } : {});
+    // Busca los últimos 4 y la marca en lo que responda Whop (método de pago, o el último pago con tarjeta)
+    const dig = (o, re, d) => { if (!o || typeof o !== 'object' || d > 4) return ''; for (const k of Object.keys(o)) { if (re.test(k) && o[k] != null && typeof o[k] !== 'object') return String(o[k]); } for (const k of Object.keys(o)) { const v = dig(o[k], re, d + 1); if (v) return v; } return ''; };
+    const srcs = ['/payment_methods/' + encodeURIComponent(a.whop_payment_method_id)];
+    const lp = await sb.from('cart_orders').select('whop_payment_id').eq('user_id', user.id).not('whop_payment_id', 'is', null).order('created_at', { ascending: false }).limit(1);
+    if (lp.data && lp.data[0]) srcs.push('/payments/' + encodeURIComponent(lp.data[0].whop_payment_id));
+    for (const path of srcs) {
+      const r = await whopFetch(path, { method: 'GET' }).catch(() => null);
+      if (!r || !r.ok) continue;
+      const last4 = dig(r.data, /last.?(4|four)/i, 0).replace(/\D/g, '').slice(-4);
+      if (last4.length !== 4) continue;
+      const brand = dig(r.data, /brand/i, 0).replace(/[^a-z ]/gi, '').slice(0, 20);
+      return res.status(200).json({ last4, brand });
+    }
+    return res.status(200).json({});
   }
   const upd = body.action === 'card_remove'
     ? { active: false, whop_payment_method_id: null, updated_at: new Date().toISOString() }

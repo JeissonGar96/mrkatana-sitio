@@ -732,6 +732,7 @@ function _mkPaying(on) {
     // Sube despacio y se acerca al 88% sin llegar; se llena del todo solo cuando el pago se confirma
     o._lv = 0.04; o._tg = 0.88; o._k = 0.15;
     var lg = o.querySelector('.mkp-logo');
+    setTimeout(function() { _mkPaying(false); }, 150000); // nunca dejar la pantalla trabada
     o._iv = setInterval(function() { o._lv += (o._tg - o._lv) * o._k * 0.05; lg.style.setProperty('--lv', o._lv.toFixed(4)); }, 50);
   }
   requestAnimationFrame(function() { o.classList.add('on'); });
@@ -740,12 +741,13 @@ function _mkPaying(on) {
 if (/[?&]vista-pago\b/.test(location.search)) setTimeout(function() { _mkPaying(true); var o = document.getElementById('mk-paying'); if (o) o.onclick = function() { _mkPaying('ok'); }; }, 1200);
 async function _wpConfirm() {
   var go = _el('wp-go');
-  hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...'; _mkPaying(true);
+  hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...';
   function fail(t) { _mkPaying(false); go.disabled = false; go.textContent = 'Intentar de nuevo'; showMsg(t, true); }
   try {
     var t; try { t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email } }); } catch (e1) { console.warn('whop token', e1); try { t = await _wpPay.pay.createConfirmationToken(); } catch (e2) { console.warn('whop token 2', e2); throw e1; } }
     var tok = t && (t.confirmationToken || (t.confirmation_token));
     if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
+    _mkPaying(true); // la animación se muestra después de leer la tarjeta: el formulario de Whop debe quedar visible hasta ese momento
     if (!_wpOrder && _wpOrd) { var o = await _wpOrd; if (!o.order) return fail(CK_ERR[o.error] || 'No se pudo preparar tu orden. Intenta de nuevo o usa PayPal.'); }
     var r = await _api(st.session ? 'whop_pay' : 'guest_whop_pay', { order: _wpOrder, token: typeof tok === 'string' ? tok : tok.id, user_id: st.user.id });
     if (r.error) return fail('No se pudo cobrar la tarjeta' + (r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : '') + '. Prueba otra tarjeta o usa PayPal.');

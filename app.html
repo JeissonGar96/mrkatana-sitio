@@ -1591,6 +1591,7 @@ body,body *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect){fon
 .a1-st.n{background-color:rgba(var(--c-ov),.08) !important;color:var(--c-muted) !important;border-color:transparent !important;}
 .a1-st.w{background-color:transparent !important;border-color:rgba(var(--c-acc),.5) !important;color:rgb(var(--c-acc)) !important;}
 .a1-st option{background:var(--c-card);color:var(--c-text);}
+:root{color-scheme:dark;}:root[data-theme="light"]{color-scheme:light;}select option{background:var(--c-card);color:var(--c-text);}
 .a1-auto{font-size:.64rem;color:var(--c-muted);margin:4px 0 0 4px;}
 .a1-act{display:flex;align-items:center;justify-content:flex-end;gap:6px;}
 .a1-ic{width:30px;height:30px;border-radius:50%;border:1px solid var(--k-line);background:transparent;color:var(--c-muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
@@ -3143,6 +3144,13 @@ function loadApp(user) {
 
       // Pestañas sin plan: se ven con candado y al entrar ofrecen comprar
       if (!isAdmin) _navLocks();
+      if (cProfile.avatar_url || cProfile.role === 'admin') {
+        // Vuelve a mostrar el menú (un paso obligatorio anterior pudo ocultarlo) y reconecta sus botones
+        var aside = document.querySelector('.aside'); if (aside) aside.style.display = '';
+        var mobNav = document.getElementById('mob-nav'); if (mobNav) { mobNav.style.display = ''; mobNav.classList.add('visible'); }
+        document.querySelectorAll('.snav[data-v]').forEach(function(b) { b.onclick = function() { navigateTo(this.getAttribute('data-v')); }; });
+        document.querySelectorAll('#mob-nav .mob-nav-btn').forEach(function(b) { b.onclick = function() { _mnGo(this); }; });
+      }
       // Si no tiene foto, mostrar pantalla para completar perfil
       if (!cProfile.avatar_url && cProfile.role !== 'admin') {
         _showCompleteProfile();
@@ -3189,7 +3197,7 @@ function loadApp(user) {
           '<p style="font-size:.76rem;color:var(--c-muted);margin-bottom:24px;">Foto de perfil (obligatoria)</p>' +
           '<div style="width:100%;max-width:340px;margin-bottom:16px;text-align:left;">' +
             '<label style="display:block;font-size:.66rem;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">Experiencia en trading</label>' +
-            '<select id="exp-complete" style="width:100%;padding:10px 12px;background:rgba(var(--c-ov),.05);border:1px solid var(--br);border-radius:2px;color:var(--c-text);font-size:.86rem;">' +
+            '<select id="exp-complete" class="mk-sel" style="width:100%;padding:10px 12px;background:rgba(var(--c-ov),.05);border:1px solid var(--br);border-radius:2px;color:var(--c-text);font-size:.86rem;">' +
               '<option value="">Selecciona...</option>' +
               '<option value="sin_experiencia">Sin experiencia</option>' +
               '<option value="principiante">Principiante (menos de 1 año)</option>' +

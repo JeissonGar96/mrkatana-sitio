@@ -1892,7 +1892,7 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .lvp-t{display:flex;flex-direction:column;gap:2px;min-width:0;}.lvp-t span{font-size:.82rem;font-weight:600;color:var(--c-text);}.lvp-t small{font-size:.74rem;color:var(--c-muted);white-space:nowrap;}
 .lvp-bar{flex:1;height:4px;border-radius:2px;background:rgba(var(--c-ov),.08);overflow:hidden;min-width:60px;}.lvp-bar i{display:block;height:100%;background:rgb(var(--c-acc));border-radius:2px;}
 .lvp.low .lvp-t small{color:var(--c-text2);}
-.lvp-add{width:30px;height:30px;flex-shrink:0;border-radius:50%;border:1px solid var(--c-line);background:none;color:var(--c-text);font-size:1.1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lvp-add{width:30px;height:30px;flex-shrink:0;border-radius:50%;border:1px solid var(--c-line);background:none;color:var(--c-text);padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}.lvp-add svg{display:block;}
 .lvp-add:hover{border-color:rgb(var(--c-acc));color:rgb(var(--c-acc));}
 .lvp-m .lvp-mt{font-size:1.05rem;font-weight:700;margin-bottom:4px;padding-right:30px;}.lvp-m .lvp-ms{font-size:.82rem;color:var(--c-muted);margin-bottom:16px;}
 .lvp-m .buy-p{justify-content:flex-start;}
@@ -5841,7 +5841,7 @@ function _lvPlanBar(le, liveF, fd) {
   });
   var d = document.createElement('div'); d.className = 'lvp' + (left <= 7 ? ' low' : '');
   d.innerHTML = '<div class="lvp-t"><span>Tu plan de en vivo</span><small>Te quedan ' + left + ' día' + (left === 1 ? '' : 's') + ' · vence el ' + fd(le) + '</small></div>' +
-    '<div class="lvp-bar"><i style="width:' + pct + '%"></i></div><button class="lvp-add" title="Sumar más tiempo" aria-label="Sumar más tiempo">+</button>';
+    '<div class="lvp-bar"><i style="width:' + pct + '%"></i></div><button class="lvp-add" title="Sumar más tiempo" aria-label="Sumar más tiempo"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg></button>';
   m.insertBefore(d, m.firstChild);
   d.querySelector('.lvp-add').onclick = function() {
     _storeLoad(function(st) {

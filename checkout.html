@@ -714,7 +714,7 @@ async function _wpConfirm() {
   hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...';
   function fail(t) { go.disabled = false; go.textContent = 'Intentar de nuevo'; showMsg(t, true); }
   try {
-    var t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email } });
+    var t; try { t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email } }); } catch (e1) { console.warn('whop token', e1); try { t = await _wpPay.pay.createConfirmationToken(); } catch (e2) { console.warn('whop token 2', e2); throw e1; } }
     var tok = t && (t.confirmationToken || (t.confirmation_token));
     if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
     var r = await _api(st.session ? 'whop_pay' : 'guest_whop_pay', { order: _wpOrder, token: typeof tok === 'string' ? tok : tok.id, user_id: st.user.id });
@@ -725,7 +725,7 @@ async function _wpConfirm() {
       if (na && na.lastPaymentError) return fail('El banco no aprobó el pago. Prueba otra tarjeta o usa PayPal.');
     }
     whopReturn(_wpOrder);
-  } catch (e) { fail('Hubo un error con el pago. Intenta de nuevo.'); }
+  } catch (e) { console.error('whop pay', e); var em = String((e && (e.message || e.code)) || e || '').slice(0, 140); fail('Hubo un error con el pago' + (em ? ' (' + em + ')' : '') + '. Intenta de nuevo.'); }
 }
 function _wpBack() {
   _el('wp-embed').style.display = 'none';

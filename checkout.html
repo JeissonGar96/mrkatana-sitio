@@ -176,7 +176,7 @@ html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz
 .wp-embed{margin-top:4px;}#wp-embed-in{min-height:200px;}.wp-card{min-height:430px;margin-bottom:14px;}html{scrollbar-gutter:stable;}.lg-right{scrollbar-gutter:stable;}.wp-brand{margin-top:12px;display:flex;justify-content:center;position:relative;z-index:5;}
 @media (min-width:901px){body.wp-on .lg-wrap{height:calc(100vh - 40px);min-height:0;}body.wp-on .lg-right{overflow-y:auto;align-items:flex-start;}}
 .ck-small{font-size:.74rem;color:var(--lg-mu);text-align:center;margin-top:12px;line-height:1.5;}
-#mk-paying{--mkp-a:var(--c-acc,212,175,55);position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .3s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-paying.on{opacity:1;}.mkp-logo{position:relative;width:128px;height:128px;margin-bottom:26px;}.mkp-m{position:absolute;inset:0;-webkit-mask:url(/img/logo-emblema.png) center/contain no-repeat;mask:url(/img/logo-emblema.png) center/contain no-repeat;overflow:hidden;}.mkp-base{background:rgba(255,255,255,.16);}.mkp-w{position:absolute;left:-100%;width:300%;aspect-ratio:1;border-radius:41%;background:#fff;top:calc((1 - var(--lv,0)) * 100% - 3%);animation:mkpSpin 3.2s linear infinite;}.mkp-w.b{opacity:.45;border-radius:38%;top:calc((1 - var(--lv,0)) * 100% - 7%);animation-duration:4.6s;animation-direction:reverse;}@keyframes mkpSpin{to{transform:rotate(360deg);}}.mkp-t{color:#f4f1ea;font-size:1rem;font-weight:600;letter-spacing:.2px;}.mkp-s{color:rgba(244,241,234,.5);font-size:.8rem;margin-top:6px;}:root[data-theme="light"] #mk-paying{background:rgba(247,245,240,.92);}:root[data-theme="light"] .mkp-base{background:rgba(0,0,0,.14);}:root[data-theme="light"] .mkp-w{background:#151309;}:root[data-theme="light"] .mkp-t{color:#151309;}:root[data-theme="light"] .mkp-s{color:rgba(21,19,9,.5);}
+#mk-paying{--mkp-a:var(--c-acc,212,175,55);position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .3s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-paying.on{opacity:1;}.mkp-logo{position:relative;width:128px;height:128px;margin-bottom:26px;}.mkp-m{position:absolute;inset:0;-webkit-mask:url(/img/logo-emblema.png) center/contain no-repeat;mask:url(/img/logo-emblema.png) center/contain no-repeat;overflow:hidden;}.mkp-base{background:rgba(255,255,255,.16);}.mkp-w{position:absolute;left:-100%;width:300%;aspect-ratio:1;border-radius:41%;background:#fff;top:calc((1 - var(--lv,0)) * 100% - 3%);animation:mkpSpin 3.2s linear infinite;}.mkp-w.b{opacity:.45;border-radius:38%;top:calc((1 - var(--lv,0)) * 100% - 7%);animation-duration:4.6s;animation-direction:reverse;}@keyframes mkpSpin{to{transform:rotate(360deg);}}.pb-on{position:relative;overflow:hidden;opacity:1 !important;}.pb-st{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .3s,transform .3s;}.pb-st.out{opacity:0;transform:translateY(-10px);}.pb-st.in{opacity:0;transform:translateY(10px);}.pb-sp{flex:none;width:15px;height:15px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;opacity:.8;animation:mkpSpin .7s linear infinite;}.mkp-fade{transition:opacity .45s,transform .45s,filter .45s;opacity:0 !important;transform:scale(.96);filter:blur(4px);pointer-events:none;}.mkp-t{color:#f4f1ea;font-size:1rem;font-weight:600;letter-spacing:.2px;}.mkp-s{color:rgba(244,241,234,.5);font-size:.8rem;margin-top:6px;}:root[data-theme="light"] #mk-paying{background:rgba(247,245,240,.92);}:root[data-theme="light"] .mkp-base{background:rgba(0,0,0,.14);}:root[data-theme="light"] .mkp-w{background:#151309;}:root[data-theme="light"] .mkp-t{color:#151309;}:root[data-theme="light"] .mkp-s{color:rgba(21,19,9,.5);}
 .ck-bk{display:block;width:100%;background:none;border:0;font:.84rem 'Plus Jakarta Sans',sans-serif;color:var(--lg-t2);text-align:center;margin-top:16px;cursor:pointer;}
 .ck-bk:hover{color:var(--lg-tx);}
 .ck-free{border:1px solid var(--lg-ln);border-radius:12px;padding:14px 16px;background:var(--lg-pn);font-size:.84rem;color:var(--lg-t2);margin-top:16px;}
@@ -718,17 +718,36 @@ function _wpEmbed(r, fallback) {
 }
 
 // Pantalla "Procesando tu pago" con el logo llenándose
+// Botón de pagar mientras Whop y el banco aprueban: circulito girando + el paso actual
+function _payBtn(b, on) {
+  if (!b) return;
+  if (!on) { clearInterval(b._pbIv); b._pbIv = null; b.classList.remove('pb-on'); b.style.minHeight = ''; return; }
+  if (b._pbIv) return;
+  var M = ['Conectando de forma segura', 'Verificando tu tarjeta', 'Procesando pago', 'Confirmando con tu banco'], i = 0;
+  var row = function(t) { var d = document.createElement('div'); d.className = 'pb-st'; d.innerHTML = '<span class="pb-sp"></span><span>' + t + '</span>'; return d; };
+  b.style.minHeight = b.offsetHeight + 'px'; b.classList.add('pb-on'); b.innerHTML = ''; b.appendChild(row(M[0]));
+  b._pbIv = setInterval(function() {
+    if (i >= M.length - 1) return; i++;
+    var o = b.firstChild, n = row(M[i]); n.classList.add('in'); if (o) o.classList.add('out'); b.appendChild(n);
+    requestAnimationFrame(function() { requestAnimationFrame(function() { n.classList.remove('in'); }); });
+    setTimeout(function() { if (o && o.parentNode) o.remove(); }, 320);
+  }, 1300);
+}
 function _mkPaying(on) {
+  var fb = document.querySelector('#wp-embed');
   var o = document.getElementById('mk-paying');
   if (on === 'ok') { // pago confirmado: termina de llenarse y se cierra
     if (!o) return; o._tg = 1.12; o._k = 4;
     setTimeout(function() { _mkPaying(false); }, 900); return;
   }
+  if (on === 'now' || !on) { if (fb) fb.classList.remove('mkp-fade'); }
   if (on === 'now') { if (o) { clearInterval(o._iv); o.remove(); } return; }
   if (!on) { if (o) { o.classList.remove('on'); setTimeout(function() { if (o.parentNode && !o.classList.contains('on')) { clearInterval(o._iv); o.remove(); } }, 300); } return; }
   if (!o) {
     o = document.createElement('div'); o.id = 'mk-paying'; o.setAttribute('role', 'status');
     o.innerHTML = '<div class="mkp-logo"><div class="mkp-m mkp-base"></div><div class="mkp-m"><div class="mkp-w b"></div><div class="mkp-w"></div></div></div><div class="mkp-t">Procesando tu pago</div><div class="mkp-s">No cierres esta página</div>';
+    // el formulario de tarjeta se desvanece y entra el logo
+    if (fb && fb.offsetParent) { fb.classList.add('mkp-fade'); o.style.transitionDelay = '.3s'; }
     document.body.appendChild(o);
     // Sube despacio y se acerca al 88% sin llegar; se llena del todo solo cuando el pago se confirma
     o._lv = 0.04; o._tg = 0.88; o._k = 0.15;
@@ -742,8 +761,8 @@ function _mkPaying(on) {
 if (/[?&]vista-pago\b/.test(location.search)) setTimeout(function() { _mkPaying(true); var o = document.getElementById('mk-paying'); if (o) o.onclick = function() { _mkPaying('ok'); }; }, 1200);
 async function _wpConfirm() {
   var go = _el('wp-go');
-  hideMsg(); go.disabled = true; go.textContent = 'Procesando pago...';
-  function fail(t) { _mkPaying(false); go.disabled = false; go.textContent = 'Intentar de nuevo'; showMsg(t, true); }
+  hideMsg(); go.disabled = true; _payBtn(go, true);
+  function fail(t) { _mkPaying(false); _payBtn(go, false); go.disabled = false; go.textContent = 'Intentar de nuevo'; showMsg(t, true); }
   try {
     var t; try { t = await _wpPay.pay.createConfirmationToken({ billingDetails: { email: st.user.email } }); } catch (e1) { console.warn('whop token', e1); try { t = await _wpPay.pay.createConfirmationToken(); } catch (e2) { console.warn('whop token 2', e2); throw e1; } }
     var tok = t && (t.confirmationToken || (t.confirmation_token));

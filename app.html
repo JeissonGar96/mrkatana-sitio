@@ -1053,6 +1053,7 @@ a.snav{text-decoration:none;}
 .atop-b{width:44px !important;height:44px !important;border-radius:12px !important;}
 .mk-ic{width:36px !important;height:36px !important;}
 .mk-ic svg{width:16px;height:16px;}
+.mk-ic.big{width:52px !important;height:52px !important;}.mk-ic.big svg{width:24px;height:24px;}
 .mk-stats{gap:12px !important;margin-bottom:22px !important;}
 .mk-stat{padding:13px 16px !important;border-radius:16px !important;gap:12px !important;}
 .mk-stat .mk-ic{width:40px !important;height:40px !important;}
@@ -4860,7 +4861,7 @@ function rReun() {
     if (upcoming.length) {
       var next = upcoming[0];
       var nd = new Date(next.scheduled_at);
-      html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal.replace(/18/g, '26') + '</div>' +
+      html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal + '</div>' +
         '<div style="flex:1;min-width:0;"><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-count" id="reu-count">—</div>' +
         '<div class="mk-live-sub">' + _mkEsc(next.title || 'Sesión 1-1') + ' · ' + nd.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + nd.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + '</div>' + (next.meet_url ? '' : '<div class="reu-hint" id="reu-hint"></div>') + '</div>' +
         (next.meet_url ? '<a class="mk-btn" data-mtgx="' + _mkEsc(next.id) + '" href="' + _mkEsc(_mkSafeUrl(next.meet_url)) + '" target="_blank" rel="noopener">Entrar</a>' : '<button class="mk-btn" id="reu-join" data-id="' + _mkEsc(next.id) + '" data-t="' + _mkEsc(next.title || 'Sesión 1-1') + '">Entrar a la llamada</button>') +
@@ -4877,7 +4878,7 @@ function rReun() {
         setTimeout(tick, 30000);
       }, 0);
     } else {
-      html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal.replace(/18/g, '26') + '</div><div><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-live-sub" style="margin-top:6px;">Sin sesiones programadas. Escríbele a Jeisson para agendar.</div></div></div>';
+      html += '<div class="mk-card mk-next"><div class="mk-ic big">' + MK_IC.cal + '</div><div><div class="mk-lbl">Próxima sesión 1-1</div><div class="mk-live-sub" style="margin-top:6px;">Sin sesiones programadas. Escríbele a Jeisson para agendar.</div></div></div>';
     }
     // ── TU PLAN 1-1 ──
     // Total = sesiones que trae su plan (3 por defecto); hechas = las que ya pasaron y no fueron canceladas ni faltó

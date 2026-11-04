@@ -1888,6 +1888,15 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .buy-a{display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
 .buy-p{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
 .buy-n{font-size:.8rem;color:var(--c-text2);}
+.lvp{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:10px 12px 10px 16px;border:1px solid var(--c-line);border-radius:12px;}
+.lvp-t{display:flex;flex-direction:column;gap:2px;min-width:0;}.lvp-t span{font-size:.82rem;font-weight:600;color:var(--c-text);}.lvp-t small{font-size:.74rem;color:var(--c-muted);white-space:nowrap;}
+.lvp-bar{flex:1;height:4px;border-radius:2px;background:rgba(var(--c-ov),.08);overflow:hidden;min-width:60px;}.lvp-bar i{display:block;height:100%;background:rgb(var(--c-acc));border-radius:2px;}
+.lvp.low .lvp-t small{color:var(--c-text2);}
+.lvp-add{width:30px;height:30px;flex-shrink:0;border-radius:50%;border:1px solid var(--c-line);background:none;color:var(--c-text);font-size:1.1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lvp-add:hover{border-color:rgb(var(--c-acc));color:rgb(var(--c-acc));}
+.lvp-m .lvp-mt{font-size:1.05rem;font-weight:700;margin-bottom:4px;padding-right:30px;}.lvp-m .lvp-ms{font-size:.82rem;color:var(--c-muted);margin-bottom:16px;}
+.lvp-m .buy-p{justify-content:flex-start;}
+@media (max-width:600px){.lvp{flex-wrap:wrap;gap:10px 12px;}.lvp-t{flex:1;}.lvp-bar{order:3;flex-basis:100%;}}
 @media (max-width:900px){.buy-b{flex-direction:column;align-items:flex-start;}.buy-a,.buy-p{align-items:flex-start;justify-content:flex-start;}}
 #mk-cart-btn .cart-n{position:absolute;top:-4px;right:-4px;background:rgb(var(--c-acc));color:#111;font-size:.6rem;font-weight:700;border-radius:8px;min-width:15px;height:15px;padding:0 3px;display:flex;align-items:center;justify-content:center;}
 .st-r .aj2-v{flex:1;}
@@ -4387,8 +4396,7 @@ function rSes() {
       var liveF = function(p) { return p.duration_live_months || p.variants.some(function(v) { return v.duration_live_months; }); };
       if (!le) _buyBanner('sesiones', liveF, 'Aún no tienes plan de en vivo', 'Agrega un plan para entrar a los en vivo diarios de análisis y operativa.');
       else if (le < now) _buyBanner('sesiones', liveF, 'Tu plan de en vivo venció el ' + fd(le), 'Renuévalo para volver a entrar a los en vivo.');
-      else if (le - now < 7 * 864e5) _buyBanner('sesiones', liveF, 'Tu plan de en vivo vence el ' + fd(le), 'Renuévalo ahora y el tiempo se suma a tu fecha actual.');
-      else _buyBanner('sesiones', liveF, 'Tu plan de en vivo está activo hasta el ' + fd(le), 'Si quieres sumar más meses, el tiempo se agrega a tu fecha actual.');
+      else _lvPlanBar(le, liveF, fd);
     }
     // Viene del botón "Unirme" del Dashboard: entra directo a la llamada
     if (_lvAutoJoin) { var aj = _lvAutoJoin; _lvAutoJoin = null; setTimeout(function(){ _lvJoinRoom(aj.id, aj.title); }, 0); }
@@ -5818,6 +5826,26 @@ function _buyBanner(section, filter, title, sub, waText) {
     m.insertBefore(d, m.firstChild);
     _storeBind(d);
   });
+}
+// Barra fina con los días que le quedan al plan de en vivo + botón para sumar más tiempo
+function _lvPlanBar(le, liveF, fd) {
+  var m = document.getElementById('amain'); if (!m || m.querySelector('.lvp')) return;
+  var left = Math.max(0, Math.ceil((le - new Date()) / 864e5)), pct = Math.max(3, Math.min(100, Math.round(left / 31 * 100)));
+  var d = document.createElement('div'); d.className = 'lvp' + (left <= 7 ? ' low' : '');
+  d.innerHTML = '<div class="lvp-t"><span>Tu plan de en vivo</span><small>Te quedan ' + left + ' día' + (left === 1 ? '' : 's') + ' · vence el ' + fd(le) + '</small></div>' +
+    '<div class="lvp-bar"><i style="width:' + pct + '%"></i></div><button class="lvp-add" title="Sumar más tiempo" aria-label="Sumar más tiempo">+</button>';
+  m.insertBefore(d, m.firstChild);
+  d.querySelector('.lvp-add').onclick = function() {
+    _storeLoad(function(st) {
+      var ps = st.filter(liveF); if (!ps.length) return tst('No hay planes disponibles ahora', 1);
+      var md = document.createElement('div'); md.className = 'mk-modal';
+      md.innerHTML = '<div class="mk-modal-box lvp-m" role="dialog" aria-modal="true"><button class="mk-modal-x" aria-label="Cerrar">×</button>' +
+        '<div class="lvp-mt">Sumar más tiempo</div><div class="lvp-ms">El tiempo nuevo se agrega después del ' + fd(le) + '.</div>' +
+        ps.map(function(p) { return '<div class="buy-p">' + (ps.length > 1 ? '<span class="buy-n">' + _mkEsc(p.name) + '</span>' : '') + _storePick(p, 'gold') + '</div>'; }).join('') + '</div>';
+      md.addEventListener('click', function(e) { if (e.target === md || e.target.classList.contains('mk-modal-x') || e.target.dataset.add) setTimeout(function() { md.remove(); }, 0); });
+      document.body.appendChild(md); _storeBind(md);
+    });
+  };
 }
 function _isTeam() { return cProfile && (cProfile.role === 'admin' || cProfile.role === 'staff'); }
 

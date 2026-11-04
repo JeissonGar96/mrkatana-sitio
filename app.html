@@ -5555,37 +5555,35 @@ function _cwPay() {
   var b = document.getElementById('cdw-wpb'); if (!b || b.disabled) return;
   b.disabled = true; b.textContent = 'Cargando...';
   var items = _cartGet().map(_storeItem).filter(Boolean), lm = items.some(function(x) { return (x.v && x.v.duration_live_months) || x.p.duration_live_months; });
-  var errMsg = { need_tv_user: 'Agrega tu usuario de TradingView en Ajustes, Conexiones.', pick_variant: 'Elige una opción para cada producto.', not_in_store: 'Uno de los productos ya no está disponible.' };
+  var total = items.reduce(function(a, x) { return a + x.price; }, 0);
   var NA = 'No se pudo abrir el pago con tarjeta. Prueba con PayPal.';
   var reset = function(m) { b.disabled = false; b.textContent = 'Pagar con tarjeta'; if (m) tst(m, 1); };
-  _cwCall({ action: 'whop_create', embed: true, items: _cartGet(), renew: lm ? { live: true, kairus: true } : null }).then(function(r) {
-    if (r.error) return reset(errMsg[r.error] || NA);
-    if (!r.account) return reset(NA);
-    var mount = function() {
-      try {
-        var W = window.WhopElements({ locale: 'es' }), dark = document.documentElement.getAttribute('data-theme') !== 'light';
-        var opts = { accountId: r.account, currency: 'usd', amount: Math.round(Number(r.total) * 100), setupFutureUsage: 'off_session',
-          paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
-          returnUrl: location.origin + '/app?whop=1&order=' + r.order, locale: 'es', appearance: { theme: { appearance: dark ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
-        var pay; try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
-        _cw = { W: W, pay: pay, order: r.order, total: r.total };
-        document.getElementById('cdw-b').innerHTML = '<div id="cdw-card" class="cdw-card"></div><div id="cdw-brand" class="cdw-brand"></div>';
-        document.getElementById('cdw-m').style.display = 'none';
-        var g = document.getElementById('cdw-wgo'); g.style.display = '';
-        g.innerHTML = '<button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Pagar ' + _money(r.total) + ' USD</button><a class="cdw-back" onclick="_cartOpen()">← Elegir otro método de pago</a>';
-        pay.create('payment', { onChange: function(ev) { var x = document.getElementById('cdw-go'); if (x) x.disabled = !(ev && ev.complete); } }).mount('#cdw-card');
-        pay.create('branding').mount('#cdw-brand');
-        document.getElementById('cdw-go').onclick = _cwConfirm;
-      } catch (e) { reset(NA); }
-    };
-    if (window.WhopElements) return mount();
-    var pre = document.querySelector('script[data-whop-elements]');
-    if (pre) { var n = 0, iv = setInterval(function() { if (window.WhopElements) { clearInterval(iv); mount(); } else if (++n > 80) { clearInterval(iv); reset(NA); } }, 100); return; }
-    var sc = document.createElement('script'); sc.src = 'https://cdn.whop.com/elements/amber/elements.js'; sc.setAttribute('data-whop-elements', '');
-    sc.onload = function() { window.WhopElements ? mount() : reset(NA); };
-    sc.onerror = function() { reset(NA); };
-    document.head.appendChild(sc);
-  }).catch(function() { reset('Error de conexión. Intenta de nuevo.'); });
+  // La orden se prepara por detrás mientras aparece el formulario; se espera recién al pagar
+  var ord = _cwCall({ action: 'whop_create', embed: true, items: _cartGet(), renew: lm ? { live: true, kairus: true } : null });
+  var mount = function() {
+    try {
+      var W = window.WhopElements({ locale: 'es' }), dark = document.documentElement.getAttribute('data-theme') !== 'light';
+      var opts = { accountId: 'biz_7IQpwkgU5mdr5I', currency: 'usd', amount: Math.round(total * 100), setupFutureUsage: 'off_session',
+        paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
+        returnUrl: location.origin + '/app?whop=1', locale: 'es', appearance: { theme: { appearance: dark ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
+      var pay; try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
+      _cw = { W: W, pay: pay, ord: ord, total: total };
+      document.getElementById('cdw-b').innerHTML = '<div id="cdw-card" class="cdw-card"></div><div id="cdw-brand" class="cdw-brand"></div>';
+      document.getElementById('cdw-m').style.display = 'none';
+      var g = document.getElementById('cdw-wgo'); g.style.display = '';
+      g.innerHTML = '<button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Pagar ' + _money(total) + ' USD</button><a class="cdw-back" onclick="_cartOpen()">← Elegir otro método de pago</a>';
+      pay.create('payment', { onChange: function(ev) { var x = document.getElementById('cdw-go'); if (x) x.disabled = !(ev && ev.complete); } }).mount('#cdw-card');
+      pay.create('branding').mount('#cdw-brand');
+      document.getElementById('cdw-go').onclick = _cwConfirm;
+    } catch (e) { reset(NA); }
+  };
+  if (window.WhopElements) return mount();
+  var pre = document.querySelector('script[data-whop-elements]');
+  if (pre) { var n = 0, iv = setInterval(function() { if (window.WhopElements) { clearInterval(iv); mount(); } else if (++n > 80) { clearInterval(iv); reset(NA); } }, 100); return; }
+  var sc = document.createElement('script'); sc.src = 'https://cdn.whop.com/elements/amber/elements.js'; sc.setAttribute('data-whop-elements', '');
+  sc.onload = function() { window.WhopElements ? mount() : reset(NA); };
+  sc.onerror = function() { reset(NA); };
+  document.head.appendChild(sc);
 }
 async function _cwConfirm() {
   var go = document.getElementById('cdw-go'); if (!go || !_cw) return;
@@ -5595,6 +5593,12 @@ async function _cwConfirm() {
     var t; try { t = await _cw.pay.createConfirmationToken({ billingDetails: { email: cUser.email } }); } catch (e1) { console.warn('whop token', e1); try { t = await _cw.pay.createConfirmationToken(); } catch (e2) { console.warn('whop token 2', e2); throw e1; } }
     var tok = t && (t.confirmationToken || t.confirmation_token);
     if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
+    if (!_cw.order) {
+      var o = await _cw.ord.catch(function() { return { error: 'net' }; });
+      var errMsg = { need_tv_user: 'Agrega tu usuario de TradingView en Ajustes, Conexiones.', pick_variant: 'Elige una opción para cada producto.', not_in_store: 'Uno de los productos ya no está disponible.', net: 'Error de conexión. Intenta de nuevo.' };
+      if (!o || o.error || !o.order) return fail(errMsg[o && o.error] || 'No se pudo preparar tu orden. Prueba con PayPal.');
+      _cw.order = o.order;
+    }
     var r = await _cwCall({ action: 'whop_pay', order: _cw.order, token: typeof tok === 'string' ? tok : tok.id });
     if (r.error) return fail('No se pudo cobrar la tarjeta. Prueba otra tarjeta o usa PayPal.');
     if (r.client_secret && !/paid|succeeded/.test(String(r.status || ''))) {

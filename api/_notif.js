@@ -102,7 +102,7 @@ async function pushPending(sb) {
 async function mtgSoon(sb) {
   const now = Date.now();
   const r = await sb.from('meetings_1on1').select('id, student_id, scheduled_at, status, created_at')
-    .gt('scheduled_at', new Date(now).toISOString()).lte('scheduled_at', new Date(now + 24 * 3600e3).toISOString());
+    .gt('scheduled_at', new Date(now).toISOString()).lte('scheduled_at', ymd(now + 24 * 3600e3, EC) + 'T23:59:59-05:00'); // hasta el fin de mañana (hora Ecuador)
   return add(sb, (r.data || []).filter(m => m.student_id && m.status !== 'cancelled' && new Date(m.created_at).getTime() < now - 2 * 3600e3).map(m => ({
     user_id: m.student_id, kind: 'mtg', link: 'reuniones', data: { at: m.scheduled_at, mtg: m.id },
     title: ymd(new Date(m.scheduled_at).getTime(), EC) === ymd(now, EC) ? 'Tu reunión 1-1 es hoy' : 'Tu reunión 1-1 es mañana',
@@ -169,9 +169,12 @@ async function journal(sb) {
   ]);
   const mins = {}; (tr.data || []).forEach(t => { mins[t.user_id] = (mins[t.user_id] || 0) + (new Date(t.close_time) - new Date(t.open_time)) / 60000; });
   const nt = {}; (jd.data || []).forEach(j => { if (j.no_trade) nt[j.user_id] = 1; });
-  return add(sb, users.filter(u => !(mins[u] >= 5) && !nt[u]).map(u => ({
+  // Quien no lo llenó: recordatorio. Quien sí: felicitación.
+  return add(sb, users.map(u => (mins[u] >= 5 || nt[u]) ? {
+    user_id: u, kind: 'journal', link: 'journal', dedupe: 'jok:' + u + ':' + day, title: '¡Journal de hoy completo!',
+    body: mins[u] >= 5 ? 'Registraste tu día de trading. Sigue así para subir en el ranking.' : 'Marcaste "No operé" y cuidaste tu racha. Bien hecho.' } : {
     user_id: u, kind: 'journal', link: 'journal', dedupe: 'jr:' + u + ':' + day, title: '¿Operaste hoy?',
-    body: 'Registra tu trade o marca "No operé" antes de medianoche para no perder tu punto del ranking.' })));
+    body: 'Registra tu trade o marca "No operé" antes de medianoche para no perder tu punto del ranking.' }));
 }
 
 // Ranking: una vez al día (desde las 8 am Ecuador). Avisa si subiste de puesto y el cierre del mes.
@@ -205,7 +208,8 @@ async function run(req) {
   if (q.push === '1') return pushPending(sb);
   // Freno: una vuelta cada 3 minutos como máximo (en memoria, sin escribir en la base de datos:
   // escrituras periódicas gastan el "Disk IO budget" de Supabase)
-  if (Date.now() - lastTick < 170e3) return { ok: true, skipped: true };
+  const cron = !!process.env.CRON_SECRET && (req.headers || {}).authorization === 'Bearer ' + process.env.CRON_SECRET;
+  if (!cron && Date.now() - lastTick < 170e3) return { ok: true, skipped: true };
   lastTick = Date.now();
   const host = (req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
   const origin = host ? 'https://' + host : SITE;

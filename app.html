@@ -11620,8 +11620,9 @@ function _resetActivity() { _lastActivity = Date.now(); }
 });
 
 function _checkInactivityAndMembership() {
-  // 1. Inactividad
-  if (Date.now() - _lastActivity > INACTIVITY_LIMIT) {
+  // 1. Inactividad (solo en computadora: en el celular la sesión queda abierta, como cualquier app)
+  var _esMovil = window.matchMedia('(max-width:900px)').matches || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (!_esMovil && Date.now() - _lastActivity > INACTIVITY_LIMIT) {
     sb.auth.signOut().then(function() {
       window.location.href = '/login';
     });

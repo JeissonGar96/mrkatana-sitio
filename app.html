@@ -5881,7 +5881,7 @@ function _tvState(p) {
 function rTools(detail) {
   pushRoute(detail ? { section: 'herramientas', tool: detail } : { section: 'herramientas' });
   var m = document.getElementById('amain');
-  if (!detail) m.innerHTML = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div><div class="tl-grid" id="tl-grid"></div>';
+  if (!detail) m.innerHTML = '<div class="atit">Herramientas</div><div class="asub" style="margin-bottom:22px;">Recursos para tu trading</div><div class="tl-grid" id="tl-grid">' + [0,1,2].map(function(){ return '<div class="mk-card tl-card mk-skel-card"><div class="mk-skel" style="height:16px;width:55%;margin-bottom:14px;"></div><div class="mk-skel" style="height:11px;width:90%;margin-bottom:8px;"></div><div class="mk-skel" style="height:11px;width:65%;"></div></div>'; }).join('') + '</div>';
   _storeLoad(function(st) { _tvClaimable(function(clm) {
     var inds = st.filter(function(p) { return p.tv_pine_id; });
     if (detail) return _toolDetail(inds.find(function(p) { return p.id === detail; }), clm);

@@ -12,8 +12,8 @@ const F = "font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;";
 // Redes: deja el link vacío para ocultar el ícono
 const REDES = [
   ['ig', 'Instagram', 'https://www.instagram.com/mrkatana.fx'],
-  ['yt', 'YouTube', ''],
-  ['tt', 'TikTok', ''],
+  ['yt', 'YouTube', 'https://www.youtube.com/@MrKatanaFX'],
+  ['tt', 'TikTok', 'https://www.tiktok.com/@mrkatana.fx'],
   ['dc', 'Discord', 'https://discord.com/app'],
   ['wa', 'WhatsApp', 'https://wa.me/593995014247']
 ];

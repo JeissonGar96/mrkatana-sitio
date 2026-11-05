@@ -1436,6 +1436,7 @@ html{scrollbar-width:auto;}
 /* Celular: 100dvh = alto visible real (sin la barra de Chrome), evita el scroll de sobra */
 html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz,1));}
 @media (max-width:900px){html body{min-height:100dvh;}.lg-wrap{min-height:100dvh;}}
+@media (min-width:901px){.lg-wrap{height:calc(100vh - 40px);min-height:0 !important;grid-template-rows:minmax(0,1fr);}.lg-right{min-height:0;overflow-y:auto;scrollbar-width:thin;align-items:flex-start;}.lg-right .lg-card{margin-top:auto;margin-bottom:auto;}.lg-left{min-height:0;overflow:hidden;}.lg-left>*{zoom:var(--lz,1);}}
 @media (max-width:480px){.lg-row2{grid-template-columns:1fr;gap:0;}}
 </style>
 
@@ -1739,17 +1740,21 @@ function _mkThemeCss(cfg) {
 function _lgFit() {
   var w = document.querySelector('.lg-wrap'); if (!w) return;
   w.style.setProperty('--fz', 1);
+  // Ya no se achica todo: el formulario (derecha) tiene scroll; la izquierda se ajusta un poco si no cabe
+  var l = w.querySelector('.lg-left'); if (!l) return;
+  l.style.setProperty('--lz', 1);
   if (window.innerWidth <= 900) return;
-  var need = 40;
-  [].forEach.call(w.children, function(c) { if (c.offsetParent !== null) need = Math.max(need, c.scrollHeight + 40); });
-  var z = Math.max(.64, Math.min(1, (window.innerHeight - 46) / (need - 40)));
-  if (z < .985) w.style.setProperty("--fz", z.toFixed(3));
+  var z = 1;
+  for (var k = 0; k < 3 && l.scrollHeight > l.clientHeight + 1; k++) {
+    z = Math.max(.55, z * l.clientHeight / l.scrollHeight);
+    l.style.setProperty('--lz', z.toFixed(3));
+  }
 }
 function _lgFitInit() {
   var w = document.querySelector('.lg-wrap'); if (!w) return;
   var t = 0, run = function() { cancelAnimationFrame(t); t = requestAnimationFrame(_lgFit); };
   window.addEventListener('resize', run);
-  new MutationObserver(function(ms) { if (ms.some(function(m) { return m.target !== w; })) run(); })
+  new MutationObserver(function(ms) { if (ms.some(function(m) { return m.target !== w && !(m.type === 'attributes' && m.target.classList.contains('lg-left')); })) run(); })
     .observe(w, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] });
   new MutationObserver(run).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);

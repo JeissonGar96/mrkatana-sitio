@@ -554,18 +554,17 @@ async function doReg() {
   if (st.user && st.user.email === e && !st.session) return go(3);
 
   var btn = _el('btn-reg');
-  btn.disabled = true; btn.textContent = 'Verificando...';
+  btn.disabled = true; _payBtn(btn, ['Verificando tus datos', 'Creando tu cuenta', 'Preparando tu pago']);
   var ex = await sb.rpc('check_email_exists', { p_email: e });
   if (!ex.error && ex.data === true) {
-    btn.disabled = false; btn.textContent = 'Continuar al pago';
+    _payBtn(btn, false); btn.disabled = false; btn.textContent = 'Continuar al pago';
     setMode('in'); _el('li-e').value = e;
     return showMsg('Ya tienes una cuenta con este correo. Inicia sesión para continuar con tu compra.', true);
   }
-  btn.textContent = 'Creando tu cuenta...';
   var reg = await sb.auth.signUp({ email: e, password: p, options: { captchaToken: _capToken || undefined, data: {
     full_name: n, first_name: fn, last_name: lnm, marketing_opt_in: !!_el('rg-mk').checked, date_of_birth: st.prof.dob, age: age,
     country: cty, phone_prefix: pp, phone: ph, terms_accepted_at: new Date().toISOString() }, emailRedirectTo: location.origin + '/app' } });
-  btn.disabled = false; btn.textContent = 'Continuar al pago';
+  _payBtn(btn, false); btn.disabled = false; btn.textContent = 'Continuar al pago';
   _capReset();
   if (reg.error) return showMsg(reg.error.message.indexOf('already') >= 0 ? 'Este correo ya tiene cuenta. Inicia sesión para continuar.' : 'No se pudo crear la cuenta: ' + reg.error.message, true);
   var u = reg.data && reg.data.user;
@@ -584,10 +583,10 @@ async function doIn() {
   if (!e || !p) return showMsg('Ingresa tu correo y contraseña.', true);
   if (_liCapWait()) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
   var btn = _el('btn-in');
-  btn.disabled = true; btn.textContent = 'Entrando...';
+  btn.disabled = true; _payBtn(btn, ['Verificando tus datos', 'Entrando a tu cuenta', 'Preparando tu pago']);
   var r = await sb.auth.signInWithPassword({ email: e, password: p, options: { captchaToken: _liToken || undefined } });
   _liCapReset();
-  btn.disabled = false; btn.textContent = 'Iniciar sesión y continuar';
+  _payBtn(btn, false); btn.disabled = false; btn.textContent = 'Iniciar sesión y continuar';
   if (r.error) {
     var m = r.error.message || '';
     return showMsg(m.indexOf('not confirmed') >= 0 ? 'Primero confirma tu correo con el enlace que te enviamos y vuelve a intentarlo.' :
@@ -781,7 +780,7 @@ function _payBtn(b, on) {
   if (!b) return;
   if (!on) { clearInterval(b._pbIv); b._pbIv = null; b.classList.remove('pb-on'); b.style.minHeight = ''; return; }
   if (b._pbIv) return;
-  var M = ['Conectando de forma segura', 'Verificando tu tarjeta', 'Procesando pago', 'Confirmando con tu banco'], i = 0;
+  var M = Array.isArray(on) ? on : ['Conectando de forma segura', 'Verificando tu tarjeta', 'Procesando pago', 'Confirmando con tu banco'], i = 0;
   var row = function(t) { var d = document.createElement('div'); d.className = 'pb-st'; d.innerHTML = '<span class="pb-sp"></span><span>' + t + '</span>'; return d; };
   b.style.minHeight = b.offsetHeight + 'px'; b.classList.add('pb-on'); b.innerHTML = ''; b.appendChild(row(M[0]));
   b._pbIv = setInterval(function() {

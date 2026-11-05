@@ -1437,6 +1437,12 @@ html{scrollbar-width:auto;}
 html body{min-height:100dvh;}.lg-wrap{min-height:calc((100dvh - 40px) / var(--fz,1));}
 @media (max-width:900px){html body{min-height:100dvh;}.lg-wrap{min-height:100dvh;}}
 @media (min-width:901px){.lg-wrap{height:calc(100vh - 40px);min-height:0 !important;grid-template-rows:minmax(0,1fr);}.lg-right{min-height:0;overflow-y:auto;scrollbar-width:thin;align-items:flex-start;}.lg-right .lg-card{margin-top:auto;margin-bottom:auto;}.lg-left{min-height:0;overflow:hidden;}.lg-left>*{zoom:var(--lz,1);}}
+.pb-on{position:relative;overflow:hidden;opacity:1 !important;}
+.pb-st{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .3s,transform .3s;}
+.pb-st.out{opacity:0;transform:translateY(-10px);}
+.pb-st.in{opacity:0;transform:translateY(10px);}
+.pb-sp{flex:none;width:15px;height:15px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;opacity:.8;animation:pbSpin .7s linear infinite;}
+@keyframes pbSpin{to{transform:rotate(360deg);}}
 @media (max-width:480px){.lg-row2{grid-template-columns:1fr;gap:0;}}
 </style>
 
@@ -1556,13 +1562,30 @@ function switchTab(t) {
   hideMsg();
 }
 
+// Botón ocupado: circulito girando + el paso actual (igual que el botón de pagar)
+function _busyBtn(b, M, txt) {
+  if (!b) return;
+  if (!M) { clearInterval(b._pbIv); b._pbIv = null; b.classList.remove('pb-on'); b.style.minHeight = ''; b.disabled = false; b.textContent = txt; return; }
+  if (b._pbIv) return;
+  var i = 0, row = function(t) { var d = document.createElement('div'); d.className = 'pb-st'; d.innerHTML = '<span class="pb-sp"></span><span>' + t + '</span>'; return d; };
+  b.disabled = true; b.style.minHeight = b.offsetHeight + 'px'; b.classList.add('pb-on'); b.innerHTML = ''; b.appendChild(row(M[0]));
+  b._pbIv = setInterval(function() {
+    if (i >= M.length - 1) return; i++;
+    var o = b.firstChild, n = row(M[i]); n.classList.add('in'); if (o) o.classList.add('out'); b.appendChild(n);
+    requestAnimationFrame(function() { requestAnimationFrame(function() { n.classList.remove('in'); }); });
+    setTimeout(function() { if (o && o.parentNode) o.remove(); }, 320);
+  }, 1300);
+}
+var BUSY_IN = ['Verificando tus datos', 'Entrando a tu cuenta', 'Preparando tu panel'];
+var BUSY_REG = ['Verificando tus datos', 'Creando tu cuenta', 'Enviando tu correo'];
+
 function doLogin() {
   var e = document.getElementById('li-e').value.trim();
   var p = document.getElementById('li-p').value;
   if (!e || !p) return showMsg('Completa todos los campos.', true);
   if (_liCapWait()) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
   var btn = document.getElementById('btn-in');
-  btn.disabled = true; btn.textContent = 'Entrando...';
+  _busyBtn(btn, BUSY_IN);
   sb.auth.signInWithPassword({ email: e, password: p, options: { captchaToken: _liToken || undefined } }).then(function(r) {
     _liCapReset();
     if (r.error) {
@@ -1593,7 +1616,7 @@ function doLogin() {
       } else {
         showMsg(errMsg, true);
       }
-      btn.disabled = false; btn.textContent = 'Iniciar sesión';
+      _busyBtn(btn, null, 'Iniciar sesión');
     } else if (r.data && r.data.user) {
       window.location.href = _lgDest() === '/app' ? '/app/dash' : _lgDest();
     }
@@ -1637,19 +1660,18 @@ async function doRegContinue() {
   if (TS_SITEKEY && !_capToken) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
 
   var btn = document.getElementById('btn-reg-continue');
-  btn.disabled = true; btn.textContent = 'Verificando...';
+  _busyBtn(btn, BUSY_REG);
 
   // Verificar email via RPC sin crear cuenta
   var checkEmail = await sb.rpc('check_email_exists', { p_email: e });
   if (!checkEmail.error && checkEmail.data === true) {
-    btn.disabled = false; btn.textContent = 'Crear cuenta gratis';
+    _busyBtn(btn, null, 'Crear cuenta gratis');
     showMsg('Este email ya está registrado. Inicia sesión con tu cuenta.', true);
     return;
   }
 
-  btn.textContent = 'Creando cuenta...';
   var reg = await sb.auth.signUp({ email: e, password: p, options: { captchaToken: _capToken || undefined, data: { full_name: n, first_name: fn, last_name: lnm, marketing_opt_in: !!document.getElementById('rg-mk').checked, date_of_birth: dy + '-' + dm + '-' + dd, age: age, country: cty, phone_prefix: pp, phone: ph, terms_accepted_at: new Date().toISOString() }, emailRedirectTo: location.origin + '/app' } });
-  btn.disabled = false; btn.textContent = 'Crear cuenta gratis';
+  _busyBtn(btn, null, 'Crear cuenta gratis');
   _capReset();
   if (reg.error) return showMsg(reg.error.message.indexOf('already') >= 0 ? 'Este email ya está registrado. Inicia sesión con tu cuenta.' : 'No se pudo crear la cuenta: ' + reg.error.message, true);
   if (reg.data && reg.data.session) { window.location.href = _lgDest(); return; }

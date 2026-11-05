@@ -12,6 +12,7 @@
 // el cobro sin la persona presente.
 
 const SITE = 'https://www.mrkatanafx.com';
+const M = require('./_mail');
 const PRICES = { live: 100, kairus: 75 };
 const MAX_FAILS = 3;
 
@@ -23,8 +24,7 @@ async function mail(to, subject, html) {
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ from: 'Mr Katana FX <noreply@mrkatanafx.com>', to: [to], subject,
-      html: '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#222;line-height:1.55">' + html +
-        '<p style="color:#888;font-size:12px;margin-top:22px">Puedes apagar la renovación automática o quitar tu tarjeta en Ajustes, Membresía y pagos.</p></div>' })
+      html })
   }).catch(() => null);
   return !!(r && r.ok);
 }
@@ -105,9 +105,10 @@ async function cron(h, req, res) {
     // 1. Aviso 5 días antes (una vez por fecha de cobro)
     const daysTo = (nx - now) / 864e5;
     if (daysTo > 0 && daysTo <= 5 && String(a.reminded_for || '') !== String(a.next_charge_at)) {
-      const ok = await mail(p.email, 'Tu renovación es el ' + fdate(nx),
-        '<p>' + name + ', el <b>' + fdate(nx) + '</b> se renuevan ' + what + ' por <b>$' + amt + ' USD</b> con tu tarjeta guardada.</p>' +
-        '<p>No tienes que hacer nada. Si prefieres no renovar, apágalo antes de esa fecha.</p>' + btn('Ver mi membresía', SITE + '/app/perfil'));
+      const ok = await mail(p.email, 'Tu renovación es el ' + fdate(nx), M.page({ art: 'ren', eyebrow: 'Tu membresía', title: 'Tu renovación es el<br>' + fdate(nx), sub: 'No tienes que hacer nada.',
+        body: M.p(name + ', se renuevan ' + what + ' con tu tarjeta guardada:') + M.box([['Servicio', a.live && a.kairus ? 'En vivo y Kairus' : 'Clases en vivo'], ['Fecha', fdate(nx)], ['Monto', '$' + amt + ' USD']]) +
+          M.p('Si prefieres no renovar, apágalo antes de esa fecha en Ajustes, Membresía y pagos.'),
+        cta: 'Ver mi membresía', url: SITE + '/app/perfil' }));
       if (ok) { out.reminded++; await sb.from('auto_renew').update({ reminded_for: a.next_charge_at }).eq('user_id', a.user_id); }
       await require('./_notif').add(sb, { user_id: a.user_id, kind: 'pay', link: 'perfil', dedupe: 'rnr:' + a.user_id + ':' + a.next_charge_at,
         title: 'Tu renovación es el ' + fdate(nx), body: 'Se cobran $' + amt + ' USD con tu tarjeta guardada. Puedes apagarla en Ajustes.' }).catch(() => {});
@@ -129,10 +130,11 @@ async function cron(h, req, res) {
     await require('./_notif').add(sb, { user_id: a.user_id, kind: 'pay', link: 'perfil', dedupe: 'rnf:' + a.user_id + ':' + a.next_charge_at + ':' + fc,
       title: off ? 'No pudimos renovar tu plan' : 'No pudimos cobrar tu renovación',
       body: off ? 'Apagamos la renovación automática. Puedes renovar cuando quieras.' : 'Lo intentaremos de nuevo en 2 días. Puedes cambiar tu tarjeta en Ajustes.' }).catch(() => {});
-    await mail(p.email, off ? 'No pudimos renovar tu plan' : 'No pudimos cobrar tu renovación',
-      '<p>' + name + ', intentamos cobrar <b>$' + amt + ' USD</b> para renovar ' + what + ', pero tu banco no lo aprobó.</p>' +
-      (off ? '<p>Apagamos la renovación automática. Puedes renovar cuando quieras desde tu panel.</p>' : '<p>Lo intentaremos de nuevo en 2 días. Si quieres, puedes renovar ahora con otra tarjeta desde tu panel.</p>') +
-      btn('Renovar desde mi panel', SITE + '/app/sesiones'));
+    await mail(p.email, off ? 'No pudimos renovar tu plan' : 'No pudimos cobrar tu renovación', M.page({ art: 'renf', eyebrow: 'Tu membresía',
+      title: off ? 'No pudimos renovar<br>tu plan' : 'No pudimos cobrar<br>tu renovación', sub: 'Tu banco no aprobó el pago.',
+      body: M.p(name + ', intentamos cobrar ' + M.b('$' + amt + ' USD') + ' para renovar ' + what + ', pero tu banco no lo aprobó.') +
+        M.p(off ? 'Apagamos la renovación automática. Puedes renovar cuando quieras desde tu panel.' : 'Lo intentaremos de nuevo en 2 días. Si quieres, puedes renovar ahora con otra tarjeta desde tu panel.'),
+      cta: 'Renovar desde mi panel', url: SITE + '/app/sesiones', note: off ? '' : 'Después de 3 intentos se apaga la renovación automática.' }));
   }
   // Cuotas de los planes de pago (api/_payplan.js)
   try { Object.assign(out, await require('./_payplan').cron(h)); } catch (e) { out.pp_error = String(e.message || e).slice(0, 200); }

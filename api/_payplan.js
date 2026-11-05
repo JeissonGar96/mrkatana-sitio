@@ -10,6 +10,7 @@
 
 const crypto = require('crypto');
 const SITE = 'https://www.mrkatanafx.com';
+const M = require('./_mail');
 const MAX_FAILS = 3;
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -22,7 +23,7 @@ async function mail(to, subject, html) {
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ from: 'Mr Katana FX <noreply@mrkatanafx.com>', to: [to], subject,
-      html: '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#222;line-height:1.55">' + html + '</div>' })
+      html })
   }).catch(() => null);
   return !!(r && r.ok);
 }
@@ -243,9 +244,11 @@ async function cron(h) {
     // Aviso 5 días antes
     const daysTo = (nx - now) / 864e5;
     if (daysTo > 0 && daysTo <= 5 && String(pp.reminded_for || '') !== String(pp.next_due)) {
-      const ok = await mail(p.email, 'Tu cuota ' + n + ' de ' + N + ' es el ' + fdate(nx),
-        '<p>' + name + ', el <b>' + fdate(nx) + '</b> se cobra la cuota ' + n + ' de ' + N + ' de ' + prog + ' por <b>' + money(it.amount) + ' USD</b> con tu tarjeta guardada.</p>' +
-        '<p>No tienes que hacer nada. Si quieres usar otra tarjeta, cámbiala en Ajustes, Membresía y pagos.</p>' + btn('Ver mi membresía', SITE + '/app/perfil'));
+      const ok = await mail(p.email, 'Tu cuota ' + n + ' de ' + N + ' es el ' + fdate(nx), M.page({ art: 'cuo', eyebrow: 'Tu plan de pago',
+        title: 'Tu cuota ' + n + ' de ' + N + ' es el<br>' + fdate(nx), sub: 'Se cobra sola con tu tarjeta guardada.',
+        body: M.p(name + ', este es el detalle de tu próxima cuota:') + M.box([['Programa', prog], ['Cuota', n + ' de ' + N], ['Fecha', fdate(nx)], ['Monto', money(it.amount) + ' USD']]) +
+          M.p('No tienes que hacer nada. Si quieres usar otra tarjeta, cámbiala en Ajustes, Membresía y pagos.'),
+        cta: 'Ver mi membresía', url: SITE + '/app/perfil' }));
       if (ok) { out.pp_reminded++; await sb.from('pay_plans').update({ reminded_for: pp.next_due }).eq('id', pp.id); }
       await require('./_notif').add(sb, { user_id: pp.user_id, kind: 'pay', link: 'perfil', dedupe: 'ppr:' + pp.id + ':' + n,
         title: 'Tu cuota ' + n + ' de ' + N + ' es el ' + fdate(nx), body: 'Se cobran ' + money(it.amount) + ' USD con tu tarjeta guardada.' }).catch(() => {});
@@ -263,10 +266,11 @@ async function cron(h) {
     await sb.from('pay_plans').update({ fail_count: fc, last_error: r.error, status: late ? 'late' : 'active', updated_at: now.toISOString() }).eq('id', pp.id);
     await require('./_notif').add(sb, { user_id: pp.user_id, kind: 'pay', link: 'perfil', dedupe: 'ppf:' + pp.id + ':' + n + ':' + fc,
       title: 'No pudimos cobrar tu cuota ' + n + ' de ' + N, body: late ? 'Escríbenos por WhatsApp para ponernos al día.' : 'Lo intentaremos de nuevo en 2 días. Puedes cambiar tu tarjeta en Ajustes.' }).catch(() => {});
-    await mail(p.email, 'No pudimos cobrar tu cuota ' + n + ' de ' + N,
-      '<p>' + name + ', intentamos cobrar <b>' + money(it.amount) + ' USD</b> (cuota ' + n + ' de ' + N + ' de ' + prog + '), pero tu banco no lo aprobó.</p>' +
-      (late ? '<p>Escríbenos por WhatsApp para ponernos al día con tu plan de pago.</p>' : '<p>Lo intentaremos de nuevo en 2 días. Si quieres usar otra tarjeta, cámbiala en Ajustes, Membresía y pagos.</p>') +
-      btn('Ver mi membresía', SITE + '/app/perfil'));
+    await mail(p.email, 'No pudimos cobrar tu cuota ' + n + ' de ' + N, M.page({ art: 'cuof', eyebrow: 'Tu plan de pago',
+      title: 'No pudimos cobrar<br>tu cuota ' + n + ' de ' + N, sub: 'Tu banco no aprobó el pago.',
+      body: M.p(name + ', intentamos cobrar ' + M.b(money(it.amount) + ' USD') + ' (cuota ' + n + ' de ' + N + ' de ' + prog + '), pero tu banco no lo aprobó.') +
+        M.p(late ? 'Escríbenos por WhatsApp para ponernos al día con tu plan de pago.' : 'Lo intentaremos de nuevo en 2 días. Si quieres usar otra tarjeta, cámbiala en Ajustes, Membresía y pagos.'),
+      cta: late ? 'Escribir por WhatsApp' : 'Ver mi membresía', url: late ? 'https://wa.me/593995014247' : SITE + '/app/perfil' }));
   }
   return out;
 }

@@ -5247,7 +5247,7 @@ function _ajCommit(k) {
   if (k === 'email') {
     if (!v) return tst('Ingresa un email', 1);
     var okB = document.querySelector('.aj2-b[data-ok]'); if (okB) { if (okB.disabled) return; okB.disabled = true; okB.textContent = 'Enviando...'; }
-    return sb.auth.updateUser({ email: v }, { emailRedirectTo: location.origin + '/app' }).then(function(r) {
+    return sb.auth.updateUser({ email: v }, { emailRedirectTo: location.origin + '/login?correo-cambiado' }).then(function(r) {
       if (r.error) { if (okB) { okB.disabled = false; okB.textContent = 'Guardar'; } return tst(/after \d+ seconds|rate limit/i.test(r.error.message) ? 'Espera un minuto antes de pedir otro correo.' : 'Error: ' + r.error.message, 1); }
       if (r.data && r.data.user) cUser = r.data.user;
       tst('✓ Te enviamos un enlace a ' + v + '. Ábrelo para completar el cambio'); _ajRender();
@@ -6400,7 +6400,7 @@ function savePw() {
 function saveEmail() {
   var email = document.getElementById('pf-email').value.trim();
   if (!email) return tst('Ingresa un email', 1);
-  sb.auth.updateUser({ email: email }, { emailRedirectTo: location.origin + '/app' }).then(function(r) {
+  sb.auth.updateUser({ email: email }, { emailRedirectTo: location.origin + '/login?correo-cambiado' }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Te enviamos un enlace a tu nuevo correo. Ábrelo para completar el cambio');
     document.getElementById('pf-email').value = '';

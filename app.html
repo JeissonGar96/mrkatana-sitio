@@ -7553,6 +7553,14 @@ function _loadPlansCache(cb) {
 function _planById(id) {
   return (window._allPlans || []).find(function(p) { return p.id === id; });
 }
+// Nombre del plan de un alumno para Admin. profiles.plan trae "completo" por defecto aunque no haya comprado
+// clases: si no tiene clases, vale su plan de en vivo (ej. Live Sessions); si no tiene nada, "Sin plan".
+function _planName(s) {
+  if (s.role === 'admin') return 'Administrador';
+  if (s.membership_end) { var pd = _planById(s.plan || ''); return pd ? (pd.label || pd.name) : (s.plan && s.plan !== 'completo' ? s.plan : 'Plan de clases'); }
+  if (s.live_end) { var lp = _planById(s.live_plan || ''); return lp ? (lp.label || lp.name) : 'Live Sessions'; }
+  return 'Sin plan';
+}
 
 // "Ilimitado" se guarda como una fecha muy lejana (no null), para que todas las
 // comparaciones de fecha que ya existen en la app (>) sigan funcionando sin
@@ -7938,10 +7946,10 @@ function _renderStudents(data, showAll) {
     visible.map(function(s) {
       var en = s.membership_end ? new Date(s.membership_end) : null, today = new Date();
       var liveEn = s.live_end ? new Date(s.live_end) : null, liveAct = liveEn && liveEn > today;
-      var pd = _planById(s.plan || ''), plan = s.role === 'admin' ? 'Administrador' : (pd ? (pd.label || pd.name) : (s.plan || 'Sin plan'));
+      var plan = _planName(s);
       // Solo en vivo (sin plan de clases): se muestra el plan de en vivo y su fecha
       var onlyLive = s.role !== 'admin' && !en && liveEn;
-      if (onlyLive) { var lp = _planById(s.live_plan || ''); plan = lp ? (lp.label || lp.name) : 'Live Sessions'; en = liveEn; liveAct = false; }
+      if (onlyLive) { en = liveEn; liveAct = false; }
       var stt = _asState(s);
       var vence = !en ? '—' : (en.getFullYear() >= 2099 ? 'Ilimitado' : _asDate(en));
       return '<div class="as-row" onclick="viewStudentProfile(\'' + s.id + '\')">' +
@@ -8027,7 +8035,7 @@ function viewStudentProfile(id) {
     var today = new Date(), stt = _asState(p), since = p.created_at || p.membership_start;
     var endDate = p.membership_end ? new Date(p.membership_end) : null, active = endDate && endDate > today;
     var liveEnd = p.live_end ? new Date(p.live_end) : null, liveActive = liveEnd && liveEnd > today;
-    var pd = _planById(p.plan || ''), plan = pd ? (pd.label || pd.name) : (p.plan || 'Sin plan');
+    var plan = _planName(p);
     var age = p.age || (p.date_of_birth ? (function() { var b = new Date(p.date_of_birth), a = today.getFullYear() - b.getFullYear(); if (today.getMonth() < b.getMonth() || (today.getMonth() === b.getMonth() && today.getDate() < b.getDate())) a--; return a; })() : null);
     var nm = encodeURIComponent(p.full_name || 'Alumno');
     var phone = p.phone ? (p.phone_prefix || '') + ' ' + p.phone : '';
@@ -8038,7 +8046,7 @@ function viewStudentProfile(id) {
       ['Teléfono', phone ? '<a href="' + wa + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">' + _mkEsc(phone) + '</a>' : '—'],
       ['Discord', p.discord_id ? 'Conectado' : 'No conectado'], ['Alumno desde', since ? _asDate(new Date(since)) : '—']];
     var accesos =
-      _afToggle('stud-clases-toggle', 'Clases', p.plan ? 'Plan actual: ' + _mkEsc(plan) : 'Sin plan asignado', active, 'toggleStudentClases(\'' + p.id + '\',this.checked)') +
+      _afToggle('stud-clases-toggle', 'Clases', p.membership_end ? 'Plan actual: ' + _mkEsc(plan) : 'Sin plan asignado', active, 'toggleStudentClases(\'' + p.id + '\',this.checked)') +
       _afToggle('stud-live-toggle', 'Sesiones en vivo', 'Activar aparte del plan', liveActive, 'toggleStudentLive(\'' + p.id + '\',this.checked)') +
       _afToggle('stud-1on1-toggle', 'Reuniones 1-1', 'Activar aparte del plan', !!p.access_1on1, 'toggleStudent1on1(\'' + p.id + '\',this.checked)') +
       (p.role === 'admin' || !cProfile || cProfile.role !== 'admin' ? '' : _afToggle('stud-staff-toggle', 'Miembro del Staff', 'Acceso al admin según Permisos de Staff', p.role === 'staff', 'toggleStudentStaff(\'' + p.id + '\',this.checked)'));

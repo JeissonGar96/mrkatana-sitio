@@ -76,7 +76,7 @@ async function pushPending(sb) {
     const subs = (await sb.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').in('user_id', uids)).data || [];
     const byU = {}; subs.forEach(s => { (byU[s.user_id] = byU[s.user_id] || []).push(s); });
     await Promise.all(sends.flatMap(({ uid, n }) => (byU[uid] || []).map(s => {
-      const msg = JSON.stringify({ title: n.title, body: n.body || 'Mr Katana FX', url: '/app/' + (n.link === 'journal' ? 'herramientas' : (n.link || '')), tag: n.kind + '-' + n.id });
+      const msg = JSON.stringify({ title: n.title, body: n.body || (n.kind === 'mtg' && n.data && n.data.at ? fecha(n.data.at) + ' con Mr Katana' : 'Mr Katana FX'), url: '/app/' + (n.link === 'journal' ? 'herramientas' : (n.link || '')), tag: n.kind + '-' + n.id });
       return webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, msg, { TTL: 3600 })
         .then(() => { pushed++; })
         .catch(e => { if (e.statusCode === 404 || e.statusCode === 410) return sb.from('push_subscriptions').delete().eq('id', s.id); });

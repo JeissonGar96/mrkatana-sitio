@@ -7,6 +7,7 @@
 const SITE = 'https://www.mrkatanafx.com';
 const IMG = SITE + '/img/correos/';
 const G = '#3B4CF0';
+const BT = '#197ae1'; // mismo azul de los botones de la plataforma
 const F = "font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;";
 
 // Redes: deja el link vacío para ocultar el ícono
@@ -24,14 +25,14 @@ const SERVICE = 'Este es un correo de servicio sobre tu cuenta en Mr Katana FX. 
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 const b = t => '<b style="color:#14161f;">' + t + '</b>';
-const hl = t => '<b style="color:' + G + ';">' + t + '</b>';
+const hl = t => '<b style="color:' + BT + ';">' + t + '</b>';
 const p = (t, center) => '<div style="' + F + 'font-size:13.5px;line-height:22px;color:#3f4250;margin:0 0 12px;' + (center ? 'text-align:center;' : '') + '">' + t + '</div>';
 const h2 = t => '<div style="' + F + 'font-size:18px;line-height:25px;color:#14161f;font-weight:800;text-align:center;margin:6px 0 14px;">' + t + '</div>';
 const icon = (f, w) => '<img src="' + IMG + f + '" width="' + w + '" alt="" style="display:block;margin:0 auto 6px;width:' + w + 'px;height:auto;">';
 const hr = '<div style="height:1px;background:#e9eaf2;margin:20px 0 22px;"></div>';
 function bl(items) {
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">' + items.map(t =>
-    '<tr><td width="22" valign="top"><div style="width:7px;height:7px;border-radius:50%;background:' + G + ';margin-top:7px;"></div></td><td style="' + F + 'font-size:13px;line-height:20px;color:#3f4250;padding:0 0 9px;">' + t + '</td></tr>').join('') + '</table>';
+    '<tr><td width="22" valign="top"><div style="width:7px;height:7px;border-radius:50%;background:' + BT + ';margin-top:7px;"></div></td><td style="' + F + 'font-size:13px;line-height:20px;color:#3f4250;padding:0 0 9px;">' + t + '</td></tr>').join('') + '</table>';
 }
 function box(rows) {
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4fb;border-radius:12px;margin:4px 0 18px;">' + rows.map((r, i) => {
@@ -50,7 +51,7 @@ function page(o) {
     '<tr><td align="center" style="padding:10px 28px 0;' + F + 'font-size:' + (big ? 32 : 28) + 'px;line-height:' + (big ? 38 : 35) + 'px;color:#ffffff;font-weight:800;letter-spacing:-.5px;">' + o.title + '</td></tr>' +
     (o.sub ? '<tr><td align="center" style="padding:12px 40px 4px;' + F + 'font-size:14px;line-height:22px;color:#dfe2ff;">' + o.sub + '</td></tr>' : '<tr><td style="padding:4px;"></td></tr>') +
     '</table>';
-  const btn = o.cta ? '<a href="' + (o.url || SITE + '/app') + '" style="display:block;background:' + G + ';border-radius:12px;padding:15px 20px;text-align:center;' + F + 'font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">' + o.cta + '</a>' : '';
+  const btn = o.cta ? '<a href="' + (o.url || SITE + '/app') + '" style="display:block;background:' + BT + ';border-radius:12px;padding:15px 20px;text-align:center;' + F + 'font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">' + o.cta + '</a>' : '';
   const panel = o.panel ? '<tr><td style="padding:6px 36px 22px;"><div style="' + F + 'font-size:12px;letter-spacing:2px;color:#7c8090;font-weight:700;text-transform:uppercase;text-align:center;margin-bottom:12px;">Así se ve tu panel</div><img src="' + IMG + 'panel.jpg" width="528" alt="Panel de Mr Katana" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid #e4e6f2;"></td></tr>' : '';
   const lk = 'color:#7c8090;';
   const links = '<a href="' + SITE + '/legal" style="' + lk + '">Términos y condiciones</a> &nbsp;·&nbsp; <a href="' + SITE + '/legal" style="' + lk + '">Política de privacidad</a>' +

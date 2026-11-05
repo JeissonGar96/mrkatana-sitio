@@ -2777,6 +2777,11 @@ _mnRender();
 <script>
 var SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4eWV6Ynl2d3F3aWhnZ2VjaHNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzA3NDEsImV4cCI6MjA4ODk0Njc0MX0.1JSsDMb08NiHwrRtzgp46UZ5pqTuUTGTkpKIOmm9WRc';
+// Enlace de correo vencido o ya usado: Supabase vuelve con #error_code=... -> avisar en vez de no mostrar nada
+if (/error_code=/.test(location.hash)) {
+  window.addEventListener('load', function() { setTimeout(function() { if (window.tst) tst('Ese enlace ya se usó o venció. Si pediste varios correos, usa el más reciente.', 1); }, 1500); });
+  history.replaceState(null, '', location.pathname + location.search);
+}
 // Si el enlace de "cambiar contraseña" cae en /app, mandarlo a la página para crear la nueva
 if (/type=recovery/.test(location.hash)) location.replace('/login?nueva-clave' + location.hash);
 var sb = supabase.createClient(SB_URL, SB_KEY);
@@ -5084,7 +5089,7 @@ function _ajRender() {
         _ajRow('Fecha de nacimiento', p.date_of_birth ? _ajFmtDate(p.date_of_birth) : _ajEmpty(), 'Editar', 'date_of_birth'));
   } else if (t === 'cuenta') {
     html = '<div class="aj2-h">Cuenta y seguridad</div><div class="aj2-s">Tu acceso a la plataforma.</div>' +
-      _ajGroup('', _ajRow('Email', _mkEsc(cUser ? cUser.email : '—'), 'Cambiar', 'email') + _ajRow('Contraseña', '••••••••', 'Cambiar', 'password')) +
+      _ajGroup('', _ajRow('Email', _mkEsc(cUser ? cUser.email : '—') + (cUser && cUser.new_email ? '<small>Pendiente: ' + _mkEsc(cUser.new_email) + '. Abre el enlace que te enviamos a ese correo para completar el cambio.</small>' : ''), 'Cambiar', 'email') + _ajRow('Contraseña', '••••••••', 'Cambiar', 'password')) +
       _ajGroup('Sesiones', _ajRow('Dispositivos', 'Cierra tu sesión en todos los computadores y celulares donde hayas entrado.', 'Cerrar en todos', 'signout_all')) +
       _ajGroup('Zona de peligro', _ajRow('Eliminar cuenta', 'Se borran tus datos y pierdes el acceso. Lo hacemos por WhatsApp para confirmar que eres tú.', 'Solicitar', 'delete', 'red'));
   } else if (t === 'membresia') {
@@ -5241,7 +5246,12 @@ function _ajCommit(k) {
   var v2 = ((document.getElementById('aj2-in2') || {}).value || '').trim();
   if (k === 'email') {
     if (!v) return tst('Ingresa un email', 1);
-    return sb.auth.updateUser({ email: v }).then(function(r) { if (r.error) return tst('Error: ' + r.error.message, 1); tst('✓ Revisa tu nuevo email para confirmar el cambio'); _ajRender(); });
+    var okB = document.querySelector('.aj2-b[data-ok]'); if (okB) { if (okB.disabled) return; okB.disabled = true; okB.textContent = 'Enviando...'; }
+    return sb.auth.updateUser({ email: v }, { emailRedirectTo: location.origin + '/app' }).then(function(r) {
+      if (r.error) { if (okB) { okB.disabled = false; okB.textContent = 'Guardar'; } return tst(/after \d+ seconds|rate limit/i.test(r.error.message) ? 'Espera un minuto antes de pedir otro correo.' : 'Error: ' + r.error.message, 1); }
+      if (r.data && r.data.user) cUser = r.data.user;
+      tst('✓ Te enviamos un enlace a ' + v + '. Ábrelo para completar el cambio'); _ajRender();
+    });
   }
   if (k === 'password') {
     if (v.length < 6) return tst('Mínimo 6 caracteres', 1);
@@ -6390,7 +6400,7 @@ function savePw() {
 function saveEmail() {
   var email = document.getElementById('pf-email').value.trim();
   if (!email) return tst('Ingresa un email', 1);
-  sb.auth.updateUser({ email: email }).then(function(r) {
+  sb.auth.updateUser({ email: email }, { emailRedirectTo: location.origin + '/app' }).then(function(r) {
     if (r.error) return tst('Error: ' + r.error.message, 1);
     tst('✓ Te enviamos un enlace a tu nuevo correo. Ábrelo para completar el cambio');
     document.getElementById('pf-email').value = '';

@@ -1851,6 +1851,7 @@ window.onload = function() {
   _capLoad();
   if (location.hash === '#registro' || new URLSearchParams(location.search).get('registro') !== null) switchTab('reg');
   var sb_check = supabase.createClient(SB_URL, SB_KEY);
+  if (/error_code=/.test(location.hash)) { _isRec = false; showMsg('Ese enlace ya se usó o venció. Pide uno nuevo; si pediste varios correos, usa el más reciente.', true); history.replaceState(null, '', location.pathname); }
   if (_isRec) _showNewPw();
   var bNp = document.getElementById('btn-np'); if (bNp) bNp.onclick = doNewPw;
   sb_check.auth.getSession().then(function(r) {

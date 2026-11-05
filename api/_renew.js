@@ -129,6 +129,8 @@ async function cron(h, req, res) {
       (off ? '<p>Apagamos la renovación automática. Puedes renovar cuando quieras desde tu panel.</p>' : '<p>Lo intentaremos de nuevo en 2 días. Si quieres, puedes renovar ahora con otra tarjeta desde tu panel.</p>') +
       btn('Renovar desde mi panel', SITE + '/app/sesiones'));
   }
+  // Cuotas de los planes de pago (api/_payplan.js)
+  try { Object.assign(out, await require('./_payplan').cron(h)); } catch (e) { out.pp_error = String(e.message || e).slice(0, 200); }
   return res.status(200).json(Object.assign({ ok: true }, out));
 }
 

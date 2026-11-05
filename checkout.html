@@ -322,7 +322,7 @@ var sb = supabase.createClient(SB_URL, SB_KEY);
 var WA = 'https://wa.me/593995014247';
 
 // Estado del checkout. Los precios que se cobran los calcula el servidor (/api/cart) con los de la base.
-var st = { page: 1, plans: [], plan: null, mode: 'reg', session: null, user: null, prof: null, disc: null, free: null };
+var st = { page: 1, plans: [], plan: null, mode: 'reg', session: null, user: null, prof: null, disc: null, free: null, pp: null };
 var CK_OK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
 function _v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
@@ -425,6 +425,7 @@ function _final() {
 
 function updateSummary() {
   var p = st.plan; if (!p) return;
+  if (st.pp) return _ppSummary();
   _el('sum-name').textContent = p.name;
   _el('sum-price').textContent = money(p.price);
   _el('sum-period').textContent = 'USD' + (p.period ? ' · ' + p.period : '');
@@ -443,14 +444,66 @@ function updateSummary() {
   _el('pay-sep').textContent = 'Pagar ' + tot;
 }
 
+// ── Plan de pago por cuotas (link que arma el closer: /checkout?pp=CODIGO) ──
+function _ppDate(d) { return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }); }
+async function ppInit(code) {
+  var r = await _api('pp_get', { code: code });
+  if (!r || !r.code) {
+    _el('plan-grid').innerHTML = '<div class="ck-empty">Este link de pago no existe o fue cancelado.<br>Escríbenos por <a href="' + WA + '" target="_blank" style="color:inherit">WhatsApp</a> y te ayudamos.</div>';
+    _el('btn-next-1').style.display = 'none'; go(1); return;
+  }
+  if (r.used && (!st.user || st.user.id !== r.owner)) {
+    _el('plan-grid').innerHTML = '<div class="ck-empty">Este link de pago ya se usó.<br>Si es tuyo, entra a tu panel para ver tu plan en Ajustes.</div>';
+    _el('btn-next-1').style.display = 'none'; go(1); return;
+  }
+  if (r.used) { location.href = '/app/perfil'; return; }
+  st.pp = r;
+  var p = r.plan || {}, first = (r.installments || [])[0] || { amount: 0 };
+  st.plan = { i: 0, vi: 0, id: p.id, variant_id: null, name: p.name || 'Plan', price: Number(first.amount), period: '', desc: '', inc: _incList(p, null), lm: 0 };
+  // Solo tarjeta (las cuotas siguientes se cobran con ella) y sin códigos de descuento
+  _el('wp-renew').style.display = 'none';
+  var cd = _el('ck-code'); if (cd) cd.closest('.lg-fg').style.display = 'none';
+  var pc = _el('paypal-button-container'); if (pc) pc.style.display = 'none';
+  var or = document.querySelector('.wp-or'); if (or) or.style.display = 'none';
+  _el('bk-2').style.display = 'none';
+  if (st.session) _el('bk-3').style.display = 'none';
+  var ps = document.querySelector('#page-3 .lg-sub'); if (ps) ps.textContent = 'Paga la primera cuota con tu tarjeta. Queda guardada para las siguientes.';
+  updateSummary();
+  go(st.session ? 3 : 2);
+}
+function _ppSummary() {
+  var pp = st.pp, p = st.plan, ins = pp.installments || [], n = ins.length;
+  var lb = document.querySelector('.ck-kick');
+  if (lb) lb.textContent = 'Plan de pago' + (pp.client_name ? ' · preparado para ' + pp.client_name : '');
+  _el('sum-name').textContent = p.name;
+  _el('sum-price').textContent = money(p.price);
+  _el('sum-period').textContent = ' hoy';
+  _el('sum-desc').textContent = n > 1 ? 'Total ' + money(pp.total) + ' en ' + n + ' cuotas. Las siguientes se cobran solas con tu tarjeta en su fecha; te avisamos 5 días antes.' : 'Total ' + money(pp.total) + ' en un solo pago.';
+  _el('sum-desc').style.display = '';
+  _el('sum-inc').innerHTML = p.inc.map(function(t) { return '<div>' + CK_OK + _esc(t) + '</div>'; }).join('') +
+    '<div>' + CK_OK + (pp.access_from >= n ? 'Tu acceso se activa al completar el pago' : pp.access_from <= 1 ? 'Tu acceso se activa con este primer pago' : 'Tu acceso se activa al pagar la cuota ' + pp.access_from) + '</div>';
+  var box = _el('sum-sub').closest('.r');
+  box.innerHTML = '<span>Cuota 1 · Hoy</span><span>' + money(p.price) + '</span>';
+  var extra = document.getElementById('pp-rows');
+  if (!extra) { extra = document.createElement('div'); extra.id = 'pp-rows'; box.parentNode.insertBefore(extra, box.nextSibling); }
+  extra.innerHTML = ins.slice(1).map(function(x) { return '<div class="r"><span>Cuota ' + x.n + ' · ' + _ppDate(x.due) + ' · automático</span><span>' + money(x.amount) + '</span></div>'; }).join('');
+  _el('sum-disc-row').style.display = 'none';
+  var tot = money(p.price) + ' USD';
+  _el('sum-total').textContent = tot;
+  _el('ms-name').textContent = p.name + ' · Cuota 1 de ' + n;
+  _el('ms-total').textContent = tot;
+  _el('pay-sep').textContent = 'Pagar ' + tot;
+}
+
 // ── Pasos ──
 function go(n) {
   st.page = n;
   document.querySelectorAll('.ck-page').forEach(function(el) { el.classList.toggle('on', el.id === 'page-' + n); });
   var names = ['Plan', st.session ? 'Tu cuenta' : 'Tus datos', 'Pago'];
-  _el('ck-steps').innerHTML = names.map(function(t, i) {
-    var k = i + 1 === n ? 'on' : (i + 1 < n ? 'dn' : '');
-    return '<span class="' + k + '"><b>' + (i + 1 < n ? '✓' : i + 1) + '</b>' + t + '</span>';
+  var sk = st.pp ? 1 : 0; // plan de pago: el plan ya viene armado, se salta el paso 1
+  _el('ck-steps').innerHTML = names.slice(sk).map(function(t, j) {
+    var i = j + sk, k = i + 1 === n ? 'on' : (i + 1 < n ? 'dn' : '');
+    return '<span class="' + k + '"><b>' + (i + 1 < n ? '✓' : j + 1) + '</b>' + t + '</span>';
   }).join('<i></i>');
   hideMsg();
   if (n === 3) {
@@ -665,7 +718,7 @@ async function payWhop() {
   btn.disabled = true; lbl.textContent = 'Abriendo pago seguro...';
   // El formulario aparece al instante; la orden se prepara por detrás y se espera recién al pagar
   _wpOrd = _api(st.session ? 'whop_create' : 'guest_whop_create', { source: 'checkout', user_id: st.user.id, embed: true,
-    items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '',
+    items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '', pp: st.pp ? st.pp.code : '',
     renew: st.plan.lm ? { live: true, kairus: true } : null }).then(function(r) {
       if (r && r.order) { _wpOrder = r.order; try { sessionStorage.setItem('mk-whop', JSON.stringify({ order: r.order, user_id: st.user.id, email: st.user.email, name: st.plan.name })); } catch (e) {} }
       else if (_wpPay) { _wpBack(); showMsg((CK_ERR[r && r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.') + (r && r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : ''), true); }
@@ -821,8 +874,8 @@ function done(lines) { if (typeof _mkPaying === 'function') _mkPaying('ok');
   var em = st.user ? st.user.email : '';
   var ul = (lines || []).map(function(l) { return '<li><b>' + _esc(l.name) + '</b>: ' + _esc(l.text) + '</li>'; }).join('');
   _el('ck-done').innerHTML = '<div class="ck-done"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' +
-    '<h2>¡Listo, ya eres parte!</h2>' +
-    (st.session ? '<p>Tu acceso ya está activo. Entra a tu panel para empezar.</p>' : '<p>Te enviamos un correo a <b>' + _esc(em) + '</b>. Ábrelo para confirmar tu cuenta y luego entra con tu correo y contraseña.</p>') +
+    '<h2>' + (st.pp ? '¡Pago recibido!' : '¡Listo, ya eres parte!') + '</h2>' +
+    (st.session ? '<p>' + (st.pp ? 'Puedes ver tu plan de pago en tu panel, en Ajustes.' : 'Tu acceso ya está activo. Entra a tu panel para empezar.') + '</p>' : '<p>Te enviamos un correo a <b>' + _esc(em) + '</b>. Ábrelo para confirmar tu cuenta y luego entra con tu correo y contraseña.</p>') +
     (ul ? '<ul>' + ul + '</ul>' : '') +
     '<a class="lg-btn" href="' + (st.session ? '/app' : '/login') + '">' + (st.session ? 'Entrar a mi panel' : 'Ir a iniciar sesión') + '</a>' +
     '<div class="lg-alt">¿Dudas? Escríbenos por <a href="' + WA + '" target="_blank">WhatsApp</a></div></div>';
@@ -978,8 +1031,8 @@ window.onload = async function() {
     if (s.data && s.data.session) { st.session = s.data.session; st.user = { id: s.data.session.user.id, email: s.data.session.user.email }; }
   } catch (e) {}
   if (!st.session && q.get('renew') === '1') setMode('in');
-  go(1);
-  loadPlans();
+  if (q.get('pp')) await ppInit(q.get('pp'));
+  else { go(1); loadPlans(); }
   if (q.get('whop') === '1' && q.get('order')) whopReturn(q.get('order'));
   _el('btn-next-1').onclick = function() { if (!st.plan) return showMsg('Elige un plan.', true); go(st.session ? 3 : 2); };
   _el('btn-reg').onclick = doReg;
@@ -989,7 +1042,7 @@ window.onload = async function() {
   _el('lnk-login').onclick = function(e) { e.preventDefault(); if (st.session) return go(3); setMode('in'); go(2); };
   _el('acct-change').onclick = changeAcct;
   _el('bk-2').onclick = function() { go(1); };
-  _el('bk-3').onclick = function() { go(st.session ? 1 : 2); };
+  _el('bk-3').onclick = function() { if (st.pp && st.session) return; go(st.session ? 1 : 2); };
   _el('btn-code').onclick = applyCode;
   _el('ck-code').addEventListener('keydown', function(e) { if (e.key === 'Enter') applyCode(); });
   _el('btn-free').onclick = activateFree;

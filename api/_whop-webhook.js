@@ -7,7 +7,7 @@
 
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
-const { applyItems } = require('./cart');
+const { applyItems, priceItems } = require('./cart');
 
 const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 const WHOP_API = 'https://api.whop.com/api/v1';
@@ -82,11 +82,15 @@ async function handler(req, res) {
     if (!claim.data || !claim.data.length) return res.status(200).json({ ok: true, already: true });
 
     const email = pick(pay.user || {}, ['email']) || pick(pay.member || {}, ['email']) || null;
-    const result = await applyItems(sb, { id: ord.user_id }, ord, email);
+    let result, rw = ord.renew || {};
+    if (ord.pay_plan_id) {
+      // Cuota de un plan de pago: suma lo pagado y da el acceso al llegar a la cuota elegida
+      result = await require('./_payplan').paid(sb, { applyItems, priceItems }, ord, pay);
+      rw = result.access && (result.lines || []).some(l => /En vivo/.test(l.text || '')) ? { live: true, kairus: false } : {};
+    } else result = await applyItems(sb, { id: ord.user_id }, ord, email);
     await sb.from('cart_orders').update({ status: result.errors.length ? 'error' : 'applied', result }).eq('id', ord.id);
 
     // Renovación automática: se guarda la tarjeta de Whop y la fecha del primer cobro (cuando termina el en vivo)
-    const rw = ord.renew || {};
     if (rw.live || rw.kairus) {
       const pr = await sb.from('profiles').select('live_end').eq('id', ord.user_id).single();
       // Los ids de Whop que no vengan en este aviso no se borran (se conserva la tarjeta ya guardada)

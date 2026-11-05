@@ -1167,6 +1167,10 @@ a.snav{text-decoration:none;}
 .cw-dur{z-index:1;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
 .mk-skel{background:linear-gradient(90deg,rgba(var(--c-ov),.05) 0%,rgba(var(--c-ov),.11) 50%,rgba(var(--c-ov),.05) 100%);background-size:200% 100%;animation:mkSkel 1.3s ease-in-out infinite;border-radius:6px;}
 .mk-skel-card{cursor:default;pointer-events:none;}
+/* Admin: mientras carga una lista se ven filas grises (como el resto del panel) en vez del círculo */
+#st-t>.spin,#plans-admin-list>.spin,#discord-roles-list>.spin,#codes-list>.spin,#staff-perms-list>.spin{display:block;width:100%;height:232px;border:none;border-radius:14px;background:repeating-linear-gradient(180deg,rgba(var(--c-ov),.07) 0 50px,transparent 50px 62px);animation:mkSkP 1.3s ease-in-out infinite;}
+@keyframes mkSkP{0%,100%{opacity:.55}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){#st-t>.spin,#plans-admin-list>.spin{animation:none;}}
 .mk-lsk{max-width:900px;}
 @keyframes mkSkel{from{background-position:200% 0}to{background-position:-200% 0}}
 .rp-chart{position:relative;}
@@ -6719,7 +6723,7 @@ function _mkCalLink(x) {
 // Admin: 4 tarjetas de resumen arriba
 function _mkAdminStats() {
   var box = document.getElementById('adm-stats'); if (!box) return;
-  var card = function(id, ic, c, lbl) { return '<div class="mk-stat" style="cursor:default;"><div class="mk-ic ' + c + '">' + ic + '</div><div><span>' + lbl + '</span><b id="' + id + '">…</b></div></div>'; };
+  var card = function(id, ic, c, lbl) { return '<div class="mk-stat" style="cursor:default;"><div class="mk-ic ' + c + '">' + ic + '</div><div><span>' + lbl + '</span><b id="' + id + '"><i class="mk-skel" style="display:inline-block;width:52px;height:16px;vertical-align:middle;"></i></b></div></div>'; };
   box.innerHTML = card('as-st', '', '', 'Alumnos activos') + card('as-sales', MK_IC.chart, 'g', 'Ventas del mes') + card('as-1on1', MK_IC.cal, 'b', '1-1 esta semana') + card('as-ads', MK_IC.live, 'r', 'Clics en anuncios');
   box.querySelector('.mk-ic').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.2.6 3.5 2.6 3.5 6"/></svg>';
   var set = function(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
@@ -7413,10 +7417,17 @@ function _ppCss() {
 function rAdmPP() {
   _ppCss();
   var c = document.getElementById('a-pp'); if (!c) return;
-  c.innerHTML = '<div class="pp-empty">Cargando...</div>';
+  if (_pp.loaded) _ppDraw(c);
+  else c.innerHTML = '<div class="pp-top"><div class="pp-stats">' + [0,1,2].map(function(){ return '<div class="pp-stat"><i class="mk-skel" style="display:block;width:60px;height:18px;"></i><i class="mk-skel" style="display:block;width:80px;height:10px;margin-top:8px;"></i></div>'; }).join('') + '</div></div>' +
+    '<div class="pp-list" style="padding:14px 18px;">' + [0,1,2].map(function(){ return '<div class="mk-skel" style="height:44px;border-radius:10px;margin:8px 0;"></div>'; }).join('') + '</div>';
   _cwCall({ action: 'pp_list' }).then(function(j) {
-    if (j.error) { c.innerHTML = '<div class="pp-empty">No se pudieron cargar los planes de pago.</div>'; return; }
-    _pp.rows = j.plans || []; _pp.programs = j.programs || [];
+    if (j.error) { if (!_pp.loaded) c.innerHTML = '<div class="pp-empty">No se pudieron cargar los planes de pago.</div>'; return; }
+    _pp.rows = j.plans || []; _pp.programs = j.programs || []; _pp.loaded = true;
+    _ppDraw(c);
+  });
+}
+function _ppDraw(c) {
+  {
     var on = _pp.rows.filter(function(r) { return r.status !== 'canceled'; });
     var cob = on.reduce(function(s, r) { return s + Number(r.paid_total || 0); }, 0);
     var falta = on.filter(function(r) { return r.status !== 'done'; }).reduce(function(s, r) { return s + Number(r.total) - Number(r.paid_total || 0); }, 0);
@@ -7446,7 +7457,7 @@ function rAdmPP() {
     c.querySelectorAll('[data-pp]').forEach(function(b) {
       b.onclick = function() { var r = _pp.rows[+b.dataset.pp]; if (r.status === 'waiting') _ppCopy(r.code); _ppView(r); };
     });
-  });
+  }
 }
 function _ppModal(html) {
   var md = document.createElement('div'); md.className = 'mk-modal';
@@ -8272,7 +8283,7 @@ function rAdm1on1() {
       '<input class="a1-q" id="a1-q" placeholder="Buscar alumno...">' +
       '<button class="mk-btn" onclick="openSchModal()">+ Programar reunión</button>' +
     '</div>' +
-    '<div id="a1on1-list"></div>' +
+    '<div id="a1on1-list">' + [0,1,2,3].map(function(){ return '<div class="mk-skel" style="height:58px;border-radius:12px;margin-bottom:10px;"></div>'; }).join('') + '</div>' +
     '<div id="a1on1-rec" style="display:none;"></div>';
   c.querySelectorAll('[data-a1]').forEach(function(b) { b.addEventListener('click', function() { swA1on1(b.dataset.a1); }); });
   document.getElementById('a1-q').addEventListener('input', function() { _a1Shown = 5; _rA1List(); });

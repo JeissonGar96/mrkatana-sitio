@@ -1853,9 +1853,21 @@ window.onload = function() {
   var sb_check = supabase.createClient(SB_URL, SB_KEY);
   if (/error_code=/.test(location.hash)) { _isRec = false; showMsg('Ese enlace ya se usó o venció. Pide uno nuevo; si pediste varios correos, usa el más reciente.', true); history.replaceState(null, '', location.pathname); }
   if (_isRec) _showNewPw();
+  // Enlace de "confirmar cambio de correo": cerrar la sesión y pedir entrar con el correo nuevo
+  var _emChg = /[?&]correo-cambiado\b/.test(location.search) && !/error_code=/.test(location.hash);
+  if (_emChg) {
+    sb.auth.getSession().then(function(r) {
+      var em = r.data && r.data.session && r.data.session.user ? r.data.session.user.email : '';
+      return sb.auth.signOut().then(function() {
+        history.replaceState(null, '', '/login');
+        if (em) document.getElementById('li-e').value = em;
+        showMsg('✓ Listo, tu correo se cambió' + (em ? ' a ' + em : '') + '. Inicia sesión con tu correo nuevo.', false);
+      });
+    });
+  }
   var bNp = document.getElementById('btn-np'); if (bNp) bNp.onclick = doNewPw;
   sb_check.auth.getSession().then(function(r) {
-    if (r.data && r.data.session && !_isRec) {
+    if (r.data && r.data.session && !_isRec && !_emChg) {
       window.location.href = _lgDest();
     }
   });

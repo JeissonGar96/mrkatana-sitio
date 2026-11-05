@@ -2919,6 +2919,10 @@ function _renderSection(state) {
   if (amainEl) amainEl.scrollTop = 0;
   // Always restore amain when navigating away from lesson layout
   if (state.section !== 'clases') _restoreAmain();
+  // Cambio rápido de pestañas: se pone un contenedor nuevo. Lo que una pestaña anterior termine de cargar
+  // tarde se escribe en el contenedor viejo (ya fuera de la pantalla) y no tapa la pestaña actual.
+  var _amOld = document.getElementById('amain');
+  if (_amOld && _amOld.parentNode) { var _amNew = _amOld.cloneNode(false); _amOld.parentNode.replaceChild(_amNew, _amOld); }
   if (cUser && !_nt.init) { _nt.init = 1; _ntLoad(); setTimeout(_ntTick, 2500); }
   if (state.section === 'dash') {
     // liveOnly = no tiene acceso a clases (sin importar el nombre del plan)

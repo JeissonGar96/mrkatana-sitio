@@ -1119,6 +1119,9 @@ a.snav{text-decoration:none;}
 #a-st .dtab td{padding:11px 8px !important;font-size:.84rem !important;border-bottom:1px solid var(--k-line) !important;}
 #a-st .dtab tr:last-child td{border-bottom:none !important;}
 #a-st .dtab tbody tr:hover td{background:rgba(var(--c-acc),.04);}
+/* Pantallas obligatorias (foto / Discord): fijas y centradas, sin scroll */
+.mk-onb{position:fixed;inset:0;z-index:99990;background:var(--c-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 20px;overflow:hidden;overscroll-behavior:none;}
+body:has(.mk-onb){overflow:hidden;}body:has(.mk-onb) #mob-nav{display:none !important;}
 /* Escala general: igual a ver la página con Chrome al 90% (solo computador) */
 @media(min-width:861px){
   #appdash{zoom:.9;}
@@ -3206,7 +3209,7 @@ function loadApp(user) {
 
       var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
       document.getElementById('amain').innerHTML =
-        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:40px 20px;">' +
+        '<div class="mk-onb">' +
           '<div style="font-family:sans-serif;font-size:1.5rem;font-weight:800;text-transform:uppercase;color:var(--c-text);margin-bottom:6px;">¡Bienvenido, ' + name + '!</div>' +
           '<p style="font-size:.84rem;color:var(--c-muted);max-width:340px;margin:0 auto 28px;">Completa tu perfil para acceder al dashboard.</p>' +
           '<div style="width:100px;height:100px;border-radius:50%;background:rgba(var(--c-acc),.1);border:2px dashed rgba(var(--c-acc),.4);display:flex;align-items:center;justify-content:center;margin-bottom:16px;cursor:pointer;" id="avatar-upload-circle" onclick="document.getElementById(\'avatar-input-complete\').click()">' +
@@ -3224,7 +3227,7 @@ function loadApp(user) {
               '<option value="avanzado">Avanzado (más de 3 años)</option>' +
             '</select>' +
           '</div>' +
-          '<button onclick="submitCompleteProfile()" style="background:linear-gradient(135deg,var(--st),var(--sl));color:var(--c-ongold);padding:12px 28px;border-radius:8px;border:none;font-weight:600;font-size:.86rem;cursor:pointer;width:100%;max-width:340px;">Guardar y continuar →</button>' +
+          '<button onclick="submitCompleteProfile()" style="background:rgb(var(--c-btn));color:var(--c-ongold);padding:12px 28px;border-radius:8px;border:none;font-weight:600;font-size:.86rem;cursor:pointer;width:100%;max-width:340px;">Guardar y continuar →</button>' +
           '<div id="avatar-complete-msg" style="font-size:.78rem;color:var(--c-muted);margin-top:12px;"></div>' +
         '</div>';
     }
@@ -3241,7 +3244,7 @@ function loadApp(user) {
 
       var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
       document.getElementById('amain').innerHTML =
-        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:40px 20px;">' +
+        '<div class="mk-onb">' +
           '<div style="width:64px;height:64px;background:rgba(88,101,242,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">' +
             '<svg width="34" height="26" viewBox="0 0 28 22" fill="none"><path d="M23.7 1.9A23.1 23.1 0 0 0 18 0c-.3.5-.5 1-.7 1.5a21.4 21.4 0 0 0-6.6 0A13 13 0 0 0 10 0 23.2 23.2 0 0 0 4.3 1.9 24.6 24.6 0 0 0 0 18a23.3 23.3 0 0 0 7.1 3.6 17.5 17.5 0 0 0 1.5-2.5 15.2 15.2 0 0 1-2.4-1.1l.6-.4a16.6 16.6 0 0 0 14.4 0l.6.4a15.2 15.2 0 0 1-2.4 1.1 17.5 17.5 0 0 0 1.5 2.5A23.2 23.2 0 0 0 28 18 24.6 24.6 0 0 0 23.7 1.9zM9.4 14.7c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.2 2.9-2.6 2.9zm9.2 0c-1.4 0-2.6-1.3-2.6-2.9s1.1-2.9 2.6-2.9 2.6 1.3 2.6 2.9-1.1 2.9-2.6 2.9z" fill="#5865F2"/></svg>' +
           '</div>' +

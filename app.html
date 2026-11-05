@@ -6525,8 +6525,7 @@ function _buildAdminTabs() {
   var allTabs = [
     ['st','Alumnos','access_students'],
     ['1on1','Reuniones 1-1','access_students'],
-    ['codes','Planes', ['access_plans','access_discord','access_codes']],
-    ['pp','Planes de pago','access_payplans'],
+    ['codes','Planes', ['access_plans','access_discord','access_codes','access_payplans']],
     // ['roadmap','Roadmap','access_roadmap'], // oculto 2026-10-13: Plan de la semana retirado (datos se conservan)
     ['ads','Anuncios','__admin_only'],
     ['apar','Apariencia','__admin_only'],
@@ -7887,7 +7886,9 @@ var AS_IC = {
 var _asFilter = 'all';
 
 function _asState(s) {
-  var t = new Date(), en = s.membership_end ? new Date(s.membership_end) : null;
+  // Vale la fecha más lejana entre clases (membership_end) y en vivo (live_end): quien compró solo en vivo también está activo
+  var t = new Date(), en = s.membership_end ? new Date(s.membership_end) : null, le = s.live_end ? new Date(s.live_end) : null;
+  if (le && (!en || le > en)) en = le;
   if (s.role === 'admin') return { k: 'ok', t: 'Admin' };
   if (!en) return { k: '', t: 'Gratis' };
   if (en <= t) return { k: 'bad', t: 'Vencido' };
@@ -7938,6 +7939,9 @@ function _renderStudents(data, showAll) {
       var en = s.membership_end ? new Date(s.membership_end) : null, today = new Date();
       var liveEn = s.live_end ? new Date(s.live_end) : null, liveAct = liveEn && liveEn > today;
       var pd = _planById(s.plan || ''), plan = s.role === 'admin' ? 'Administrador' : (pd ? (pd.label || pd.name) : (s.plan || 'Sin plan'));
+      // Solo en vivo (sin plan de clases): se muestra el plan de en vivo y su fecha
+      var onlyLive = s.role !== 'admin' && !en && liveEn;
+      if (onlyLive) { var lp = _planById(s.live_plan || ''); plan = lp ? (lp.label || lp.name) : 'Live Sessions'; en = liveEn; liveAct = false; }
       var stt = _asState(s);
       var vence = !en ? '—' : (en.getFullYear() >= 2099 ? 'Ilimitado' : _asDate(en));
       return '<div class="as-row" onclick="viewStudentProfile(\'' + s.id + '\')">' +
@@ -9676,6 +9680,7 @@ function rAdmCodes() {
 
   var subtabDefs = [
     ['plans', 'Gestionar Plan', canPlans],
+    ['pp', 'Planes de pago', _staffCan('access_payplans')],
     ['discord', 'Roles de Discord', canDiscord],
     ['codes', 'Generar código', canCodes],
     ['staff', 'Permisos de Staff', canStaffPerms]
@@ -9706,6 +9711,9 @@ function rAdmCodes() {
         '<div id="plans-admin-list"><span class="spin"></span></div>' +
       '</div>' +
     '</div>' +
+
+    // ── SUB-PESTAÑA: PLANES DE PAGO POR CUOTAS (rAdmPP) ──
+    '<div id="codes-subtab-pp" class="codes-subtab-panel" style="display:none;"><div id="a-pp"></div></div>' +
 
     // ── SUB-PESTAÑA: ROLES DE DISCORD ──
     '<div id="codes-subtab-discord" class="codes-subtab-panel" style="display:none;">' +
@@ -9803,6 +9811,7 @@ function _switchCodesSubtab(tab) {
     p.style.display = on ? '' : 'none';
     if (on) _tabFx(p);
   });
+  if (tab === 'pp') rAdmPP();
   var b0 = document.querySelector('.wp-subtab-btn[data-subtab]');
   if (b0) _tabInk(b0.parentNode);
 }

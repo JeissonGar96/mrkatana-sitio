@@ -7606,7 +7606,13 @@ function rAdmAvisos() {
     '<div style="font-size:.84rem;color:var(--c-text2);line-height:1.5;margin-bottom:12px;">Le llega a todos los registrados para invitarlos a entrar a la plataforma nueva. Primero mándate una prueba a tu correo. El envío a todos se puede hacer una sola vez.</div>' +
     '<div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="av-btn" style="flex:1;min-width:180px;background:none;border:1px solid var(--k-line);color:var(--c-text);" onclick="_avLaunch(true,this)">Enviarme una prueba</button>' +
     '<button class="av-btn" style="flex:1;min-width:180px;" onclick="_avLaunch(false,this)">Enviar a todos (una vez)</button></div>' +
-    '<div id="av-lres" style="font-size:.78rem;color:var(--c-muted);margin-top:10px;"></div></div>' : '');
+    '<div id="av-lres" style="font-size:.78rem;color:var(--c-muted);margin-top:10px;"></div></div>' +
+    '<div class="av-card" style="margin-top:16px;"><div class="av-t">Contactos antiguos de Wix</div>' +
+    '<div style="font-size:.84rem;color:var(--c-text2);line-height:1.5;margin-bottom:12px;">Sube el archivo CSV que exportaste de Wix. Los que ya tienen cuenta se saltan solos, y cada correo trae un link para darse de baja. Se puede enviar una sola vez.</div>' +
+    '<input type="file" accept=".csv,text/csv" class="av-in" onchange="_avWixFile(this)">' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="av-btn" style="flex:1;min-width:180px;background:none;border:1px solid var(--k-line);color:var(--c-text);" onclick="_avLaunch(true,this,1)">Enviarme una prueba</button>' +
+    '<button class="av-btn" style="flex:1;min-width:180px;" onclick="_avLaunch(false,this,1)">Enviar a contactos antiguos</button></div>' +
+    '<div id="av-wres" style="font-size:.78rem;color:var(--c-muted);margin-top:10px;"></div></div>' : '');
   _avDraw(); _avPrev(); _avList();
 }
 function _avDraw() {
@@ -7631,14 +7637,22 @@ function _avList() {
     }).join('') : '<div style="font-size:.8rem;color:var(--c-muted);">Todavía no has enviado avisos.</div>';
   });
 }
-async function _avLaunch(test, btn) {
-  var out = document.getElementById('av-lres');
-  if (!test && !confirm('¿Enviar el correo de lanzamiento a todos los registrados? Solo se puede hacer una vez.')) return;
+var _avWix = [];
+function _avWixFile(inp) {
+  var f = inp.files && inp.files[0], out = document.getElementById('av-wres'); if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function() { var m = String(rd.result).match(/[^\s,;"<>]+@[^\s,;"<>]+\.[a-z]{2,}/gi) || []; _avWix = m.map(function(e) { return e.toLowerCase(); }).filter(function(e, i, a) { return a.indexOf(e) === i; }); out.textContent = _avWix.length + ' correos encontrados en el archivo.'; };
+  rd.readAsText(f);
+}
+async function _avLaunch(test, btn, wix) {
+  var out = document.getElementById(wix ? 'av-wres' : 'av-lres');
+  if (wix && !test && !_avWix.length) { out.textContent = 'Primero sube el archivo CSV.'; return; }
+  if (!test && !confirm(wix ? '¿Enviar el correo a ' + _avWix.length + ' contactos antiguos? Solo se puede hacer una vez.' : '¿Enviar el correo de lanzamiento a todos los registrados? Solo se puede hacer una vez.')) return;
   btn.disabled = true; out.textContent = 'Enviando...';
   try {
     var s = await sb.auth.getSession();
     var tk = s.data && s.data.session && s.data.session.access_token;
-    var r = await fetch('/api/notify-live?launch=1', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ test: !!test }) });
+    var r = await fetch('/api/notify-live?launch=1', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify(wix ? { test: !!test, wix: true, emails: _avWix } : { test: !!test }) });
     var j = await r.json().catch(function() { return {}; });
     if (!r.ok) out.textContent = 'No se pudo enviar (' + (j.error || r.status) + ').';
     else if (j.skipped) out.textContent = 'Ya se había enviado a todos antes. No se volvió a mandar.';

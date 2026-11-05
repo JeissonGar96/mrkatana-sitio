@@ -10,6 +10,7 @@
 const webpush = require('web-push');
 const { createClient } = require('@supabase/supabase-js');
 const M = require('./_mail');
+const crypto = require('crypto');
 
 const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 const VAPID_PUBLIC = 'BFq0c3NiHS9LLzjgZJImePJ7dXBAvG-EYgRF8v8tI4jWfwdVLEDI7BetU4bfVhs9fhKZQ88nAVsmq9ZhyXh18oc';
@@ -19,6 +20,7 @@ module.exports = async function handler(req, res) {
   try {
     if (req.query && req.query.weekly === '1') return await weekly(req, res);
     if (req.query && req.query.launch === '1') return await launchMail(req, res);
+    if (req.query && req.query.baja) return await baja(req, res);
     // Notificaciones de la app (campana): tick cada 5 min y envío de pendientes
     if (req.query && (req.query.tick === '1' || req.query.push === '1')) return res.status(200).json(await require('./_notif').run(req));
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
@@ -170,6 +172,7 @@ async function launchMail(req, res) {
     }
     return sent;
   };
+  if (body.wix) return await wixMail(sb, body, u.user.email || me.email, from, res);
   if (body.test) return res.status(200).json({ ok: true, test: true, sent: await send([u.user.email || me.email].filter(Boolean)) });
   const prev = (await sb.from('site_settings').select('theme').eq('id', 5).maybeSingle()).data;
   if (prev && prev.theme && prev.theme.launch_sent) return res.status(200).json({ ok: true, skipped: 'already', at: prev.theme.launch_sent });
@@ -177,4 +180,44 @@ async function launchMail(req, res) {
   const pr = (await sb.from('profiles').select('email, role')).data || [];
   const list = [...new Set(pr.filter(p => p.email && p.role !== 'admin' && p.role !== 'staff').map(p => p.email.trim().toLowerCase()))];
   return res.status(200).json({ ok: true, total: list.length, sent: await send(list) });
+}
+
+// Contactos antiguos de Wix: la lista llega desde Admin (no se guarda), se quitan los ya registrados y los dados de baja.
+const bajaKey = e => crypto.createHmac('sha256', process.env.SUPABASE_SERVICE_KEY || 'x').update(e).digest('hex').slice(0, 24);
+const bajaUrl = e => SITE + '/api/notify-live?baja=' + encodeURIComponent(e) + '&k=' + bajaKey(e);
+async function wixMail(sb, body, adminEmail, from, res) {
+  const subject = 'Volvimos, y ahora con plataforma propia';
+  const sendTo = async list => {
+    let sent = 0;
+    for (let i = 0; i < list.length; i += 100) {
+      const batch = list.slice(i, i + 100).map(to => ({ from, to: [to], subject, html: M.launch('wix', bajaUrl(to)), headers: { 'List-Unsubscribe': '<' + bajaUrl(to) + '>' } }));
+      const r = await fetch('https://api.resend.com/emails/batch', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY.trim(), 'Content-Type': 'application/json' }, body: JSON.stringify(batch) }).catch(() => null);
+      if (r && r.ok) sent += batch.length;
+    }
+    return sent;
+  };
+  if (body.test) return res.status(200).json({ ok: true, test: true, sent: await sendTo([adminEmail].filter(Boolean)) });
+  const prev = (await sb.from('site_settings').select('theme').eq('id', 6).maybeSingle()).data;
+  const th = (prev && prev.theme) || {};
+  if (th.wix_sent) return res.status(200).json({ ok: true, skipped: 'already', at: th.wix_sent });
+  const ok = e => /^[^@\s,;]+@[^@\s,;]+\.[a-z]{2,}$/i.test(e);
+  let list = [...new Set((Array.isArray(body.emails) ? body.emails : []).map(e => String(e).trim().toLowerCase()).filter(ok))].slice(0, 500);
+  const reg = new Set(((await sb.from('profiles').select('email')).data || []).map(p => String(p.email || '').toLowerCase()));
+  const off = new Set(th.bajas || []);
+  list = list.filter(e => !reg.has(e) && !off.has(e));
+  if (!list.length) return res.status(400).json({ error: 'sin_contactos' });
+  await sb.from('site_settings').upsert({ id: 6, theme: Object.assign({}, th, { wix_sent: new Date().toISOString() }), updated_at: new Date().toISOString() });
+  return res.status(200).json({ ok: true, total: list.length, sent: await sendTo(list) });
+}
+async function baja(req, res) {
+  const e = String(req.query.baja || '').trim().toLowerCase();
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  const pg = t => '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#eef0f7;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh"><div style="background:#fff;border-radius:16px;padding:32px;max-width:380px;text-align:center;color:#3f4250">' + t + '</div></body>';
+  if (!e || req.query.k !== bajaKey(e)) return res.status(400).send(pg('Este link no es válido.'));
+  if (process.env.SUPABASE_SERVICE_KEY) {
+    const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+    const th = ((await sb.from('site_settings').select('theme').eq('id', 6).maybeSingle()).data || {}).theme || {};
+    const b = new Set(th.bajas || []); if (!b.has(e)) { b.add(e); await sb.from('site_settings').upsert({ id: 6, theme: Object.assign({}, th, { bajas: [...b] }), updated_at: new Date().toISOString() }); }
+  }
+  return res.status(200).send(pg('<b style="color:#14161f;font-size:18px">Listo</b><p>Ya no te enviaremos más correos de este tipo.</p>'));
 }

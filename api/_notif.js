@@ -110,6 +110,18 @@ async function mtgSoon(sb) {
   })));
 }
 
+// Reunión 1-1 en 30 minutos
+async function mtg30(sb) {
+  const now = Date.now();
+  const r = await sb.from('meetings_1on1').select('id, student_id, scheduled_at, status')
+    .gt('scheduled_at', new Date(now).toISOString()).lte('scheduled_at', new Date(now + 35 * 60e3).toISOString());
+  return add(sb, (r.data || []).filter(m => m.student_id && m.status !== 'cancelled').map(m => ({
+    user_id: m.student_id, kind: 'mtg', link: 'reuniones', data: { at: m.scheduled_at, mtg: m.id },
+    title: 'Tu reunión 1-1 empieza en ' + Math.max(1, Math.round((new Date(m.scheduled_at).getTime() - now) / 60000)) + ' min',
+    body: 'Entra desde la pestaña 1-1 cuando sea la hora.', dedupe: 'mtg30:' + m.id + ':' + m.scheduled_at
+  })));
+}
+
 // Accesos por vencer: 7 días y 1 día antes
 async function expiring(sb) {
   const now = Date.now(), until = new Date(now + 7 * 864e5);
@@ -214,7 +226,7 @@ async function run(req) {
   const host = (req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
   const origin = host ? 'https://' + host : SITE;
   const out = {};
-  for (const [k, f] of [['mtg', mtgSoon], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking]]) {
+  for (const [k, f] of [['mtg', mtgSoon], ['mtg30', mtg30], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking]]) {
     try { out[k] = await f(sb); } catch (e) { out[k] = 'error: ' + e.message; }
   }
   try { Object.assign(out, await pushPending(sb)); } catch (e) { out.push_error = e.message; }

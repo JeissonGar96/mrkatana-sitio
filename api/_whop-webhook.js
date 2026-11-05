@@ -89,6 +89,12 @@ async function handler(req, res) {
       rw = result.access && (result.lines || []).some(l => /En vivo/.test(l.text || '')) ? { live: true, kairus: false } : {};
     } else result = await applyItems(sb, { id: ord.user_id }, ord, email);
     await sb.from('cart_orders').update({ status: result.errors.length ? 'error' : 'applied', result }).eq('id', ord.id);
+    // Aviso en la campana
+    try {
+      const tot = '$' + Number(ord.total || 0).toLocaleString('en-US');
+      await require('./_notif').add(sb, { user_id: ord.user_id, kind: 'pay', link: 'perfil', dedupe: 'pay:' + ord.id, title: 'Pago recibido',
+        body: ord.pay_plan_id ? 'Cuota ' + (ord.pp_n || '') + ' de tu plan de pago · ' + tot + (result.access ? ' · Tu acceso ya está activo' : '') : tot + ' USD · Gracias por tu compra' });
+    } catch (e) { console.log('notif pay', e.message); }
 
     // Renovación automática: se guarda la tarjeta de Whop y la fecha del primer cobro (cuando termina el en vivo)
     if (rw.live || rw.kairus) {

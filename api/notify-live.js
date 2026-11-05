@@ -17,6 +17,8 @@ const SITE = 'https://www.mrkatanafx.com';
 module.exports = async function handler(req, res) {
   try {
     if (req.query && req.query.weekly === '1') return await weekly(req, res);
+    // Notificaciones de la app (campana): tick cada 5 min y envío de pendientes
+    if (req.query && (req.query.tick === '1' || req.query.push === '1')) return res.status(200).json(await require('./_notif').run(req));
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
     if (!process.env.SUPABASE_SERVICE_KEY) return res.status(500).json({ error: 'missing_service_key' });
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});

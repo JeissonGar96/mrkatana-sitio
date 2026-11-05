@@ -5270,14 +5270,17 @@ function _ajMemb() {
   Promise.all([
     sb.from('purchases').select('*').eq('user_id', cUser.id).order('created_at', { ascending: false }).limit(50),
     sb.from('checkout_plans').select('*'),
-    sb.from('meetings_1on1').select('status').eq('student_id', cUser.id)
+    sb.from('meetings_1on1').select('status, scheduled_at').eq('student_id', cUser.id)
   ]).then(function(res) {
     var el = document.getElementById('aj2-memb'); if (!el) return;
     var plans = (res[1] && res[1].data) || [], names = {};
     plans.forEach(function(x){ names[x.id] = x.name; });
     var plan = plans.find(function(x){ return x.id === p.plan; }) || {};
     _ajPays = (res[0] && res[0].data) || [];
-    var done = ((res[2] && res[2].data) || []).filter(function(x){ return x.status === 'completed'; }).length;
+    // Igual que la pestaña 1-1: cuenta como hecha si se completó o ya pasó su hora (sin cancelar ni falta)
+    var _mt = (res[2] && res[2].data) || [], _lim = Date.now() - 1800000;
+    var _ok = _mt.filter(function(x){ return x.status !== 'cancelled' && x.status !== 'no_show'; });
+    var done = _ok.filter(function(x){ return x.status === 'completed' || new Date(x.scheduled_at).getTime() < _lim; }).length, _up = _ok.length - done;
     var end = p.membership_end ? new Date(p.membership_end) : null, now = new Date();
     var unl = end && end.getFullYear() >= 2099, active = end && end > now;
     var perks = []; if (_hasClasesAccess()) perks.push('Clases grabadas'); if (_hasLiveAccess()) perks.push('En vivo'); if (p.access_1on1) perks.push('Sesiones 1-1');
@@ -5289,7 +5292,7 @@ function _ajMemb() {
       var pct = start && end > start ? Math.max(0, Math.min(100, Math.round((end - now) / (end - start) * 100))) : 0;
       vence = _ajFmtDate(p.membership_end.slice(0, 10)) + '<small>' + (active ? 'Te quedan ' + left + ' día' + (left === 1 ? '' : 's') : 'Tu plan venció') + '</small>' + (active ? '<div class="aj2-bar"><i style="width:' + pct + '%"></i></div>' : '');
     }
-    var tot = (plan.sessions_1on1 != null ? plan.sessions_1on1 : 3) + _ajPays.reduce(function(a, x) { return a + (x.extra_1on1 || 0); }, 0);
+    var tot = (plan.sessions_1on1 != null ? plan.sessions_1on1 : 3) + _ajPays.reduce(function(a, x) { return a + (x.extra_1on1 || 0); }, 0); tot = Math.max(tot, done + _up);
     // En vivo comprado aparte (Live Sessions): tiene su propia fecha
     var le = p.live_end ? new Date(p.live_end) : null, lvOn = le && le > now && le.getFullYear() < 2099;
     var lvPlan = plans.find(function(x) { return x.id === 'live'; }) || {};

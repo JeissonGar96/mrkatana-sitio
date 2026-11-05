@@ -197,18 +197,16 @@ async function ranking(sb) {
   return add(sb, rows);
 }
 
+let lastTick = 0;
 async function run(req) {
   if (!process.env.SUPABASE_SERVICE_KEY) return { error: 'missing_service_key' };
   const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
   const q = req.query || {};
   if (q.push === '1') return pushPending(sb);
-  // Freno: una vuelta cada 3 minutos como máximo
-  const nowIso = new Date().toISOString(), cut = new Date(Date.now() - 170e3).toISOString();
-  const c = await sb.from('notif_state').update({ at: nowIso }).eq('k', 'tick').lt('at', cut).select('k');
-  if (!c.data || !c.data.length) {
-    const ins = await sb.from('notif_state').insert({ k: 'tick', at: nowIso });
-    if (ins.error) return { ok: true, skipped: true };
-  }
+  // Freno: una vuelta cada 3 minutos como máximo (en memoria, sin escribir en la base de datos:
+  // escrituras periódicas gastan el "Disk IO budget" de Supabase)
+  if (Date.now() - lastTick < 170e3) return { ok: true, skipped: true };
+  lastTick = Date.now();
   const host = (req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
   const origin = host ? 'https://' + host : SITE;
   const out = {};

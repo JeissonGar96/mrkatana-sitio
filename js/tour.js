@@ -1,0 +1,181 @@
+// ── TUTORIAL DEL PANEL ──
+// Recorrido guiado: la pantalla se oscurece y una luz dorada señala cada parte con una explicación corta.
+// Dos versiones: "bienvenida" (cuentas nuevas) y "novedades" (cuentas que ya estaban antes del lanzamiento).
+// Se abre solo una vez (se guarda en la cuenta, así no se repite en otro dispositivo) y se vuelve a ver en Ajustes > Preferencias.
+(function() {
+  var CUT = new Date('2026-11-08T00:00:00Z').getTime(); // cuentas creadas antes de esta fecha = alumnos que ya estaban
+  var VER = 1;
+
+  function paid() { try { return _hasClasesAccess() || _hasLiveAccess() || !!(cProfile && cProfile.access_1on1) || _isTeam(); } catch (e) { return true; } }
+  function lockTx() { return paid() ? '' : ' Con tu cuenta gratis está con candado: toca "Conocer planes" para desbloquearla.'; }
+  function nav(v) { return ['.snav[data-v="' + v + '"]', '#mob-nav .mob-nav-btn[data-v="' + v + '"]', '#mtb-who']; }
+
+  function stepsNew() {
+    return [
+      { t: 'Bienvenido a Mr Katana', p: 'Te mostramos en 1 minuto dónde está cada cosa para que sepas por dónde empezar.', go: 'Empezar', skip: 'Ahora no' },
+      { s: nav('dash'), t: 'Inicio', p: 'Tu resumen del día: anuncios, plan de la semana y calendario económico.' },
+      { s: ['#rp-chart', '#mpw'], t: 'Tu progreso de la semana', p: 'Cada barra es un día. Se llena en 4 pasos: entrar, operar, anotar tu trade y ver una clase.' },
+      { s: nav('clases'), t: 'Curso', p: 'Las clases grabadas por niveles. Empieza por el Nivel 1 y avanza en orden.' + lockTx() },
+      { s: nav('sesiones'), t: 'En vivo', p: 'Las sesiones en directo. Cuando estoy en vivo entras desde aquí, sin salir del panel.' + lockTx() },
+      { s: nav('reuniones'), t: 'Reuniones 1-1', p: 'Tus sesiones privadas conmigo: cuándo es la próxima y las grabaciones de las pasadas.' + lockTx() },
+      { s: nav('herramientas'), t: 'Herramientas', p: 'El Journal que anota tus trades solo, el ranking del mes y Kairus.' },
+      { s: ['#mk-bell'], t: 'Avisos', p: 'La campana te avisa de clases nuevas, tus 1-1, pagos y noticias fuertes del mercado.' },
+      { s: ['#mk-cart-btn'], t: 'Carrito', p: 'Para sumar meses, sesiones en vivo o Kairus pagando con tu tarjeta.' },
+      { s: nav('perfil'), t: 'Ajustes', p: 'Tu perfil, tu membresía y renovación, tu tarjeta y qué avisos quieres recibir. Aquí también puedes ver este tutorial otra vez.', go: 'Listo' }
+    ];
+  }
+  function stepsOld() {
+    return [
+      { t: 'Renovamos tu panel', p: 'Te mostramos lo nuevo en 6 pasos para que no te pierdas nada.', go: 'Ver lo nuevo', skip: 'Ahora no' },
+      { s: ['.aside', '#mob-nav'], t: 'Todo está en el menú', p: 'Inicio, Curso, En vivo, Reuniones 1-1 y Herramientas están en el menú de la izquierda.', pm: 'Tus secciones están en la barra de abajo. Toca tu foto, arriba, para ver todo lo demás.' },
+      { s: ['#rp-chart', '#mpw'], t: 'Progreso semanal y ranking', p: 'Una barra por día que se llena en 4 pasos, y un ranking mensual de constancia.' },
+      { s: nav('herramientas'), t: 'Journal automático', p: 'Conecta tu cuenta de Exness o Funding Pips y tus trades se anotan solos, en Herramientas.' },
+      { s: nav('sesiones'), t: 'En vivo dentro del panel', p: 'Ya no necesitas otro link: entras a los directos desde aquí.' + lockTx() },
+      { s: ['#mk-bell'], t: 'Avisos', p: 'La campana nueva te avisa de clases, 1-1 y pagos. Puedes apagar los que no quieras en Ajustes.' },
+      { s: ['#mk-cart-btn'], t: 'Pago con tarjeta', p: 'Suma meses o servicios desde el carrito. La renovación automática y el cambio de tarjeta están en Ajustes > Membresía.', go: 'Listo' }
+    ];
+  }
+
+  var st = null, ov, hole, card;
+
+  function css() {
+    if (document.getElementById('mk-tour-css')) return;
+    var c = document.createElement('style'); c.id = 'mk-tour-css';
+    c.textContent =
+      '#mk-tour{position:fixed;inset:0;z-index:9999;font-family:inherit;}' +
+      '#mk-tour .tr-bg{position:absolute;inset:0;background:rgba(0,0,0,.62);transition:opacity .25s;}' +
+      '#mk-tour.has-h .tr-bg{opacity:0;}' +
+      '#mk-tour .tr-h{position:absolute;border-radius:14px;box-shadow:0 0 0 2px rgb(var(--c-acc)),0 0 0 9999px rgba(0,0,0,.62);pointer-events:none;opacity:0;transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease,opacity .25s;}' +
+      '#mk-tour.has-h .tr-h{opacity:1;}' +
+      '#mk-tour .tr-c{position:absolute;width:300px;max-width:calc(100vw - 32px);background:var(--c-card);color:var(--c-text);border:1px solid var(--c-line);border-radius:16px;padding:16px 16px 13px;box-shadow:0 16px 44px rgba(0,0,0,.4);transition:left .35s ease,top .35s ease,opacity .2s;}' +
+      '#mk-tour .tr-c.ct{text-align:center;width:340px;padding:24px 22px 18px;}' +
+      '#mk-tour .tr-c b{display:block;font-size:.98rem;font-weight:700;margin-bottom:5px;}' +
+      '#mk-tour .tr-c.ct b{font-size:1.15rem;}' +
+      '#mk-tour .tr-c p{margin:0;color:var(--c-text2);font-size:.86rem;line-height:1.5;}' +
+      '#mk-tour .tr-f{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;}' +
+      '#mk-tour .tr-c.ct .tr-f{flex-direction:column-reverse;gap:6px;margin-top:18px;}' +
+      '#mk-tour .tr-n{color:var(--c-muted);font-size:.76rem;font-variant-numeric:tabular-nums;}' +
+      '#mk-tour .tr-bs{display:flex;align-items:center;gap:6px;}' +
+      '#mk-tour .tr-c.ct .tr-bs{flex-direction:column-reverse;width:100%;}' +
+      '#mk-tour button{font:inherit;cursor:pointer;border:none;border-radius:10px;}' +
+      '#mk-tour .tr-sk,#mk-tour .tr-bk{background:none;color:var(--c-muted);font-size:.8rem;padding:8px 8px;}' +
+      '#mk-tour .tr-sk:hover,#mk-tour .tr-bk:hover{color:var(--c-text);}' +
+      '#mk-tour .tr-go{background:rgb(var(--c-btn));color:var(--c-ongold);font-weight:700;font-size:.84rem;padding:9px 16px;}' +
+      '#mk-tour .tr-c.ct .tr-go{width:100%;padding:12px 16px;}' +
+      '#mk-tour button:focus-visible{outline:2px solid rgb(var(--c-acc));outline-offset:2px;}' +
+      '@media(prefers-reduced-motion:reduce){#mk-tour .tr-h,#mk-tour .tr-c{transition:none;}}';
+    document.head.appendChild(c);
+  }
+
+  function vis(el) {
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) return null;
+    if (r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) return null;
+    var cs = getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') return null;
+    return r;
+  }
+  function find(sel) {
+    for (var i = 0; i < (sel || []).length; i++) {
+      var els = document.querySelectorAll(sel[i]);
+      for (var j = 0; j < els.length; j++) { var r = vis(els[j]); if (r) return { el: els[j], r: r }; }
+    }
+    return null;
+  }
+
+  function draw() {
+    if (!st) return;
+    var s = st.list[st.i], n = st.list.length, f = s.s ? find(s.s) : null;
+    // si el elemento está fuera de la vista (por ejemplo, abajo en el celular), lo traemos y volvemos a medir
+    if (s.s && !f) {
+      var el0 = null; for (var k = 0; k < s.s.length && !el0; k++) { var c0 = document.querySelector(s.s[k]); if (c0 && c0.getBoundingClientRect().height > 3) el0 = c0; }
+      if (el0 && !st.scrolled) { st.scrolled = 1; try { el0.scrollIntoView({ block: 'center' }); } catch (e) {} return setTimeout(draw, 350); }
+    }
+    st.scrolled = 0;
+    var last = st.i === n - 1, first = st.i === 0;
+    card.className = 'tr-c' + (f ? '' : ' ct');
+    var tx = (innerWidth <= 860 && s.pm) ? s.pm : s.p;
+    if (f && f.el.id === 'mtb-who' && !s.pm) tx += ' En el celular lo abres tocando tu foto, arriba.';
+    card.innerHTML = '<b>' + s.t + '</b><p>' + tx + '</p><div class="tr-f">' +
+      (f ? '<span class="tr-n">' + st.i + ' de ' + (n - 1) + '</span>' : '') +
+      '<span class="tr-bs">' + (first ? '<button class="tr-sk" data-a="x">' + (s.skip || 'Saltar') + '</button>' : (f && !last ? '<button class="tr-sk" data-a="x">Saltar</button>' : '') + (st.i > 1 ? '<button class="tr-bk" data-a="b">Atrás</button>' : '')) +
+      '<button class="tr-go" data-a="n">' + (s.go || 'Siguiente') + '</button></span></div>';
+    ov.classList.toggle('has-h', !!f);
+    var W = innerWidth, H = innerHeight, cw = Math.min(f ? 300 : 340, W - 32);
+    if (f) {
+      var r = f.r, pad = 6;
+      hole.style.left = (r.left - pad) + 'px'; hole.style.top = (r.top - pad) + 'px';
+      hole.style.width = (r.width + pad * 2) + 'px'; hole.style.height = (r.height + pad * 2) + 'px';
+      var ch = card.offsetHeight || 150, x, y;
+      if (W <= 860 || r.width > W * .5) { // celular o elemento ancho: tarjeta arriba o abajo
+        x = (W - cw) / 2;
+        y = r.bottom + 16 + ch < H - 8 ? r.bottom + 16 : Math.max(12, r.top - 16 - ch);
+      } else if (r.right + 18 + cw < W - 12) { // a la derecha
+        x = r.right + 18; y = Math.min(Math.max(12, r.top + r.height / 2 - ch / 2), H - ch - 12);
+      } else { // a la izquierda o debajo
+        x = Math.max(12, Math.min(r.left + r.width / 2 - cw / 2, W - cw - 12));
+        y = r.bottom + 16 + ch < H - 8 ? r.bottom + 16 : Math.max(12, r.top - 16 - ch);
+      }
+      card.style.left = x + 'px'; card.style.top = y + 'px';
+    } else {
+      card.style.left = (W - cw) / 2 + 'px';
+      card.style.top = Math.max(12, (H - (card.offsetHeight || 200)) / 2) + 'px';
+    }
+  }
+
+  function save() {
+    try { localStorage.setItem('mk-tour-' + cUser.id, String(VER)); } catch (e) {}
+    try { if (!(cUser.user_metadata && cUser.user_metadata.mk_tour >= VER)) sb.auth.updateUser({ data: { mk_tour: VER } }).then(function(r) { if (r && r.data && r.data.user) cUser = r.data.user; }); } catch (e) {}
+  }
+  function end() {
+    if (!st) return;
+    st = null; window._tourOn = false; save();
+    ov.remove(); removeEventListener('resize', onRs); removeEventListener('keydown', onKey);
+    if (window._pushAsk) setTimeout(_pushAsk, 1500);
+  }
+  function onRs() { clearTimeout(onRs.t); onRs.t = setTimeout(draw, 120); }
+  function onKey(e) {
+    if (!st) return;
+    if (e.key === 'Escape') end();
+    else if (e.key === 'ArrowRight') act('n');
+    else if (e.key === 'ArrowLeft' && st.i > 1) act('b');
+  }
+  function act(a) {
+    if (a === 'x') return end();
+    if (a === 'b') st.i = Math.max(1, st.i - 1);
+    else if (st.i >= st.list.length - 1) return end();
+    else st.i++;
+    draw();
+  }
+
+  window.mkTour = function(kind) {
+    if (st || !window.cUser) return;
+    var onDash = document.querySelector('.snav.on[data-v="dash"]') || (history.state && history.state.section === 'dash');
+    if (!onDash && window.navigateTo) { navigateTo('dash'); return setTimeout(function() { mkTour(kind); }, 700); }
+    var ps = document.getElementById('push-ask'); if (ps) ps.remove();
+    css(); window._tourOn = true;
+    st = { list: kind === 'old' ? stepsOld() : stepsNew(), i: 0 };
+    ov = document.createElement('div'); ov.id = 'mk-tour'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Tutorial');
+    ov.innerHTML = '<div class="tr-bg"></div><div class="tr-h"></div><div class="tr-c"></div>';
+    hole = ov.querySelector('.tr-h'); card = ov.querySelector('.tr-c');
+    card.onclick = function(e) { var b = e.target.closest('button[data-a]'); if (b) act(b.getAttribute('data-a')); };
+    document.body.appendChild(ov);
+    addEventListener('resize', onRs); addEventListener('keydown', onKey);
+    draw();
+  };
+
+  // Se abre solo la primera vez que la persona llega a Inicio
+  window._tourAuto = function() {
+    try {
+      if (!window.cUser || st) return;
+      if (/[?&](whop|vista-pago)/.test(location.search)) return;
+      if (cUser.user_metadata && cUser.user_metadata.mk_tour >= VER) return;
+      try { if (+localStorage.getItem('mk-tour-' + cUser.id) >= VER) return; } catch (e) {}
+      var onDash = document.querySelector('.snav.on[data-v="dash"]') || (history.state && history.state.section === 'dash');
+      if (!onDash || document.querySelector('.mk-onb')) return;
+      var made = new Date(cUser.created_at || Date.now()).getTime();
+      var old = made < CUT && Date.now() - made > 3 * 864e5;
+      mkTour(old ? 'old' : 'new');
+    } catch (e) {}
+  };
+})();

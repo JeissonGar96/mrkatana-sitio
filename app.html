@@ -3257,6 +3257,7 @@ function loadApp(user) {
       var routeState = _parseUrlToState(path);
       pushRoute(routeState, true);
       _renderSection(routeState);
+      setTimeout(function() { if (window._tourAuto) _tourAuto(); }, 1800); // tutorial la primera vez
     }
 
     function _showCompleteProfile() {
@@ -5146,6 +5147,7 @@ function _ajRender() {
     html = '<div class="aj2-h">Preferencias</div><div class="aj2-s">Cómo se ve la plataforma para ti.</div>' +
       _ajGroup('', _ajRow('Tema', '<span class="aj2-seg"><button class="' + (dark ? 'on' : '') + '" onclick="mkToggleTheme(event,\'dark\',_ajRender)">Dark</button><button class="' + (dark ? '' : 'on') + '" onclick="mkToggleTheme(event,\'light\',_ajRender)">Light</button></span>') +
         (window.matchMedia && matchMedia('(max-width:860px)').matches ? '<div class="aj2-r"><div class="aj2-l">Barra de abajo</div><div class="aj2-v">Elige tus accesos directos</div><button class="aj2-b" onclick="_mpOpen()">Personalizar</button></div>' : '') +
+        '<div class="aj2-r"><div class="aj2-l">Tutorial</div><div class="aj2-v">Recorre el panel otra vez</div><span style="display:flex;gap:8px;flex-wrap:wrap;"><button class="aj2-b" onclick="mkTour(\'old\')">Novedades</button><button class="aj2-b" onclick="mkTour(\'new\')">Ver tutorial</button></span></div>' +
         _ajRow('Zona horaria', '(UTC' + (off >= 0 ? '+' : '') + off + ') ' + _mkEsc(tz.replace(/_/g, ' ')) + '<small>Se detecta sola desde tu dispositivo. Los horarios de en vivo y 1-1 se muestran en tu hora.</small>'));
   }
   box.innerHTML = html;
@@ -5195,7 +5197,7 @@ function _pushSubscribe(ask) {
 }
 // Invitación discreta (una vez cada 14 días) para activar los avisos de en vivo
 function _pushAsk() {
-  if (!_pushOk() || Notification.permission !== 'default' || document.getElementById('push-ask')) return;
+  if (window._tourOn || !_pushOk() || Notification.permission !== 'default' || document.getElementById('push-ask')) return;
   try { var t = +localStorage.getItem('mk-push-ask') || 0; if (Date.now() - t < 14 * 864e5) return; } catch (e) {}
   var d = document.createElement('div'); d.id = 'push-ask'; d.className = 'push-ask';
   d.innerHTML = '<div><b>Avisos de en vivo</b><span>Te avisamos en el celular o computador cuando empiece un en vivo.</span></div>' +
@@ -11699,5 +11701,6 @@ function toggleCalExplain(id) {
 
 </script>
 <script src="/js/journal.js"></script>
+<script src="/js/tour.js"></script>
 </body>
 </html>

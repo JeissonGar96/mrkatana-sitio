@@ -8,13 +8,30 @@
 
   function paid() { try { return _hasClasesAccess() || _hasLiveAccess() || !!(cProfile && cProfile.access_1on1) || _isTeam(); } catch (e) { return true; } }
   function lockTx() { return paid() ? '' : ' Con tu cuenta gratis está con candado: toca "Conocer planes" para desbloquearla.'; }
+  // Dibujos para los pasos destacados (progreso y ranking)
+  var IMG_PROG = '<svg class="tr-img" viewBox="0 0 280 92" aria-hidden="true"><defs><linearGradient id="trg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="rgb(var(--c-acc))" stop-opacity=".25"/><stop offset="1" stop-color="rgb(var(--c-acc2))"/></linearGradient></defs>' +
+    [1, .75, .5, 1, .25, .75, 0].map(function(h, i) { var x = 8 + i * 39, H = 62; return '<rect x="' + x + '" y="6" width="28" height="' + H + '" rx="7" fill="rgba(var(--c-acc),.08)"/>' + (h ? '<rect x="' + x + '" y="' + (6 + H * (1 - h)) + '" width="28" height="' + (H * h) + '" rx="7" fill="url(#trg)"/>' : '') + '<text x="' + (x + 14) + '" y="86" text-anchor="middle" font-size="10" fill="currentColor" opacity=".55">' + 'LMMJVSD'.charAt(i) + '</text>'; }).join('') + '</svg>';
+  var IMG_RANK = '<svg class="tr-img" viewBox="0 0 280 100" aria-hidden="true">' +
+    '<rect x="40" y="52" width="62" height="40" rx="8" fill="rgba(var(--c-acc),.16)"/><rect x="109" y="34" width="62" height="58" rx="8" fill="rgba(var(--c-acc),.32)"/><rect x="178" y="64" width="62" height="28" rx="8" fill="rgba(var(--c-acc),.1)"/>' +
+    '<text x="71" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="currentColor" opacity=".7">2</text><text x="140" y="70" text-anchor="middle" font-size="20" font-weight="800" fill="rgb(var(--c-acc))">1</text><text x="209" y="84" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" opacity=".6">3</text>' +
+    '<circle cx="71" cy="38" r="11" fill="rgba(var(--c-acc),.22)"/><circle cx="140" cy="20" r="12" fill="rgba(var(--c-acc),.4)"/><circle cx="209" cy="50" r="10" fill="rgba(var(--c-acc),.16)"/>' +
+    '<path d="M129 6l4 4 7-7 7 7 4-4-2 9h-18z" fill="rgb(var(--c-acc))" transform="translate(0,-2)"/></svg>';
+  var PROG = { s: ['#rp-chart', '#mpw'], t: 'Tu progreso de la semana', img: IMG_PROG, big: 1,
+    p: 'Cada barra es un día y se llena en 4 pasos:',
+    li: ['Entra a la plataforma', 'Opera o marca "No operé"', 'Anota tu trade con foto o nota', 'Mira una clase o un en vivo'],
+    p2: 'Llénala todos los días. Operar o marcar "No operé" también te da puntos en el ranking.' };
+  var RANK = { s: ['.rp-rank', '.mpw-rk'], t: 'Ranking del mes', img: IMG_RANK, big: 1,
+    p: 'Compites con los demás alumnos por ser el más constante del mes:',
+    li: ['+1 punto por cada día hábil que operas o marcas "No operé"', '−1 punto si un día hábil no haces ninguna de las dos', 'Para entrar, conecta tu cuenta real de Exness o Funding Pips en el Journal'],
+    p2: '<b class="tr-pz">Los primeros del mes pueden ganar premios, como efectivo o cuentas de fondeo.</b>' };
+
   function nav(v) { return ['.snav[data-v="' + v + '"]', '#mob-nav .mob-nav-btn[data-v="' + v + '"]', '#mtb-who']; }
 
   function stepsNew() {
     return [
       { t: 'Bienvenido a Mr Katana', p: 'Te mostramos en 1 minuto dónde está cada cosa para que sepas por dónde empezar.', go: 'Empezar', skip: 'Ahora no' },
       { s: nav('dash'), t: 'Inicio', p: 'Tu resumen del día: anuncios, plan de la semana y calendario económico.' },
-      { s: ['#rp-chart', '#mpw'], t: 'Tu progreso de la semana', p: 'Cada barra es un día. Se llena en 4 pasos: entrar, operar, anotar tu trade y ver una clase.' },
+      PROG, RANK,
       { s: nav('clases'), t: 'Curso', p: 'Las clases grabadas por niveles. Empieza por el Nivel 1 y avanza en orden.' + lockTx() },
       { s: nav('sesiones'), t: 'En vivo', p: 'Las sesiones en directo. Cuando estoy en vivo entras desde aquí, sin salir del panel.' + lockTx() },
       { s: nav('reuniones'), t: 'Reuniones 1-1', p: 'Tus sesiones privadas conmigo: cuándo es la próxima y las grabaciones de las pasadas.' + lockTx() },
@@ -26,9 +43,9 @@
   }
   function stepsOld() {
     return [
-      { t: 'Renovamos tu panel', p: 'Te mostramos lo nuevo en 6 pasos para que no te pierdas nada.', go: 'Ver lo nuevo', skip: 'Ahora no' },
+      { t: 'Renovamos tu panel', p: 'Te mostramos lo nuevo en 7 pasos para que no te pierdas nada.', go: 'Ver lo nuevo', skip: 'Ahora no' },
       { s: ['.aside', '#mob-nav'], t: 'Todo está en el menú', p: 'Inicio, Curso, En vivo, Reuniones 1-1 y Herramientas están en el menú de la izquierda.', pm: 'Tus secciones están en la barra de abajo. Toca tu foto, arriba, para ver todo lo demás.' },
-      { s: ['#rp-chart', '#mpw'], t: 'Progreso semanal y ranking', p: 'Una barra por día que se llena en 4 pasos, y un ranking mensual de constancia.' },
+      PROG, RANK,
       { s: nav('herramientas'), t: 'Journal automático', p: 'Conecta tu cuenta de Exness o Funding Pips y tus trades se anotan solos, en Herramientas.' },
       { s: nav('sesiones'), t: 'En vivo dentro del panel', p: 'Ya no necesitas otro link: entras a los directos desde aquí.' + lockTx() },
       { s: ['#mk-bell'], t: 'Avisos', p: 'La campana nueva te avisa de clases, 1-1 y pagos. Puedes apagar los que no quieras en Ajustes.' },
@@ -48,6 +65,13 @@
       '#mk-tour .tr-h{position:absolute;border-radius:14px;box-shadow:0 0 0 2px rgb(var(--c-acc)),0 0 0 9999px rgba(0,0,0,.62);pointer-events:none;opacity:0;transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease,opacity .25s;}' +
       '#mk-tour.has-h .tr-h{opacity:1;}' +
       '#mk-tour .tr-c{position:absolute;width:300px;max-width:calc(100vw - 32px);background:var(--c-card);color:var(--c-text);border:1px solid var(--c-line);border-radius:16px;padding:16px 16px 13px;box-shadow:0 16px 44px rgba(0,0,0,.4);transition:left .35s ease,top .35s ease,opacity .2s;}' +
+      '#mk-tour .tr-c.big{width:340px;}' +
+      '#mk-tour .tr-img{display:block;width:100%;height:auto;margin:6px 0 12px;color:var(--c-text);}' +
+      '#mk-tour .tr-c ul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;}' +
+      '#mk-tour .tr-c li{position:relative;padding-left:16px;font-size:.84rem;line-height:1.45;color:var(--c-text);}' +
+      '#mk-tour .tr-c li:before{content:"";position:absolute;left:2px;top:.55em;width:6px;height:6px;border-radius:50%;background:rgb(var(--c-acc));}' +
+      '#mk-tour .tr-p2{margin-top:10px !important;}' +
+      '#mk-tour .tr-c b.tr-pz{display:inline;font-size:inherit;margin:0;color:rgb(var(--c-acc));font-weight:600;}' +
       '#mk-tour .tr-c.ct{text-align:center;width:340px;padding:24px 22px 18px;}' +
       '#mk-tour .tr-c b{display:block;font-size:.98rem;font-weight:700;margin-bottom:5px;}' +
       '#mk-tour .tr-c.ct b{font-size:1.15rem;}' +
@@ -93,15 +117,15 @@
     }
     st.scrolled = 0;
     var last = st.i === n - 1, first = st.i === 0;
-    card.className = 'tr-c' + (f ? '' : ' ct');
+    card.className = 'tr-c' + (f ? '' : ' ct') + (s.big ? ' big' : '');
     var tx = (innerWidth <= 860 && s.pm) ? s.pm : s.p;
     if (f && f.el.id === 'mtb-who' && !s.pm) tx += ' En el celular lo abres tocando tu foto, arriba.';
-    card.innerHTML = '<b>' + s.t + '</b><p>' + tx + '</p><div class="tr-f">' +
+    card.innerHTML = '<b>' + s.t + '</b>' + (s.img || '') + '<p>' + tx + '</p>' + (s.li ? '<ul>' + s.li.map(function(x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' : '') + (s.p2 ? '<p class="tr-p2">' + s.p2 + '</p>' : '') + '<div class="tr-f">' +
       (f ? '<span class="tr-n">' + st.i + ' de ' + (n - 1) + '</span>' : '') +
       '<span class="tr-bs">' + (first ? '<button class="tr-sk" data-a="x">' + (s.skip || 'Saltar') + '</button>' : (f && !last ? '<button class="tr-sk" data-a="x">Saltar</button>' : '') + (st.i > 1 ? '<button class="tr-bk" data-a="b">Atrás</button>' : '')) +
       '<button class="tr-go" data-a="n">' + (s.go || 'Siguiente') + '</button></span></div>';
     ov.classList.toggle('has-h', !!f);
-    var W = innerWidth, H = innerHeight, cw = Math.min(f ? 300 : 340, W - 32);
+    var W = innerWidth, H = innerHeight, cw = Math.min(f ? (s.big ? 340 : 300) : 340, W - 32);
     if (f) {
       var r = f.r, pad = 6;
       hole.style.left = (r.left - pad) + 'px'; hole.style.top = (r.top - pad) + 'px';
@@ -112,7 +136,9 @@
         y = r.bottom + 16 + ch < H - 8 ? r.bottom + 16 : Math.max(12, r.top - 16 - ch);
       } else if (r.right + 18 + cw < W - 12) { // a la derecha
         x = r.right + 18; y = Math.min(Math.max(12, r.top + r.height / 2 - ch / 2), H - ch - 12);
-      } else { // a la izquierda o debajo
+      } else if (r.left - 18 - cw > 12) { // a la izquierda
+        x = r.left - 18 - cw; y = Math.min(Math.max(12, r.top + r.height / 2 - ch / 2), H - ch - 12);
+      } else { // debajo o arriba
         x = Math.max(12, Math.min(r.left + r.width / 2 - cw / 2, W - cw - 12));
         y = r.bottom + 16 + ch < H - 8 ? r.bottom + 16 : Math.max(12, r.top - 16 - ch);
       }

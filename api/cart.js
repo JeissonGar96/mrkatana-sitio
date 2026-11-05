@@ -68,6 +68,7 @@ module.exports = async function handler(req, res) {
     if (body.action === 'whop_pay') return await whopPay(sb, user, body, req, res);
     if (body.action === 'renew_test') return await require('./_renew').adminTest({ sb, whopFetch, priceItems, WHOP_COMPANY, WHOP_PRODUCT }, user, body, res);
     if (body.action === 'tv_claim') return await tvClaim(sb, user, body, res);
+    if (body.action === 'card_setup') return await cardSetup(sb, user, body, req, res);
     if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
     return res.status(400).json({ error: 'bad_action' });
   } catch (e) {
@@ -492,6 +493,40 @@ async function tvClaim(sb, user, body, res) {
     return res.status(502).json({ error: tv.error || 'tv_rejected' });
   }
   return res.status(200).json({ ok: true, expires: tv.expires });
+}
+
+// Cambiar tarjeta: Whop guarda la nueva con un "setup intent" (no cobra) y queda para las renovaciones.
+// { token } crea el intento; { check: id } revisa uno que pidió verificación del banco.
+async function cardSetup(sb, user, body, req, res) {
+  if (!process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_whop_key' });
+  let si;
+  if (body.check) {
+    const id = String(body.check);
+    if (!/^sint_[A-Za-z0-9]+$/.test(id)) return res.status(400).json({ error: 'bad_id' });
+    si = await whopFetch('/setup_intents/' + id, { method: 'GET' });
+  } else {
+    const token = String(body.token || '');
+    if (!token) return res.status(400).json({ error: 'bad_token' });
+    const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
+    si = await whopFetch('/setup_intents', {
+      method: 'POST', headers: { 'Idempotency-Key': 'mk-setup-' + user.id + '-' + token.slice(-16) },
+      body: JSON.stringify({ account_id: WHOP_COMPANY, confirmation_token: token, return_url: origin + '/app/perfil', metadata: { user_id: user.id } })
+    });
+  }
+  const d = si.data || {};
+  if (!si.ok) return res.status(402).json({ error: 'setup_failed', detail: d.message || (d.error && d.error.message) || si.status });
+  if (d.metadata && d.metadata.user_id && d.metadata.user_id !== user.id) return res.status(403).json({ error: 'not_yours' });
+  const st = String(d.status || '');
+  if (st === 'succeeded' && d.payment_method_id) {
+    const row = { user_id: user.id, whop_payment_method_id: d.payment_method_id, updated_at: new Date().toISOString() };
+    const mid = d.member_id || (d.member && d.member.id); if (mid) row.whop_member_id = mid;
+    const ex = await sb.from('auto_renew').select('user_id').eq('user_id', user.id).maybeSingle();
+    if (ex.data) await sb.from('auto_renew').update(row).eq('user_id', user.id);
+    else await sb.from('auto_renew').insert(Object.assign({ live: true, kairus: false, active: false }, row));
+    return res.status(200).json({ ok: true });
+  }
+  if (d.client_secret && /requires_action|processing/.test(st)) return res.status(200).json({ id: d.id, client_secret: d.client_secret, status: st });
+  return res.status(200).json({ ok: false, status: st, error: (d.last_setup_error && d.last_setup_error.message) || 'not_saved' });
 }
 
 // Ajustes, Membresía: ver la tarjeta guardada (últimos 4 si Whop los da), apagar/encender la renovación o quitar la tarjeta.

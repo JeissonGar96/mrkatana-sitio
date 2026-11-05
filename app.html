@@ -5283,6 +5283,52 @@ function _ajMemb() {
     });
   });
 }
+// Cambiar la tarjeta guardada sin cobrar nada (Whop guarda la nueva y se usa en las renovaciones)
+function _cardChange(done) {
+  var NA = 'No se pudo abrir el formulario de tarjeta. Intenta de nuevo.';
+  var mount = function() {
+    try {
+      var W = window.WhopElements({ locale: 'es' }), dark = document.documentElement.getAttribute('data-theme') !== 'light';
+      var opts = { accountId: 'biz_7IQpwkgU5mdr5I', currency: 'usd', amount: 100, setupFutureUsage: 'off_session',
+        paymentMethodConfiguration: { enabled: ['card'], include_platform_defaults: false },
+        returnUrl: location.origin + '/app/perfil', locale: 'es', appearance: { theme: { appearance: dark ? 'dark' : 'light', accentColor: 'amber', grayColor: 'sand' }, variables: { '--radius': '10px' } } };
+      var pay; try { pay = W.payments.create(opts); } catch (e) { delete opts.appearance; delete opts.paymentMethodConfiguration; pay = W.payments.create(opts); }
+      var old = document.getElementById('cwp'); if (old) old.remove();
+      var md = document.createElement('div'); md.id = 'cwp';
+      md.innerHTML = '<div class="cwp-box" role="dialog" aria-modal="true"><div class="cwp-h"><b>Cambiar tarjeta</b><span>No se cobra nada</span></div>' +
+        '<div id="cdw-card" class="cdw-card"></div><button type="button" class="aj2-b gold cdw-wpb" id="cdw-go" disabled>Guardar tarjeta</button>' +
+        '<div id="cdw-brand" class="cdw-brand"></div><a class="cdw-back" onclick="_cwClose()">Cancelar</a></div>';
+      document.documentElement.classList.add('cw-on');
+      document.body.appendChild(md);
+      pay.create('payment', { onChange: function(ev) { var x = document.getElementById('cdw-go'); if (x) x.disabled = !(ev && ev.complete); } }).mount('#cdw-card');
+      pay.create('branding').mount('#cdw-brand');
+      var go = document.getElementById('cdw-go');
+      go.onclick = async function() {
+        go.disabled = true; _payBtn(go, true);
+        var fail = function(t) { _payBtn(go, false); go.disabled = false; go.textContent = 'Intentar de nuevo'; tst(t, 1); };
+        try {
+          var t; try { t = await pay.createConfirmationToken({ billingDetails: { email: cUser.email } }); } catch (e1) { t = await pay.createConfirmationToken(); }
+          var tok = t && (t.confirmationToken || t.confirmation_token);
+          if (!tok) return fail((t && t.error && t.error.message) || 'Revisa los datos de tu tarjeta.');
+          var r = await _cwCall({ action: 'card_setup', token: typeof tok === 'string' ? tok : tok.id });
+          if (r && r.client_secret && !r.ok) {
+            var na = await (W.payments.handleNextAction || window.WhopElements.payments.handleNextAction)({ clientSecret: r.client_secret, returnUrl: location.origin + '/app/perfil' });
+            if (na && na.redirected) return;
+            r = await _cwCall({ action: 'card_setup', check: r.id });
+          }
+          if (!r || !r.ok) return fail('Tu banco no aceptó esta tarjeta. Prueba con otra.');
+          _cwClose(); tst('Listo, tu nueva tarjeta quedó guardada'); if (done) done();
+        } catch (e) { console.error('card setup', e); fail('No se pudo guardar la tarjeta. Intenta de nuevo.'); }
+      };
+    } catch (e) { tst(NA, 1); }
+  };
+  if (window.WhopElements) return mount();
+  var sc = document.querySelector('script[data-whop-elements]');
+  if (sc) { var n = 0, iv = setInterval(function() { if (window.WhopElements) { clearInterval(iv); mount(); } else if (++n > 80) { clearInterval(iv); tst(NA, 1); } }, 100); return; }
+  sc = document.createElement('script'); sc.src = 'https://cdn.whop.com/elements/amber/elements.js'; sc.setAttribute('data-whop-elements', '');
+  sc.onload = function() { window.WhopElements ? mount() : tst(NA, 1); }; sc.onerror = function() { tst(NA, 1); };
+  document.head.appendChild(sc);
+}
 // Método de pago: tarjeta guardada en Whop (solo guardamos una referencia) y la renovación automática
 function _ajPayMethod() {
   var box = document.getElementById('aj2-pm'); if (!box || !cUser) return;
@@ -5295,10 +5341,11 @@ function _ajPayMethod() {
     var nx = a.next_charge_at ? _ajFmtDate(String(a.next_charge_at).slice(0, 10)) : '';
     var draw = function(card) {
       box.innerHTML = _ajGroup('Método de pago',
-        _ajRow('Tarjeta guardada', ic + '<span id="aj2-cd">' + _mkEsc(card || 'Tarjeta') + '</span><small>Se usa para tus renovaciones</small>') +
+        _ajRow('Tarjeta guardada', ic + '<span id="aj2-cd">' + _mkEsc(card || 'Tarjeta') + '</span><small>Se usa para tus renovaciones</small>', 'Cambiar', 'cardchg') +
         _ajRow('Renovación automática', (a.active ? 'Activa' : 'Apagada') + '<small>' + (a.active ? (nx ? 'Próximo cobro: ' + nx + ' · ' : '') + '$' + amt + ' USD (' + what + '). Te avisamos 5 días antes.' : 'No se te cobrará nada. Puedes volver a activarla cuando quieras.') + '</small>') +
         _ajRow('', '<a class="aj2-mut" id="aj2-rm" style="text-decoration:underline;cursor:pointer">Quitar tarjeta y cancelar la renovación</a>'));
       var rws = box.querySelectorAll('.aj2-r');
+      var cb = box.querySelector('[data-ed="cardchg"]'); if (cb) cb.onclick = function() { _cardChange(function() { _ajPayMethod(); }); };
       rws[1].insertAdjacentHTML('beforeend', _ajToggle('renew', a.active));
       rws[1].querySelector('.aj2-t').onclick = function() {
         var on = !a.active, b = this; b.disabled = true;

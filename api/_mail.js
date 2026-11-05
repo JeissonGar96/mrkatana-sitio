@@ -44,7 +44,7 @@ function box(rows) {
 // art: lanz wix conf pass magic mail inv live week aviso ren renf cuo cuof
 function page(o) {
   const big = !!o.big;
-  const hero = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:' + G + ';background-image:radial-gradient(ellipse 70% 55% at 50% 0%,rgba(150,162,255,.42) 0%,rgba(59,76,240,0) 100%),url(' + IMG + 'fondo.jpg);background-position:center top,center bottom;background-size:100% 100%,100% auto;background-repeat:no-repeat,no-repeat;border-radius:16px 16px 0 0;">' +
+  const hero = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" background="' + IMG + 'fondo2.jpg" style="background-color:' + G + ';background-image:url(' + IMG + 'fondo2.jpg);background-position:center bottom;background-size:100% auto;background-repeat:no-repeat;border-radius:16px 16px 0 0;">' +
     '<tr><td align="center" style="padding:28px 24px 0;"><img src="' + IMG + 'logo.png" width="130" alt="Mr Katana" style="display:block;width:130px;height:auto;"></td></tr>' +
     '<tr><td align="center" style="padding:22px 24px 0;' + F + 'font-size:11px;letter-spacing:3px;color:#c9cdff;font-weight:700;text-transform:uppercase;">' + (o.eyebrow || 'Mr Katana FX') + '</td></tr>' +
     '<tr><td align="center" style="padding:10px 28px 0;' + F + 'font-size:' + (big ? 32 : 28) + 'px;line-height:' + (big ? 38 : 35) + 'px;color:#ffffff;font-weight:800;letter-spacing:-.5px;">' + o.title + '</td></tr>' +
@@ -57,11 +57,11 @@ function page(o) {
     (o.unsub ? ' &nbsp;·&nbsp; <a href="' + (o.unsubUrl || SITE + '/app/perfil') + '" style="' + lk + '">Darme de baja</a>' : ' &nbsp;·&nbsp; <a href="' + SITE + '/app/perfil" style="' + lk + '">Ajustes de notificaciones</a>');
   const soc = REDES.filter(r => r[2]).map(r => '<td style="padding:0 6px;"><a href="' + r[2] + '"><img src="' + IMG + 'red-' + r[0] + '.png" width="34" height="34" alt="' + r[1] + '" style="display:block;width:34px;height:34px;"></a></td>').join('');
   const small = t => '<tr><td align="center" style="padding:10px 34px 0;' + F + 'font-size:11px;line-height:17px;color:#8a8e9c;">' + t + '</td></tr>';
-  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"></head><body style="margin:0;padding:0;background:#eef0f7;">' +
+  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"><style>:root{color-scheme:light only;supported-color-schemes:light only;}</style></head><body style="margin:0;padding:0;background:#eef0f7;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef0f7;"><tr><td align="center" style="padding:24px 10px;">' +
     '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:20px;overflow:hidden;">' +
     '<tr><td style="padding:12px 2% 0;">' + hero + '</td></tr>' +
-    '<tr><td style="padding:0;"><img src="' + IMG + 'a-' + (o.art || 'aviso') + '.jpg" width="600" alt="" style="display:block;width:100%;height:auto;"></td></tr>' +
+    '<tr><td style="padding:0;"><img src="' + IMG + 'b-' + (o.art || 'aviso') + '.png" width="600" alt="" style="display:block;width:100%;height:auto;"></td></tr>' +
     '<tr><td style="padding:14px 36px 8px;">' + (o.body || '') + '</td></tr>' + panel +
     '<tr><td style="padding:4px 36px 34px;">' + btn + (o.note ? '<div style="' + F + 'font-size:12px;line-height:18px;color:#8a8e9c;text-align:center;padding-top:12px;">' + o.note + '</div>' : '') + '</td></tr>' +
     '</table>' +

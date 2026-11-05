@@ -1,0 +1,574 @@
+// api/cart.js
+// Carrito dentro de la app: el alumno ya logueado compra o renueva cualquier servicio
+// (en vivo, Kairus, sesiones 1-1 extra, o lo que se agregue en Admin > Planes con
+// "Mostrar en el carrito").
+//
+//   POST /api/cart  { action: 'create', items: [{ plan_id, variant_id }] }
+//     → calcula el total con los precios de la base (no los del navegador),
+//       crea el pedido en PayPal y devuelve su id
+//   POST /api/cart  { action: 'capture', orderID }
+//     → cobra en PayPal, verifica el monto y activa todo lo comprado
+//
+// Checkout público (checkout.html, quien compra sin entrar a la app):
+//   { action: 'create', source: 'checkout', items, code } con sesión, o
+//   { action: 'guest_create', user_id, items, code } sin sesión: la cuenta recién creada
+//   aún no confirmó el correo, así que no tiene sesión. Solo se acepta para cuentas
+//   nuevas (sin confirmar o creadas hace menos de 24 h).
+//   { action: 'guest_capture', user_id, orderID } cobra y activa igual que 'capture'.
+//
+// Variables en Vercel: PAYPAL_SECRET (y PAYPAL_CLIENT_ID si cambia), SUPABASE_SERVICE_KEY,
+// TV_SESSIONID (sesión de TradingView del dueño de Kairus, para dar el acceso solo).
+
+const { createClient } = require('@supabase/supabase-js');
+
+const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
+const PP_CLIENT = process.env.PAYPAL_CLIENT_ID || 'AYqmenNbm9toSrKHvVt5BxHZglY06A2a5Fgi_ffQrKbPoeLxtXlNc4wseA89j24Cv8iJjLoLYV08A0vu';
+const PP_API = process.env.PAYPAL_API || 'https://api-m.paypal.com';
+const UNLIMITED = '2099-12-31T00:00:00.000Z';
+
+module.exports = async function handler(req, res) {
+  try {
+    // Cron diario de renovaciones con tarjeta (vercel.json → /api/cart?cron=renew)
+    if (req.query && req.query.cron === 'renew') {
+      if (!process.env.SUPABASE_SERVICE_KEY || !process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_keys' });
+      const sbc = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+      return await require('./_renew').cron({ sb: sbc, whopFetch, priceItems, WHOP_COMPANY, WHOP_PRODUCT }, req, res);
+    }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+    // Aviso de pago de Whop (/api/whop-webhook llega aquí por vercel.json; plan Hobby = máx. 12 funciones)
+    if (req.query && req.query.hook === 'whop') return await require('./_whop-webhook')(req, res);
+    if (!process.env.SUPABASE_SERVICE_KEY) return res.status(500).json({ error: 'missing_service_key' });
+    const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+
+    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    if (body.action === 'guest_create' || body.action === 'guest_capture') {
+      const guest = await guestUser(sb, body.user_id);
+      if (!guest) return res.status(401).json({ error: 'no_session' });
+      if (body.action === 'guest_create') return await create(sb, guest, Object.assign({}, body, { source: 'checkout' }), res);
+      return await capture(sb, guest, body, res);
+    }
+    if (body.action === 'guest_whop_create' || body.action === 'guest_whop_status' || body.action === 'guest_whop_pay') {
+      const guest = await guestUser(sb, body.user_id);
+      if (!guest) return res.status(401).json({ error: 'no_session' });
+      if (body.action === 'guest_whop_create') return await whopCreate(sb, guest, Object.assign({}, body, { source: 'checkout' }), req, res);
+      if (body.action === 'guest_whop_pay') return await whopPay(sb, guest, body, req, res);
+      return await whopStatus(sb, guest, body, res);
+    }
+
+    // Plan de pago por cuotas: el checkout lo lee con el link, sin sesión
+    if (body.action === 'pp_get') return await require('./_payplan').get(sb, body, res);
+
+    const token = (req.headers.authorization || '').replace('Bearer ', '');
+    const u = token ? await sb.auth.getUser(token) : null;
+    const user = u && u.data && u.data.user;
+    if (!user) return res.status(401).json({ error: 'no_session' });
+
+    if (body.action === 'create') return await create(sb, user, body, res);
+    if (body.action === 'capture') return await capture(sb, user, body, res);
+    if (body.action === 'tv_grant') return await adminTv(sb, user, body, res);
+    if (body.action === 'whop_create') return await whopCreate(sb, user, body, req, res);
+    if (body.action === 'whop_status') return await whopStatus(sb, user, body, res);
+    if (body.action === 'whop_pay') return await whopPay(sb, user, body, req, res);
+    if (body.action === 'renew_test') return await require('./_renew').adminTest({ sb, whopFetch, priceItems, WHOP_COMPANY, WHOP_PRODUCT }, user, body, res);
+    if (body.action === 'tv_claim') return await tvClaim(sb, user, body, res);
+    if (body.action === 'card_setup') return await cardSetup(sb, user, body, req, res);
+    if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
+    if (/^pp_(list|create|update|delete|cancel|resume|date)$/.test(String(body.action))) return await require('./_payplan').admin(sb, user, body, res);
+    if (body.action === 'pp_mine') return await require('./_payplan').mine(sb, user, res);
+    return res.status(400).json({ error: 'bad_action' });
+  } catch (e) {
+    return res.status(500).json({ error: String(e.message || e) });
+  }
+};
+
+// Cuenta recién creada en el checkout (todavía sin sesión porque falta confirmar el correo)
+async function guestUser(sb, id) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) return null;
+  const r = await sb.auth.admin.getUserById(id);
+  const u = r && r.data && r.data.user;
+  if (!u) return null;
+  const fresh = Date.now() - new Date(u.created_at).getTime() < 24 * 3600e3;
+  return (!u.email_confirmed_at || fresh) ? u : null;
+}
+
+// Código de descuento del checkout (tabla access_codes, code_type = 'discount')
+async function discountFor(sb, code, items) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) return null;
+  const r = await sb.from('access_codes').select('code, plan, code_type, discount_type, discount_value, is_used').eq('code', code).maybeSingle();
+  const d = r.data;
+  if (!d || d.is_used || d.code_type !== 'discount') throw new Error('bad_code');
+  const pl = d.plan || 'completo';
+  if (pl !== 'completo' && !items.some(i => i.plan_id === pl || (pl === 'live' && String(i.plan_id).indexOf('live') === 0))) throw new Error('bad_code');
+  return { code: d.code, type: d.discount_type, value: Number(d.discount_value) || 0 };
+}
+
+// ── Precios reales desde la base ──
+// En el checkout público valen los planes marcados como visibles (active); en el carrito, los de "Mostrar en el carrito".
+async function priceItems(sb, items, checkout) {
+  if (!Array.isArray(items) || !items.length || items.length > 10) throw new Error('empty_cart');
+  const ids = [...new Set(items.map(i => String(i.plan_id || '')))];
+  const pr = await sb.from('checkout_plans').select('*').in('id', ids);
+  const vr = await sb.from('checkout_plan_variants').select('*').in('plan_id', ids);
+  const plans = {}; (pr.data || []).forEach(p => { plans[p.id] = p; });
+  const vars = {}; (vr.data || []).forEach(v => { vars[v.id] = v; });
+  return items.map(i => {
+    const p = plans[i.plan_id];
+    if (!p || !(checkout ? (p.active || p.in_store) : p.in_store)) throw new Error('not_in_store');
+    const pv = (vr.data || []).filter(v => v.plan_id === p.id);
+    let v = null;
+    if (pv.length) { v = vars[i.variant_id]; if (!v || v.plan_id !== p.id) throw new Error('pick_variant'); }
+    const price = Number(v ? v.price : p.price);
+    if (!(price > 0)) throw new Error('no_price');
+    return {
+      plan_id: p.id, variant_id: v ? v.id : null,
+      name: p.name + (v ? ' · ' + v.name : ''), price,
+      access_clases: v && v.access_clases != null ? v.access_clases : p.access_clases,
+      clases_months: v && v.duration_clases_months != null ? v.duration_clases_months : p.duration_clases_months,
+      live_months: v && v.duration_live_months != null ? v.duration_live_months : p.duration_live_months,
+      tv_months: v && v.duration_tv_months != null ? v.duration_tv_months : p.duration_tv_months,
+      extra_1on1: v && v.extra_1on1 != null ? v.extra_1on1 : (p.extra_1on1 || 0),
+      access_1on1: !!p.access_1on1, category: p.category, tv_pine_id: p.tv_pine_id || null,
+      roadmap_mode: p.roadmap_mode || null
+    };
+  });
+}
+
+async function paypalToken() {
+  const r = await fetch(PP_API + '/v1/oauth2/token', {
+    method: 'POST',
+    headers: { Authorization: 'Basic ' + Buffer.from(PP_CLIENT + ':' + process.env.PAYPAL_SECRET).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials'
+  });
+  const j = await r.json();
+  if (!j.access_token) throw new Error('paypal_auth');
+  return j.access_token;
+}
+
+async function create(sb, user, body, res) {
+  if (!process.env.PAYPAL_SECRET) return res.status(500).json({ error: 'missing_paypal_secret' });
+  const pr = await prepare(sb, user, body);
+  if (pr.error) return res.status(400).json({ error: pr.error });
+  const { items, total } = pr;
+  const tk = await paypalToken();
+  const r = await fetch(PP_API + '/v2/checkout/orders', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      intent: 'CAPTURE',
+      purchase_units: [{
+        description: ('Mr Katana FX: ' + items.map(i => i.name).join(', ')).slice(0, 127),
+        amount: { currency_code: 'USD', value: total.toFixed(2) }
+      }]
+    })
+  });
+  const o = await r.json();
+  if (!o.id) return res.status(502).json({ error: 'paypal_order', detail: o.message || o.name });
+  const ins = await sb.from('cart_orders').insert({ user_id: user.id, paypal_order_id: o.id, items, total });
+  if (ins.error) return res.status(500).json({ error: ins.error.message });
+  return res.status(200).json({ id: o.id, total });
+}
+
+// Precios y descuento calculados en el servidor (los usan PayPal y Whop)
+async function prepare(sb, user, body) {
+  let items;
+  const checkout = body.source === 'checkout';
+  let disc = null;
+  try {
+    items = await priceItems(sb, body.items, checkout);
+    if (checkout) disc = await discountFor(sb, body.code, items);
+  } catch (e) { return { error: e.message }; }
+  if (items.some(i => i.tv_pine_id)) {
+    const s = await sb.from('user_settings').select('tv_username').eq('id', user.id).maybeSingle();
+    if (!s.data || !s.data.tv_username) return { error: 'need_tv_user' };
+  }
+  let total = Math.round(items.reduce((a, i) => a + i.price, 0) * 100) / 100;
+  if (disc) {
+    const off = disc.type === 'percent' ? total * disc.value / 100 : disc.value;
+    const nt = Math.max(0, Math.round((total - off) * 100) / 100);
+    // El descuento se reparte entre lo comprado para que cada compra quede con lo que se pagó
+    items.forEach(i => { i.price = Math.round(i.price * (total ? nt / total : 0) * 100) / 100; i.discount_code = disc.code; });
+    total = nt;
+  }
+  if (!(total > 0)) return { error: 'no_price' };
+  return { items, total };
+}
+
+async function capture(sb, user, body, res) {
+  const orderID = String(body.orderID || '');
+  const q = await sb.from('cart_orders').select('*').eq('paypal_order_id', orderID).eq('user_id', user.id).maybeSingle();
+  const ord = q.data;
+  if (!ord) return res.status(404).json({ error: 'order_not_found' });
+  if (ord.status !== 'pending') return res.status(200).json({ ok: true, already: true, result: ord.result });
+
+  const tk = await paypalToken();
+  const r = await fetch(PP_API + '/v2/checkout/orders/' + encodeURIComponent(orderID) + '/capture', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }
+  });
+  const c = await r.json();
+  const cap = c.purchase_units && c.purchase_units[0] && c.purchase_units[0].payments && c.purchase_units[0].payments.captures && c.purchase_units[0].payments.captures[0];
+  if (c.status !== 'COMPLETED' || !cap || Math.abs(Number(cap.amount.value) - Number(ord.total)) > 0.01) {
+    await sb.from('cart_orders').update({ status: 'error', result: { paypal: c.status || c.name || 'fail' } }).eq('id', ord.id);
+    return res.status(402).json({ error: 'payment_not_completed' });
+  }
+  // Marca como pagado una sola vez (evita activar dos veces si llegan dos llamadas)
+  const claim = await sb.from('cart_orders').update({ status: 'paid', paid_at: new Date().toISOString() })
+    .eq('id', ord.id).eq('status', 'pending').select('id');
+  if (!claim.data || !claim.data.length) return res.status(200).json({ ok: true, already: true });
+
+  const result = await applyItems(sb, user, ord, c.payer && c.payer.email_address);
+  await sb.from('cart_orders').update({ status: result.errors.length ? 'error' : 'applied', result }).eq('id', ord.id);
+  return res.status(200).json({ ok: true, result });
+}
+
+// ── Admin: dar o reintentar el acceso a un indicador a mano (respaldo) ──
+async function adminTv(sb, user, body, res) {
+  const me = await sb.from('profiles').select('role').eq('id', user.id).single();
+  if (!me.data || me.data.role !== 'admin') return res.status(403).json({ error: 'not_admin' });
+  const pl = await sb.from('checkout_plans').select('id, tv_pine_id').eq('id', String(body.plan_id || '')).maybeSingle();
+  if (!pl.data || !pl.data.tv_pine_id) return res.status(400).json({ error: 'plan_without_indicator' });
+  const months = body.months == null ? 0 : parseInt(body.months, 10);
+  const uid = String(body.user_id || '');
+  const tvu = String(body.tv_username || '').trim();
+  if (tvu) await sb.from('user_settings').upsert({ id: uid, tv_username: tvu, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+  const tv = await grantTv(sb, uid, { plan_id: pl.data.id, tv_pine_id: pl.data.tv_pine_id, tv_months: months || null }, !!body.retry);
+  return res.status(200).json(Object.assign({ ok: false }, tv));
+}
+
+// ── Activa lo comprado: suma tiempo a lo que ya tiene, nunca lo acorta ──
+function addMonths(fromISO, months) {
+  const now = new Date();
+  let d = fromISO ? new Date(fromISO) : now;
+  if (isNaN(d) || d < now) d = now;
+  d = new Date(d); d.setMonth(d.getMonth() + months);
+  return d.toISOString();
+}
+const fmt = x => new Date(x).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Guayaquil' });
+const isUnl = x => x && new Date(x).getFullYear() >= 2099;
+
+async function applyItems(sb, user, ord, payerEmail) {
+  const out = { lines: [], errors: [] };
+  const pr = await sb.from('profiles').select('plan, membership_start, membership_end, live_end, live_plan, access_1on1').eq('id', user.id).single();
+  const p = pr.data || {};
+  const upd = {};
+  let end = p.membership_end, liveEnd = p.live_end;
+  const purchases = [];
+
+  for (const it of ord.items) {
+    let expires = null;
+    // Clases (planes de formación)
+    if ((it.category === 'clases' || it.category === 'ambos') && it.access_clases !== false) {
+      if (!it.clases_months) end = UNLIMITED;
+      else if (!isUnl(end)) end = addMonths(end, it.clases_months);
+      upd.membership_end = end; if (!p.membership_start) upd.membership_start = new Date().toISOString();
+      upd.plan = it.plan_id; if (it.roadmap_mode) upd.roadmap_mode = it.roadmap_mode;
+      expires = end;
+      out.lines.push({ name: it.name, text: isUnl(end) ? 'Acceso ilimitado a las clases' : 'Clases hasta el ' + fmt(end) });
+    }
+    // En vivo
+    if (it.live_months) {
+      liveEnd = addMonths(liveEnd, it.live_months);
+      upd.live_end = liveEnd; upd.live_plan = it.plan_id; expires = liveEnd;
+      out.lines.push({ name: it.name, text: 'En vivo hasta el ' + fmt(liveEnd) });
+    }
+    // Sesiones 1-1
+    if (it.access_1on1 || it.extra_1on1) upd.access_1on1 = true;
+    if (it.extra_1on1) out.lines.push({ name: it.name, text: '+' + it.extra_1on1 + ' sesión' + (it.extra_1on1 === 1 ? '' : 'es') + ' 1-1' });
+    // Indicador de TradingView
+    if (it.tv_pine_id) {
+      const tv = await grantTv(sb, user.id, it);
+      expires = tv.expires || expires;
+      if (tv.ok) out.lines.push({ name: it.name, text: 'Activo en TradingView (' + tv.username + ')' + (tv.expires ? ' hasta el ' + fmt(tv.expires) : '') });
+      else { out.lines.push({ name: it.name, text: 'Pago recibido. Te damos el acceso en TradingView en breve.' }); out.errors.push('tv:' + tv.error); }
+    }
+    if (!out.lines.some(l => l.name === it.name)) out.lines.push({ name: it.name, text: 'Pago recibido' });
+    purchases.push({
+      user_id: user.id, plan_id: it.plan_id, amount: it.price, currency: 'USD', payment_method: ord.provider || 'paypal',
+      paypal_order_id: ord.paypal_order_id, paypal_payer_email: payerEmail || null, status: 'completed',
+      starts_at: new Date().toISOString(), expires_at: expires, extra_1on1: it.extra_1on1 || 0, cart_order_id: ord.id
+    });
+  }
+  if (Object.keys(upd).length) {
+    const u = await sb.from('profiles').update(upd).eq('id', user.id);
+    if (u.error) out.errors.push('profile:' + u.error.message);
+  }
+  const ins = await sb.from('purchases').insert(purchases);
+  if (ins.error) out.errors.push('purchases:' + ins.error.message);
+  out.total = ord.total;
+  return out;
+}
+
+// TradingView no tiene API oficial: se usa la misma llamada que hace su página de
+// "Administrar acceso" del script, con la sesión del dueño (TV_SESSIONID en Vercel).
+async function grantTv(sb, userId, it, retry) {
+  const s = await sb.from('user_settings').select('tv_username').eq('id', userId).maybeSingle();
+  const username = s.data && s.data.tv_username;
+  const prev = await sb.from('tv_access').select('expires_at').eq('user_id', userId).eq('pine_id', it.tv_pine_id).maybeSingle();
+  const lifetime = !it.tv_months || (prev.data && prev.data.expires_at === null);
+  let expires = retry && prev.data ? prev.data.expires_at : (lifetime ? null : addMonths(prev.data && prev.data.expires_at, it.tv_months));
+  let ok = false, error = null;
+  if (!username) error = 'no_username';
+  else if (!process.env.TV_SESSIONID) error = 'missing_tv_session';
+  else {
+    try {
+      const pine = await resolvePine(it.tv_pine_id);
+      // Si ya tenía acceso dado directo en TradingView, se suma desde esa fecha (nunca se acorta)
+      if (!retry && expires !== null) {
+        const cur = await tvCurrent(pine, username);
+        if (cur && cur.lifetime) expires = null;
+        else if (cur && cur.expires && new Date(cur.expires) > new Date(prev.data && prev.data.expires_at || 0)) expires = addMonths(cur.expires, it.tv_months);
+      }
+      ok = await tvCall('add', pine, username, expires);
+      if (!ok) ok = await tvCall('modify_user_expiration', pine, username, expires);
+      if (!ok) error = 'tv_rejected';
+    } catch (e) { error = String(e.message || e); }
+  }
+  await sb.from('tv_access').upsert({
+    user_id: userId, plan_id: it.plan_id, pine_id: it.tv_pine_id, tv_username: username || '',
+    expires_at: expires, status: ok ? 'ok' : 'error', last_error: error, updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,pine_id' });
+  return { ok, error, expires, username };
+}
+
+// En Admin se puede poner el ID (PUB;...) o simplemente el link de la página del script:
+// en ese caso se lee el ID real desde esa página.
+const _pineCache = {};
+async function resolvePine(v) {
+  v = String(v || '').trim();
+  if (/^PUB;/.test(v)) return v;
+  if (_pineCache[v]) return _pineCache[v];
+  const url = v.replace(/^https?:\/\/[a-z]{2,3}\.tradingview\.com/, 'https://www.tradingview.com');
+  const r = await fetch(url, { headers: { cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), 'user-agent': 'Mozilla/5.0' } });
+  const html = await r.text();
+  const m = html.match(/PUB;[A-Za-z0-9]{16,}/);
+  if (!m) throw new Error('pine_id_not_found');
+  return (_pineCache[v] = m[0]);
+}
+
+// Acceso actual de un usuario en el script (lo que se ve en "Administrar acceso" de TradingView)
+async function tvCurrent(pineId, username) {
+  try {
+    const r = await fetch('https://www.tradingview.com/pine_perm/list_users/?limit=10&order_by=-created', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), origin: 'https://www.tradingview.com', referer: 'https://www.tradingview.com/' },
+      body: new URLSearchParams({ pine_id: pineId, username: username }).toString()
+    });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => ({}));
+    const u = (j.results || []).find(x => String(x.username || '').toLowerCase() === String(username).toLowerCase());
+    if (!u) return null;
+    return u.expiration ? { expires: u.expiration } : { lifetime: true };
+  } catch (e) { return null; }
+}
+
+async function tvCall(kind, pineId, username, expires) {
+  const form = new URLSearchParams({ pine_id: pineId, username_recip: username });
+  if (expires) form.set('expiration', expires);
+  const r = await fetch('https://www.tradingview.com/pine_perm/' + kind + '/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(),
+      origin: 'https://www.tradingview.com', referer: 'https://www.tradingview.com/'
+    },
+    body: form.toString()
+  });
+  if (!r.ok) return false;
+  const j = await r.json().catch(() => ({}));
+  return j.status === 'ok' || (kind === 'modify_user_expiration' && r.status === 200 && !j.status);
+}
+
+// ── Pago con tarjeta por Whop ──
+// whop_create: crea el pedido y una página de pago de Whop con el total calculado aquí.
+// Al pagar, Whop avisa a /api/whop-webhook, que activa lo comprado (misma función que PayPal).
+// whop_status: el checkout pregunta si ya se activó al volver de Whop.
+// Variables en Vercel: WHOP_API_KEY (y WHOP_COMPANY_ID si cambia la empresa).
+const WHOP_API = 'https://api.whop.com/api/v1';
+const WHOP_COMPANY = process.env.WHOP_COMPANY_ID || 'biz_7IQpwkgU5mdr5I';
+// Producto de Whop al que se cuelgan los pagos de la página (sin Discord ni otros accesos de Whop)
+const WHOP_PRODUCT = process.env.WHOP_PRODUCT_ID || 'prod_serN8bGIueDYD';
+async function whopFetch(path, opts) {
+  const r = await fetch(WHOP_API + path, Object.assign({}, opts, {
+    headers: Object.assign({ Authorization: 'Bearer ' + process.env.WHOP_API_KEY, 'Content-Type': 'application/json' }, (opts && opts.headers) || {})
+  }));
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  return { ok: r.ok, status: r.status, data: j };
+}
+
+async function whopCreate(sb, user, body, req, res) {
+  if (!process.env.WHOP_API_KEY || !WHOP_PRODUCT) return res.status(500).json({ error: 'missing_whop_key' });
+  // Cuota 1 de un plan de pago (el monto sale del plan que armó el closer)
+  if (body.pp) {
+    const o = await require('./_payplan').firstOrder(sb, user, body.pp);
+    if (o.error) return res.status(400).json({ error: o.error });
+    return res.status(200).json({ order: o.order, total: o.total, account: WHOP_COMPANY });
+  }
+  const pr = await prepare(sb, user, body);
+  if (pr.error) return res.status(400).json({ error: pr.error });
+  const { items, total } = pr;
+  // Renovación automática con tarjeta: solo lo que se compró (en vivo; Kairus solo si el pedido lo incluye).
+  // Aplica cuando lo comprado incluye en vivo. Se decide aquí, nunca desde el navegador.
+  const hasLive = items.some(i => i.live_months);
+  const renew = hasLive ? { live: true, kairus: items.some(i => i.tv_months) } : null;
+  const ins = await sb.from('cart_orders').insert({ user_id: user.id, provider: 'whop', items, total, renew }).select('id').single();
+  if (ins.error) return res.status(500).json({ error: ins.error.message });
+  const orderId = ins.data.id;
+  // Formulario dentro de la página: no hace falta crear la página de pago de Whop (ahorra una llamada lenta)
+  if (body.embed) return res.status(200).json({ order: orderId, total, account: WHOP_COMPANY });
+  const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
+  const c = await whopFetch('/checkout_configurations', {
+    method: 'POST',
+    body: JSON.stringify({
+      mode: 'payment',
+      account_id: WHOP_COMPANY,
+      variant: {
+        product_id: WHOP_PRODUCT, currency: 'usd', billing_type: 'one_time', initial_price: total,
+        visibility: 'hidden',
+        title: items.map(i => i.name).join(', ').slice(0, 30).trim()  // Whop: máximo 30 caracteres
+      },
+      metadata: { order_id: orderId, user_id: user.id },
+      redirect_url: origin + '/checkout?whop=1&order=' + orderId
+    })
+  });
+  const url = c.data && c.data.purchase_url;
+  if (!c.ok || !url) {
+    await sb.from('cart_orders').update({ status: 'error', result: { whop: c.status, detail: (c.data && (c.data.message || c.data.error)) || null } }).eq('id', orderId);
+    return res.status(502).json({ error: 'whop_checkout', detail: c.data && (c.data.message || (c.data.error && c.data.error.message) || c.data.error) });
+  }
+  await sb.from('cart_orders').update({ whop_checkout_id: c.data.id || null }).eq('id', orderId);
+  return res.status(200).json({ url: /^https?:/.test(url) ? url : 'https://whop.com' + url, ch: c.data.id || null, order: orderId, total, account: WHOP_COMPANY });
+}
+
+async function whopStatus(sb, user, body, res) {
+  const id = String(body.order || '');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: 'bad_order' });
+  const q = await sb.from('cart_orders').select('status, result, total').eq('id', id).eq('user_id', user.id).maybeSingle();
+  if (!q.data) return res.status(404).json({ error: 'order_not_found' });
+  return res.status(200).json({ status: q.data.status, result: q.data.result, total: q.data.total });
+}
+
+// whop_pay: cobra con los campos de tarjeta de Whop dentro del checkout (confirmation token).
+// El monto sale del pedido guardado, nunca del navegador. La tarjeta queda guardada para las renovaciones.
+async function whopPay(sb, user, body, req, res) {
+  if (!process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_whop_key' });
+  const id = String(body.order || ''), token = String(body.token || '');
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !token) return res.status(400).json({ error: 'bad_order' });
+  const q = await sb.from('cart_orders').select('id, status, total, items, provider').eq('id', id).eq('user_id', user.id).maybeSingle();
+  const ord = q.data;
+  if (!ord || ord.provider !== 'whop') return res.status(404).json({ error: 'order_not_found' });
+  if (ord.status !== 'pending') return res.status(200).json({ status: ord.status });
+  const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
+  const p = await whopFetch('/payments', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': 'mk-' + ord.id + '-' + token.slice(-12) },
+    body: JSON.stringify({
+      account_id: WHOP_COMPANY,
+      variant: {
+        product_id: WHOP_PRODUCT, currency: 'usd', billing_type: 'one_time', initial_price: Number(ord.total),
+        visibility: 'hidden', title: (ord.items || []).map(i => i.name).join(', ').slice(0, 30).trim() || 'Mr Katana FX'
+      },
+      confirmation_token: token,
+      return_url: origin + '/checkout?whop=1&order=' + ord.id,
+      metadata: { order_id: ord.id, user_id: user.id }
+    })
+  });
+  if (!p.ok || !p.data || !p.data.id) {
+    const d = p.data || {};
+    return res.status(402).json({ error: 'whop_pay', detail: d.message || (d.error && d.error.message) || d.error || p.status });
+  }
+  await sb.from('cart_orders').update({ whop_payment_id: p.data.id }).eq('id', ord.id).eq('status', 'pending');
+  return res.status(200).json({ status: p.data.status || null, client_secret: p.data.client_secret || null, payment: p.data.id });
+}
+
+// Kairus incluido en un plan (ej. Mentoría: 3 meses): el alumno lo reclama en Herramientas con su usuario de TradingView.
+async function tvClaim(sb, user, body, res) {
+  const username = String(body.username || '').trim().replace(/^@/, '');
+  if (!/^[A-Za-z0-9_.-]{2,40}$/.test(username)) return res.status(400).json({ error: 'bad_username' });
+  const pl = await sb.from('checkout_plans').select('id, tv_claim_months').gt('tv_claim_months', 0);
+  const months = {}; ((pl.data) || []).forEach(x => { months[x.id] = x.tv_claim_months; });
+  const ids = Object.keys(months);
+  if (!ids.length) return res.status(404).json({ error: 'nothing_to_claim' });
+  const pu = await sb.from('purchases').select('id, plan_id').eq('user_id', user.id).in('plan_id', ids).is('tv_claimed_at', null).order('created_at', { ascending: true }).limit(1);
+  const buy = pu.data && pu.data[0];
+  if (!buy) return res.status(404).json({ error: 'nothing_to_claim' });
+  const k = await sb.from('checkout_plans').select('id, tv_pine_id').not('tv_pine_id', 'is', null).eq('category', 'herramienta').limit(1);
+  const kai = (k.data && k.data[0]) || null;
+  if (!kai) return res.status(500).json({ error: 'no_indicator' });
+  // Se aparta la compra primero para que no se pueda reclamar dos veces
+  const lock = await sb.from('purchases').update({ tv_claimed_at: new Date().toISOString() }).eq('id', buy.id).is('tv_claimed_at', null).select('id');
+  if (!lock.data || !lock.data.length) return res.status(409).json({ error: 'already_claimed' });
+  await sb.from('user_settings').upsert({ id: user.id, tv_username: username }, { onConflict: 'id' });
+  const tv = await grantTv(sb, user.id, { plan_id: kai.id, tv_pine_id: kai.tv_pine_id, tv_months: months[buy.plan_id] }, false);
+  if (!tv.ok) {
+    await sb.from('purchases').update({ tv_claimed_at: null }).eq('id', buy.id);
+    return res.status(502).json({ error: tv.error || 'tv_rejected' });
+  }
+  return res.status(200).json({ ok: true, expires: tv.expires });
+}
+
+// Cambiar tarjeta: Whop guarda la nueva con un "setup intent" (no cobra) y queda para las renovaciones.
+// { token } crea el intento; { check: id } revisa uno que pidió verificación del banco.
+async function cardSetup(sb, user, body, req, res) {
+  if (!process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_whop_key' });
+  let si;
+  if (body.check) {
+    const id = String(body.check);
+    if (!/^sint_[A-Za-z0-9]+$/.test(id)) return res.status(400).json({ error: 'bad_id' });
+    si = await whopFetch('/setup_intents/' + id, { method: 'GET' });
+  } else {
+    const token = String(body.token || '');
+    if (!token) return res.status(400).json({ error: 'bad_token' });
+    const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';
+    si = await whopFetch('/setup_intents', {
+      method: 'POST', headers: { 'Idempotency-Key': 'mk-setup-' + user.id + '-' + token.slice(-16) },
+      body: JSON.stringify({ account_id: WHOP_COMPANY, confirmation_token: token, return_url: origin + '/app/perfil', metadata: { user_id: user.id } })
+    });
+  }
+  const d = si.data || {};
+  if (!si.ok) return res.status(402).json({ error: 'setup_failed', detail: d.message || (d.error && d.error.message) || si.status });
+  if (d.metadata && d.metadata.user_id && d.metadata.user_id !== user.id) return res.status(403).json({ error: 'not_yours' });
+  const st = String(d.status || '');
+  if (st === 'succeeded' && d.payment_method_id) {
+    const row = { user_id: user.id, whop_payment_method_id: d.payment_method_id, updated_at: new Date().toISOString() };
+    const mid = d.member_id || (d.member && d.member.id); if (mid) row.whop_member_id = mid;
+    const ex = await sb.from('auto_renew').select('user_id').eq('user_id', user.id).maybeSingle();
+    if (ex.data) await sb.from('auto_renew').update(row).eq('user_id', user.id);
+    else await sb.from('auto_renew').insert(Object.assign({ live: true, kairus: false, active: false }, row));
+    return res.status(200).json({ ok: true });
+  }
+  if (d.client_secret && /requires_action|processing/.test(st)) return res.status(200).json({ id: d.id, client_secret: d.client_secret, status: st });
+  return res.status(200).json({ ok: false, status: st, error: (d.last_setup_error && d.last_setup_error.message) || 'not_saved' });
+}
+
+// Ajustes, Membresía: ver la tarjeta guardada (últimos 4 si Whop los da), apagar/encender la renovación o quitar la tarjeta.
+async function renewCard(sb, user, body, res) {
+  const q = await sb.from('auto_renew').select('*').eq('user_id', user.id).maybeSingle();
+  const a = q.data;
+  if (!a) return res.status(404).json({ error: 'no_card' });
+  if (body.action === 'card_info') {
+    if (!a.whop_payment_method_id || !process.env.WHOP_API_KEY) return res.status(200).json({});
+    // Busca los últimos 4 y la marca en lo que responda Whop (método de pago, o el último pago con tarjeta)
+    const dig = (o, re, d) => { if (!o || typeof o !== 'object' || d > 4) return ''; for (const k of Object.keys(o)) { if (re.test(k) && o[k] != null && typeof o[k] !== 'object') return String(o[k]); } for (const k of Object.keys(o)) { const v = dig(o[k], re, d + 1); if (v) return v; } return ''; };
+    const srcs = ['/payment_methods/' + encodeURIComponent(a.whop_payment_method_id) + '?account_id=' + WHOP_COMPANY];
+    const lp = await sb.from('cart_orders').select('whop_payment_id').eq('user_id', user.id).not('whop_payment_id', 'is', null).order('created_at', { ascending: false }).limit(1);
+    if (lp.data && lp.data[0]) srcs.push('/payments/' + encodeURIComponent(lp.data[0].whop_payment_id));
+    for (const path of srcs) {
+      const r = await whopFetch(path, { method: 'GET' }).catch(() => null);
+      if (!r || !r.ok) continue;
+      const last4 = dig(r.data, /last.?(4|four)/i, 0).replace(/\D/g, '').slice(-4);
+      if (last4.length !== 4) continue;
+      const brand = dig(r.data, /brand/i, 0).replace(/[^a-z ]/gi, '').slice(0, 20);
+      return res.status(200).json({ last4, brand });
+    }
+    return res.status(200).json({});
+  }
+  const upd = body.action === 'card_remove'
+    ? { active: false, whop_payment_method_id: null, updated_at: new Date().toISOString() }
+    : { active: !!body.active, updated_at: new Date().toISOString() };
+  const u = await sb.from('auto_renew').update(upd).eq('user_id', user.id);
+  if (u.error) return res.status(500).json({ error: u.error.message });
+  return res.status(200).json({ ok: true });
+}
+
+module.exports.applyItems = applyItems;
+module.exports.priceItems = priceItems;

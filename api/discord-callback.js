@@ -3,6 +3,7 @@
 // adds user to server and assigns the roles configured for the person's PLAN
 // (checkout_plans.discord_role_ids), then saves to Supabase profiles
 
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 
 const DISCORD_CLIENT_ID     = '1482794976118046851';
@@ -16,8 +17,32 @@ const sb = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+// El "state" de Discord lleva el id del alumno firmado por el servidor, para que nadie
+// pueda conectar su Discord a la cuenta de otra persona (y llevarse sus roles).
+function signState(uid) {
+  const exp = Math.floor(Date.now() / 1000) + 30 * 60;
+  const mac = crypto.createHmac('sha256', process.env.SUPABASE_SERVICE_KEY).update(uid + '.' + exp).digest('hex').slice(0, 32);
+  return uid + '.' + exp + '.' + mac;
+}
+function readState(st) {
+  const [uid, exp, mac] = String(st || '').split('.');
+  if (!uid || !exp || !mac || Number(exp) < Date.now() / 1000) return null;
+  const ok = crypto.createHmac('sha256', process.env.SUPABASE_SERVICE_KEY).update(uid + '.' + exp).digest('hex').slice(0, 32);
+  return mac.length === ok.length && crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(ok)) ? uid : null;
+}
+
 module.exports = async function handler(req, res) {
-  const { code, state } = req.query;
+  // Paso previo: la app pide aquí el state firmado (con la sesión del alumno) antes de ir a Discord
+  if (req.query.start) {
+    const token = (req.headers.authorization || '').replace('Bearer ', '');
+    const u = token ? await sb.auth.getUser(token) : null;
+    const user = u && u.data && u.data.user;
+    if (!user) return res.status(401).json({ error: 'no_session' });
+    return res.status(200).json({ state: signState(user.id) });
+  }
+
+  const { code } = req.query;
+  const state = readState(req.query.state);
   // Detecta automáticamente el dominio desde donde llegó la petición
   // (funciona igual en producción y en cualquier preview de Vercel)
   const REDIRECT_URI = `https://${req.headers.host}/api/discord-callback`;
@@ -62,14 +87,19 @@ module.exports = async function handler(req, res) {
     //    configurados (checkout_plans.discord_role_ids). Si no tiene plan o no
     //    tiene roles configurados, se usa el rol fijo de respaldo.
     let roleIds = [DISCORD_ROLE_ID];
+    if (!state) return res.redirect('/app/dash?discord_error=bad_state');
     try {
       if (state) {
         const { data: profile } = await sb
           .from('profiles')
-          .select('plan')
+          .select('plan, membership_end, live_end, access_1on1, role')
           .eq('id', state)
           .single();
-        if (profile && profile.plan) {
+        // Solo quien tiene algo pagado activo recibe roles (las cuentas gratis entran sin rol)
+        const paid = profile && ((profile.membership_end && new Date(profile.membership_end) > new Date()) ||
+          (profile.live_end && new Date(profile.live_end) > new Date()) || profile.access_1on1 || profile.role === 'admin' || profile.role === 'staff');
+        if (!paid) roleIds = [];
+        if (paid && profile.plan) {
           const { data: planRow } = await sb
             .from('checkout_plans')
             .select('discord_role_ids')

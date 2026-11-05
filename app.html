@@ -5327,6 +5327,7 @@ function _cardChange(done) {
 // Método de pago: tarjeta guardada en Whop (solo guardamos una referencia) y la renovación automática
 function _ajPayMethod() {
   var box = document.getElementById('aj2-pm'); if (!box || !cUser) return;
+  _ajPayPlan(box);
   var plain = function() { box.innerHTML = _ajGroup('Método de pago', _ajRow('Tarjeta o PayPal', 'Pagas en el checkout o en el carrito. Si pagas con tarjeta, queda guardada para tus renovaciones.')); };
   sb.from('auto_renew').select('*').eq('user_id', cUser.id).maybeSingle().then(function(r) {
     var a = r && r.data;
@@ -5353,6 +5354,25 @@ function _ajPayMethod() {
     };
     draw('');
     _cwCall({ action: 'card_info' }).then(function(x) { if (x && x.last4) { var c = document.getElementById('aj2-cd'); if (c) c.textContent = (x.brand ? x.brand.charAt(0).toUpperCase() + x.brand.slice(1) + ' ' : 'Tarjeta ') + 'terminada en ' + x.last4; } });
+  });
+}
+// Plan de pago por cuotas del alumno (lo arma el closer en Admin → Planes de pago)
+function _ajPayPlan(box) {
+  var el = document.getElementById('aj2-pp');
+  if (!el) { el = document.createElement('div'); el.id = 'aj2-pp'; box.parentNode.insertBefore(el, box); }
+  _cwCall({ action: 'pp_mine' }).then(function(j) {
+    var ps = (j && j.plans) || []; if (!ps.length) { el.innerHTML = ''; return; }
+    el.innerHTML = ps.map(function(p) {
+      var ins = p.installments || [], n = ins.length, nx = ins[p.paid_count];
+      var pct = Math.min(100, Math.round(Number(p.paid_total) / Number(p.total) * 100));
+      var m = function(v) { v = Math.round(Number(v) * 100) / 100; return '$' + v.toLocaleString('en-US'); };
+      var txt = p.status === 'done' ? 'Completado. ¡Gracias!' : p.status === 'late' ? 'Tenemos una cuota pendiente. Escríbenos por WhatsApp o cambia tu tarjeta abajo.' :
+        nx && nx.due ? 'Próxima cuota: ' + m(nx.amount) + ' el ' + _ajFmtDate(nx.due) + '. Se cobra sola con tu tarjeta.' : '';
+      var acc = !p.access_given && p.access_from > p.paid_count ? ' Tu acceso se activa al pagar la cuota ' + p.access_from + '.' : '';
+      return _ajGroup('Plan de pago', _ajRow(_mkEsc(p.plan_name) + ' · ' + n + ' cuotas', 'Pagado ' + m(p.paid_total) + ' de ' + m(p.total) +
+        '<div style="height:4px;background:rgba(var(--c-ov),.1);border-radius:3px;margin:7px 0 2px;max-width:220px"><i style="display:block;height:100%;width:' + pct + '%;background:rgb(var(--c-acc));border-radius:3px"></i></div>' +
+        '<small>' + txt + acc + '</small>'));
+    }).join('');
   });
 }
 function _ajReceipt(x, names) {
@@ -6507,6 +6527,7 @@ function _buildAdminTabs() {
     ['st','Alumnos','access_students'],
     ['1on1','Reuniones 1-1','access_students'],
     ['codes','Planes', ['access_plans','access_discord','access_codes']],
+    ['pp','Planes de pago','access_payplans'],
     // ['roadmap','Roadmap','access_roadmap'], // oculto 2026-10-13: Plan de la semana retirado (datos se conservan)
     ['ads','Anuncios','__admin_only'],
     ['apar','Apariencia','__admin_only'],
@@ -6539,7 +6560,7 @@ function _buildAdminTabs() {
   });
 
   var first = visibleTabs[0][0];
-  if (first==='cl') rAdmCl(); else if (first==='se') rAdmSe(); else if (first==='codes') rAdmCodes(); else if (first==='roadmap') rAdmRoadmap(); else if (first==='1on1') rAdm1on1(); else rAdmSt();
+  if (first==='cl') rAdmCl(); else if (first==='se') rAdmSe(); else if (first==='codes') rAdmCodes(); else if (first==='roadmap') rAdmRoadmap(); else if (first==='1on1') rAdm1on1(); else if (first==='pp') rAdmPP(); else rAdmSt();
 }
 // ── PANEL DERECHO "Tu perfil" (solo Dashboard, pantallas anchas) ──
 // Íconos pequeños del rediseño
@@ -7356,8 +7377,165 @@ function rAdmApar() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes','roadmap','1on1','ads','apar','home'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='ads') rAdmAds(); else if(sec==='apar') rAdmApar(); else if(sec==='home') rAdmHome(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+  ['st','cl','se','codes','pp','roadmap','1on1','ads','apar','home'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='pp') rAdmPP(); else if(sec==='ads') rAdmAds(); else if(sec==='apar') rAdmApar(); else if(sec==='home') rAdmHome(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+}
+// ── PLANES DE PAGO POR CUOTAS (Admin → Planes de pago; api/_payplan.js) ──
+var _pp = { rows: [], programs: [] };
+var PP_ST = { waiting: ['Esperando primer pago', 'var(--c-muted)'], active: ['Al día', '#7fb38a'], late: ['Cuota atrasada', '#e38b6a'], done: ['Completado', 'rgb(var(--c-acc))'], canceled: ['Cancelado', 'var(--c-faint)'] };
+function _ppMoney(n) { n = Math.round((Number(n) || 0) * 100) / 100; return '$' + n.toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); }
+function _ppDay(d) { return d ? new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; }
+function _ppLink(c) { return location.origin + '/checkout?pp=' + c; }
+function _ppCopy(c) { var u = _ppLink(c); (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function() { tst('Link copiado'); }, function() { prompt('Copia el link:', u); }); }
+function _ppCss() {
+  if (document.getElementById('pp-css')) return;
+  var s = document.createElement('style'); s.id = 'pp-css';
+  s.textContent = '.pp-top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px;}' +
+    '.pp-stats{display:flex;gap:10px;flex-wrap:wrap;}.pp-stat{background:var(--c-card);border:1px solid var(--k-line,var(--c-line));border-radius:14px;padding:11px 16px;min-width:130px;}' +
+    '.pp-stat b{display:block;font-size:1.15rem;}.pp-stat small{color:var(--c-muted);font-size:.72rem;}' +
+    '.pp-list{background:var(--c-card);border:1px solid var(--k-line,var(--c-line));border-radius:18px;padding:4px 18px;}' +
+    '.pp-row{display:grid;grid-template-columns:1.3fr 1.1fr 1.1fr 1fr 1fr 70px;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--k-line,var(--c-line));font-size:.84rem;}' +
+    '.pp-row:last-child{border-bottom:none;}.pp-h{font-size:.62rem;letter-spacing:1.4px;text-transform:uppercase;color:var(--c-muted);padding:12px 0;}' +
+    '.pp-m{color:var(--c-muted);font-size:.74rem;margin-top:2px;}.pp-bar{height:4px;background:rgba(var(--c-ov),.1);border-radius:3px;margin-top:6px;max-width:150px;}.pp-bar i{display:block;height:100%;background:rgb(var(--c-acc));border-radius:3px;}' +
+    '.pp-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:middle;}' +
+    '.pp-a{background:none;border:none;color:var(--c-text2);cursor:pointer;font-size:.8rem;padding:0;text-align:right;}.pp-a:hover{color:var(--c-text);}' +
+    '.pp-empty{color:var(--c-muted);font-size:.85rem;padding:26px 0;text-align:center;}' +
+    '.pp-f{margin-bottom:13px;}.pp-f label{display:block;font-size:.64rem;color:var(--c-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}' +
+    '.pp-two{display:flex;gap:10px;}.pp-two>div{flex:1;min-width:0;}' +
+    '.pp-q{display:flex;gap:8px;align-items:center;margin-bottom:8px;}.pp-q span{width:62px;flex-shrink:0;color:var(--c-muted);font-size:.78rem;}.pp-q input,.pp-q div{flex:1;min-width:0;}' +
+    '.pp-q .pp-fx{padding:9px 11px;font-size:.82rem;color:var(--c-muted);}' +
+    '.pp-sum{font-size:.78rem;color:var(--c-muted);margin:4px 0 0 70px;}.pp-sum b{color:var(--c-text);}' +
+    '.pp-link{display:flex;gap:8px;align-items:center;border:1px dashed rgba(var(--c-acc),.5);border-radius:10px;padding:10px 12px;font-size:.8rem;color:var(--c-text2);word-break:break-all;}' +
+    '.pp-link button{margin-left:auto;background:none;border:none;color:rgb(var(--c-acc));cursor:pointer;font-weight:600;flex-shrink:0;}' +
+    '.pp-ins{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--c-line);font-size:.84rem;}.pp-ins:last-child{border-bottom:none;}' +
+    '.pp-ins input{width:150px;}.pp-acts{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;font-size:.8rem;}' +
+    '@media(max-width:860px){.pp-stats{display:grid;grid-template-columns:repeat(3,1fr);width:100%;}.pp-stat{min-width:0;padding:10px 12px;}.pp-stat b{font-size:1rem;}#pp-new{width:100% !important;}.pp-row{grid-template-columns:1fr auto;gap:6px 12px;}.pp-row.pp-h{display:none;}.pp-row>div:nth-child(2),.pp-row>div:nth-child(4){display:none;}.pp-row>div:nth-child(1){grid-column:1;grid-row:1;}.pp-row>div:nth-child(5){grid-column:2;grid-row:1;text-align:right;}.pp-row>div:nth-child(3){grid-column:1;grid-row:2;}.pp-row>div:nth-child(6){grid-column:2;grid-row:2;align-self:end;}}';
+  document.head.appendChild(s);
+}
+function rAdmPP() {
+  _ppCss();
+  var c = document.getElementById('a-pp'); if (!c) return;
+  c.innerHTML = '<div class="pp-empty">Cargando...</div>';
+  _cwCall({ action: 'pp_list' }).then(function(j) {
+    if (j.error) { c.innerHTML = '<div class="pp-empty">No se pudieron cargar los planes de pago.</div>'; return; }
+    _pp.rows = j.plans || []; _pp.programs = j.programs || [];
+    var on = _pp.rows.filter(function(r) { return r.status !== 'canceled'; });
+    var cob = on.reduce(function(s, r) { return s + Number(r.paid_total || 0); }, 0);
+    var falta = on.filter(function(r) { return r.status !== 'done'; }).reduce(function(s, r) { return s + Number(r.total) - Number(r.paid_total || 0); }, 0);
+    var act = on.filter(function(r) { return r.status !== 'done'; }).length;
+    var pn = {}; _pp.programs.forEach(function(p) { pn[p.id] = p.name; });
+    var h = '<div class="pp-top"><div class="pp-stats"><div class="pp-stat"><b>' + act + '</b><small>Planes activos</small></div><div class="pp-stat"><b>' + _ppMoney(cob) + '</b><small>Cobrado</small></div><div class="pp-stat"><b>' + _ppMoney(falta) + '</b><small>Por cobrar</small></div></div>' +
+      '<button class="wp-btn-primary" id="pp-new" style="margin:0;width:auto;flex:0 0 auto;padding-left:18px;padding-right:18px;">+ Crear plan de pago</button></div><div class="pp-list">';
+    if (!_pp.rows.length) h += '<div class="pp-empty">Todavía no hay planes de pago. Crea el primero y envía el link a tu cliente.</div>';
+    else {
+      h += '<div class="pp-row pp-h"><div>Cliente</div><div>Plan</div><div>Pagado</div><div>Próxima cuota</div><div>Estado</div><div></div></div>';
+      h += _pp.rows.map(function(r, i) {
+        var ins = r.installments || [], n = ins.length, nx = ins[r.paid_count];
+        var who = r.profile ? (r.profile.full_name || r.profile.email) : (r.client_name || 'Sin nombre');
+        var sub = r.profile ? _mkEsc(r.profile.email || '') : 'Sin cuenta aún';
+        var pct = Math.min(100, Math.round(Number(r.paid_total || 0) / Number(r.total) * 100));
+        var s = PP_ST[r.status] || PP_ST.waiting;
+        var nxt = r.status === 'done' || r.status === 'canceled' || !nx ? '—' : _ppMoney(nx.amount) + ' · ' + (nx.due ? _ppDay(nx.due) : 'al abrir el link');
+        return '<div class="pp-row"><div>' + _mkEsc(who) + '<div class="pp-m">' + sub + '</div></div>' +
+          '<div>' + _mkEsc(pn[r.plan_id] || r.plan_id) + ' · ' + n + (n === 1 ? ' cuota' : ' cuotas') + '</div>' +
+          '<div>' + _ppMoney(r.paid_total) + ' de ' + _ppMoney(r.total) + '<div class="pp-bar"><i style="width:' + pct + '%"></i></div></div>' +
+          '<div>' + nxt + '</div><div><span class="pp-dot" style="background:' + s[1] + '"></span>' + s[0] + '</div>' +
+          '<div style="text-align:right"><button class="pp-a" data-pp="' + i + '">' + (r.status === 'waiting' ? 'Copiar link' : 'Ver') + '</button></div></div>';
+      }).join('');
+    }
+    c.innerHTML = h + '</div>';
+    document.getElementById('pp-new').onclick = _ppNew;
+    c.querySelectorAll('[data-pp]').forEach(function(b) {
+      b.onclick = function() { var r = _pp.rows[+b.dataset.pp]; if (r.status === 'waiting') _ppCopy(r.code); _ppView(r); };
+    });
+  });
+}
+function _ppModal(html) {
+  var md = document.createElement('div'); md.className = 'mk-modal';
+  md.innerHTML = '<div class="mk-modal-box" role="dialog" aria-modal="true" style="max-width:480px;"><button class="mk-modal-x" aria-label="Cerrar">×</button>' + html + '</div>';
+  md.addEventListener('click', function(e) { if (e.target === md || e.target.classList.contains('mk-modal-x')) md.remove(); });
+  document.body.appendChild(md); return md;
+}
+function _ppAddMonths(iso, k) { var d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() + k); return d.toISOString().slice(0, 10); }
+function _ppNew() {
+  var progs = _pp.programs.filter(function(p) { return Number(p.price) > 0; });
+  if (!progs.length) return tst('Primero crea un plan con precio en Planes', 1);
+  var md = _ppModal('<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">Crear plan de pago</div><div style="color:var(--c-muted);font-size:.8rem;margin-bottom:18px;">El cliente pone su correo y su tarjeta al abrir el link.</div>' +
+    '<div class="pp-two"><div class="pp-f"><label>Nombre del cliente</label><input class="wp-input" id="ppn-name" placeholder="Ej. Luis R." maxlength="80"></div>' +
+    '<div class="pp-f"><label>Programa</label><select class="wp-input" id="ppn-plan">' + progs.map(function(p) { return '<option value="' + _mkEsc(p.id) + '" data-price="' + Number(p.price) + '">' + _mkEsc(p.name) + ' · ' + _ppMoney(p.price) + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="pp-two"><div class="pp-f"><label>Total a cobrar</label><input class="wp-input" id="ppn-total" type="number" min="1" step="1"></div>' +
+    '<div class="pp-f"><label>Número de cuotas</label><select class="wp-input" id="ppn-n">' + [1,2,3,4,5,6,8,10,12].map(function(k) { return '<option' + (k === 3 ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="pp-f"><label>Cuotas</label><div id="ppn-q"></div><div class="pp-sum" id="ppn-sum"></div></div>' +
+    '<div class="pp-f"><label>Acceso</label><select class="wp-input" id="ppn-acc"></select></div>' +
+    '<button class="wp-btn-primary" id="ppn-go" style="width:100%;margin:6px 0 0;">Crear y copiar link</button><div id="ppn-out" style="margin-top:12px;"></div>');
+  var $ = function(id) { return md.querySelector('#' + id); };
+  function fill() {
+    var n = +$('ppn-n').value, tot = Number($('ppn-total').value) || 0, today = new Date().toISOString().slice(0, 10);
+    var base = Math.floor(tot / n * 100) / 100, last = Math.round((tot - base * (n - 1)) * 100) / 100;
+    var h = '';
+    for (var i = 0; i < n; i++) h += '<div class="pp-q"><span>Cuota ' + (i + 1) + '</span><input class="wp-input pp-am" type="number" min="1" step="0.01" value="' + (i === n - 1 ? last : base) + '">' +
+      (i === 0 ? '<div class="pp-fx">Al pagar el link</div>' : '<input class="wp-input pp-du" type="date" value="' + _ppAddMonths(today, i) + '">') + '</div>';
+    $('ppn-q').innerHTML = h;
+    var a = $('ppn-acc'), keep = a.value;
+    a.innerHTML = Array.from({ length: n }, function(_, i) { var k = i + 1; return '<option value="' + k + '">' + (k === n ? (n === 1 ? 'Al pagar' : 'Al terminar de pagar (cuota ' + n + ')') : 'Desde la cuota ' + k) + '</option>'; }).join('');
+    a.value = keep && +keep <= n ? keep : String(n);
+    sum();
+    md.querySelectorAll('.pp-am').forEach(function(x) { x.oninput = sum; });
+  }
+  function sum() {
+    var t = 0; md.querySelectorAll('.pp-am').forEach(function(x) { t += Number(x.value) || 0; });
+    t = Math.round(t * 100) / 100;
+    var want = Number($('ppn-total').value) || 0;
+    $('ppn-sum').innerHTML = 'Suma de las cuotas: <b>' + _ppMoney(t) + '</b>' + (Math.abs(t - want) > 0.009 ? ' · no coincide con el total' : '');
+  }
+  function setTotal() { $('ppn-total').value = $('ppn-plan').selectedOptions[0].dataset.price; fill(); }
+  $('ppn-plan').onchange = setTotal; $('ppn-n').onchange = fill; $('ppn-total').oninput = fill;
+  setTotal();
+  $('ppn-go').onclick = function() {
+    var b = this, ams = md.querySelectorAll('.pp-am'), dus = md.querySelectorAll('.pp-du'), inst = [];
+    ams.forEach(function(x, i) { inst.push({ amount: Number(x.value), due: i ? dus[i - 1].value : null }); });
+    if (inst.some(function(x) { return !(x.amount >= 1); })) return tst('Cada cuota debe ser de al menos $1', 1);
+    for (var i = 1; i < inst.length; i++) if (!inst[i].due || (i > 1 && inst[i].due <= inst[i - 1].due) || inst[i].due <= new Date().toISOString().slice(0, 10)) return tst('Revisa las fechas: cada cuota después de la anterior y después de hoy', 1);
+    b.disabled = true; b.textContent = 'Creando...';
+    _cwCall({ action: 'pp_create', plan_id: $('ppn-plan').value, client_name: $('ppn-name').value, installments: inst, access_from: +$('ppn-acc').value }).then(function(j) {
+      b.disabled = false; b.textContent = 'Crear y copiar link';
+      if (!j.ok) return tst({ pp_dates: 'Revisa las fechas de las cuotas', pp_amount: 'Revisa los montos', staff_only: 'Tu cuenta no tiene permiso para crear planes de pago' }[j.error] || 'No se pudo crear el plan', 1);
+      _ppCopy(j.plan.code);
+      $('ppn-go').style.display = 'none';
+      $('ppn-out').innerHTML = '<div style="font-size:.82rem;margin-bottom:8px;">Listo. Envíale este link a tu cliente:</div><div class="pp-link">' + _mkEsc(_ppLink(j.plan.code)) + '<button type="button" id="ppn-cp">Copiar</button></div>';
+      $('ppn-cp').onclick = function() { _ppCopy(j.plan.code); };
+      rAdmPP();
+    });
+  };
+}
+function _ppView(r) {
+  var ins = r.installments || [], s = PP_ST[r.status] || PP_ST.waiting;
+  var pn = {}; _pp.programs.forEach(function(p) { pn[p.id] = p.name; });
+  var who = r.profile ? (r.profile.full_name || r.profile.email) : (r.client_name || 'Sin nombre');
+  var edit = r.status === 'active' || r.status === 'late' || r.status === 'waiting';
+  var md = _ppModal('<div style="font-size:1.1rem;font-weight:700;">' + _mkEsc(who) + '</div><div style="color:var(--c-muted);font-size:.8rem;margin:3px 0 16px;">' +
+    _mkEsc(pn[r.plan_id] || r.plan_id) + ' · ' + _ppMoney(r.paid_total) + ' de ' + _ppMoney(r.total) + ' · <span class="pp-dot" style="background:' + s[1] + '"></span>' + s[0] + '</div>' +
+    ins.map(function(x) {
+      var paid = x.n <= r.paid_count, canEd = edit && !paid && x.n > 1;
+      return '<div class="pp-ins"><div>Cuota ' + x.n + ' · ' + _ppMoney(x.amount) + '<div class="pp-m">' + (paid ? 'Pagada' : x.n === r.paid_count + 1 && r.status === 'late' ? 'Atrasada' : x.due ? 'Se cobra sola' : 'Al abrir el link') + (x.n === r.access_from ? ' · da el acceso' : '') + '</div></div>' +
+        (canEd ? '<input type="date" class="wp-input" data-n="' + x.n + '" value="' + x.due + '">' : '<span style="color:var(--c-muted);font-size:.8rem;">' + (x.due ? _ppDay(x.due) : '') + '</span>') + '</div>';
+    }).join('') +
+    (r.last_error && r.status === 'late' ? '<div class="pp-m" style="margin-top:10px;">Último error del banco: ' + _mkEsc(r.last_error) + '</div>' : '') +
+    '<div class="pp-acts">' + (r.status === 'waiting' ? '<button class="pp-a" id="ppv-cp">Copiar link</button>' : '') +
+    (r.status === 'late' ? '<button class="pp-a" id="ppv-rs">Reintentar cobros</button>' : '') +
+    (edit ? '<button class="pp-a" id="ppv-x" style="color:#e38b6a;">Cancelar plan</button>' : '') + '</div>');
+  var q = function(id) { return md.querySelector('#' + id); };
+  if (q('ppv-cp')) q('ppv-cp').onclick = function() { _ppCopy(r.code); };
+  if (q('ppv-rs')) q('ppv-rs').onclick = function() { _cwCall({ action: 'pp_resume', id: r.id }).then(function(j) { if (j.ok) { tst('Listo, se vuelve a intentar el cobro mañana'); md.remove(); rAdmPP(); } else tst('No se pudo', 1); }); };
+  if (q('ppv-x')) q('ppv-x').onclick = function() {
+    if (!confirm('¿Cancelar este plan de pago? No se cobrarán más cuotas. El acceso que ya tenga no cambia.')) return;
+    _cwCall({ action: 'pp_cancel', id: r.id }).then(function(j) { if (j.ok) { tst('Plan cancelado'); md.remove(); rAdmPP(); } else tst('No se pudo cancelar', 1); });
+  };
+  md.querySelectorAll('input[data-n]').forEach(function(inp) {
+    inp.onchange = function() {
+      _cwCall({ action: 'pp_date', id: r.id, n: +inp.dataset.n, due: inp.value }).then(function(j) { if (j.ok) { tst('Fecha cambiada'); rAdmPP(); } else tst('Esa fecha no sirve: debe ir después de la cuota anterior y antes de la siguiente', 1); });
+    };
+  });
 }
 // ── PLANES: caché compartida (planes + sus variantes) ──
 function _loadPlansCache(cb) {
@@ -9653,6 +9831,7 @@ var STAFF_PERMS = [
   { key: 'access_codes',     label: 'Generar códigos', sub: 'Acceso gratis y descuentos' },
   { key: 'delete_students',  label: 'Eliminar alumnos', sub: 'Borrar una cuenta por completo' },
   { key: 'access_plans',     label: 'Gestión de Planes', sub: 'Crear, editar o eliminar planes' },
+  { key: 'access_payplans',  label: 'Planes de pago', sub: 'Crear planes por cuotas y ver lo cobrado' },
   { key: 'access_discord',   label: 'Roles de Discord', sub: 'Sincronizar y activar roles' },
   { key: 'access_clases',    label: 'Clases', sub: 'Subir/editar contenido de cursos' },
   { key: 'access_sesiones',  label: 'Sesiones en vivo', sub: 'Programar/editar sesiones' },

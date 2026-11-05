@@ -55,6 +55,9 @@ module.exports = async function handler(req, res) {
       return await whopStatus(sb, guest, body, res);
     }
 
+    // Plan de pago por cuotas: el checkout lo lee con el link, sin sesión
+    if (body.action === 'pp_get') return await require('./_payplan').get(sb, body, res);
+
     const token = (req.headers.authorization || '').replace('Bearer ', '');
     const u = token ? await sb.auth.getUser(token) : null;
     const user = u && u.data && u.data.user;
@@ -70,6 +73,8 @@ module.exports = async function handler(req, res) {
     if (body.action === 'tv_claim') return await tvClaim(sb, user, body, res);
     if (body.action === 'card_setup') return await cardSetup(sb, user, body, req, res);
     if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
+    if (/^pp_(list|create|cancel|resume|date)$/.test(String(body.action))) return await require('./_payplan').admin(sb, user, body, res);
+    if (body.action === 'pp_mine') return await require('./_payplan').mine(sb, user, res);
     return res.status(400).json({ error: 'bad_action' });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
@@ -392,6 +397,12 @@ async function whopFetch(path, opts) {
 
 async function whopCreate(sb, user, body, req, res) {
   if (!process.env.WHOP_API_KEY || !WHOP_PRODUCT) return res.status(500).json({ error: 'missing_whop_key' });
+  // Cuota 1 de un plan de pago (el monto sale del plan que armó el closer)
+  if (body.pp) {
+    const o = await require('./_payplan').firstOrder(sb, user, body.pp);
+    if (o.error) return res.status(400).json({ error: o.error });
+    return res.status(200).json({ order: o.order, total: o.total, account: WHOP_COMPANY });
+  }
   const pr = await prepare(sb, user, body);
   if (pr.error) return res.status(400).json({ error: pr.error });
   const { items, total } = pr;
@@ -560,3 +571,4 @@ async function renewCard(sb, user, body, res) {
 }
 
 module.exports.applyItems = applyItems;
+module.exports.priceItems = priceItems;

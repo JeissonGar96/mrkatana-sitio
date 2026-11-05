@@ -229,6 +229,8 @@ async function cron(h) {
         '<p>' + name + ', el <b>' + fdate(nx) + '</b> se cobra la cuota ' + n + ' de ' + N + ' de ' + prog + ' por <b>' + money(it.amount) + ' USD</b> con tu tarjeta guardada.</p>' +
         '<p>No tienes que hacer nada. Si quieres usar otra tarjeta, cámbiala en Ajustes, Membresía y pagos.</p>' + btn('Ver mi membresía', SITE + '/app/perfil'));
       if (ok) { out.pp_reminded++; await sb.from('pay_plans').update({ reminded_for: pp.next_due }).eq('id', pp.id); }
+      await require('./_notif').add(sb, { user_id: pp.user_id, kind: 'pay', link: 'perfil', dedupe: 'ppr:' + pp.id + ':' + n,
+        title: 'Tu cuota ' + n + ' de ' + N + ' es el ' + fdate(nx), body: 'Se cobran ' + money(it.amount) + ' USD con tu tarjeta guardada.' }).catch(() => {});
     }
     if (nx > now) continue;
     if (pp.last_try_at && now - new Date(pp.last_try_at) < 47 * 3600e3) continue;
@@ -241,6 +243,8 @@ async function cron(h) {
     out.pp_failed++;
     const fc = (pp.fail_count || 0) + 1, late = fc >= MAX_FAILS;
     await sb.from('pay_plans').update({ fail_count: fc, last_error: r.error, status: late ? 'late' : 'active', updated_at: now.toISOString() }).eq('id', pp.id);
+    await require('./_notif').add(sb, { user_id: pp.user_id, kind: 'pay', link: 'perfil', dedupe: 'ppf:' + pp.id + ':' + n + ':' + fc,
+      title: 'No pudimos cobrar tu cuota ' + n + ' de ' + N, body: late ? 'Escríbenos por WhatsApp para ponernos al día.' : 'Lo intentaremos de nuevo en 2 días. Puedes cambiar tu tarjeta en Ajustes.' }).catch(() => {});
     await mail(p.email, 'No pudimos cobrar tu cuota ' + n + ' de ' + N,
       '<p>' + name + ', intentamos cobrar <b>' + money(it.amount) + ' USD</b> (cuota ' + n + ' de ' + N + ' de ' + prog + '), pero tu banco no lo aprobó.</p>' +
       (late ? '<p>Escríbenos por WhatsApp para ponernos al día con tu plan de pago.</p>' : '<p>Lo intentaremos de nuevo en 2 días. Si quieres usar otra tarjeta, cámbiala en Ajustes, Membresía y pagos.</p>') +

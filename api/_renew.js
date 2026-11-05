@@ -109,6 +109,8 @@ async function cron(h, req, res) {
         '<p>' + name + ', el <b>' + fdate(nx) + '</b> se renuevan ' + what + ' por <b>$' + amt + ' USD</b> con tu tarjeta guardada.</p>' +
         '<p>No tienes que hacer nada. Si prefieres no renovar, apágalo antes de esa fecha.</p>' + btn('Ver mi membresía', SITE + '/app/perfil'));
       if (ok) { out.reminded++; await sb.from('auto_renew').update({ reminded_for: a.next_charge_at }).eq('user_id', a.user_id); }
+      await require('./_notif').add(sb, { user_id: a.user_id, kind: 'pay', link: 'perfil', dedupe: 'rnr:' + a.user_id + ':' + a.next_charge_at,
+        title: 'Tu renovación es el ' + fdate(nx), body: 'Se cobran $' + amt + ' USD con tu tarjeta guardada. Puedes apagarla en Ajustes.' }).catch(() => {});
     }
     // 2. Cobro (si ya llegó la fecha y no se intentó en las últimas 47 horas)
     if (nx > now) continue;
@@ -124,6 +126,9 @@ async function cron(h, req, res) {
     out.failed++;
     const fc = (a.fail_count || 0) + 1, off = fc >= MAX_FAILS;
     await sb.from('auto_renew').update({ fail_count: fc, last_error: r.error, active: !off }).eq('user_id', a.user_id);
+    await require('./_notif').add(sb, { user_id: a.user_id, kind: 'pay', link: 'perfil', dedupe: 'rnf:' + a.user_id + ':' + a.next_charge_at + ':' + fc,
+      title: off ? 'No pudimos renovar tu plan' : 'No pudimos cobrar tu renovación',
+      body: off ? 'Apagamos la renovación automática. Puedes renovar cuando quieras.' : 'Lo intentaremos de nuevo en 2 días. Puedes cambiar tu tarjeta en Ajustes.' }).catch(() => {});
     await mail(p.email, off ? 'No pudimos renovar tu plan' : 'No pudimos cobrar tu renovación',
       '<p>' + name + ', intentamos cobrar <b>$' + amt + ' USD</b> para renovar ' + what + ', pero tu banco no lo aprobó.</p>' +
       (off ? '<p>Apagamos la renovación automática. Puedes renovar cuando quieras desde tu panel.</p>' : '<p>Lo intentaremos de nuevo en 2 días. Si quieres, puedes renovar ahora con otra tarjeta desde tu panel.</p>') +

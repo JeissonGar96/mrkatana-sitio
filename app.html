@@ -900,6 +900,34 @@ a.snav{text-decoration:none;}
 .atop-dd .it{display:flex;width:100%;text-align:left;gap:12px;align-items:center;background:none;border:none;color:var(--c-text);font-size:.88rem;padding:10px 12px;border-radius:10px;cursor:pointer;}
 .atop-dd .it:hover{background:rgba(var(--c-acc),.1);}
 .atop-dd .it small{display:block;color:var(--c-muted);font-size:.74rem;margin-top:1px;}
+/* Notificaciones (campana) */
+#mk-bell-n{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:rgb(var(--c-acc));color:var(--c-ongold);font-size:.64rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px;line-height:1;}
+#mk-bell.nt-has #mk-bell-dot{display:none !important;}
+#mk-bell-dd.nt{width:380px;max-height:none;padding:0;overflow:hidden;}
+.nt-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px 10px;}
+.nt-h b{font-size:.92rem;color:var(--c-text);}.nt-h span{color:var(--c-muted);font-size:.72rem;cursor:pointer;}.nt-h span:hover{color:var(--c-text);}
+.nt-tabs{display:flex;gap:16px;padding:0 16px;border-bottom:1px solid var(--k-line);}
+.nt-tabs span{color:var(--c-muted);font-size:.78rem;padding:0 0 9px;cursor:pointer;}
+.nt-tabs span.on{color:var(--c-text);box-shadow:inset 0 -2px 0 rgb(var(--c-acc));}
+.nt-list{max-height:430px;overflow-y:auto;padding:0;}
+.nt-list .em{padding:22px 16px;}
+.nt-list .it{border-radius:0;padding:12px 16px;}
+.nt-it{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--k-line);position:relative;cursor:pointer;color:var(--c-text);}
+.nt-it:last-child{border-bottom:0;}
+.nt-it:hover{background:rgba(var(--c-acc),.05);}
+.nt-it.nw{background:rgba(var(--c-acc),.035);}
+.nt-it.nw:after{content:'';position:absolute;right:16px;top:18px;width:7px;height:7px;border-radius:50%;background:rgb(var(--c-acc));}
+.nt-ic{width:32px;height:32px;border-radius:10px;border:1px solid var(--k-line);display:flex;align-items:center;justify-content:center;color:var(--c-text2);flex:none;}
+.nt-it.nw .nt-ic{color:rgb(var(--c-acc));}
+.nt-it b{display:block;font-size:.82rem;font-weight:600;margin-bottom:2px;padding-right:14px;}
+.nt-it p{font-size:.75rem;color:var(--c-text2);line-height:1.45;margin:0;}
+.nt-it small{display:block;font-size:.68rem;color:var(--c-muted);margin-top:4px;}
+.nt-sec{font-size:.62rem;letter-spacing:1.4px;text-transform:uppercase;color:var(--c-muted);padding:12px 16px 4px;}
+@media(max-width:860px){#mk-bell-dd.nt{position:fixed;left:12px;right:12px;top:76px;width:auto;}.nt-list{max-height:calc(100dvh - 220px);}}
+#amain>.mk-ban{order:-99 !important;}.mk-ban{box-sizing:border-box;width:100%;display:flex;align-items:center;gap:14px;border:1px solid rgba(var(--c-acc),.28);background:linear-gradient(90deg,rgba(var(--c-acc),.08),transparent 70%),var(--c-panel);border-radius:14px;padding:14px 16px;margin-bottom:16px;}
+.mk-ban .nt-ic{border-color:rgba(var(--c-acc),.35);color:rgb(var(--c-acc));}
+.mk-ban b{font-size:.86rem;display:block;}.mk-ban p{font-size:.78rem;color:var(--c-text2);margin:2px 0 0;line-height:1.45;}
+.mk-ban button{background:none;border:0;color:var(--c-muted);font-size:1.3rem;cursor:pointer;padding:0 4px;line-height:1;}
 .atop-dd .em{padding:14px;color:var(--c-muted);font-size:.84rem;}
 .mk-ic{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(var(--c-acc),.13);color:rgb(var(--c-acc));}
 .mk-ic.r{background:rgba(var(--c-bad),.12);color:rgb(var(--c-bad));}
@@ -2864,9 +2892,11 @@ function _renderSection(state) {
   if (amainEl) amainEl.scrollTop = 0;
   // Always restore amain when navigating away from lesson layout
   if (state.section !== 'clases') _restoreAmain();
+  if (cUser && !_nt.init) { _nt.init = 1; _ntLoad(); setTimeout(_ntTick, 2500); }
   if (state.section === 'dash') {
     // liveOnly = no tiene acceso a clases (sin importar el nombre del plan)
     if (!_hasClasesAccess()) rDash(true); else rDash();
+    setTimeout(_ntBanner, 0);
   }
   else if (state.section === 'clases') {
     if (!_hasClasesAccess()) _rLocked('clases');
@@ -4997,7 +5027,7 @@ function _ajEmpty(t) { return '<span class="aj2-mut">' + (t || 'Sin completar') 
 
 var _ajList = false; // celular: mostrar la lista de Ajustes en vez de una sección
 var _AJ_IC = { perfil: 'user', cuenta: 'shield', membresia: 'card', conexiones: 'link', notif: 'bell', pref: 'cfg' };
-var _AJ_SUB = { perfil: 'Nombre, foto y datos', cuenta: 'Correo y contraseña', membresia: 'Tu plan y tus compras', conexiones: 'Discord y TradingView', notif: 'Avisos de en vivo y clases', pref: 'Tema y zona horaria' };
+var _AJ_SUB = { perfil: 'Nombre, foto y datos', cuenta: 'Correo y contraseña', membresia: 'Tu plan y tus compras', conexiones: 'Discord y TradingView', notif: 'Qué avisos recibes', pref: 'Tema y zona horaria' };
 function rPerfil() {
   var m = document.getElementById('amain');
   if (_ajTab === 'planes') _ajTab = 'membresia';
@@ -5070,8 +5100,13 @@ function _ajRender() {
       _ajGroup('Cuando empieza un en vivo', _ajRow('En el celular o computador', 'Aparece aunque no tengas la página abierta', _ajToggle('notify_live_push', v('notify_live_push', true)).replace('<button', '<span').replace('</button>', '</span>')) +
         _ajPushRow() +
         _ajRow('Por email', _mkEsc(cUser ? cUser.email : ''), _ajToggle('notify_live_email', v('notify_live_email', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
-      _ajGroup('Reuniones 1-1', _ajRow('Recordatorio de mi 1-1', '10 minutos antes de la llamada', _ajToggle('notify_mtg', v('notify_mtg', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
-      _ajGroup('Novedades', _ajRow('Clases nuevas', 'Cuando se publica una clase en el curso', _ajToggle('notify_new_class', v('notify_new_class', false)).replace('<button', '<span').replace('</button>', '</span>')));
+      _ajGroup('Curso y reuniones', _ajRow('Nueva clase en el curso', 'Cuando Mr Katana sube una clase', _ajToggle('notify_class', v('notify_class', true)).replace('<button', '<span').replace('</button>', '</span>')) +
+        _ajRow('Reuniones 1-1', 'Cuando se agenda o cambia, 1 día antes y 10 minutos antes', _ajToggle('notify_mtg', v('notify_mtg', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
+      _ajGroup('Herramientas', _ajRow('Calendario económico', '30 minutos antes de cada noticia de alto impacto', _ajToggle('notify_cal', v('notify_cal', false)).replace('<button', '<span').replace('</button>', '</span>')) +
+        _ajRow('Recordatorio del journal', 'A las 8 pm si no registraste trade ni marcaste "No operé"', _ajToggle('notify_journal', v('notify_journal', true)).replace('<button', '<span').replace('</button>', '</span>')) +
+        _ajRow('Ranking', 'Cuando subes de puesto y al cierre del mes', _ajToggle('notify_rank', v('notify_rank', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
+      _ajGroup('Cuenta y pagos', _ajRow('Pagos y vencimientos', 'Cobros, cuotas y avisos antes de que venza tu acceso', _ajToggle('notify_pay', v('notify_pay', true)).replace('<button', '<span').replace('</button>', '</span>')) +
+        _ajRow('Avisos de Mr Katana', 'Anuncios importantes para la comunidad', _ajToggle('notify_news', v('notify_news', true)).replace('<button', '<span').replace('</button>', '</span>')));
   } else if (t === 'pref') {
     var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
     var off = -new Date().getTimezoneOffset() / 60;
@@ -6533,6 +6568,7 @@ function _buildAdminTabs() {
   var allTabs = [
     ['st','Alumnos','access_students'],
     ['1on1','Reuniones 1-1','access_students'],
+    ['avisos','Avisos','__admin_only'],
     ['codes','Planes', ['access_plans','access_discord','access_codes','access_payplans']],
     // ['roadmap','Roadmap','access_roadmap'], // oculto 2026-10-13: Plan de la semana retirado (datos se conservan)
     ['ads','Anuncios','__admin_only'],
@@ -6675,16 +6711,119 @@ function _mkItemHtml(x, tag) {
   return '<' + tag + ' class="' + (tag === 'button' ? 'it' : 'rp-li') + '" onclick="navigateTo(\'' + x.go + '\')"><div class="mk-ic ' + x.c + '">' + MK_IC[x.ic] + '</div>' +
     '<div style="min-width:0;"><b>' + _mkEsc(x.t) + '</b><' + (tag === 'button' ? 'small' : 'span') + '>' + (x.w || _mkWhen(x.d)) + '</' + (tag === 'button' ? 'small' : 'span') + '></div></' + tag + '>';
 }
-// Campana de la barra de arriba
+// Campana de la barra de arriba: notificaciones (tabla notifications) + "Próximas" (en vivos y 1-1)
+var _nt = { list: null, seen: null, openSeen: null, tab: 'all', init: 0 };
+var NT_IC = {
+  class: MK_IC.play, mtg: MK_IC.cal, journal: MK_IC.book,
+  exp: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  pay: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3 10h18"/></svg>',
+  cal: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  rank: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/></svg>',
+  news: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h3l7 4V6l-7 4zM17.5 9a4 4 0 0 1 0 6"/></svg>'
+};
+function _ntAgo(iso) {
+  var m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'Ahora'; if (m < 60) return 'Hace ' + m + ' min';
+  var h = Math.round(m / 60); if (h < 24) return 'Hace ' + h + ' h';
+  var d = Math.round(h / 24); if (d === 1) return 'Ayer'; if (d < 7) return 'Hace ' + d + ' días';
+  return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
+}
+function _ntDate(iso) {
+  var d = new Date(iso), h = d.getHours(), mm = String(d.getMinutes()).padStart(2, '0');
+  return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', '').replace(',', '') + ' · ' + ((h % 12) || 12) + ':' + mm + ' ' + (h < 12 ? 'am' : 'pm');
+}
+function _ntBody(n) { return (n.kind === 'mtg' && n.data && n.data.at && !n.body) ? _ntDate(n.data.at) + ' con Mr Katana' : (n.body || ''); }
+function _ntLoad(cb) {
+  if (!cUser) return;
+  var since = new Date(Math.max(Date.now() - 60 * 864e5, cUser.created_at ? new Date(cUser.created_at).getTime() - 864e5 : 0)).toISOString();
+  Promise.all([
+    sb.from('notifications').select('id, kind, title, body, link, data, banner, created_at').gte('created_at', since).order('created_at', { ascending: false }).limit(40),
+    _nt.seen === null ? sb.from('user_settings').select('notif_seen_at').eq('id', cUser.id).maybeSingle() : Promise.resolve(null)
+  ]).then(function(r) {
+    if (!r[0].error) _nt.list = r[0].data || [];
+    if (r[1]) _nt.seen = (r[1].data && r[1].data.notif_seen_at) || '';
+    _ntBadge(); _ntBanner(); if (cb) cb();
+  }, function() {});
+}
+// Revisa avisos nuevos en el servidor (como mucho cada 5 minutos por navegador)
+function _ntTick() {
+  var k = 'mk-nt-tick', t = 0; try { t = +localStorage.getItem(k) || 0; } catch (e) {}
+  if (Date.now() - t < 5 * 60000) return;
+  try { localStorage.setItem(k, Date.now()); } catch (e) {}
+  fetch('/api/notify-live?tick=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"tick":1}' })
+    .then(function() { setTimeout(function() { _ntLoad(function() { var dd = document.getElementById('mk-bell-dd'); if (dd && dd.classList.contains('on')) _ntRender(); }); }, 1500); }, function() {});
+}
+function _ntUnread() { var s = _nt.seen ? new Date(_nt.seen) : 0; return (_nt.list || []).filter(function(n) { return new Date(n.created_at) > s; }).length; }
+function _ntBadge() {
+  var bell = document.getElementById('mk-bell'); if (!bell) return;
+  var b = document.getElementById('mk-bell-n');
+  if (!b) { b = document.createElement('span'); b.id = 'mk-bell-n'; bell.appendChild(b); }
+  var n = _ntUnread(); b.textContent = n > 9 ? '9+' : n; b.style.display = n ? 'flex' : 'none';
+  bell.classList.toggle('nt-has', !!n);
+}
+function _ntSeen() {
+  if (!cUser) return; var now = new Date().toISOString(); _nt.seen = now; _ntBadge();
+  sb.from('user_settings').upsert({ id: cUser.id, notif_seen_at: now }, { onConflict: 'id' }).then(function() {}, function() {});
+}
+function _ntGo(link) {
+  if (link === 'journal') { navigateTo('herramientas'); rJournalDash(); }
+  else navigateTo(link || 'dash');
+}
+function _ntItem(n, isNew) {
+  return '<div class="nt-it' + (isNew ? ' nw' : '') + '" role="button" onclick="_ntGo(\'' + _mkEsc(n.link || 'dash') + '\')"><div class="nt-ic">' + (NT_IC[n.kind] || NT_IC.news) + '</div>' +
+    '<div style="min-width:0;"><b>' + _mkEsc(n.kind === 'news' ? n.title : n.title) + '</b>' + (_ntBody(n) ? '<p>' + _mkEsc(_ntBody(n)) + '</p>' : '') + '<small>' + _ntAgo(n.created_at) + '</small></div></div>';
+}
+function _ntRender() {
+  var dd = document.getElementById('mk-bell-dd'); if (!dd) return;
+  var tab = _nt.tab, stop = 'event.stopPropagation();';
+  var head = '<div class="nt-h"><b>Notificaciones</b>' + (tab === 'all' && _ntUnread() ? '<span role="button" onclick="' + stop + '_ntSeen();_nt.openSeen=_nt.seen;_ntRender()">Marcar todo como leído</span>' : '') + '</div>' +
+    '<div class="nt-tabs"><span role="button" class="' + (tab === 'all' ? 'on' : '') + '" onclick="' + stop + '_nt.tab=\'all\';_ntRender()">Todas</span><span role="button" class="' + (tab === 'up' ? 'on' : '') + '" onclick="' + stop + '_nt.tab=\'up\';_ntRender()">Próximas</span></div>';
+  if (tab === 'up') {
+    dd.innerHTML = head + '<div class="nt-list" id="nt-up"><div class="em">Cargando...</div></div>';
+    _mkUpcoming(function(items) {
+      var el = document.getElementById('nt-up'); if (!el) return;
+      el.innerHTML = items.length ? items.slice(0, 6).map(function(x) { return _mkItemHtml(x, 'button'); }).join('') : '<div class="em">No tienes actividades próximas.</div>';
+    });
+    return;
+  }
+  var L = _nt.list, html;
+  if (L === null) html = '<div class="em">Cargando...</div>';
+  else if (!L.length) html = '<div class="em">Aún no tienes notificaciones. Aquí te avisaremos de clases nuevas, tus 1-1, pagos y más.</div>';
+  else {
+    var ref = _nt.openSeen ? new Date(_nt.openSeen) : 0;
+    var nw = L.filter(function(n) { return new Date(n.created_at) > ref; }), old = L.filter(function(n) { return !(new Date(n.created_at) > ref); });
+    html = nw.map(function(n) { return _ntItem(n, true); }).join('') + (nw.length && old.length ? '<div class="nt-sec">Antes</div>' : '') + old.map(function(n) { return _ntItem(n, false); }).join('');
+  }
+  dd.innerHTML = head + '<div class="nt-list">' + html + '</div>';
+}
 function _mkBell(e) {
   if (e) e.stopPropagation();
   var dd = document.getElementById('mk-bell-dd'); if (!dd) return;
   if (dd.classList.contains('on')) { dd.classList.remove('on'); return; }
-  dd.classList.add('on');
-  dd.innerHTML = '<div class="em">Cargando...</div>';
-  _mkUpcoming(function(items) {
-    dd.innerHTML = items.length ? items.slice(0, 6).map(function(x){ return _mkItemHtml(x, 'button'); }).join('') : '<div class="em">No tienes actividades próximas.</div>';
-  });
+  dd.classList.add('on', 'nt');
+  _nt.tab = 'all'; _nt.openSeen = _nt.seen;
+  _ntRender();
+  _ntLoad(function() { if (_nt.list && _nt.list.length) { _nt.openSeen = _nt.openSeen === null ? _nt.seen : _nt.openSeen; _ntRender(); _ntSeen(); } });
+}
+// Anuncio con "Mostrar arriba en Inicio": franja hasta que la persona la cierra
+function _ntBanner() {
+  var m = document.getElementById('amain'), on = document.querySelector('.snav.on[data-v="dash"]') || (history.state && history.state.section === 'dash');
+  var old = document.getElementById('mk-ban'); if (old && !on) old.remove();
+  if (!m || !on || !_nt.list) return;
+  var x = []; try { x = JSON.parse(localStorage.getItem('mk-ban-x') || '[]'); } catch (e) {}
+  var n = _nt.list.find(function(a) { return a.kind === 'news' && a.banner && Date.now() - new Date(a.created_at) < 14 * 864e5 && x.indexOf(a.id) < 0; });
+  if (!n) { if (old) old.remove(); return; }
+  if (old && old.dataset.id === n.id) return;
+  if (old) old.remove();
+  var d = document.createElement('div'); d.id = 'mk-ban'; d.className = 'mk-ban'; d.dataset.id = n.id;
+  d.innerHTML = '<div class="nt-ic">' + NT_IC.news + '</div><div style="min-width:0;flex:1;"><b>' + _mkEsc(n.title) + '</b>' + (n.body ? '<p>' + _mkEsc(n.body) + '</p>' : '') + '</div>' +
+    '<button type="button" aria-label="Cerrar" onclick="_ntBanX(\'' + n.id + '\')">&times;</button>';
+  m.insertBefore(d, m.firstChild);
+}
+function _ntBanX(id) {
+  var x = []; try { x = JSON.parse(localStorage.getItem('mk-ban-x') || '[]'); } catch (e) {}
+  x.push(id); try { localStorage.setItem('mk-ban-x', JSON.stringify(x.slice(-30))); } catch (e) {}
+  var b = document.getElementById('mk-ban'); if (b) b.remove();
 }
 // Buscador de la barra de arriba (clases y módulos)
 var _mkQTimer = null;
@@ -7383,8 +7522,87 @@ function rAdmApar() {
 function swA(btn, sec) {
   document.querySelectorAll('.admtab').forEach(function(b){ b.classList.remove('on'); });
   btn.classList.add('on');
-  ['st','cl','se','codes','pp','roadmap','1on1','ads','apar','home'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
-  if(sec==='pp') rAdmPP(); else if(sec==='ads') rAdmAds(); else if(sec==='apar') rAdmApar(); else if(sec==='home') rAdmHome(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+  ['st','cl','se','codes','pp','roadmap','1on1','avisos','ads','apar','home'].forEach(function(s){ var el=document.getElementById('a-'+s); if(el) el.style.display=s===sec?'block':'none'; });
+  if(sec==='pp') rAdmPP(); else if(sec==='avisos') rAdmAvisos(); else if(sec==='ads') rAdmAds(); else if(sec==='apar') rAdmApar(); else if(sec==='home') rAdmHome(); else if(sec==='cl') rAdmCl(); else if(sec==='se') rAdmSe(); else if(sec==='codes') rAdmCodes(); else if(sec==='roadmap') rAdmRoadmap(); else if(sec==='1on1') rAdm1on1(); else rAdmSt();
+}
+// ── AVISOS (Admin → Avisos): anuncio a la campana, al celular, arriba en Inicio y opcional por correo ──
+var _av = { seg: 'all', ban: true, push: true, mail: false };
+var AV_SEG = [['all', 'Todos'], ['paid', 'Alumnos de pago'], ['live', 'En vivo'], ['free', 'Cuentas gratis']];
+function rAdmAvisos() {
+  var box = document.getElementById('a-avisos'); if (!box) return;
+  if (!document.getElementById('av-css')) {
+    var st = document.createElement('style'); st.id = 'av-css';
+    st.textContent = '.av-card{background:var(--c-panel);border:1px solid var(--k-line);border-radius:18px;padding:22px;}' +
+      '.av-g{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;}@media(max-width:860px){.av-g{grid-template-columns:1fr;}}' +
+      '.av-l{display:block;font-size:.72rem;color:var(--c-muted);margin:0 0 7px;}' +
+      '.av-in{width:100%;box-sizing:border-box;border:1px solid var(--k-line);background:var(--c-bg);border-radius:10px;padding:11px 13px;font:inherit;font-size:.86rem;color:var(--c-text);margin-bottom:14px;outline:none;}' +
+      '.av-in:focus{border-color:rgba(var(--c-acc),.6);}textarea.av-in{height:96px;resize:vertical;line-height:1.5;}' +
+      '.av-seg{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}.av-seg button{border:1px solid var(--k-line);background:none;border-radius:9px;padding:8px 12px;font:inherit;font-size:.78rem;color:var(--c-text2);cursor:pointer;}' +
+      '.av-seg button.on{border-color:rgb(var(--c-acc));color:var(--c-text);}' +
+      '.av-ck{display:flex;gap:9px;align-items:center;font-size:.82rem;color:var(--c-text2);margin-bottom:10px;cursor:pointer;user-select:none;}' +
+      '.av-ck i{width:16px;height:16px;border-radius:4px;border:1px solid var(--k-line);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.62rem;flex:none;}' +
+      '.av-ck i.on{background:rgb(var(--c-btn));border-color:rgb(var(--c-btn));color:var(--c-ongold);}' +
+      '.av-btn{width:100%;background:rgb(var(--c-btn));color:var(--c-ongold);border:0;border-radius:10px;padding:12px;font:inherit;font-weight:600;font-size:.86rem;cursor:pointer;margin-top:6px;}.av-btn:disabled{opacity:.5;cursor:default;}' +
+      '.av-prv{border:1px solid var(--k-line);border-radius:14px;padding:6px 0;background:var(--c-bg);}.av-prv .nt-it{border:0;}' +
+      '.av-t{font-size:.64rem;letter-spacing:1.2px;text-transform:uppercase;color:var(--c-muted);margin:0 0 8px;}' +
+      '.av-h{margin-top:22px;border-top:1px solid var(--k-line);padding-top:14px;}' +
+      '.av-r{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;font-size:.8rem;padding:10px 0;border-bottom:1px solid var(--k-line);color:var(--c-text2);}' +
+      '.av-r b{color:var(--c-text);font-weight:600;display:block;}.av-r small{color:var(--c-muted);}.av-r button{background:none;border:0;color:var(--c-muted);cursor:pointer;font-size:.76rem;}.av-r button:hover{color:rgb(var(--c-bad));}' +
+      '.av-note{font-size:.7rem;color:var(--c-muted);margin:-4px 0 10px 25px;line-height:1.4;}';
+    document.head.appendChild(st);
+  }
+  var ck = function(k, t) { return '<div class="av-ck" onclick="_av.' + k + '=!_av.' + k + ';_avDraw()"><i class="' + (_av[k] ? 'on' : '') + '">' + (_av[k] ? '✓' : '') + '</i>' + t + '</div>'; };
+  box.innerHTML = '<div class="av-card"><div class="av-g"><div>' +
+    '<label class="av-l">Título</label><input id="av-ti" class="av-in" maxlength="80" placeholder="Ej: Cambio de horario del en vivo" oninput="_avPrev()">' +
+    '<label class="av-l">Mensaje</label><textarea id="av-bo" class="av-in" maxlength="400" placeholder="Escribe el aviso" oninput="_avPrev()"></textarea>' +
+    '<label class="av-l">Para</label><div class="av-seg" id="av-seg"></div>' +
+    '<div id="av-cks"></div>' +
+    '<button class="av-btn" id="av-go" onclick="_avSend()">Enviar aviso</button>' +
+    '</div><div><div class="av-t">Así le llega</div><div class="av-prv" id="av-prv"></div>' +
+    '<div class="av-h"><div class="av-t">Enviados</div><div id="av-list"><div class="mk-skel" style="height:40px;border-radius:10px;"></div></div></div></div></div></div>';
+  _avDraw(); _avPrev(); _avList();
+}
+function _avDraw() {
+  var sg = document.getElementById('av-seg'); if (!sg) return;
+  sg.innerHTML = AV_SEG.map(function(x) { return '<button type="button" class="' + (_av.seg === x[0] ? 'on' : '') + '" onclick="_av.seg=\'' + x[0] + '\';_avDraw()">' + x[1] + '</button>'; }).join('');
+  var ck = function(k, t) { return '<div class="av-ck" onclick="_av.' + k + '=!_av.' + k + ';_avDraw()"><i class="' + (_av[k] ? 'on' : '') + '">' + (_av[k] ? '✓' : '') + '</i>' + t + '</div>'; };
+  document.getElementById('av-cks').innerHTML = ck('ban', 'Mostrar arriba en Inicio') + ck('push', 'Enviar al celular') + ck('mail', 'Enviar también por correo') +
+    (_av.mail ? '<div class="av-note">El plan gratis de correos permite 100 al día. Úsalo para avisos importantes.</div>' : '');
+}
+function _avPrev() {
+  var el = document.getElementById('av-prv'); if (!el) return;
+  var t = (document.getElementById('av-ti') || {}).value || 'Título del aviso', b = (document.getElementById('av-bo') || {}).value || 'Aquí va tu mensaje.';
+  el.innerHTML = _ntItem({ kind: 'news', title: t, body: b, created_at: new Date().toISOString(), link: 'dash' }, true).replace('onclick=', 'data-x=');
+}
+function _avList() {
+  var el = document.getElementById('av-list'); if (!el) return;
+  sb.from('notifications').select('id, title, segment, banner, created_at').eq('kind', 'news').order('created_at', { ascending: false }).limit(20).then(function(r) {
+    var L = r.data || [], nm = {}; AV_SEG.forEach(function(x) { nm[x[0]] = x[1]; });
+    el.innerHTML = L.length ? L.map(function(n) {
+      return '<div class="av-r"><div><b>' + _mkEsc(n.title) + '</b><small>' + (nm[n.segment] || n.segment) + (n.banner ? ' · En Inicio' : '') + '</small></div><span>' + _ntAgo(n.created_at) + '</span>' +
+        '<button onclick="_avDel(\'' + n.id + '\')" title="Borrar">Borrar</button></div>';
+    }).join('') : '<div style="font-size:.8rem;color:var(--c-muted);">Todavía no has enviado avisos.</div>';
+  });
+}
+function _avSend() {
+  var t = document.getElementById('av-ti').value.trim(), b = document.getElementById('av-bo').value.trim();
+  if (!t) { tst('Escribe un título', 1); return; }
+  var go = document.getElementById('av-go'); go.disabled = true; go.textContent = 'Enviando...';
+  // Si no se quiere al celular, se marca como ya enviado
+  var row = { kind: 'news', segment: _av.seg, title: t, body: b || null, link: 'dash', banner: _av.ban, email: _av.mail, created_by: cUser.id };
+  if (!_av.push && !_av.mail) row.pushed_at = new Date().toISOString();
+  if (!_av.push) row.data = { nopush: true };
+  sb.from('notifications').insert(row).then(function(r) {
+    go.disabled = false; go.textContent = 'Enviar aviso';
+    if (r.error) { tst('No se pudo enviar: ' + r.error.message, 1); return; }
+    if (_av.push || _av.mail) fetch('/api/notify-live?push=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(function() {});
+    tst('Aviso enviado');
+    document.getElementById('av-ti').value = ''; document.getElementById('av-bo').value = ''; _avPrev(); _avList(); _ntLoad();
+  });
+}
+function _avDel(id) {
+  if (!confirm('¿Borrar este aviso? Desaparece de la campana de todos.')) return;
+  sb.from('notifications').delete().eq('id', id).then(function(r) { if (r.error) tst('No se pudo borrar', 1); else { tst('Aviso borrado'); _avList(); _ntLoad(); } });
 }
 // ── PLANES DE PAGO POR CUOTAS (Admin → Planes de pago; api/_payplan.js) ──
 var _pp = { rows: [], programs: [] };

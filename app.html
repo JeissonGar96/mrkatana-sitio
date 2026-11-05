@@ -1927,6 +1927,10 @@ a.mk-pill:hover{color:var(--c-text) !important;}
 .buy-p{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
 .buy-n{font-size:.8rem;color:var(--c-text2);}
 #mk-paying{--mkp-a:var(--c-acc,212,175,55);position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transition:opacity .3s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-paying.on{opacity:1;}.mkp-logo{position:relative;width:128px;height:128px;margin-bottom:26px;}.mkp-m{position:absolute;inset:0;-webkit-mask:url(/img/logo-emblema.png) center/contain no-repeat;mask:url(/img/logo-emblema.png) center/contain no-repeat;overflow:hidden;}.mkp-base{background:rgba(255,255,255,.16);}.mkp-w{position:absolute;left:-100%;width:300%;aspect-ratio:1;border-radius:41%;background:#fff;top:calc((1 - var(--lv,0)) * 100% - 3%);animation:mkpSpin 3.2s linear infinite;}.mkp-w.b{opacity:.45;border-radius:38%;top:calc((1 - var(--lv,0)) * 100% - 7%);animation-duration:4.6s;animation-direction:reverse;}@keyframes mkpSpin{to{transform:rotate(360deg);}}.pb-on{position:relative;overflow:hidden;opacity:1 !important;}.pb-st{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .3s,transform .3s;}.pb-st.out{opacity:0;transform:translateY(-10px);}.pb-st.in{opacity:0;transform:translateY(10px);}.pb-sp{flex:none;width:15px;height:15px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;opacity:.8;animation:mkpSpin .7s linear infinite;}.mkp-fade{transition:opacity .45s,transform .45s,filter .45s;opacity:0 !important;transform:scale(.96);filter:blur(4px);pointer-events:none;}.mkp-t{color:#f4f1ea;font-size:1rem;font-weight:600;letter-spacing:.2px;}.mkp-s{color:rgba(244,241,234,.5);font-size:.8rem;margin-top:6px;}:root[data-theme="light"] #mk-paying{background:rgba(247,245,240,.92);}:root[data-theme="light"] .mkp-base{background:rgba(0,0,0,.14);}:root[data-theme="light"] .mkp-w{background:#151309;}:root[data-theme="light"] .mkp-t{color:#151309;}:root[data-theme="light"] .mkp-s{color:rgba(21,19,9,.5);}
+/* Pantalla de carga al abrir la app en el celular (mismo logo con agua que el pago) */
+#mk-splash{display:none;}
+@media (max-width:900px){#mk-splash{display:flex;position:fixed;inset:0;z-index:100000;flex-direction:column;align-items:center;justify-content:center;background:#0b0b0d;transition:opacity .4s;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}#mk-splash .mkp-logo{width:104px;height:104px;margin-bottom:22px;}#mk-splash.off{opacity:0;pointer-events:none;}}
+:root[data-theme="light"] #mk-splash{background:#f7f5f0;}
 .lvp{display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:10px 12px 10px 16px;border:1px solid var(--c-line);border-radius:12px;}
 .lvp-t{display:flex;flex-direction:column;gap:2px;min-width:0;}.lvp-t span{font-size:.82rem;font-weight:600;color:var(--c-text);}.lvp-t small{font-size:.74rem;color:var(--c-muted);white-space:nowrap;}
 .lvp-bar{flex:1;height:4px;border-radius:2px;background:rgba(var(--c-ov),.08);overflow:hidden;min-width:60px;}.lvp-bar i{display:block;height:100%;background:rgb(var(--c-acc));border-radius:2px;}
@@ -2509,6 +2513,22 @@ function mkToggleTheme(ev, want, after) {
 </head>
 
 <body>
+<div id="mk-splash" role="status" aria-label="Cargando"><div class="mkp-logo"><div class="mkp-m mkp-base"></div><div class="mkp-m"><div class="mkp-w b"></div><div class="mkp-w"></div></div></div><div class="mkp-s">Cargando tu panel</div></div>
+<script>
+// Solo justo después de iniciar sesión (login.html deja la marca mk-splash). Llena el logo poco a poco hasta que el panel termine de cargar (_splashDone); nunca más de 10 s
+(function() {
+  var o = document.getElementById('mk-splash'), go = false;
+  try { go = sessionStorage.getItem('mk-splash') === '1'; sessionStorage.removeItem('mk-splash'); } catch (e) {}
+  if (!o || !go || !window.matchMedia('(max-width:900px)').matches) { if (o) o.remove(); return; }
+  var lg = o.querySelector('.mkp-logo'), lv = 0.05, tg = 0.85, t0 = Date.now();
+  var iv = setInterval(function() { lv += (tg - lv) * 0.04; lg.style.setProperty('--lv', lv.toFixed(4)); }, 40);
+  window._splashDone = function() {
+    if (!o.parentNode || o._d) return; o._d = 1;
+    setTimeout(function() { tg = 1.1; setTimeout(function() { o.classList.add('off'); setTimeout(function() { clearInterval(iv); o.remove(); }, 450); }, 550); }, Math.max(0, 900 - (Date.now() - t0)));
+  };
+  setTimeout(window._splashDone, 10000);
+})();
+</script>
 <div id="appdash">
   <!-- Pull-to-refresh indicator -->
   <div id="ptr-indicator"><div id="ptr-inner"><div id="ptr-spinner"></div><span id="ptr-label">Suelta para recargar</span></div></div>
@@ -3114,6 +3134,7 @@ function loadApp(user) {
 
   sb.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
     cProfile = r.data;
+    setTimeout(function() { if (window._splashDone) _splashDone(); }, 400);
     _actMark(false);
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
     document.getElementById('uname').textContent = name;

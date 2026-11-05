@@ -1627,6 +1627,7 @@ function doLogin() {
       }
       _busyBtn(btn, null, 'Iniciar sesión');
     } else if (r.data && r.data.user) {
+      try { sessionStorage.setItem('mk-splash', '1'); } catch (e) {}
       window.location.href = _lgDest() === '/app' ? '/app/dash' : _lgDest();
     }
   });
@@ -1836,6 +1837,7 @@ function doNewPw() {
     if (!r.data || !r.data.session) { _busyBtn(btn, null, 'Guardar y entrar'); return showMsg('El enlace venció o ya se usó. Pide uno nuevo con "¿Olvidaste tu contraseña?".', true); }
     sb.auth.updateUser({ password: p }).then(function(u) {
       if (u.error) { _busyBtn(btn, null, 'Guardar y entrar'); return showMsg(/different|same/i.test(u.error.message) ? 'La nueva contraseña debe ser distinta a la anterior.' : 'No se pudo guardar: ' + u.error.message, true); }
+      try { sessionStorage.setItem('mk-splash', '1'); } catch (e) {}
       window.location.href = '/app/dash';
     });
   });

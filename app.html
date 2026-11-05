@@ -9732,7 +9732,24 @@ function loadPlansAdmin() {
           '</div>' +
         '</div>';
       }).join('') +
-    '</div>';
+    '</div>' +
+    // Prueba del cobro automático: cobra $1 con la tarjeta guardada de una cuenta (sin la persona presente)
+    '<div style="margin-top:18px;padding:14px 16px;border:1px solid rgba(var(--c-ov),.1);border-radius:8px;">' +
+      '<div style="font-size:.84rem;font-weight:600;color:var(--c-text);">Probar cobro automático ($1)</div>' +
+      '<div style="font-size:.72rem;color:var(--c-muted);margin:3px 0 10px;">Cobra $1 a la tarjeta guardada de esa cuenta, como lo hará la renovación. Úsalo solo con tus cuentas de prueba.</div>' +
+      '<div style="display:flex;gap:8px;"><input id="rn-test-em" class="wp-input" placeholder="Correo de la cuenta de prueba" style="flex:1;"><button class="wp-btn-primary" id="rn-test-go" style="margin:0;">Cobrar $1</button></div>' +
+      '<div id="rn-test-out" style="font-size:.74rem;color:var(--c-muted);margin-top:8px;"></div></div>';
+    var tb = document.getElementById('rn-test-go');
+    if (tb) tb.onclick = function() {
+      var em = document.getElementById('rn-test-em').value.trim(), out = document.getElementById('rn-test-out');
+      if (!em) return;
+      if (!confirm('¿Cobrar $1 a la tarjeta guardada de ' + em + '?')) return;
+      tb.disabled = true; out.textContent = 'Cobrando...';
+      _cwCall({ action: 'renew_test', email: em }).then(function(r) {
+        tb.disabled = false;
+        out.textContent = r && r.ok ? 'Listo: Whop aceptó el cobro (' + (r.status || 'enviado') + '). En unos segundos debe sumarse 1 mes de en vivo a esa cuenta.' : 'No se pudo cobrar: ' + ((r && r.error) || 'error');
+      });
+    };
   });
 }
 

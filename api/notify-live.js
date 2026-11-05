@@ -102,7 +102,7 @@ module.exports = async function handler(req, res) {
   }
 };
 
-// Correo semanal (domingo, cron de Vercel) a quienes no tienen en vivo pagado: lo que se perdieron.
+// Correo semanal (sábado 18:00 Ecuador, cron de Vercel) a quienes no tienen en vivo pagado: lo que se perdieron.
 // Solo corre con la clave CRON_SECRET (Vercel la manda sola en el cron) y una vez por semana.
 async function weekly(req, res) {
   const key = process.env.CRON_SECRET;

@@ -28,6 +28,12 @@ const UNLIMITED = '2099-12-31T00:00:00.000Z';
 
 module.exports = async function handler(req, res) {
   try {
+    // Cron diario de renovaciones con tarjeta (vercel.json → /api/cart?cron=renew)
+    if (req.query && req.query.cron === 'renew') {
+      if (!process.env.SUPABASE_SERVICE_KEY || !process.env.WHOP_API_KEY) return res.status(500).json({ error: 'missing_keys' });
+      const sbc = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+      return await require('./_renew').cron({ sb: sbc, whopFetch, priceItems, WHOP_COMPANY, WHOP_PRODUCT }, req, res);
+    }
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
     // Aviso de pago de Whop (/api/whop-webhook llega aquí por vercel.json; plan Hobby = máx. 12 funciones)
     if (req.query && req.query.hook === 'whop') return await require('./_whop-webhook')(req, res);
@@ -60,6 +66,7 @@ module.exports = async function handler(req, res) {
     if (body.action === 'whop_create') return await whopCreate(sb, user, body, req, res);
     if (body.action === 'whop_status') return await whopStatus(sb, user, body, res);
     if (body.action === 'whop_pay') return await whopPay(sb, user, body, req, res);
+    if (body.action === 'renew_test') return await require('./_renew').adminTest({ sb, whopFetch, priceItems, WHOP_COMPANY, WHOP_PRODUCT }, user, body, res);
     if (body.action === 'tv_claim') return await tvClaim(sb, user, body, res);
     if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
     return res.status(400).json({ error: 'bad_action' });
@@ -496,7 +503,7 @@ async function renewCard(sb, user, body, res) {
     if (!a.whop_payment_method_id || !process.env.WHOP_API_KEY) return res.status(200).json({});
     // Busca los últimos 4 y la marca en lo que responda Whop (método de pago, o el último pago con tarjeta)
     const dig = (o, re, d) => { if (!o || typeof o !== 'object' || d > 4) return ''; for (const k of Object.keys(o)) { if (re.test(k) && o[k] != null && typeof o[k] !== 'object') return String(o[k]); } for (const k of Object.keys(o)) { const v = dig(o[k], re, d + 1); if (v) return v; } return ''; };
-    const srcs = ['/payment_methods/' + encodeURIComponent(a.whop_payment_method_id)];
+    const srcs = ['/payment_methods/' + encodeURIComponent(a.whop_payment_method_id) + '?account_id=' + WHOP_COMPANY];
     const lp = await sb.from('cart_orders').select('whop_payment_id').eq('user_id', user.id).not('whop_payment_id', 'is', null).order('created_at', { ascending: false }).limit(1);
     if (lp.data && lp.data[0]) srcs.push('/payments/' + encodeURIComponent(lp.data[0].whop_payment_id));
     for (const path of srcs) {

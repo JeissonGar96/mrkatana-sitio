@@ -89,14 +89,16 @@ async function handler(req, res) {
     const rw = ord.renew || {};
     if (rw.live || rw.kairus) {
       const pr = await sb.from('profiles').select('live_end').eq('id', ord.user_id).single();
-      await sb.from('auto_renew').upsert({
-        user_id: ord.user_id, live: !!rw.live, kairus: !!rw.kairus, active: true,
-        whop_member_id: pick(pay.member || {}, ['id']) || pick(pay, ['member_id']) || null,
-        whop_user_id: pick(pay.user || {}, ['id']) || pick(pay, ['user_id']) || null,
-        whop_payment_method_id: pick(pay, ['payment_method_id']) || pick(pay.payment_method || {}, ['id']) || null,
-        next_charge_at: (pr.data && pr.data.live_end) || null,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+      // Los ids de Whop que no vengan en este aviso no se borran (se conserva la tarjeta ya guardada)
+      const row = { user_id: ord.user_id, live: !!rw.live, kairus: !!rw.kairus, active: true, fail_count: 0, last_error: null,
+        next_charge_at: (pr.data && pr.data.live_end) || null, updated_at: new Date().toISOString() };
+      const ids = {
+        whop_member_id: pick(pay.member || {}, ['id']) || pick(pay, ['member_id']),
+        whop_user_id: pick(pay.user || {}, ['id']) || pick(pay, ['user_id']),
+        whop_payment_method_id: pick(pay, ['payment_method_id']) || pick(pay.payment_method || {}, ['id'])
+      };
+      Object.keys(ids).forEach(k => { if (ids[k]) row[k] = ids[k]; });
+      await sb.from('auto_renew').upsert(row, { onConflict: 'user_id' });
     }
     return res.status(200).json({ ok: true });
   } catch (e) {

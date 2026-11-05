@@ -76,27 +76,34 @@ async function admin(sb, user, body, res) {
     const who = {}; pr.forEach(p => { who[p.id] = p; });
     return res.status(200).json({ plans: rows.map(r => Object.assign({}, r, { profile: who[r.user_id] || null })), programs: pl });
   }
-  if (a === 'pp_create') {
+  // Valida programa, cuotas y fechas (para crear y para editar)
+  const read = async () => {
     const plan = (await sb.from('checkout_plans').select('id, name').eq('id', String(body.plan_id || '')).maybeSingle()).data;
-    if (!plan) return res.status(400).json({ error: 'pp_plan' });
+    if (!plan) return { error: 'pp_plan' };
     const raw = Array.isArray(body.installments) ? body.installments : [];
-    if (raw.length < 1 || raw.length > 24) return res.status(400).json({ error: 'pp_count' });
-    const today = new Date().toISOString().slice(0, 10);
-    let prev = today;
+    if (raw.length < 1 || raw.length > 24) return { error: 'pp_count' };
+    let prev = new Date().toISOString().slice(0, 10);
     const inst = [];
     for (let i = 0; i < raw.length; i++) {
       const amount = r2(raw[i].amount);
-      if (!(amount >= 1)) return res.status(400).json({ error: 'pp_amount' });
+      if (!(amount >= 1)) return { error: 'pp_amount' };
       let due = null;
       if (i > 0) {
         due = String(raw[i].due || '').slice(0, 10);
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || due <= prev) return res.status(400).json({ error: 'pp_dates' });
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || due <= prev) return { error: 'pp_dates' };
         prev = due;
       }
       inst.push({ n: i + 1, amount, due });
     }
-    const af = Math.max(1, Math.min(inst.length, parseInt(body.access_from, 10) || inst.length));
-    const total = r2(inst.reduce((s, i) => s + i.amount, 0));
+    return {
+      plan_id: plan.id, installments: inst, total: r2(inst.reduce((s, i) => s + i.amount, 0)),
+      access_from: Math.max(1, Math.min(inst.length, parseInt(body.access_from, 10) || inst.length)),
+      client_name: String(body.client_name || '').trim().slice(0, 80) || null
+    };
+  };
+  if (a === 'pp_create') {
+    const v = await read();
+    if (v.error) return res.status(400).json(v);
     let code = '';
     for (let t = 0; t < 5 && !code; t++) {
       const c = crypto.randomBytes(8).toString('base64').replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
@@ -104,10 +111,7 @@ async function admin(sb, user, body, res) {
       if (c.length === 8 && !ex.data) code = c;
     }
     if (!code) return res.status(500).json({ error: 'pp_code' });
-    const ins = await sb.from('pay_plans').insert({
-      code, plan_id: plan.id, client_name: String(body.client_name || '').trim().slice(0, 80) || null,
-      total, installments: inst, access_from: af, created_by: user.id
-    }).select('*').single();
+    const ins = await sb.from('pay_plans').insert(Object.assign({ code, created_by: user.id }, v)).select('*').single();
     if (ins.error) return res.status(500).json({ error: ins.error.message });
     return res.status(200).json({ ok: true, plan: ins.data });
   }
@@ -117,6 +121,20 @@ async function admin(sb, user, body, res) {
   if (!pp) return res.status(404).json({ error: 'pp_not_found' });
   if (a === 'pp_cancel') {
     await sb.from('pay_plans').update({ status: 'canceled', next_due: null, updated_at: new Date().toISOString() }).eq('id', id);
+    return res.status(200).json({ ok: true });
+  }
+  // Editar o borrar solo si aún no se pagó ninguna cuota (el link sigue siendo el mismo)
+  if (a === 'pp_update') {
+    if (pp.paid_count > 0 || pp.status !== 'waiting') return res.status(400).json({ error: 'pp_used' });
+    const v = await read();
+    if (v.error) return res.status(400).json(v);
+    const up = await sb.from('pay_plans').update(Object.assign({ updated_at: new Date().toISOString() }, v)).eq('id', id).eq('paid_count', 0).select('*').single();
+    if (up.error) return res.status(500).json({ error: up.error.message });
+    return res.status(200).json({ ok: true, plan: up.data });
+  }
+  if (a === 'pp_delete') {
+    if (pp.paid_count > 0) return res.status(400).json({ error: 'pp_used' });
+    await sb.from('pay_plans').delete().eq('id', id).eq('paid_count', 0);
     return res.status(200).json({ ok: true });
   }
   if (a === 'pp_resume') {

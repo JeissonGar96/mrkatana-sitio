@@ -7688,24 +7688,25 @@ function _ppModal(html) {
   document.body.appendChild(md); return md;
 }
 function _ppAddMonths(iso, k) { var d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() + k); return d.toISOString().slice(0, 10); }
-function _ppNew() {
+function _ppNew(r) {
+  var pre = r ? (r.installments || []) : null;
   var progs = _pp.programs.filter(function(p) { return Number(p.price) > 0; });
   if (!progs.length) return tst('Primero crea un plan con precio en Planes', 1);
-  var md = _ppModal('<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">Crear plan de pago</div><div style="color:var(--c-muted);font-size:.8rem;margin-bottom:18px;">El cliente pone su correo y su tarjeta al abrir el link.</div>' +
+  var md = _ppModal('<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">' + (r ? 'Editar plan de pago' : 'Crear plan de pago') + '</div><div style="color:var(--c-muted);font-size:.8rem;margin-bottom:18px;">El cliente pone su correo y su tarjeta al abrir el link.</div>' +
     '<div class="pp-two"><div class="pp-f"><label>Nombre del cliente</label><input class="wp-input" id="ppn-name" placeholder="Ej. Luis R." maxlength="80"></div>' +
     '<div class="pp-f"><label>Programa</label><select class="wp-input" id="ppn-plan">' + progs.map(function(p) { return '<option value="' + _mkEsc(p.id) + '" data-price="' + Number(p.price) + '">' + _mkEsc(p.name) + ' · ' + _ppMoney(p.price) + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="pp-two"><div class="pp-f"><label>Total a cobrar</label><input class="wp-input" id="ppn-total" type="number" min="1" step="1"></div>' +
-    '<div class="pp-f"><label>Número de cuotas</label><select class="wp-input" id="ppn-n">' + [1,2,3,4,5,6,8,10,12].map(function(k) { return '<option' + (k === 3 ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="pp-f"><label>Número de cuotas</label><select class="wp-input" id="ppn-n">' + [1,2,3,4,5,6,8,10,12].concat(pre && [1,2,3,4,5,6,8,10,12].indexOf(pre.length) < 0 ? [pre.length] : []).sort(function(a, b) { return a - b; }).map(function(k) { return '<option' + (k === (pre ? pre.length : 3) ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="pp-f"><label>Cuotas</label><div id="ppn-q"></div><div class="pp-sum" id="ppn-sum"></div></div>' +
     '<div class="pp-f"><label>Acceso</label><select class="wp-input" id="ppn-acc"></select></div>' +
-    '<button class="wp-btn-primary" id="ppn-go" style="width:100%;margin:6px 0 0;">Crear y copiar link</button><div id="ppn-out" style="margin-top:12px;"></div>');
+    '<button class="wp-btn-primary" id="ppn-go" style="width:100%;margin:6px 0 0;">' + (r ? 'Guardar cambios' : 'Crear y copiar link') + '</button><div id="ppn-out" style="margin-top:12px;"></div>');
   var $ = function(id) { return md.querySelector('#' + id); };
   function fill() {
     var n = +$('ppn-n').value, tot = Number($('ppn-total').value) || 0, today = new Date().toISOString().slice(0, 10);
     var base = Math.floor(tot / n * 100) / 100, last = Math.round((tot - base * (n - 1)) * 100) / 100;
-    var h = '';
-    for (var i = 0; i < n; i++) h += '<div class="pp-q"><span>Cuota ' + (i + 1) + '</span><input class="wp-input pp-am" type="number" min="1" step="0.01" value="' + (i === n - 1 ? last : base) + '">' +
-      (i === 0 ? '<div class="pp-fx">Al pagar el link</div>' : '<input class="wp-input pp-du" type="date" value="' + _ppAddMonths(today, i) + '">') + '</div>';
+    var h = '', use = pre && pre.length === n && Math.abs(pre.reduce(function(s, x) { return s + Number(x.amount); }, 0) - tot) < 0.01;
+    for (var i = 0; i < n; i++) h += '<div class="pp-q"><span>Cuota ' + (i + 1) + '</span><input class="wp-input pp-am" type="number" min="1" step="0.01" value="' + (use ? pre[i].amount : i === n - 1 ? last : base) + '">' +
+      (i === 0 ? '<div class="pp-fx">Al pagar el link</div>' : '<input class="wp-input pp-du" type="date" value="' + (use && pre[i].due ? pre[i].due : _ppAddMonths(today, i)) + '">') + '</div>';
     $('ppn-q').innerHTML = h;
     var a = $('ppn-acc'), keep = a.value;
     a.innerHTML = Array.from({ length: n }, function(_, i) { var k = i + 1; return '<option value="' + k + '">' + (k === n ? (n === 1 ? 'Al pagar' : 'Al terminar de pagar (cuota ' + n + ')') : 'Desde la cuota ' + k) + '</option>'; }).join('');
@@ -7721,13 +7722,22 @@ function _ppNew() {
   }
   function setTotal() { $('ppn-total').value = $('ppn-plan').selectedOptions[0].dataset.price; fill(); }
   $('ppn-plan').onchange = setTotal; $('ppn-n').onchange = fill; $('ppn-total').oninput = fill;
-  setTotal();
+  if (r) {
+    $('ppn-name').value = r.client_name || '';
+    if (md.querySelector('#ppn-plan option[value="' + r.plan_id + '"]')) $('ppn-plan').value = r.plan_id;
+    $('ppn-total').value = Number(r.total); fill(); $('ppn-acc').value = String(r.access_from || pre.length);
+  } else setTotal();
   $('ppn-go').onclick = function() {
     var b = this, ams = md.querySelectorAll('.pp-am'), dus = md.querySelectorAll('.pp-du'), inst = [];
     ams.forEach(function(x, i) { inst.push({ amount: Number(x.value), due: i ? dus[i - 1].value : null }); });
     if (inst.some(function(x) { return !(x.amount >= 1); })) return tst('Cada cuota debe ser de al menos $1', 1);
     for (var i = 1; i < inst.length; i++) if (!inst[i].due || (i > 1 && inst[i].due <= inst[i - 1].due) || inst[i].due <= new Date().toISOString().slice(0, 10)) return tst('Revisa las fechas: cada cuota después de la anterior y después de hoy', 1);
-    b.disabled = true; b.textContent = 'Creando...';
+    b.disabled = true; b.textContent = r ? 'Guardando...' : 'Creando...';
+    if (r) return _cwCall({ action: 'pp_update', id: r.id, plan_id: $('ppn-plan').value, client_name: $('ppn-name').value, installments: inst, access_from: +$('ppn-acc').value }).then(function(j) {
+      b.disabled = false; b.textContent = 'Guardar cambios';
+      if (!j.ok) return tst({ pp_dates: 'Revisa las fechas de las cuotas', pp_amount: 'Revisa los montos', pp_used: 'Ya pagó la primera cuota, este plan ya no se puede editar' }[j.error] || 'No se pudo guardar', 1);
+      tst('Cambios guardados'); md.remove(); rAdmPP();
+    });
     _cwCall({ action: 'pp_create', plan_id: $('ppn-plan').value, client_name: $('ppn-name').value, installments: inst, access_from: +$('ppn-acc').value }).then(function(j) {
       b.disabled = false; b.textContent = 'Crear y copiar link';
       if (!j.ok) return tst({ pp_dates: 'Revisa las fechas de las cuotas', pp_amount: 'Revisa los montos', staff_only: 'Tu cuenta no tiene permiso para crear planes de pago' }[j.error] || 'No se pudo crear el plan', 1);
@@ -7752,11 +7762,17 @@ function _ppView(r) {
         (canEd ? '<input type="date" class="wp-input" data-n="' + x.n + '" value="' + x.due + '">' : '<span style="color:var(--c-muted);font-size:.8rem;">' + (x.due ? _ppDay(x.due) : '') + '</span>') + '</div>';
     }).join('') +
     (r.last_error && r.status === 'late' ? '<div class="pp-m" style="margin-top:10px;">Último error del banco: ' + _mkEsc(r.last_error) + '</div>' : '') +
-    '<div class="pp-acts">' + (r.status === 'waiting' ? '<button class="pp-a" id="ppv-cp">Copiar link</button>' : '') +
+    '<div class="pp-acts">' + (r.status === 'waiting' ? '<button class="pp-a" id="ppv-cp">Copiar link</button><button class="pp-a" id="ppv-ed">Editar</button>' : '') +
     (r.status === 'late' ? '<button class="pp-a" id="ppv-rs">Reintentar cobros</button>' : '') +
-    (edit ? '<button class="pp-a" id="ppv-x" style="color:#e38b6a;">Cancelar plan</button>' : '') + '</div>');
+    (edit && r.paid_count > 0 ? '<button class="pp-a" id="ppv-x" style="color:#e38b6a;">Cancelar plan</button>' : '') +
+    (!(r.paid_count > 0) ? '<button class="pp-a" id="ppv-del" style="color:#e38b6a;">Eliminar</button>' : '') + '</div>');
   var q = function(id) { return md.querySelector('#' + id); };
   if (q('ppv-cp')) q('ppv-cp').onclick = function() { _ppCopy(r.code); };
+  if (q('ppv-ed')) q('ppv-ed').onclick = function() { md.remove(); _ppNew(r); };
+  if (q('ppv-del')) q('ppv-del').onclick = function() {
+    if (!confirm('¿Eliminar este plan de pago? El link dejará de funcionar.')) return;
+    _cwCall({ action: 'pp_delete', id: r.id }).then(function(j) { if (j.ok) { tst('Plan eliminado'); md.remove(); rAdmPP(); } else tst(j.error === 'pp_used' ? 'Ya tiene pagos, usa Cancelar plan' : 'No se pudo eliminar', 1); });
+  };
   if (q('ppv-rs')) q('ppv-rs').onclick = function() { _cwCall({ action: 'pp_resume', id: r.id }).then(function(j) { if (j.ok) { tst('Listo, se vuelve a intentar el cobro mañana'); md.remove(); rAdmPP(); } else tst('No se pudo', 1); }); };
   if (q('ppv-x')) q('ppv-x').onclick = function() {
     if (!confirm('¿Cancelar este plan de pago? No se cobrarán más cuotas. El acceso que ya tenga no cambia.')) return;

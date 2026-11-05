@@ -73,7 +73,7 @@ module.exports = async function handler(req, res) {
     if (body.action === 'tv_claim') return await tvClaim(sb, user, body, res);
     if (body.action === 'card_setup') return await cardSetup(sb, user, body, req, res);
     if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
-    if (/^pp_(list|create|cancel|resume|date)$/.test(String(body.action))) return await require('./_payplan').admin(sb, user, body, res);
+    if (/^pp_(list|create|update|delete|cancel|resume|date)$/.test(String(body.action))) return await require('./_payplan').admin(sb, user, body, res);
     if (body.action === 'pp_mine') return await require('./_payplan').mine(sb, user, res);
     return res.status(400).json({ error: 'bad_action' });
   } catch (e) {

@@ -1063,7 +1063,7 @@ window.onload = async function() {
     var em = _v('li-e').trim();
     if (!em) return showMsg('Escribe tu correo arriba primero.', true);
     if (_liCapWait()) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
-    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + '/login', captchaToken: _liToken || undefined }).then(function(r) {
+    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + '/login?nueva-clave', captchaToken: _liToken || undefined }).then(function(r) {
       _liCapReset();
       if (r.error) showMsg('No se pudo enviar: ' + r.error.message, true);
       else showMsg('Te enviamos un correo para cambiar tu contraseña.', false);

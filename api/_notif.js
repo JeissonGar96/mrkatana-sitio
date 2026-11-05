@@ -12,7 +12,7 @@ const { createClient } = require('@supabase/supabase-js');
 const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 const VAPID_PUBLIC = 'BFq0c3NiHS9LLzjgZJImePJ7dXBAvG-EYgRF8v8tI4jWfwdVLEDI7BetU4bfVhs9fhKZQ88nAVsmq9ZhyXh18oc';
 const SITE = 'https://www.mrkatanafx.com';
-const PREF = { class: 'notify_class', mtg: 'notify_mtg', exp: 'notify_pay', pay: 'notify_pay', cal: 'notify_cal', journal: 'notify_journal', rank: 'notify_rank', news: 'notify_news' };
+const PREF = { class: 'notify_class', mtg: 'notify_mtg', exp: 'notify_pay', pay: 'notify_pay', cal: 'notify_calendar', journal: 'notify_journal', rank: 'notify_rank', news: 'notify_news' };
 const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const EC = -5 * 3600e3, MX = -6 * 3600e3; // Ecuador y Ciudad de México (sin horario de verano)
@@ -42,12 +42,11 @@ function inSeg(p, seg, set) {
   if (seg === 'live') return team || live;
   if (seg === 'free') return !team && !mem && !live;
   if (seg === 'course') return team || (p.membership_end && new Date(p.membership_end).getTime() > now);
-  if (seg === 'cal') return !!(set[p.id] && set[p.id].notify_cal);
+  if (seg === 'cal') return !(set[p.id] && set[p.id].notify_calendar === false);
   return false;
 }
 const wants = (set, uid, kind) => {
   const k = PREF[kind], s = set[uid];
-  if (kind === 'cal') return !!(s && s.notify_cal);
   return !s || !k || s[k] !== false;
 };
 

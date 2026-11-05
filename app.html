@@ -5102,7 +5102,7 @@ function _ajRender() {
         _ajRow('Por email', _mkEsc(cUser ? cUser.email : ''), _ajToggle('notify_live_email', v('notify_live_email', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
       _ajGroup('Curso y reuniones', _ajRow('Nueva clase en el curso', 'Cuando Mr Katana sube una clase', _ajToggle('notify_class', v('notify_class', true)).replace('<button', '<span').replace('</button>', '</span>')) +
         _ajRow('Reuniones 1-1', 'Cuando se agenda o cambia, 1 día antes y 10 minutos antes', _ajToggle('notify_mtg', v('notify_mtg', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
-      _ajGroup('Herramientas', _ajRow('Calendario económico', '30 minutos antes de cada noticia de alto impacto', _ajToggle('notify_cal', v('notify_cal', false)).replace('<button', '<span').replace('</button>', '</span>')) +
+      _ajGroup('Herramientas', _ajRow('Calendario económico', '30 minutos antes de cada noticia de alto impacto', _ajToggle('notify_calendar', v('notify_calendar', true)).replace('<button', '<span').replace('</button>', '</span>')) +
         _ajRow('Recordatorio del journal', 'A las 8 pm si no registraste trade ni marcaste "No operé"', _ajToggle('notify_journal', v('notify_journal', true)).replace('<button', '<span').replace('</button>', '</span>')) +
         _ajRow('Ranking', 'Cuando subes de puesto y al cierre del mes', _ajToggle('notify_rank', v('notify_rank', true)).replace('<button', '<span').replace('</button>', '</span>'))) +
       _ajGroup('Cuenta y pagos', _ajRow('Pagos y vencimientos', 'Cobros, cuotas y avisos antes de que venza tu acceso', _ajToggle('notify_pay', v('notify_pay', true)).replace('<button', '<span').replace('</button>', '</span>')) +

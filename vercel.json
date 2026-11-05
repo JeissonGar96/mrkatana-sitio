@@ -1,13 +1,38 @@
 {
   "rewrites": [
-    { "source": "/checkout", "destination": "/checkout.html" },
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/app", "destination": "/app.html" },
-    { "source": "/app/(.*)", "destination": "/app.html" },
-    { "source": "/legal", "destination": "/legal.html" },
-    { "source": "/api/whop-webhook", "destination": "/api/cart?hook=whop" }
+    {
+      "source": "/checkout",
+      "destination": "/checkout.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/app",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/app/(.*)",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/legal",
+      "destination": "/legal.html"
+    },
+    {
+      "source": "/api/whop-webhook",
+      "destination": "/api/cart?hook=whop"
+    }
   ],
   "crons": [
-    { "path": "/api/notify-live?weekly=1", "schedule": "0 23 * * 0" }
+    {
+      "path": "/api/notify-live?weekly=1",
+      "schedule": "0 23 * * 6"
+    },
+    {
+      "path": "/api/cart?cron=renew",
+      "schedule": "0 15 * * *"
+    }
   ]
 }

@@ -7,6 +7,7 @@
 const SITE = 'https://www.mrkatanafx.com';
 const IMG = SITE + '/img/correos/';
 const G = '#3B4CF0';
+const BT = '#197ae1'; // mismo azul de los botones de la plataforma
 const F = "font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;";
 
 // Redes: deja el link vacío para ocultar el ícono
@@ -24,14 +25,14 @@ const SERVICE = 'Este es un correo de servicio sobre tu cuenta en Mr Katana FX. 
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 const b = t => '<b style="color:#14161f;">' + t + '</b>';
-const hl = t => '<b style="color:' + G + ';">' + t + '</b>';
+const hl = t => '<b style="color:' + BT + ';">' + t + '</b>';
 const p = (t, center) => '<div style="' + F + 'font-size:13.5px;line-height:22px;color:#3f4250;margin:0 0 12px;' + (center ? 'text-align:center;' : '') + '">' + t + '</div>';
 const h2 = t => '<div style="' + F + 'font-size:18px;line-height:25px;color:#14161f;font-weight:800;text-align:center;margin:6px 0 14px;">' + t + '</div>';
 const icon = (f, w) => '<img src="' + IMG + f + '" width="' + w + '" alt="" style="display:block;margin:0 auto 6px;width:' + w + 'px;height:auto;">';
 const hr = '<div style="height:1px;background:#e9eaf2;margin:20px 0 22px;"></div>';
 function bl(items) {
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">' + items.map(t =>
-    '<tr><td width="22" valign="top"><div style="width:7px;height:7px;border-radius:50%;background:' + G + ';margin-top:7px;"></div></td><td style="' + F + 'font-size:13px;line-height:20px;color:#3f4250;padding:0 0 9px;">' + t + '</td></tr>').join('') + '</table>';
+    '<tr><td width="22" valign="top"><div style="width:7px;height:7px;border-radius:50%;background:' + BT + ';margin-top:7px;"></div></td><td style="' + F + 'font-size:13px;line-height:20px;color:#3f4250;padding:0 0 9px;">' + t + '</td></tr>').join('') + '</table>';
 }
 function box(rows) {
   return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4fb;border-radius:12px;margin:4px 0 18px;">' + rows.map((r, i) => {
@@ -50,16 +51,16 @@ function page(o) {
     '<tr><td align="center" style="padding:10px 28px 0;' + F + 'font-size:' + (big ? 32 : 28) + 'px;line-height:' + (big ? 38 : 35) + 'px;color:#ffffff;font-weight:800;letter-spacing:-.5px;">' + o.title + '</td></tr>' +
     (o.sub ? '<tr><td align="center" style="padding:12px 40px 4px;' + F + 'font-size:14px;line-height:22px;color:#dfe2ff;">' + o.sub + '</td></tr>' : '<tr><td style="padding:4px;"></td></tr>') +
     '</table>';
-  const btn = o.cta ? '<a href="' + (o.url || SITE + '/app') + '" style="display:block;background:' + G + ';border-radius:12px;padding:15px 20px;text-align:center;' + F + 'font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">' + o.cta + '</a>' : '';
+  const btn = o.cta ? '<a href="' + (o.url || SITE + '/app') + '" style="display:block;background:' + BT + ';border-radius:12px;padding:15px 20px;text-align:center;' + F + 'font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">' + o.cta + '</a>' : '';
   const panel = o.panel ? '<tr><td style="padding:6px 36px 22px;"><div style="' + F + 'font-size:12px;letter-spacing:2px;color:#7c8090;font-weight:700;text-transform:uppercase;text-align:center;margin-bottom:12px;">Así se ve tu panel</div><img src="' + IMG + 'panel.jpg" width="528" alt="Panel de Mr Katana" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid #e4e6f2;"></td></tr>' : '';
   const lk = 'color:#7c8090;';
   const links = '<a href="' + SITE + '/legal" style="' + lk + '">Términos y condiciones</a> &nbsp;·&nbsp; <a href="' + SITE + '/legal" style="' + lk + '">Política de privacidad</a>' +
     (o.unsub ? ' &nbsp;·&nbsp; <a href="' + (o.unsubUrl || SITE + '/app/perfil') + '" style="' + lk + '">Darme de baja</a>' : ' &nbsp;·&nbsp; <a href="' + SITE + '/app/perfil" style="' + lk + '">Ajustes de notificaciones</a>');
   const soc = REDES.filter(r => r[2]).map(r => '<td style="padding:0 6px;"><a href="' + r[2] + '"><img src="' + IMG + 'red-' + r[0] + '.png" width="34" height="34" alt="' + r[1] + '" style="display:block;width:34px;height:34px;"></a></td>').join('');
   const small = t => '<tr><td align="center" style="padding:10px 34px 0;' + F + 'font-size:11px;line-height:17px;color:#8a8e9c;">' + t + '</td></tr>';
-  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"><style>:root{color-scheme:light only;supported-color-schemes:light only;}</style></head><body style="margin:0;padding:0;background:#ffffff;">' +
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;"><tr><td align="center" style="padding:24px 10px;">' +
-    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e6e8f0;border-radius:20px;overflow:hidden;">' +
+  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"><style>:root{color-scheme:light only;supported-color-schemes:light only;}</style></head><body style="margin:0;padding:0;background:#f6f7fa;">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fa;"><tr><td align="center" style="padding:24px 10px;">' +
+    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:20px;overflow:hidden;">' +
     '<tr><td style="padding:12px 2% 0;">' + hero + '</td></tr>' +
     '<tr><td style="padding:0;"><img src="' + IMG + 'b-' + (o.art || 'aviso') + '.png" width="600" alt="" style="display:block;width:100%;height:auto;"></td></tr>' +
     '<tr><td style="padding:14px 36px 8px;">' + (o.body || '') + '</td></tr>' + panel +

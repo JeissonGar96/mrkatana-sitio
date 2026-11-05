@@ -37,12 +37,13 @@ function digId(o, re, d) {
 
 // Admin siempre; staff (closers) si tiene el permiso "Planes de pago" en Admin → Planes → Permisos de Staff
 async function isStaff(sb, user) {
-  const me = await sb.from('profiles').select('role').eq('id', user.id).single();
+  const [me, sp] = await Promise.all([
+    sb.from('profiles').select('role').eq('id', user.id).single(),
+    sb.from('staff_permissions').select('access_payplans').eq('id', 1).maybeSingle()
+  ]);
   const role = me.data && me.data.role;
   if (role === 'admin') return true;
-  if (role !== 'staff') return false;
-  const sp = await sb.from('staff_permissions').select('access_payplans').eq('id', 1).maybeSingle();
-  return !!(sp.data && sp.data.access_payplans);
+  return role === 'staff' && !!(sp.data && sp.data.access_payplans);
 }
 
 // ── Público: lo que muestra el checkout al abrir el link ──
@@ -65,12 +66,14 @@ async function admin(sb, user, body, res) {
   if (!(await isStaff(sb, user))) return res.status(403).json({ error: 'staff_only' });
   const a = body.action;
   if (a === 'pp_list') {
-    const q = await sb.from('pay_plans').select('*').order('created_at', { ascending: false }).limit(300);
-    const rows = q.data || [];
+    const [q, plq] = await Promise.all([
+      sb.from('pay_plans').select('*').order('created_at', { ascending: false }).limit(300),
+      sb.from('checkout_plans').select('id, name, price')
+    ]);
+    const rows = q.data || [], pl = plq.data || [];
     const uids = [...new Set(rows.map(r => r.user_id).filter(Boolean))];
     const pr = uids.length ? ((await sb.from('profiles').select('id, email, full_name').in('id', uids)).data || []) : [];
     const who = {}; pr.forEach(p => { who[p.id] = p; });
-    const pl = (await sb.from('checkout_plans').select('id, name, price')).data || [];
     return res.status(200).json({ plans: rows.map(r => Object.assign({}, r, { profile: who[r.user_id] || null })), programs: pl });
   }
   if (a === 'pp_create') {

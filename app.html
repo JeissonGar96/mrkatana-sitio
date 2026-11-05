@@ -2777,6 +2777,8 @@ _mnRender();
 <script>
 var SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4eWV6Ynl2d3F3aWhnZ2VjaHNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzA3NDEsImV4cCI6MjA4ODk0Njc0MX0.1JSsDMb08NiHwrRtzgp46UZ5pqTuUTGTkpKIOmm9WRc';
+// Si el enlace de "cambiar contraseña" cae en /app, mandarlo a la página para crear la nueva
+if (/type=recovery/.test(location.hash)) location.replace('/login?nueva-clave' + location.hash);
 var sb = supabase.createClient(SB_URL, SB_KEY);
 var cUser = null, cProfile = null;
 

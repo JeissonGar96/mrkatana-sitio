@@ -7601,7 +7601,12 @@ function rAdmAvisos() {
     '<div id="av-cks"></div>' +
     '<button class="av-btn" id="av-go" onclick="_avSend()">Enviar aviso</button>' +
     '</div><div><div class="av-t">Así le llega</div><div class="av-prv" id="av-prv"></div>' +
-    '<div class="av-h"><div class="av-t">Enviados</div><div id="av-list"><div class="mk-skel" style="height:40px;border-radius:10px;"></div></div></div></div></div></div>';
+    '<div class="av-h"><div class="av-t">Enviados</div><div id="av-list"><div class="mk-skel" style="height:40px;border-radius:10px;"></div></div></div></div></div></div>' +
+    (cProfile && cProfile.role === 'admin' ? '<div class="av-card" style="margin-top:16px;"><div class="av-t">Correo de lanzamiento</div>' +
+    '<div style="font-size:.84rem;color:var(--c-text2);line-height:1.5;margin-bottom:12px;">Le llega a todos los registrados para invitarlos a entrar a la plataforma nueva. Primero mándate una prueba a tu correo. El envío a todos se puede hacer una sola vez.</div>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="av-btn" style="flex:1;min-width:180px;background:none;border:1px solid var(--k-line);color:var(--c-text);" onclick="_avLaunch(true,this)">Enviarme una prueba</button>' +
+    '<button class="av-btn" style="flex:1;min-width:180px;" onclick="_avLaunch(false,this)">Enviar a todos (una vez)</button></div>' +
+    '<div id="av-lres" style="font-size:.78rem;color:var(--c-muted);margin-top:10px;"></div></div>' : '');
   _avDraw(); _avPrev(); _avList();
 }
 function _avDraw() {
@@ -7625,6 +7630,22 @@ function _avList() {
         '<button onclick="_avDel(\'' + n.id + '\')" title="Borrar">Borrar</button></div>';
     }).join('') : '<div style="font-size:.8rem;color:var(--c-muted);">Todavía no has enviado avisos.</div>';
   });
+}
+async function _avLaunch(test, btn) {
+  var out = document.getElementById('av-lres');
+  if (!test && !confirm('¿Enviar el correo de lanzamiento a todos los registrados? Solo se puede hacer una vez.')) return;
+  btn.disabled = true; out.textContent = 'Enviando...';
+  try {
+    var s = await sb.auth.getSession();
+    var tk = s.data && s.data.session && s.data.session.access_token;
+    var r = await fetch('/api/notify-live?launch=1', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ test: !!test }) });
+    var j = await r.json().catch(function() { return {}; });
+    if (!r.ok) out.textContent = 'No se pudo enviar (' + (j.error || r.status) + ').';
+    else if (j.skipped) out.textContent = 'Ya se había enviado a todos antes. No se volvió a mandar.';
+    else if (j.test) out.textContent = j.sent ? 'Listo, revisa tu correo.' : 'No se pudo enviar la prueba.';
+    else out.textContent = 'Enviado a ' + j.sent + ' de ' + j.total + ' personas.';
+  } catch (e) { out.textContent = 'No se pudo enviar.'; }
+  btn.disabled = false;
 }
 function _avSend() {
   var t = document.getElementById('av-ti').value.trim(), b = document.getElementById('av-bo').value.trim();

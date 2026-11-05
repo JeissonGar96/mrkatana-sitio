@@ -9,6 +9,7 @@
 
 const webpush = require('web-push');
 const { createClient } = require('@supabase/supabase-js');
+const M = require('./_mail');
 
 const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 const VAPID_PUBLIC = 'BFq0c3NiHS9LLzjgZJImePJ7dXBAvG-EYgRF8v8tI4jWfwdVLEDI7BetU4bfVhs9fhKZQ88nAVsmq9ZhyXh18oc';
@@ -17,6 +18,7 @@ const SITE = 'https://www.mrkatanafx.com';
 module.exports = async function handler(req, res) {
   try {
     if (req.query && req.query.weekly === '1') return await weekly(req, res);
+    if (req.query && req.query.launch === '1') return await launchMail(req, res);
     // Notificaciones de la app (campana): tick cada 5 min y envío de pendientes
     if (req.query && (req.query.tick === '1' || req.query.push === '1')) return res.status(200).json(await require('./_notif').run(req));
     if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
@@ -83,11 +85,9 @@ module.exports = async function handler(req, res) {
       const from = process.env.MAIL_FROM || 'Mr Katana FX <noreply@mrkatanafx.com>';
       const mails = people.filter(p => wantMail(p) && p.email).map(p => ({
         from, to: [p.email], subject: 'En vivo ahora: ' + title,
-        html: '<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;line-height:1.5">' +
-          '<p>Hola ' + esc((p.full_name || '').split(' ')[0] || '') + ',</p>' +
-          '<p>Acaba de empezar el en vivo <b>' + esc(title) + '</b>.</p>' +
-          '<p><a href="' + SITE + '/app/sesiones" style="display:inline-block;background:#c9a646;color:#111;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Entrar al en vivo</a></p>' +
-          '<p style="color:#888;font-size:12px">Puedes apagar estos avisos en Ajustes, Notificaciones.</p></div>'
+        html: M.page({ art: 'live', eyebrow: 'En vivo ahora', title: esc(title), sub: 'Acaba de empezar. Entra desde tu panel.',
+          body: M.p('Hola ' + esc((p.full_name || '').split(' ')[0] || '') + ', ya estamos operando en vivo. Entra ahora y sigue la sesión desde la plataforma, sin otros links.', true),
+          cta: 'Entrar al en vivo', url: SITE + '/app/sesiones' })
       }));
       for (let i = 0; i < mails.length; i += 100) {
         const r = await fetch('https://api.resend.com/emails/batch', {
@@ -125,16 +125,14 @@ async function weekly(req, res) {
   const free = pr.filter(p => p.email && p.role !== 'admin' && p.role !== 'staff' && !(p.live_end && p.live_end > now));
   const st = free.length ? ((await sb.from('user_settings').select('id, notify_live_email').in('id', free.map(p => p.id))).data || []) : [];
   const off = new Set(st.filter(x => x.notify_live_email === false).map(x => x.id));
-  const n = lives.length, list = lives.slice(0, 6).map(x => '<li>' + esc(x.title || 'Sesión en vivo') + '</li>').join('');
+  const n = lives.length;
   const from = process.env.MAIL_FROM || 'Mr Katana FX <noreply@mrkatanafx.com>';
   const mails = free.filter(p => !off.has(p.id)).map(p => ({
     from, to: [p.email], subject: n === 1 ? 'Esta semana hubo 1 en vivo y te lo perdiste' : 'Esta semana hubo ' + n + ' en vivos y te los perdiste',
-    html: '<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;line-height:1.5">' +
-      '<p>Hola ' + esc((p.full_name || '').split(' ')[0] || '') + ',</p>' +
-      '<p>Esta semana operamos en vivo ' + (n === 1 ? '1 vez' : n + ' veces') + ':</p><ul>' + list + '</ul>' +
-      '<p>Para entrar a los próximos, únete con la Mentoría o compra el acceso a los en vivo.</p>' +
-      '<p><a href="' + SITE + '/app/sesiones" style="display:inline-block;background:#c9a646;color:#111;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Ver opciones</a></p>' +
-      '<p style="color:#888;font-size:12px">Puedes apagar estos correos en Ajustes, Notificaciones.</p></div>'
+    html: M.page({ art: 'week', eyebrow: 'Resumen de la semana', title: n === 1 ? 'Esta semana hubo<br>1 en vivo' : 'Esta semana hubo<br>' + n + ' en vivos', sub: 'Esto es lo que operamos en directo.',
+      body: M.p('Hola ' + esc((p.full_name || '').split(' ')[0] || '') + ', esta semana operamos en vivo ' + (n === 1 ? '1 vez' : n + ' veces') + ':') + M.bl(lives.slice(0, 6).map(x => esc(x.title || 'Sesión en vivo'))) +
+        M.p('Para entrar a los próximos, únete con la Mentoría o compra el acceso a los en vivo.'),
+      cta: 'Ver opciones', url: SITE + '/app/sesiones' })
   }));
   let sent = 0;
   for (let i = 0; i < mails.length; i += 100) {
@@ -148,3 +146,35 @@ async function weekly(req, res) {
 }
 
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+// Correo de lanzamiento (Admin > Avisos). Solo admin. test=true: solo al admin. Envío a todos: una sola vez (site_settings id 5).
+async function launchMail(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+  if (!process.env.SUPABASE_SERVICE_KEY || !process.env.RESEND_API_KEY) return res.status(500).json({ error: 'missing_keys' });
+  const sb = createClient(SB_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+  const tok = String(req.headers.authorization || '').replace(/^Bearer /, '');
+  const u = tok ? (await sb.auth.getUser(tok)).data : null;
+  if (!u || !u.user) return res.status(401).json({ error: 'auth' });
+  const me = (await sb.from('profiles').select('role, email').eq('id', u.user.id).maybeSingle()).data;
+  if (!me || me.role !== 'admin') return res.status(403).json({ error: 'admin' });
+  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+  const from = process.env.MAIL_FROM || 'Mr Katana FX <noreply@mrkatanafx.com>';
+  const subject = 'Ya abrimos tu nueva plataforma de trading';
+  const html = M.launch('users');
+  const send = async list => {
+    let sent = 0;
+    for (let i = 0; i < list.length; i += 100) {
+      const batch = list.slice(i, i + 100).map(to => ({ from, to: [to], subject, html }));
+      const r = await fetch('https://api.resend.com/emails/batch', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY.trim(), 'Content-Type': 'application/json' }, body: JSON.stringify(batch) }).catch(() => null);
+      if (r && r.ok) sent += batch.length;
+    }
+    return sent;
+  };
+  if (body.test) return res.status(200).json({ ok: true, test: true, sent: await send([u.user.email || me.email].filter(Boolean)) });
+  const prev = (await sb.from('site_settings').select('theme').eq('id', 5).maybeSingle()).data;
+  if (prev && prev.theme && prev.theme.launch_sent) return res.status(200).json({ ok: true, skipped: 'already', at: prev.theme.launch_sent });
+  await sb.from('site_settings').upsert({ id: 5, theme: { launch_sent: new Date().toISOString() }, updated_at: new Date().toISOString() });
+  const pr = (await sb.from('profiles').select('email, role')).data || [];
+  const list = [...new Set(pr.filter(p => p.email && p.role !== 'admin' && p.role !== 'staff').map(p => p.email.trim().toLowerCase()))];
+  return res.status(200).json({ ok: true, total: list.length, sent: await send(list) });
+}

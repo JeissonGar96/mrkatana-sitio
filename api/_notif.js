@@ -8,6 +8,7 @@
 
 const webpush = require('web-push');
 const { createClient } = require('@supabase/supabase-js');
+const M = require('./_mail');
 
 const SB_URL = 'https://rxyezbyvwqwihggechsc.supabase.co';
 const VAPID_PUBLIC = 'BFq0c3NiHS9LLzjgZJImePJ7dXBAvG-EYgRF8v8tI4jWfwdVLEDI7BetU4bfVhs9fhKZQ88nAVsmq9ZhyXh18oc';
@@ -84,11 +85,7 @@ async function pushPending(sb) {
   }
   if (process.env.RESEND_API_KEY && mails.length) {
     const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    const html = n => '<div style="background:#f6f5f2;padding:32px 16px;font-family:Helvetica,Arial,sans-serif"><div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e7e3d8;border-radius:14px;padding:32px">' +
-      '<p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#a8822b">Mr Katana FX</p>' +
-      '<h1 style="margin:0 0 14px;font-size:22px;color:#151309">' + esc(n.title) + '</h1>' +
-      '<p style="margin:0 0 24px;font-size:15px;line-height:24px;color:#4a4740;white-space:pre-line">' + esc(n.body) + '</p>' +
-      '<a href="' + SITE + '/app" style="display:inline-block;background:#c9a84c;color:#151309;text-decoration:none;font-weight:700;font-size:14px;padding:13px 26px;border-radius:10px">Abrir la plataforma</a></div></div>';
+    const html = n => M.page({ art: 'aviso', eyebrow: 'Mr Katana FX', title: esc(n.title), body: '<div style="white-space:pre-line;">' + M.p(esc(n.body)) + '</div>', cta: 'Abrir la plataforma', url: SITE + '/app' });
     for (let i = 0; i < mails.length; i += 100) {
       const batch = mails.slice(i, i + 100).map(({ p, n }) => ({ from: 'Mr Katana FX <noreply@mrkatanafx.com>', to: [p.email], subject: n.title, html: html(n) }));
       const r = await fetch('https://api.resend.com/emails/batch', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY.trim(), 'Content-Type': 'application/json' }, body: JSON.stringify(batch) }).catch(() => null);

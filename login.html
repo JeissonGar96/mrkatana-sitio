@@ -1588,12 +1588,23 @@ function _busyBtn(b, M, txt) {
 var BUSY_IN = ['Verificando tus datos', 'Entrando a tu cuenta', 'Preparando tu panel'];
 var BUSY_REG = ['Verificando tus datos', 'Creando tu cuenta', 'Enviando tu correo'];
 
+// Si la verificación de seguridad aún no termina, el botón espera solo (hasta 12 s) en vez de mostrar un error
+function _liWaitTok(btn, txt, go) {
+  if (!_liCapWait()) return go();
+  _busyBtn(btn, BUSY_IN); var n = 0;
+  var iv = setInterval(function() {
+    n++;
+    if (!_liCapWait()) { clearInterval(iv); go(); return; }
+    if (n === 20 && window.turnstile && _liCapId !== null) turnstile.reset(_liCapId);
+    if (n >= 48) { clearInterval(iv); _busyBtn(btn, null, txt); showMsg('No se pudo completar la verificación de seguridad. Recarga la página e intenta de nuevo.', true); }
+  }, 250);
+}
 function doLogin() {
   var e = document.getElementById('li-e').value.trim();
   var p = document.getElementById('li-p').value;
   if (!e || !p) return showMsg('Completa todos los campos.', true);
-  if (_liCapWait()) return showMsg('Espera un momento a que termine la verificación de seguridad.', true);
   var btn = document.getElementById('btn-in');
+  if (_liCapWait()) return _liWaitTok(btn, 'Iniciar sesión', doLogin);
   _busyBtn(btn, BUSY_IN);
   sb.auth.signInWithPassword({ email: e, password: p, options: { captchaToken: _liToken || undefined } }).then(function(r) {
     _liCapReset();

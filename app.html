@@ -3062,6 +3062,7 @@ function loadApp(user) {
   var appdashEl = document.getElementById('appdash');
   appdashEl.style.display = 'block';
   appdashEl.scrollTop = 0;
+  _alayFit(); setTimeout(_alayFit, 300);
   document.body.style.overflow = 'hidden';
   document.body.style.height = '100%';
 
@@ -4288,7 +4289,18 @@ function _lpFit() {
   var h = (box.getBoundingClientRect().bottom - lay.getBoundingClientRect().top - 22) / z;
   if (h > 420) lay.style.height = h + 'px';
 }
-window.addEventListener('resize', function(){ _lpFit(); });
+// Alto del panel en computador: Safari y Chrome calculan distinto el alto con zoom .9,
+// así que se mide lo que realmente se ve y se ajusta para que quede igual arriba y abajo.
+function _alayFit() {
+  var a = document.querySelector('#appdash > .alay'); if (!a) return;
+  if (!window.matchMedia || !matchMedia('(min-width:861px)').matches) { a.style.removeProperty('height'); return; }
+  a.style.setProperty('height', '1000px', 'important');
+  var r = a.getBoundingClientRect(); if (!r.height) return a.style.removeProperty('height');
+  var want = window.innerHeight - 2 * Math.max(0, r.top);
+  if (want > 200) a.style.setProperty('height', (1000 * want / r.height).toFixed(1) + 'px', 'important');
+  else a.style.removeProperty('height');
+}
+window.addEventListener('resize', function(){ _alayFit(); _lpFit(); });
 
 function markDone(lessonId, isMobile) {
   var taskInput = document.getElementById(isMobile ? 'mob-task-input' : 'task-input');

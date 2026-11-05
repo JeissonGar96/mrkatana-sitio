@@ -57,9 +57,9 @@ function page(o) {
     (o.unsub ? ' &nbsp;·&nbsp; <a href="' + (o.unsubUrl || SITE + '/app/perfil') + '" style="' + lk + '">Darme de baja</a>' : ' &nbsp;·&nbsp; <a href="' + SITE + '/app/perfil" style="' + lk + '">Ajustes de notificaciones</a>');
   const soc = REDES.filter(r => r[2]).map(r => '<td style="padding:0 6px;"><a href="' + r[2] + '"><img src="' + IMG + 'red-' + r[0] + '.png" width="34" height="34" alt="' + r[1] + '" style="display:block;width:34px;height:34px;"></a></td>').join('');
   const small = t => '<tr><td align="center" style="padding:10px 34px 0;' + F + 'font-size:11px;line-height:17px;color:#8a8e9c;">' + t + '</td></tr>';
-  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"><style>:root{color-scheme:light only;supported-color-schemes:light only;}</style></head><body style="margin:0;padding:0;background:#ffffff;">' +
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;"><tr><td align="center" style="padding:24px 10px;">' +
-    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e6e8f0;border-radius:20px;overflow:hidden;">' +
+  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light"><style>:root{color-scheme:light only;supported-color-schemes:light only;}</style></head><body style="margin:0;padding:0;background:#f6f7fa;">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fa;"><tr><td align="center" style="padding:24px 10px;">' +
+    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:20px;overflow:hidden;">' +
     '<tr><td style="padding:12px 2% 0;">' + hero + '</td></tr>' +
     '<tr><td style="padding:0;"><img src="' + IMG + 'b-' + (o.art || 'aviso') + '.png" width="600" alt="" style="display:block;width:100%;height:auto;"></td></tr>' +
     '<tr><td style="padding:14px 36px 8px;">' + (o.body || '') + '</td></tr>' + panel +

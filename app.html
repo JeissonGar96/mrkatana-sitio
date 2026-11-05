@@ -1123,8 +1123,7 @@ a.snav{text-decoration:none;}
 @media(min-width:861px){
   #appdash{zoom:.9;}
   .alay{height:calc(100vh / .9 - 44px) !important;}
-  html.sf #appdash{zoom:1 !important;}
-  html.sf .alay{height:calc(100vh - 44px) !important;}
+  html.sf .alay{height:calc(100vh - 40px) !important;}
 }
 #mk-wk.in-rp{flex-shrink:0;}
 #mk-wk.in-rp .mk-sh{margin:0 0 10px !important;}
@@ -4291,8 +4290,8 @@ function _lpFit() {
   var h = (box.getBoundingClientRect().bottom - lay.getBoundingClientRect().top - 22) / z;
   if (h > 420) lay.style.height = h + 'px';
 }
-// Safari (computador) calcula distinto el alto con zoom .9 y el panel se salía de la pantalla:
-// en Safari se muestra sin zoom (tamaño 100%) y el alto sale igual que en Chrome.
+// Safari (computador) no aplica el zoom .9 al alto en vh como Chrome (el panel se salía de la pantalla):
+// en Safari se deja el mismo zoom .9 y el alto va directo en vh.
 (function(){ var u = navigator.userAgent; if (/Safari\//.test(u) && !/Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS/.test(u)) document.documentElement.classList.add('sf'); })();
 function _alayFit() { var a = document.querySelector('#appdash > .alay'); if (a) a.style.removeProperty('height'); }
 window.addEventListener('resize', function(){ _alayFit(); _lpFit(); });

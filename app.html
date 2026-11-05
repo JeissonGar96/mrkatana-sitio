@@ -2515,11 +2515,11 @@ function mkToggleTheme(ev, want, after) {
 <body>
 <div id="mk-splash" role="status" aria-label="Cargando"><div class="mkp-logo"><div class="mkp-m mkp-base"></div><div class="mkp-m"><div class="mkp-w b"></div><div class="mkp-w"></div></div></div><div class="mkp-s">Cargando tu panel</div></div>
 <script>
-// Solo justo después de iniciar sesión (login.html deja la marca mk-splash). Llena el logo poco a poco hasta que el panel termine de cargar (_splashDone); nunca más de 10 s
+// En el celular sale cada vez que se abre la app (y después de iniciar sesión). Llena el logo poco a poco hasta que el panel termine de cargar (_splashDone); nunca más de 10 s
 (function() {
-  var o = document.getElementById('mk-splash'), go = false;
-  try { go = sessionStorage.getItem('mk-splash') === '1'; sessionStorage.removeItem('mk-splash'); } catch (e) {}
-  if (!o || !go || !window.matchMedia('(max-width:900px)').matches) { if (o) o.remove(); return; }
+  var o = document.getElementById('mk-splash');
+  try { sessionStorage.removeItem('mk-splash'); } catch (e) {}
+  if (!o || !window.matchMedia('(max-width:900px)').matches) { if (o) o.remove(); return; }
   var lg = o.querySelector('.mkp-logo'), lv = 0.05, tg = 0.85, t0 = Date.now();
   var iv = setInterval(function() { lv += (tg - lv) * 0.04; lg.style.setProperty('--lv', lv.toFixed(4)); }, 40);
   window._splashDone = function() {

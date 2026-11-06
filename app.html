@@ -3101,7 +3101,7 @@ window.onload = function() {
 
   // Logout
   document.getElementById('btn-out').onclick = function() {
-    sb.auth.signOut().then(function() {
+    sb.auth.signOut({ scope: 'local' }).then(function() {
       window.location.href = '/login';
     });
   };
@@ -11664,7 +11664,7 @@ function _checkInactivityAndMembership() {
   // 1. Inactividad (solo en computadora: en el celular la sesión queda abierta, como cualquier app)
   var _esMovil = window.matchMedia('(max-width:900px)').matches || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   if (!_esMovil && Date.now() - _lastActivity > INACTIVITY_LIMIT) {
-    sb.auth.signOut().then(function() {
+    sb.auth.signOut({ scope: 'local' }).then(function() {
       window.location.href = '/login';
     });
     return;

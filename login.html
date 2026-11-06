@@ -1871,7 +1871,7 @@ window.onload = function() {
   if (_emChg) {
     sb.auth.getSession().then(function(r) {
       var em = r.data && r.data.session && r.data.session.user ? r.data.session.user.email : '';
-      return sb.auth.signOut().then(function() {
+      return sb.auth.signOut({ scope: 'local' }).then(function() {
         history.replaceState(null, '', '/login');
         if (em) document.getElementById('li-e').value = em;
         showMsg('✓ Listo, tu correo se cambió' + (em ? ' a ' + em : '') + '. Inicia sesión con tu correo nuevo.', false);

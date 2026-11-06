@@ -343,14 +343,14 @@
     Promise.all([
       sb.from('journal_trades').select(TR_COLS).eq('account_id', a.id).order('close_time', { ascending: false }).limit(3000),
       sb.from('journal_snapshots').select('day, balance, equity').eq('account_id', a.id).order('day'),
-      sb.from('journal_days').select('day, no_trade, note, account_id').or('account_id.eq.' + a.id + ',account_id.is.null')
+      sb.from('journal_days').select('day, no_trade, note')
     ]).then(function(r) {
       if (JX.cur !== a || !document.getElementById('jx-body')) return;
       if (r[0].error || r[1].error) { body.innerHTML = '<div class="jx-card jx-empty">No se pudieron cargar las operaciones. Recarga la página.</div>'; return; }
       JX.trades = (r[0].data || []).filter(function(t) { return t.close_time; });
       JX.trades.forEach(function(t) { t._n = net(t); t._c = new Date(t.close_time); t._o = new Date(t.open_time); t._k = dk(t._c); });
       JX.snaps = (r[1].data || []).map(function(s) { return { d: new Date(s.day + 'T12:00:00'), b: +s.balance, e: +s.equity }; });
-      JX.days = {}; (r[2].data || []).forEach(function(d) { if (d.no_trade && (!JX.days[d.day] || d.account_id)) JX.days[d.day] = d; }); // "No operé" de esta cuenta (o de antes, cuando era por alumno)
+      JX.days = {}; (r[2].data || []).forEach(function(d) { if (d.no_trade) JX.days[d.day] = d; }); // "No operé" vale para todas las cuentas; donde hubo operaciones se muestran las operaciones
       if (!JX.trades.length && !JX.snaps.length) return waiting();
       render();
     });
@@ -594,16 +594,15 @@
         tst('✓ Notas guardadas'); close();
       });
     };
-    // "No operé" y su nota son de esta cuenta (las marcas antiguas no tenían cuenta)
-    var dn = ov.querySelector('#jx-dn'), aid = JX.cur.id, mine = function(q) { return no && !no.account_id ? q.is('account_id', null) : q.eq('account_id', aid); };
+    var dn = ov.querySelector('#jx-dn');
     var nt = ov.querySelector('#jx-nt');
     if (nt) nt.onclick = function() {
       nt.disabled = true;
       var v = dn ? dn.value.trim() || null : null;
-      var q = no ? mine(sb.from('journal_days').delete().eq('user_id', cUser.id).eq('day', k)) : sb.from('journal_days').insert({ user_id: cUser.id, day: k, account_id: aid, no_trade: true, note: v });
+      var q = no ? sb.from('journal_days').delete().eq('user_id', cUser.id).eq('day', k) : sb.from('journal_days').upsert({ user_id: cUser.id, day: k, no_trade: true, note: v });
       q.then(function(r) {
         if (r.error) { nt.disabled = false; tst('No se pudo guardar el día.', 1); return; }
-        if (no) delete JX.days[k]; else JX.days[k] = { day: k, no_trade: true, note: v, account_id: aid };
+        if (no) delete JX.days[k]; else JX.days[k] = { day: k, no_trade: true, note: v };
         close(); renderCal();
       });
     };
@@ -612,7 +611,7 @@
       var v = dn.value.trim() || null;
       if (v === (no.note || null)) return close();
       ds.disabled = true;
-      mine(sb.from('journal_days').update({ note: v }).eq('user_id', cUser.id).eq('day', k)).then(function(r) {
+      sb.from('journal_days').update({ note: v }).eq('user_id', cUser.id).eq('day', k).then(function(r) {
         if (r.error) { ds.disabled = false; tst('No se pudo guardar la nota.', 1); return; }
         no.note = v; tst('✓ Nota guardada'); close();
       });

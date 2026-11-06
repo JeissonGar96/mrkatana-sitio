@@ -186,11 +186,11 @@ async function launchMail(req, res) {
 const bajaKey = e => crypto.createHmac('sha256', process.env.SUPABASE_SERVICE_KEY || 'x').update(e).digest('hex').slice(0, 24);
 const bajaUrl = e => SITE + '/api/notify-live?baja=' + encodeURIComponent(e) + '&k=' + bajaKey(e);
 async function wixMail(sb, body, adminEmail, from, res) {
-  const subject = 'Volvimos, y ahora con plataforma propia';
+  const subject = 'Actualizamos nuestra página: tu cuenta gratis ya está lista';
   const sendTo = async list => {
     let sent = 0;
     for (let i = 0; i < list.length; i += 100) {
-      const batch = list.slice(i, i + 100).map(to => ({ from, to: [to], subject, html: M.launch('wix', bajaUrl(to)), headers: { 'List-Unsubscribe': '<' + bajaUrl(to) + '>' } }));
+      const batch = list.slice(i, i + 100).map(to => Object.assign({ from, to: [to], subject, html: M.launch('wix', bajaUrl(to), to), headers: { 'List-Unsubscribe': '<' + bajaUrl(to) + '>' } }, adminEmail ? { reply_to: adminEmail } : {}));
       const r = await fetch('https://api.resend.com/emails/batch', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY.trim(), 'Content-Type': 'application/json' }, body: JSON.stringify(batch) }).catch(() => null);
       if (r && r.ok) sent += batch.length;
     }
@@ -207,7 +207,17 @@ async function wixMail(sb, body, adminEmail, from, res) {
   list = list.filter(e => !reg.has(e) && !off.has(e));
   if (!list.length) return res.status(400).json({ error: 'sin_contactos' });
   await sb.from('site_settings').upsert({ id: 6, theme: Object.assign({}, th, { wix_sent: new Date().toISOString() }), updated_at: new Date().toISOString() });
-  return res.status(200).json({ ok: true, total: list.length, sent: await sendTo(list) });
+  // Cuenta gratis ya creada (verificada, sin contraseña y sin correo de Supabase); la contraseña la crean desde el botón del correo
+  const names = body.names && typeof body.names === 'object' ? body.names : {};
+  let created = 0; const ready = [];
+  for (let i = 0; i < list.length; i += 10) {
+    await Promise.all(list.slice(i, i + 10).map(async e => {
+      const n = String(names[e] || '').replace(/[<>]/g, '').trim().slice(0, 80);
+      const r = await sb.auth.admin.createUser({ email: e, email_confirm: true, user_metadata: Object.assign({ source: 'wix' }, n ? { full_name: n } : {}) }).catch(err => ({ error: err }));
+      if (!r.error) { created++; ready.push(e); } else if (/already|registered|exists/i.test(String(r.error.message || ''))) ready.push(e);
+    }));
+  }
+  return res.status(200).json({ ok: true, total: list.length, created, sent: await sendTo(ready) });
 }
 async function baja(req, res) {
   const e = String(req.query.baja || '').trim().toLowerCase();

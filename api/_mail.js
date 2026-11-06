@@ -78,16 +78,17 @@ function page(o) {
 }
 
 // Correo de lanzamiento: alumnos/registrados (kind 'users') o contactos antiguos (kind 'wix')
-function launch(kind, unsubUrl) {
+function launch(kind, unsubUrl, email) {
   const wix = kind === 'wix';
   const premios = icon('i-premio.png', 56) + h2('Cada mes hay premios') +
     p('Con el ' + b('ranking del mes') + ' compites con los demás alumnos por ser el más constante. Sumas un punto por cada día que operas, y los primeros del mes pueden ganar ' + hl('efectivo o cuentas de fondeo') + '.', true);
   if (wix) return page({ art: 'wix', big: true, panel: true, prize: true, unsub: true, unsubUrl,
-    eyebrow: 'Mr Katana FX', title: 'Volvimos, y ahora<br>con plataforma propia', sub: 'Crea tu cuenta gratis y conoce todo lo que preparamos.',
-    body: p('Hola, hace un tiempo fuiste parte de la comunidad de Mr Katana. Hoy abrimos nuestra plataforma, y puedes entrar ' + b('gratis') + ':', true) +
-      bl(['Journal automático para tus cuentas de Exness o Funding Pips.', 'Ranking mensual con premios como ' + hl('efectivo o cuentas de fondeo') + '.', 'Calendario económico y avisos de noticias fuertes.', 'Cuando quieras, sumas las clases, los en vivos y las sesiones 1-1.']),
-    cta: 'Crear mi cuenta gratis', url: SITE + '/login#registro', note: 'Toma menos de un minuto.',
-    foot: 'Recibes este correo porque en algún momento dejaste tus datos en Mr Katana FX. Si no quieres recibir más, toca Darme de baja.' });
+    eyebrow: 'Mr Katana FX', title: 'Actualizamos<br>nuestra página', sub: 'Tu cuenta gratis en la nueva plataforma ya está lista.',
+    body: p('Hola, hace un tiempo fuiste parte de la comunidad de Mr Katana. Pasamos de la página anterior a una ' + b('plataforma propia') + ', y ya te dejamos una cuenta gratis creada con este correo' + (email ? ' (' + b(esc(email)) + ')' : '') + '. Esto es lo que puedes usar:', true) +
+      bl(['Journal automático para tus cuentas de Exness o Funding Pips.', 'Ranking mensual con premios como ' + hl('efectivo o cuentas de fondeo') + '.', 'Calendario económico y avisos de noticias fuertes.', 'Cuando quieras, sumas las clases, los en vivos y las sesiones 1-1.']) +
+      p('Solo falta que crees tu contraseña y completes tus datos. Con la nueva plataforma también actualizamos los <a href="' + SITE + '/legal" style="color:' + BT + ';">Términos</a> y la <a href="' + SITE + '/legal#privacidad" style="color:' + BT + ';">Política de privacidad</a>; los aceptas al entrar.', true),
+    cta: 'Crear mi contraseña', url: SITE + '/login?crear=' + encodeURIComponent(email || ''), note: 'Toma menos de un minuto.',
+    foot: 'Recibes este correo porque tenías una cuenta en la página anterior de Mr Katana FX. Si no quieres recibir más, toca Darme de baja. Si quieres que borremos tu cuenta, responde a este correo.' });
   return page({ art: 'lanz', big: true, panel: true, prize: true, unsub: true, unsubUrl,
     eyebrow: 'Ya está abierta', title: 'Tu nueva plataforma<br>de trading', sub: 'Clases, en vivos, tu journal y un ranking con premios. Todo en un solo lugar.',
     body: icon('i-nuevo.png', 52) + h2('Lo nuevo que vas a encontrar') +

@@ -1878,6 +1878,14 @@ window.onload = function() {
       });
     });
   }
+  // Enlace del correo a contactos de Wix: la cuenta ya existe, solo falta crear la contraseña
+  var _crear = new URLSearchParams(location.search).get('crear');
+  if (_crear && !_isRec) {
+    var _lf = document.getElementById('lnk-forgot');
+    document.getElementById('li-e').value = _crear;
+    if (_lf) { _lf.textContent = 'Crear mi contraseña'; _lf.dataset.crear = '1'; }
+    showMsg('Tu cuenta gratis ya está lista. Toca "Crear mi contraseña" y te enviamos un enlace a tu correo.', false);
+  }
   var bNp = document.getElementById('btn-np'); if (bNp) bNp.onclick = doNewPw;
   sb_check.auth.getSession().then(function(r) {
     if (r.data && r.data.session && !_isRec && !_emChg) {
@@ -1911,7 +1919,7 @@ window.onload = function() {
     }).then(function(r) {
       _liCapReset();
       if (r.error) showMsg('Error: ' + r.error.message, true);
-      else showMsg('✓ Revisa tu email para restablecer tu contraseña.', false);
+      else showMsg(lnkForgot.dataset.crear ? '✓ Listo, revisa tu correo y abre el enlace para crear tu contraseña.' : '✓ Revisa tu email para restablecer tu contraseña.', false);
     });
   };
   

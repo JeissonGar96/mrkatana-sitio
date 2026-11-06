@@ -601,7 +601,7 @@ async function doIn() {
 
 async function changeAcct(ev) {
   if (ev) ev.preventDefault();
-  if (st.session) { try { await sb.auth.signOut(); } catch (e) {} }
+  if (st.session) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} }
   st.session = null; st.user = null;
   setMode('reg');
   go(2);

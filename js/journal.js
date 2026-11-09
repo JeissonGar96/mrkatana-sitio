@@ -3,7 +3,7 @@
    Aquí solo se leen; el alumno puede escribir su nota y su captura por operación y marcar días "No operé".
    Usa las funciones del panel: sb, cUser, tst, _mkEsc, rTools, rJournal (administrar cuentas) y _jnForm (conectar). */
 (function() {
-  var JX = { acc: [], cur: null, trades: [], snaps: [], days: {}, month: null, range: 'all', hist: 25, prefs: null };
+  var JX = { acc: [], cur: null, trades: [], snaps: [], days: {}, month: null, range: 'all', hist: 25, prefs: null, view: null }; // view: alumno que el admin está mirando (solo lectura)
   var PN = [
     ['top', 'Resumen de la cuenta', 'Balance, equidad, hoy y disciplina', 1],
     ['curva', 'Curva de la cuenta', 'Balance y equidad en el tiempo', 0],
@@ -26,6 +26,7 @@
   var ACC_COLS = 'id, nickname, broker, server, login, account_size, status, last_error, last_sync_at, balance, equity, currency, created_at';
   var TR_COLS = 'id, ticket, symbol, side, volume, open_time, close_time, open_price, close_price, sl, tp, commission, swap, profit, note, screenshot_path';
   var CAM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+  var STU = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14.5c2.4.2 4 1.8 4.5 4.5"/></svg>';
   var CHEV = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
   var GEAR = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
   var GRIP = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><g fill="currentColor"><circle cx="5" cy="3" r="1.2"/><circle cx="9" cy="3" r="1.2"/><circle cx="5" cy="7" r="1.2"/><circle cx="9" cy="7" r="1.2"/><circle cx="5" cy="11" r="1.2"/><circle cx="9" cy="11" r="1.2"/></g></svg>';
@@ -107,6 +108,13 @@
     '.jx-tbl .r{text-align:right;} .jx-tbl .sym{font-weight:700;color:var(--c-text);}',
     '.jx .sb,.jx-ov .sb{color:var(--jx-win);font-weight:600;} .jx .ss,.jx-ov .ss{color:var(--c-text2);font-weight:600;}',
     '.jx-more{display:flex;justify-content:center;padding:14px;}',
+    /* admin: ver el journal de un alumno */
+    '.jx-stsel{position:relative;} .jx-stbtn{appearance:none;display:flex;align-items:center;gap:8px;background:var(--c-card);border:1px solid var(--k-line);color:var(--c-text);font:inherit;font-size:13px;font-weight:600;padding:10px 14px;border-radius:12px;cursor:pointer;min-height:44px;}',
+    '.jx-stmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:320px;max-width:86vw;background:var(--c-card);border:1px solid var(--k-line);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);padding:8px;}',
+    '.jx-stmenu input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;color:var(--c-text);background:var(--c-bg);border:1px solid var(--k-line);border-radius:10px;padding:9px 12px;margin-bottom:6px;} .jx-stl{max-height:320px;overflow-y:auto;}',
+    '.jx-sti{appearance:none;display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;color:var(--c-text);font:inherit;padding:8px 10px;border-radius:10px;cursor:pointer;} .jx-sti:hover,.jx-sti.on{background:var(--k-line);} .jx-sti b{display:block;font-size:13px;} .jx-sti small{display:block;font-size:11px;color:var(--c-text2);margin-top:1px;}',
+    '.jx-av{width:32px;height:32px;border-radius:50%;flex:none;object-fit:cover;background:var(--k-line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--c-text2);}',
+    '.jx-viewbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;background:var(--c-card);border:1px solid var(--k-line);border-radius:12px;padding:10px 14px;margin:12px 0 4px;font-size:13px;} .jx-viewbar>span{display:flex;align-items:center;gap:10px;} .jx-viewbar button{appearance:none;background:none;border:0;color:var(--c-accent,#AFC9E4);font:inherit;font-weight:600;cursor:pointer;padding:6px 0;}',
     /* selector de cuenta */
     '.jx-accsel{position:relative;}',
     '.jx-accbtn{appearance:none;display:flex;align-items:center;gap:11px;text-align:left;background:var(--c-card);background-image:var(--k-sheen);border:1px solid var(--k-line);box-shadow:var(--k-sh);color:var(--c-text);font-family:inherit;padding:9px 14px;border-radius:12px;cursor:pointer;min-width:260px;}',
@@ -260,16 +268,18 @@
   }
 
   /* ── Entrada: Herramientas › Journal ── */
-  window.rJournalDash = function() {
+  window.rJournalDash = function(keep) {
+    if (keep !== true) JX.view = null; // al entrar desde el menú siempre abre tu propio journal
     pushRoute({ section: 'herramientas', tool: 'journal' });
     css();
     var m = document.getElementById('amain');
     m.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">Cargando tu journal…</div>';
-    sb.from('journal_accounts').select(ACC_COLS).eq('user_id', cUser.id).order('created_at').then(function(r) {
+    var uid = JX.view ? JX.view.id : cUser.id;
+    sb.from('journal_accounts').select(ACC_COLS).eq('user_id', uid).order('created_at').then(function(r) {
       if (r.error) { m.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">No se pudo cargar tu journal. Recarga la página.</div>'; return; }
       JX.acc = r.data || [];
-      if (!JX.acc.length) return rJournal();
-      var saved = null; try { saved = localStorage.getItem('mk-jn-acc'); } catch (e) {}
+      if (!JX.acc.length) { if (JX.view) { JX.view = null; tst('Ese alumno ya no tiene cuentas conectadas.', 1); return rJournalDash(); } return rJournal(); }
+      var saved = null; try { if (!JX.view) saved = localStorage.getItem('mk-jn-acc'); } catch (e) {}
       JX.cur = JX.acc.find(function(a) { return a.id === saved; }) || JX.acc[0];
       loadPrefs(function() { shell(); loadAccount(); });
     });
@@ -285,7 +295,8 @@
     m.innerHTML = '<div class="jx" id="jx">' +
       '<div><button class="jn-back" id="jx-back">‹ Herramientas</button>' +
       '<div class="jx-head"><div><div class="atit">Journal</div><div class="asub">Toca un día del calendario para ver sus operaciones y subir tus capturas' + ago + '</div></div>' +
-      '<div class="jx-acts"><button class="jx-gear" id="jx-gear" aria-haspopup="dialog" aria-label="Personalizar journal">' + GEAR + '</button>' +
+      (JX.view ? '<div class="jx-viewbar"><span>' + avatar(JX.view) + '<span>Estás viendo el journal de <b>' + esc(JX.view.name) + '</b> · solo lectura</span></span><button id="jx-mine">Volver a mi journal</button></div>' : '') +
+      '<div class="jx-acts">' + (isAdm() ? '<div class="jx-stsel"><button class="jx-stbtn" id="jx-stbtn" aria-haspopup="true" aria-expanded="false">' + STU + 'Ver alumno</button><div class="jx-stmenu" id="jx-stmenu" hidden></div></div>' : '') + '<button class="jx-gear" id="jx-gear" aria-haspopup="dialog" aria-label="Personalizar journal">' + GEAR + '</button>' +
       '<div class="jx-accsel"><button class="jx-accbtn" id="jx-accbtn" aria-haspopup="true" aria-expanded="false"><span class="jx-live ' + esc(a.status) + '"></span><span><b>' + esc(a.nickname) + '</b><small>' + esc(accMeta(a)) + '</small></span>' + CHEV + '</button>' +
       '<div class="jx-menu" id="jx-menu" hidden></div></div></div></div></div>' +
       '<div class="jx-body" id="jx-body"><div class="jx-card jx-empty">Cargando operaciones…</div></div></div>';
@@ -295,29 +306,77 @@
     var btn = document.getElementById('jx-accbtn'), menu = document.getElementById('jx-menu');
     btn.onclick = function(e) { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', !menu.hidden); if (!menu.hidden) renderMenu(); };
     menu.onclick = function(e) { e.stopPropagation(); };
+    var mine = document.getElementById('jx-mine'); if (mine) mine.onclick = function() { JX.view = null; JX.month = null; JX.hist = 25; rJournalDash(true); };
+    var sb2 = document.getElementById('jx-stbtn'), sm = document.getElementById('jx-stmenu');
+    if (sb2) {
+      sb2.onclick = function(e) { e.stopPropagation(); var op = sm.hidden; closeMenu(); sm.hidden = !op; sb2.setAttribute('aria-expanded', op); if (op) renderStudents(); };
+      sm.onclick = function(e) { e.stopPropagation(); };
+    }
+  }
+  function isAdm() { return typeof cProfile !== 'undefined' && cProfile && cProfile.role === 'admin'; }
+  function avatar(s) {
+    return s.avatar ? '<img class="jx-av" src="' + esc(s.avatar) + '" alt="">' : '<span class="jx-av" aria-hidden="true">' + esc((s.name || '?').trim().charAt(0).toUpperCase()) + '</span>';
+  }
+  /* Admin: lista de alumnos con cuenta conectada (solo lectura; el alumno no recibe ningún aviso) */
+  function renderStudents() {
+    var sm = document.getElementById('jx-stmenu'); if (!sm) return;
+    var draw = function(list) {
+      sm.innerHTML = '<label for="jx-sts" class="sr-only" style="position:absolute;left:-9999px">Buscar alumno</label><input id="jx-sts" placeholder="Buscar alumno por nombre" autocomplete="off"><div class="jx-stl" id="jx-stl"></div>';
+      var inp = document.getElementById('jx-sts'), box = document.getElementById('jx-stl');
+      var paint = function() {
+        var q = inp.value.trim().toLowerCase(), f = list.filter(function(s) { return !q || s.name.toLowerCase().indexOf(q) >= 0; });
+        box.innerHTML = f.length ? f.map(function(s) {
+          return '<button class="jx-sti' + (JX.view && JX.view.id === s.id ? ' on' : '') + '" data-id="' + esc(s.id) + '">' + avatar(s) + '<span><b>' + esc(s.name) + '</b><small>' + s.n + (s.n === 1 ? ' cuenta' : ' cuentas') + ' · ' + esc(s.br.join(', ')) + '</small></span></button>';
+        }).join('') : '<div style="padding:10px;font-size:12px;color:var(--c-text2)">' + (list.length ? 'Ningún alumno con ese nombre.' : 'Todavía ningún alumno conectó su cuenta.') + '</div>';
+      };
+      inp.oninput = paint; paint(); inp.focus();
+      box.onclick = function(e) {
+        var b = e.target.closest('[data-id]'); if (!b) return;
+        var s = list.find(function(x) { return x.id === b.dataset.id; });
+        JX.view = { id: s.id, name: s.name, avatar: s.avatar }; JX.month = null; JX.hist = 25; rJournalDash(true);
+      };
+    };
+    if (JX.students) return draw(JX.students);
+    sm.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--c-text2)">Cargando alumnos…</div>';
+    sb.from('journal_accounts').select('user_id, broker').neq('user_id', cUser.id).then(function(r) {
+      var by = {};
+      (r.data || []).forEach(function(a) { var o = by[a.user_id] = by[a.user_id] || { n: 0, br: [] }; o.n++; var b = BROKER[a.broker] || a.broker; if (b && o.br.indexOf(b) < 0) o.br.push(b); });
+      var ids = Object.keys(by);
+      if (!ids.length) { JX.students = []; return draw([]); }
+      sb.from('profiles').select('id, full_name, email, avatar_url').in('id', ids).then(function(p) {
+        var pm = {}; (p.data || []).forEach(function(x) { pm[x.id] = x; });
+        JX.students = ids.map(function(id) { var x = pm[id] || {}; return { id: id, name: x.full_name || x.email || 'Alumno', avatar: x.avatar_url || '', n: by[id].n, br: by[id].br }; })
+          .sort(function(a, b) { return a.name.localeCompare(b.name, 'es'); });
+        draw(JX.students);
+      });
+    });
   }
   function closeMenu() {
     var menu = document.getElementById('jx-menu'), btn = document.getElementById('jx-accbtn');
     if (menu) menu.hidden = true; if (btn) btn.setAttribute('aria-expanded', 'false');
+    var sm = document.getElementById('jx-stmenu'), sbn = document.getElementById('jx-stbtn');
+    if (sm) sm.hidden = true; if (sbn) sbn.setAttribute('aria-expanded', 'false');
   }
   document.addEventListener('click', closeMenu);
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeMenu(); });
 
   function renderMenu() {
     var menu = document.getElementById('jx-menu');
-    menu.innerHTML = '<div class="jx-amh">Tus cuentas conectadas</div>' + JX.acc.map(function(a) {
-      return '<div class="jx-ai' + (a.id === JX.cur.id ? ' on' : '') + '" data-id="' + esc(a.id) + '"><span class="jx-live ' + esc(a.status) + '"></span><div><b>' + esc(a.nickname) + '</b><small>' + esc(accMeta(a)) + '</small></div><button class="ren" data-ren>Renombrar</button></div>';
-    }).join('') + (JX.acc.length < 5 ? '<button class="jx-madd" id="jx-add">+ Conectar otra cuenta</button>' : '') +
-      '<button class="jx-mman" id="jx-man">Administrar cuentas</button>';
+    var ro = !!JX.view;
+    menu.innerHTML = '<div class="jx-amh">' + (ro ? 'Cuentas de ' + esc(JX.view.name) : 'Tus cuentas conectadas') + '</div>' + JX.acc.map(function(a) {
+      return '<div class="jx-ai' + (a.id === JX.cur.id ? ' on' : '') + '" data-id="' + esc(a.id) + '"><span class="jx-live ' + esc(a.status) + '"></span><div><b>' + esc(a.nickname) + '</b><small>' + esc(accMeta(a)) + '</small></div>' + (ro ? '' : '<button class="ren" data-ren>Renombrar</button>') + '</div>';
+    }).join('') + (ro ? '' : (JX.acc.length < 5 ? '<button class="jx-madd" id="jx-add">+ Conectar otra cuenta</button>' : '') +
+      '<button class="jx-mman" id="jx-man">Administrar cuentas</button>');
     var add = document.getElementById('jx-add'); if (add) add.onclick = function() { closeMenu(); _jnForm(); };
-    document.getElementById('jx-man').onclick = function() { rJournal(); };
+    var man = document.getElementById('jx-man'); if (man) man.onclick = function() { rJournal(); };
     menu.querySelectorAll('.jx-ai').forEach(function(row) {
       var a = JX.acc.find(function(x) { return x.id === row.dataset.id; });
       row.onclick = function(e) {
         if (e.target.closest('[data-ren]') || e.target.tagName === 'INPUT') return;
-        JX.cur = a; try { localStorage.setItem('mk-jn-acc', a.id); } catch (er) {}
+        JX.cur = a; try { if (!ro) localStorage.setItem('mk-jn-acc', a.id); } catch (er) {}
         JX.month = null; JX.hist = 25; shell(); loadAccount();
       };
+      if (ro) return;
       row.querySelector('[data-ren]').onclick = function() {
         var b = row.querySelector('b'), inp = document.createElement('input');
         inp.value = a.nickname; inp.maxLength = 28; inp.setAttribute('aria-label', 'Nombre de la cuenta'); b.replaceWith(inp); inp.focus(); inp.select();
@@ -343,7 +402,7 @@
     Promise.all([
       sb.from('journal_trades').select(TR_COLS).eq('account_id', a.id).order('close_time', { ascending: false }).limit(3000),
       sb.from('journal_snapshots').select('day, balance, equity').eq('account_id', a.id).order('day'),
-      sb.from('journal_days').select('day, no_trade, note').eq('user_id', cUser.id)
+      sb.from('journal_days').select('day, no_trade, note').eq('user_id', JX.view ? JX.view.id : cUser.id)
     ]).then(function(r) {
       if (JX.cur !== a || !document.getElementById('jx-body')) return;
       if (r[0].error || r[1].error) { body.innerHTML = '<div class="jx-card jx-empty">No se pudieron cargar las operaciones. Recarga la página.</div>'; return; }
@@ -369,7 +428,7 @@
       h = 'Estamos conectando tu cuenta'; p = 'La primera lectura tarda unos minutos. Cuando termine vas a ver aquí tus operaciones, tu curva y tus estadísticas.';
     }
     body.innerHTML = '<div class="jx-card jx-wait"><h3>' + h + '</h3><p>' + p + '</p>' + btn + '</div>';
-    var f = document.getElementById('jx-fix'); if (f) f.onclick = function() { _jnForm(a); };
+    var f = document.getElementById('jx-fix'); if (f) { if (JX.view) f.remove(); else f.onclick = function() { _jnForm(a); }; }
   }
 
   /* ── Panel completo ── */
@@ -567,8 +626,13 @@
     document.addEventListener('keydown', kd);
     ov.onclick = function(e) { if (e.target === ov || e.target.closest('[data-close]')) close(); };
     ov.querySelector('.jx-x').focus();
+    if (JX.view) { // admin mirando a un alumno: sin capturas ni botones de guardar
+      ov.querySelectorAll('.jx-drop,#jx-save,#jx-nt,#jx-dsave').forEach(function(x) { x.remove(); });
+      ov.querySelectorAll('textarea').forEach(function(x) { x.readOnly = true; });
+      ov.querySelectorAll('.jx-nod br').forEach(function(x) { while (x.nextSibling) x.nextSibling.remove(); x.remove(); });
+    }
     // capturas ya guardadas
-    T.forEach(function(t) { if (t.screenshot_path) paintShot(ov, t); });
+    if (!JX.view) T.forEach(function(t) { if (t.screenshot_path) paintShot(ov, t); });
     var toggle = function(h) { var tr = h.parentElement, open = !tr.classList.contains('open'); tr.classList.toggle('open', open); tr.querySelector('.jx-trb').hidden = !open; h.setAttribute('aria-expanded', open); };
     ov.querySelectorAll('.jx-trh').forEach(function(h) {
       h.onclick = function() { toggle(h); };

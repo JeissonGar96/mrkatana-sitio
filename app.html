@@ -5535,9 +5535,9 @@ function _pgLoad(force) {
   var mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7), s0 = mon < m0 ? mon : m0; // lunes de esta semana (puede ser del mes anterior)
   return Promise.all([
     sb.rpc('journal_ranking_v3').then(function(x) { return x.error ? sb.rpc('journal_ranking_v2') : x; }), // si falla la versión con foto, usa la anterior
-    sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap, note, screenshot_path').gte('close_time', s0.toISOString()).limit(5000),
-    sb.from('journal_days').select('day, no_trade, note').gte('day', dk(s0)),
-    sb.from('journal_accounts').select('id, nickname, broker, server, login, balance, currency, created_at').order('created_at'),
+    sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap, note, screenshot_path').eq('user_id', cUser.id).gte('close_time', s0.toISOString()).limit(5000),
+    sb.from('journal_days').select('day, no_trade, note').eq('user_id', cUser.id).gte('day', dk(s0)),
+    sb.from('journal_accounts').select('id, nickname, broker, server, login, balance, currency, created_at').eq('user_id', cUser.id).order('created_at'),
     sb.from('journal_rank_picks').select('account_id').eq('month', dk(m0)),
     sb.from('daily_activity').select('day, learned').gte('day', dk(mon)).then(function(x) { return x; }, function() { return {}; }),
     sb.from('lesson_progress').select('completed_at').eq('user_id', cUser.id).gte('completed_at', mon.toISOString()).then(function(x) { return x; }, function() { return {}; })
@@ -6010,7 +6010,7 @@ function rJournal() {
   document.getElementById('jn-back').onclick = function() { rTools(); };
   document.getElementById('jn-add').onclick = function() { _jnForm(); };
   var _jnDash = function() { var bk = document.getElementById('jn-back'); if (bk) { bk.textContent = '‹ Journal'; bk.onclick = function() { rJournalDash(); }; } };
-  sb.from('journal_accounts').select(JN_COLS).order('created_at').then(function(r) {
+  sb.from('journal_accounts').select(JN_COLS).eq('user_id', cUser.id).order('created_at').then(function(r) {
     var b = document.getElementById('jn-body'); if (!b) return;
     var acc = r.data || [];
     if (r.error) { b.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">No se pudieron cargar tus cuentas. Recarga la página.</div>'; return; }

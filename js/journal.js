@@ -265,7 +265,7 @@
     css();
     var m = document.getElementById('amain');
     m.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">Cargando tu journal…</div>';
-    sb.from('journal_accounts').select(ACC_COLS).order('created_at').then(function(r) {
+    sb.from('journal_accounts').select(ACC_COLS).eq('user_id', cUser.id).order('created_at').then(function(r) {
       if (r.error) { m.innerHTML = '<div class="mk-card" style="color:var(--c-muted)">No se pudo cargar tu journal. Recarga la página.</div>'; return; }
       JX.acc = r.data || [];
       if (!JX.acc.length) return rJournal();
@@ -343,7 +343,7 @@
     Promise.all([
       sb.from('journal_trades').select(TR_COLS).eq('account_id', a.id).order('close_time', { ascending: false }).limit(3000),
       sb.from('journal_snapshots').select('day, balance, equity').eq('account_id', a.id).order('day'),
-      sb.from('journal_days').select('day, no_trade, note')
+      sb.from('journal_days').select('day, no_trade, note').eq('user_id', cUser.id)
     ]).then(function(r) {
       if (JX.cur !== a || !document.getElementById('jx-body')) return;
       if (r[0].error || r[1].error) { body.innerHTML = '<div class="jx-card jx-empty">No se pudieron cargar las operaciones. Recarga la página.</div>'; return; }

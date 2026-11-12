@@ -5737,14 +5737,18 @@ function _pgPick(me) {
   var fin = '1 de ' + nx.toLocaleDateString('es-MX', { month: 'long' });
   if (me.picked) return head + '<span>' + _pgAccName(me.eff) + '</span></div><small>Esta es tu cuenta del ranking este mes. No se puede cambiar hasta el ' + fin + '.</small></div>';
   return head + '<span>Ahora cuenta: ' + _pgAccName(me.eff) + '</span></div>' +
-    '<div class="pg-pick-row"><select class="ai" id="pg-acc">' + me.el.map(function(a) { return '<option value="' + a.id + '"' + (a.id === me.eff.id ? ' selected' : '') + '>' + _pgAccName(a) + '</option>'; }).join('') + '</select>' +
+    '<div class="pg-pick-row"><select class="ai" id="pg-acc"><option value="" selected disabled>Elige tu cuenta</option>' + me.el.map(function(a) { return '<option value="' + a.id + '">' + _pgAccName(a) + '</option>'; }).join('') + '</select>' +
     '<button class="mk-btn" onclick="_pgPickSave()">Participar con esta cuenta</button></div>' +
     '<small>Tienes varias cuentas: elige con cuál participas este mes. Una vez elegida no podrás cambiarla hasta el ' + fin + '. Si eliges otra distinta a la que cuenta ahora, tus días cuentan desde hoy.</small></div>';
 }
 function _pgPickSave() {
   var s = document.getElementById('pg-acc'); if (!s) return;
-  if (!confirm('¿Participar con esta cuenta? No podrás cambiarla hasta que termine el mes.')) return;
-  sb.rpc('journal_rank_pick', { p_account: s.value }).then(function() { _pgLoad(true); });
+  if (!s.value) { alert('Primero elige en la lista con qué cuenta participas.'); return; }
+  if (!confirm('¿Participar con ' + s.options[s.selectedIndex].text + '? No podrás cambiarla hasta que termine el mes.')) return;
+  sb.rpc('journal_rank_pick', { p_account: s.value }).then(function(r) {
+    if (r && (r.error || r.data === false)) alert('No se pudo guardar. Si acabas de conectar la cuenta, espera unos minutos a que se sincronice e inténtalo de nuevo.');
+    _pgLoad(true);
+  });
 }
 function openProgreso() {
   var old = document.getElementById('pg-modal'); if (old) old.remove();

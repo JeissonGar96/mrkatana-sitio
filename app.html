@@ -5629,11 +5629,11 @@ function _pgLoad(force) {
     sb.from('daily_activity').select('day, learned').gte('day', dk(mon)).then(function(x) { return x; }, function() { return {}; }),
     sb.from('lesson_progress').select('completed_at').eq('user_id', cUser.id).gte('completed_at', mon.toISOString()).then(function(x) { return x; }, function() { return {}; })
   ]).then(function(r) {
-    // Cuenta del ranking: la elegida este mes, o la válida más antigua (no demo; Exness con balance de $100 o más)
+    // Cuenta del ranking: solo la que el alumno eligió este mes (sin elegir no participa). Válidas: no demo; Exness con $100 o más
     var A = r[3].data || [], el = A.filter(function(a) {
       return !/trial/i.test(a.server || '') && (a.broker !== 'exness' || (+a.balance || 0) / ((a.currency || '').toUpperCase() === 'USC' ? 100 : 1) >= 100);
     });
-    var pk = ((r[4].data || [])[0] || {}).account_id, eff = el.find(function(a) { return a.id === pk; }) || el[0];
+    var pk = ((r[4].data || [])[0] || {}).account_id, eff = el.find(function(a) { return a.id === pk; });
     // Puntos: +1 por día hábil operado, −1 por día hábil sin operar y sin marcar "No operé"
     if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me, avatar: x.avatar }; });
     var TA = (r[1].data || []).filter(function(t) { return !eff || t.account_id === eff.id; }), ok = {}, td = {}, res = 0, nt = {};
@@ -5663,7 +5663,7 @@ function _pgLoad(force) {
     var st = 0, c = new Date(d); if (!ok[dk(c)]) c.setDate(c.getDate() - 1);
     for (var g = 0; g < 400; g++) { if (wd(c)) { if (!ok[dk(c)]) break; st++; } c.setDate(c.getDate() - 1); }
     var mine = (window._pgRank || []).find(function(x) { return x.me; });
-    window._pgMe = { acc: A.length > 0, el: el, eff: eff, picked: !!pk && eff && eff.id === pk, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
+    window._pgMe = { acc: A.length > 0, el: el, eff: eff, picked: !!eff, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
     document.querySelectorAll('.rp-rank').forEach(function(e) { e.outerHTML = _rpRankCard(); });
     document.querySelectorAll('.mpw-rk b').forEach(function(e) { e.textContent = _mpwRankTx(); });
     var pg = document.querySelector('#pg-modal .sum-body'); if (pg) pg.innerHTML = _pgBody();
@@ -5673,7 +5673,7 @@ function _pgLoad(force) {
 function _rpRankCard() {
   var rows = (window._pgRank || []).slice().sort(function(a, b) { return b.days - a.days; });
   var i = rows.findIndex(function(r) { return r.me; });
-  var body = i < 0 ? '<b>Sin puesto aún</b><span>Conecta tu cuenta para entrar</span>'
+  var body = i < 0 ? '<b>Sin puesto aún</b><span>' + (window._pgMe && window._pgMe.acc ? 'Elige tu cuenta para participar' : 'Conecta tu cuenta para entrar') + '</span>'
     : '<b>Tu puesto: #' + (i + 1) + '</b><span>' + rows[i].days + (Math.abs(rows[i].days) === 1 ? ' punto' : ' puntos') + ' este mes</span>';
   return '<button class="rp-rank" onclick="openProgreso()"><span class="rp-rank-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg></span><span class="rp-rank-tx"><small>Ranking del mes</small>' + body + '</span><span class="rp-rank-go">›</span></button>';
 }
@@ -5690,7 +5690,7 @@ function _pgRanking(rows) {
   for (var k = d.getDate(); k <= last; k++) { var w = new Date(d.getFullYear(), d.getMonth(), k).getDay(); if (w > 0 && w < 6) left++; }
   var mes = d.toLocaleDateString('es-MX', { month: 'long' });
   var head = '<div class="pg-rk"><div class="pg-rk-h"><b>Ranking de ' + mes + '</b><span>Por puntos · ' + (left === 1 ? 'queda 1 día hábil' : 'quedan ' + left + ' días hábiles') + '</span></div>';
-  if (!rows.length) return head + '<div class="pg-rk-empty">El ranking empieza cuando los alumnos conecten su cuenta de trading.</div></div>';
+  if (!rows.length) return head + '<div class="pg-rk-empty">El ranking empieza cuando los alumnos conecten y elijan su cuenta de trading.</div></div>';
   rows = rows.slice().sort(function(a, b) { return b.days - a.days; });
   var nm = function(r) { var p = String(r.name || '').split(' '); return _mkEsc(p[0] + (p[1] ? ' ' + p[1].charAt(0) + '.' : '')); };
   var pts = function(n) { return n + (Math.abs(n) === 1 ? ' punto' : ' puntos'); };
@@ -5732,14 +5732,13 @@ function _pgPick(me) {
   if (!me || !me.acc) return '';
   var head = '<div class="pg-pick"><div class="pg-ph"><b>Cuenta del ranking</b>';
   if (!me.el.length) return head + '</div><small>Tus cuentas conectadas no participan: las demo no cuentan y las de Exness necesitan un balance de al menos $100.</small></div>';
-  if (me.el.length < 2) return '';
   var nx = new Date(); nx = new Date(nx.getFullYear(), nx.getMonth() + 1, 1);
   var fin = '1 de ' + nx.toLocaleDateString('es-MX', { month: 'long' });
   if (me.picked) return head + '<span>' + _pgAccName(me.eff) + '</span></div><small>Esta es tu cuenta del ranking este mes. No se puede cambiar hasta el ' + fin + '.</small></div>';
-  return head + '<span>Ahora cuenta: ' + _pgAccName(me.eff) + '</span></div>' +
+  return head + '<span>Sin elegir</span></div>' +
     '<div class="pg-pick-row"><select class="ai" id="pg-acc"><option value="" selected disabled>Elige tu cuenta</option>' + me.el.map(function(a) { return '<option value="' + a.id + '">' + _pgAccName(a) + '</option>'; }).join('') + '</select>' +
     '<button class="mk-btn" onclick="_pgPickSave()">Participar con esta cuenta</button></div>' +
-    '<small>Tienes varias cuentas: elige con cuál participas este mes. Una vez elegida no podrás cambiarla hasta el ' + fin + '. Si eliges otra distinta a la que cuenta ahora, tus días cuentan desde hoy.</small></div>';
+    '<small>Para participar este mes elige tu cuenta. Cuentan tus operaciones desde el día 1 del mes, aunque la elijas tarde. Una vez elegida no podrás cambiarla hasta el ' + fin + '.</small></div>';
 }
 function _pgPickSave() {
   var s = document.getElementById('pg-acc'); if (!s) return;

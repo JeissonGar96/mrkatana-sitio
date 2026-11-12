@@ -209,6 +209,63 @@ async function ranking(sb) {
   return add(sb, rows);
 }
 
+// Cuentas creadas desde contactos antiguos de Wix (user_metadata.source = 'wix') que nunca entraron:
+// 1 vez por semana (lunes desde las 10am Ecuador). A los 30 días: recordatorio. A los 53 días: aviso de cierre
+// (se cierra en 7 días). A los 60 días y con el aviso enviado hace 6+ días: se borra la cuenta.
+// Si la persona entra aunque sea una vez (last_sign_in_at), nunca se toca. Solo cuentas de Wix.
+let wixDay = '';
+async function wixClean(sb) {
+  const now = new Date(Date.now() + EC), today = now.toISOString().slice(0, 10);
+  if (now.getUTCDay() !== 1 || now.getUTCHours() < 10 || wixDay === today) return 'skip';
+  const st = ((await sb.from('notif_state').select('v').eq('k', 'wix').maybeSingle()).data || {}).v || {};
+  wixDay = today;
+  if (st.day === today) return 'skip';
+  await sb.from('notif_state').upsert({ k: 'wix', v: { day: today }, at: new Date().toISOString() });
+  const users = [];
+  for (let page = 1; page < 50; page++) {
+    const { data, error } = await sb.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    const l = (data && data.users) || [];
+    users.push(...l.filter(u => (u.user_metadata || {}).source === 'wix' && !u.last_sign_in_at));
+    if (l.length < 1000) break;
+  }
+  const th = ((await sb.from('site_settings').select('theme').eq('id', 6).maybeSingle()).data || {}).theme || {};
+  const off = new Set(th.bajas || []);
+  const D = 864e5, out = { remind: 0, warn: 0, deleted: 0 }, mails = [];
+  const fmt = t => { const d = new Date(t + EC); return d.getUTCDate() + ' de ' + MES[d.getUTCMonth()]; };
+  for (const u of users) {
+    const md = u.user_metadata || {}, age = (Date.now() - new Date(u.created_at).getTime()) / D, email = String(u.email || '').toLowerCase();
+    const crear = SITE + '/login?crear=' + encodeURIComponent(email);
+    if (age >= 60 && md.wix_warn && Date.now() - new Date(md.wix_warn).getTime() >= 6 * D) {
+      const { count } = await sb.from('purchases').select('id', { count: 'exact', head: true }).eq('user_id', u.id);
+      if (count) continue; // por seguridad: si tiene algo comprado o asignado, no se borra
+      const r = await sb.auth.admin.deleteUser(u.id).catch(e => ({ error: e }));
+      if (!r.error) out.deleted++;
+    } else if (age >= 53 && !md.wix_warn) {
+      const close = fmt(Date.now() + 7 * D);
+      await sb.auth.admin.updateUserById(u.id, { user_metadata: Object.assign({}, md, { wix_warn: new Date().toISOString() }) });
+      out.warn++;
+      if (!off.has(email)) mails.push({ to: email, subject: 'Tu cuenta de Mr Katana se cerrará el ' + close, html: M.page({ art: 'aviso', eyebrow: 'Mr Katana FX', title: 'Tu cuenta se cerrará<br>por inactividad',
+        body: M.p('Hola, hace casi 2 meses te dejamos una cuenta gratis en la nueva plataforma de Mr Katana, pero todavía no has entrado. Si no la activas, la cerraremos el ' + M.b(close) + ' y borraremos tus datos.', true) +
+          M.p('Si quieres conservarla, solo crea tu contraseña. Toma menos de un minuto.', true),
+        cta: 'Crear mi contraseña', url: crear }) });
+    } else if (age >= 30 && !md.wix_r1 && !md.wix_warn) {
+      await sb.auth.admin.updateUserById(u.id, { user_metadata: Object.assign({}, md, { wix_r1: new Date().toISOString() }) });
+      out.remind++;
+      if (!off.has(email)) mails.push({ to: email, subject: 'No olvides crear tu contraseña', html: M.page({ art: 'aviso', eyebrow: 'Mr Katana FX', title: 'Tu cuenta gratis<br>te está esperando',
+        body: M.p('Hola, hace un mes te dejamos una cuenta gratis en la nueva plataforma de Mr Katana. Solo falta que crees tu contraseña para empezar a usar el journal automático, el ranking con premios y el calendario económico.', true),
+        cta: 'Crear mi contraseña', url: crear, note: 'Toma menos de un minuto.' }) });
+    }
+  }
+  if (process.env.RESEND_API_KEY && mails.length) {
+    for (let i = 0; i < mails.length; i += 100) {
+      const batch = mails.slice(i, i + 100).map(m => Object.assign({ from: 'Mr Katana FX <noreply@mrkatanafx.com>' }, m));
+      await fetch('https://api.resend.com/emails/batch', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY.trim(), 'Content-Type': 'application/json' }, body: JSON.stringify(batch) }).catch(() => null);
+    }
+  }
+  return out;
+}
+
 let lastTick = 0;
 async function run(req) {
   if (!process.env.SUPABASE_SERVICE_KEY) return { error: 'missing_service_key' };
@@ -223,7 +280,7 @@ async function run(req) {
   const host = (req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
   const origin = host ? 'https://' + host : SITE;
   const out = {};
-  for (const [k, f] of [['mtg', mtgSoon], ['mtg30', mtg30], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking]]) {
+  for (const [k, f] of [['mtg', mtgSoon], ['mtg30', mtg30], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking], ['wix', wixClean]]) {
     try { out[k] = await f(sb); } catch (e) { out[k] = 'error: ' + e.message; }
   }
   try { Object.assign(out, await pushPending(sb)); } catch (e) { out.push_error = e.message; }

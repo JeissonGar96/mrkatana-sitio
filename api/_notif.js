@@ -266,6 +266,45 @@ async function wixClean(sb) {
   return out;
 }
 
+// Ranking: recordar elegir (o conectar) la cuenta del mes. Hasta 50 alumnos por día, una vez al mes cada uno,
+// desde las 9 am (Ecuador). Si tiene avisos en el celular le llega el aviso; si no, el correo (Resend: 100 al día).
+async function pickRemind(sb) {
+  const now = Date.now(), ecH = new Date(now + EC).getUTCHours(), today = ymd(now, MX), month = today.slice(0, 7);
+  if (ecH < 9) return 0;
+  const dayStart = new Date(today + 'T00:00:00-06:00').toISOString();
+  const sent = await sb.from('notifications').select('id', { count: 'exact', head: true }).like('dedupe', 'pk:%:' + month).gte('created_at', dayStart);
+  const left = 50 - (sent.count || 0);
+  if (sent.error || left <= 0) return 0;
+  const [pf, pk, ac, old, st] = await Promise.all([
+    sb.from('profiles').select('id, email, full_name, role'),
+    sb.from('journal_rank_picks').select('user_id').eq('month', month + '-01'),
+    sb.from('journal_accounts').select('user_id, server'),
+    sb.from('notifications').select('user_id').like('dedupe', 'pk:%:' + month),
+    sb.from('user_settings').select('id, notify_rank')
+  ]);
+  if (pf.error || pk.error || old.error) return 0;
+  const picked = new Set((pk.data || []).map(x => x.user_id)), done = new Set((old.data || []).map(x => x.user_id));
+  const off = new Set((st.data || []).filter(x => x.notify_rank === false).map(x => x.id));
+  const hasAcc = new Set((ac.data || []).filter(a => !/trial/i.test(a.server || '')).map(a => a.user_id));
+  const who = (pf.data || []).filter(p => p.role !== 'admin' && p.role !== 'staff' && !picked.has(p.id) && !done.has(p.id) && !off.has(p.id)).slice(0, left);
+  if (!who.length) return 0;
+  const mes = MES[+month.slice(5, 7) - 1];
+  const msg = p => hasAcc.has(p.id)
+    ? { link: 'dash', title: 'Elige tu cuenta para el ranking de ' + mes, body: 'Sin elegir tu cuenta no participas. Entra a "Mi progreso" y elige con qué cuenta compites: cuentan tus operaciones desde el 1 de ' + mes + '.' }
+    : { link: 'journal', title: 'Conecta tu cuenta y entra al ranking de ' + mes, body: 'Conecta gratis tu cuenta de Exness o Funding Pips en el Journal y elígela para participar: cuentan tus operaciones desde el 1 de ' + mes + '.' };
+  await add(sb, who.map(p => Object.assign({ user_id: p.id, kind: 'rank', dedupe: 'pk:' + p.id + ':' + month }, msg(p))));
+  // Correo solo a quien no tiene avisos en el celular (app instalada con avisos activados)
+  const subs = (await sb.from('push_subscriptions').select('user_id').in('user_id', who.map(p => p.id))).data || [];
+  const push = new Set(subs.map(s => s.user_id));
+  const mails = who.filter(p => p.email && !push.has(p.id));
+  if (process.env.RESEND_API_KEY && mails.length) {
+    const batch = mails.map(p => { const m = msg(p); return { from: 'Mr Katana FX <noreply@mrkatanafx.com>', to: [p.email], subject: m.title,
+      html: M.page({ art: 'aviso', eyebrow: 'Ranking de ' + mes, title: M.esc(m.title), body: M.p(M.esc(m.body)), cta: hasAcc.has(p.id) ? 'Elegir mi cuenta' : 'Conectar mi cuenta', url: SITE + '/app' }) }; });
+    await fetch('https://api.resend.com/emails/batch', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY.trim(), 'Content-Type': 'application/json' }, body: JSON.stringify(batch) }).catch(() => null);
+  }
+  return who.length;
+}
+
 let lastTick = 0;
 async function run(req) {
   if (!process.env.SUPABASE_SERVICE_KEY) return { error: 'missing_service_key' };
@@ -280,7 +319,7 @@ async function run(req) {
   const host = (req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
   const origin = host ? 'https://' + host : SITE;
   const out = {};
-  for (const [k, f] of [['mtg', mtgSoon], ['mtg30', mtg30], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking], ['wix', wixClean]]) {
+  for (const [k, f] of [['mtg', mtgSoon], ['mtg30', mtg30], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking], ['pick', pickRemind], ['wix', wixClean]]) {
     try { out[k] = await f(sb); } catch (e) { out[k] = 'error: ' + e.message; }
   }
   try { Object.assign(out, await pushPending(sb)); } catch (e) { out.push_error = e.message; }

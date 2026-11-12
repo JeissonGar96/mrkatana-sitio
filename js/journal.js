@@ -172,6 +172,18 @@
     '.jx-drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}',
     '.jx-drop .chg{position:absolute;right:8px;bottom:8px;background:rgba(10,10,12,.8);border:1px solid var(--k-line);color:#f0f0f0;font-size:11px;font-weight:600;padding:5px 9px;border-radius:8px;}',
     '.jx-drop.busy{opacity:.6;pointer-events:none;} .jx-drop input{display:none;}',
+    '.jx-sc{display:flex;flex-direction:column;gap:8px;min-width:0;}',
+    '.jx-shot{position:relative;display:block;width:100%;padding:0;border:1px solid var(--k-line);border-radius:12px;overflow:hidden;background:#000;cursor:zoom-in;}',
+    '.jx-shot img{display:block;width:100%;max-height:260px;object-fit:contain;} .jx-shot span{position:absolute;right:8px;bottom:8px;background:rgba(10,10,12,.8);color:#f0f0f0;font-size:11px;font-weight:600;padding:5px 9px;border-radius:8px;}',
+    '.jx-drop.sm{min-height:0;padding:9px;border-style:solid;font-size:12.5px;font-weight:600;color:var(--c-text);}',
+    '.jx-vw{position:fixed;inset:0;z-index:10050;background:#000;display:flex;flex-direction:column;color:#f0f0f0;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);}',
+    '.jx-vh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px;} .jx-vh b{font-size:14px;} .jx-vh small{display:block;color:#9a9aa3;font-size:12px;margin-top:2px;}',
+    '.jx-vh button,.jx-vnav button{background:none;border:0;color:#f0f0f0;font:inherit;cursor:pointer;padding:6px 8px;} .jx-vh button{font-size:18px;line-height:1;}',
+    '.jx-vi{flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;}',
+    '.jx-vi img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:0 0;user-select:none;-webkit-user-drag:none;cursor:zoom-in;} .jx-vi.zm img{cursor:grab;}',
+    '.jx-vht{text-align:center;color:#9a9aa3;font-size:12px;padding:6px 0;}',
+    '.jx-vnav{display:flex;justify-content:space-between;align-items:center;padding:0 10px 8px;color:#9a9aa3;font-size:12.5px;} .jx-vnav button:disabled{opacity:.3;cursor:default;}',
+    '.jx-vn{margin:0 12px 14px;background:rgba(28,28,32,.92);border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;max-height:22vh;overflow:auto;white-space:pre-wrap;} .jx-vn span{display:block;color:#9a9aa3;font-size:11.5px;margin-bottom:3px;}',
     '.jx-nt label{font-size:11px;color:var(--c-text2);display:block;margin-bottom:6px;}',
     '.jx-nt textarea{width:100%;height:132px;resize:none;background:var(--c-card);border:1px solid var(--k-line);border-radius:12px;color:var(--c-text);font:13px/1.5 inherit;font-family:inherit;padding:10px 12px;box-sizing:border-box;}',
     '.jx-nt textarea:focus{outline:none;border-color:rgba(var(--c-acc),.6);}',
@@ -609,7 +621,7 @@
     var title = d.getDate() + ' de ' + MESL[d.getMonth()] + ' de ' + d.getFullYear();
     var list = T.length ? T.map(function(t, i) {
       return '<div class="jx-tr' + (i === 0 ? ' open' : '') + '" data-id="' + t.id + '"><div class="jx-trh" role="button" tabindex="0" aria-expanded="' + (i === 0) + '"><span class="ic">' + CAM + '</span><div><b>' + esc(t.symbol) + ' · ' + sideLbl(t) + '</b><small>' + hm(t._o) + ' → ' + hm(t._c) + ' · ' + (+t.volume) + ' lotes<span data-has>' + (t.screenshot_path ? ' · Con captura' : '') + '</span></small></div><span class="res num ' + cls(t._n) + '">' + money(t._n) + '</span><span class="chev">' + CHEV + '</span></div>' +
-        '<div class="jx-trb"' + (i === 0 ? '' : ' hidden') + '><label class="jx-drop"><span data-ph>' + CAM + '<b>Agregar captura</b>Arrastra la imagen o toca para elegirla<br>PNG o JPG, hasta 5 MB</span><input type="file" accept="image/png,image/jpeg,image/webp"></label>' +
+        '<div class="jx-trb"' + (i === 0 ? '' : ' hidden') + '><div class="jx-sc"><label class="jx-drop"><span data-ph>' + CAM + '<b>Agregar captura</b>Arrastra la imagen o toca para elegirla<br>PNG o JPG</span><input type="file" accept="image/png,image/jpeg,image/webp"></label></div>' +
         '<div class="jx-nt"><label for="jx-n-' + t.id + '">¿Qué viste en esta operación?</label><textarea id="jx-n-' + t.id + '" maxlength="2000" placeholder="Por qué entraste, qué salió bien o mal…">' + esc(t.note || '') + '</textarea>' +
         '<div class="jx-kv"><span>Entrada<b class="num">' + px(t.open_price) + '</b></span><span>Salida<b class="num">' + px(t.close_price) + '</b></span><span>Stop loss<b class="num">' + px(t.sl) + '</b></span><span>Duración<b>' + dur(mins(t)) + '</b></span></div></div></div></div>';
     }).join('') : '<div class="jx-nod">' + (no ? 'Marcaste este día como <b>No operé</b>.' : 'No hay operaciones cerradas este día en esta cuenta.') +
@@ -620,6 +632,7 @@
       '<div class="jx-tl">' + list + '</div><div class="jx-mf">' +
       (T.length ? '<button class="jx-btn" data-close>Cerrar</button><button class="jx-btn pri" id="jx-save">Guardar notas</button>' :
         '<button class="jx-btn" data-close>Cerrar</button>' + (isT ? (no ? '<button class="jx-btn" id="jx-nt">Quitar "No operé"</button><button class="jx-btn pri" id="jx-dsave">Guardar nota</button>' : '<button class="jx-btn pri" id="jx-nt">Marcar "No operé"</button>') : '')) + '</div></div>';
+    ov._T = T;
     document.body.appendChild(ov);
     var close = function() { ov.remove(); document.removeEventListener('keydown', kd); if (last) last.focus(); };
     var kd = function(e) { if (e.key === 'Escape') close(); };
@@ -685,20 +698,104 @@
     shotUrl(t.screenshot_path).then(function(u) {
       var tr = ov.querySelector('.jx-tr[data-id="' + t.id + '"]'); if (!u || !tr) return;
       tr.querySelector('.ic').innerHTML = '<img src="' + esc(u) + '" alt="">';
-      var dp = tr.querySelector('.jx-drop'), ph = dp.querySelector('[data-ph]');
-      if (ph) ph.remove();
-      dp.querySelectorAll('img,.chg').forEach(function(x) { x.remove(); });
-      dp.insertAdjacentHTML('afterbegin', '<img src="' + esc(u) + '" alt="Captura de la operación"><span class="chg">Cambiar</span>');
+      var dp = tr.querySelector('.jx-drop'), ph = dp.querySelector('[data-ph]'), sc = dp.parentElement, old = sc.querySelector('.jx-shot');
+      if (ph) ph.outerHTML = '<span>Cambiar captura</span>';
+      dp.classList.add('sm');
+      if (old) old.remove();
+      sc.insertAdjacentHTML('afterbegin', '<button type="button" class="jx-shot" aria-label="Ver captura en grande"><img src="' + esc(u) + '" alt="Captura de la operación"><span>⤢ Ver en grande</span></button>');
+      sc.querySelector('.jx-shot').onclick = function() { viewShots(ov._T, t); };
     });
+  }
+  // Achica la captura antes de subirla (lado largo máx. 1800 px, WEBP o JPG): de 1-3 MB pasa a ~150-250 KB
+  function shrink(file) {
+    return new Promise(function(res) {
+      var u = URL.createObjectURL(file), im = new Image();
+      im.onerror = function() { URL.revokeObjectURL(u); res(file); };
+      im.onload = function() {
+        URL.revokeObjectURL(u);
+        var k = Math.min(1, 1800 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+        c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+        var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+        var done = function(b) { res(b && b.size < file.size ? b : file); };
+        c.toBlob(function(b) { if (b && b.type === 'image/webp') done(b); else c.toBlob(done, 'image/jpeg', 0.82); }, 'image/webp', 0.82);
+      };
+      im.src = u;
+    });
+  }
+  // Visor a pantalla completa: zoom (pellizco, doble toque, rueda), arrastrar, anterior/siguiente
+  function viewShots(T, t0) {
+    var L = (T || [t0]).filter(function(t) { return t.screenshot_path; }), i = Math.max(0, L.indexOf(t0)), last = document.activeElement;
+    var vw = document.createElement('div'); vw.className = 'jx-vw'; vw.setAttribute('role', 'dialog'); vw.setAttribute('aria-modal', 'true'); vw.setAttribute('aria-label', 'Captura');
+    vw.innerHTML = '<div class="jx-vh"><div><b></b><small></small></div><button type="button" aria-label="Cerrar">✕</button></div><div class="jx-vi"><img alt="Captura de la operación"></div>' +
+      '<div class="jx-vht">Pellizca o toca dos veces para hacer zoom</div><div class="jx-vnav"><button type="button" data-p>‹ Anterior</button><span></span><button type="button" data-n>Siguiente ›</button></div><div class="jx-vn" hidden></div>';
+    document.body.appendChild(vw);
+    var box = vw.querySelector('.jx-vi'), img = box.querySelector('img'), s = 1, tx = 0, ty = 0, pts = {}, st = null, tap = 0;
+    var apply = function() { img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')'; box.classList.toggle('zm', s > 1); };
+    var reset = function() { s = 1; tx = ty = 0; apply(); };
+    var zoomAt = function(ns, cx, cy) { // cx,cy relativos a la imagen sin transformar
+      ns = Math.max(1, Math.min(5, ns)); tx += cx * (s - ns); ty += cy * (s - ns); s = ns; if (s === 1) tx = ty = 0; apply();
+    };
+    var rel = function(x, y) { var r = img.getBoundingClientRect(); return [(x - r.left) / s, (y - r.top) / s]; };
+    var show = function() {
+      var t = L[i], d = t._o || new Date(t.open_time);
+      vw.querySelector('.jx-vh b').innerHTML = esc(t.symbol) + ' · ' + sideLbl(t) + ' · <span class="' + cls(t._n) + '">' + money(t._n) + '</span>';
+      vw.querySelector('.jx-vh small').textContent = d.getDate() + ' ' + MESL[d.getMonth()].slice(0, 3) + ' · ' + hm(t._o) + ' → ' + hm(t._c);
+      vw.querySelector('.jx-vnav span').textContent = (i + 1) + ' de ' + L.length;
+      vw.querySelector('.jx-vnav').hidden = L.length < 2;
+      vw.querySelector('[data-p]').disabled = i === 0; vw.querySelector('[data-n]').disabled = i === L.length - 1;
+      var n = vw.querySelector('.jx-vn'), nt = (document.getElementById('jx-n-' + t.id) || {}).value; nt = (nt == null ? t.note || '' : nt).trim();
+      n.hidden = !nt; n.innerHTML = '<span>Tu nota</span>' + esc(nt);
+      reset(); img.removeAttribute('src'); shotUrl(t.screenshot_path).then(function(u) { if (u && L[i] === t) img.src = u; });
+    };
+    var go = function(k) { if (L[i + k]) { i += k; show(); } };
+    var close = function() { vw.remove(); document.removeEventListener('keydown', kd, true); if (last) last.focus(); };
+    var kd = function(e) {
+      if (e.key === 'Escape') { e.stopPropagation(); close(); } else if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1);
+    };
+    document.addEventListener('keydown', kd, true);
+    vw.querySelector('.jx-vh button').onclick = close;
+    vw.querySelector('[data-p]').onclick = function() { go(-1); };
+    vw.querySelector('[data-n]').onclick = function() { go(1); };
+    box.addEventListener('wheel', function(e) { e.preventDefault(); var p = rel(e.clientX, e.clientY); zoomAt(s * (e.deltaY < 0 ? 1.2 : 1 / 1.2), p[0], p[1]); }, { passive: false });
+    box.addEventListener('dblclick', function(e) { var p = rel(e.clientX, e.clientY); zoomAt(s > 1 ? 1 : 2.5, p[0], p[1]); });
+    box.addEventListener('pointerdown', function(e) {
+      box.setPointerCapture(e.pointerId); pts[e.pointerId] = [e.clientX, e.clientY];
+      var k = Object.keys(pts);
+      if (k.length === 2) { var a = pts[k[0]], b = pts[k[1]], m = rel((a[0] + b[0]) / 2, (a[1] + b[1]) / 2); st = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: s, m: m }; }
+      else st = { x: e.clientX, y: e.clientY, tx: tx, ty: ty, t: Date.now() };
+    });
+    box.addEventListener('pointermove', function(e) {
+      if (!pts[e.pointerId] || !st) return; pts[e.pointerId] = [e.clientX, e.clientY];
+      var k = Object.keys(pts);
+      if (k.length === 2 && st.d) { var a = pts[k[0]], b = pts[k[1]]; zoomAt(st.s * Math.hypot(a[0] - b[0], a[1] - b[1]) / st.d, st.m[0], st.m[1]); }
+      else if (k.length === 1 && s > 1 && st.x != null) { tx = st.tx + e.clientX - st.x; ty = st.ty + e.clientY - st.y; apply(); }
+    });
+    var up = function(e) {
+      if (!pts[e.pointerId]) return; delete pts[e.pointerId];
+      if (st && st.x != null && !Object.keys(pts).length) {
+        var dx = e.clientX - st.x, dy = e.clientY - st.y;
+        if (s === 1 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1); // deslizar
+        else if (e.pointerType !== 'mouse' && Math.abs(dx) < 10 && Math.abs(dy) < 10) { // doble toque
+          var now = Date.now(); if (now - tap < 300) { var p = rel(e.clientX, e.clientY); zoomAt(s > 1 ? 1 : 2.5, p[0], p[1]); tap = 0; } else tap = now;
+        }
+      }
+      st = Object.keys(pts).length === 1 ? { x: pts[Object.keys(pts)[0]][0], y: pts[Object.keys(pts)[0]][1], tx: tx, ty: ty } : null;
+    };
+    box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+    show(); vw.querySelector('.jx-vh button').focus();
   }
   function upload(ov, dp, t, file) {
     if (!file) return;
     if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return tst('La captura debe ser PNG, JPG o WEBP.', 1);
-    if (file.size > 5 * 1024 * 1024) return tst('La captura pesa más de 5 MB.', 1);
-    var ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-    var path = cUser.id + '/' + JX.cur.id + '/' + t.ticket + '-' + Date.now() + '.' + ext, old = t.screenshot_path;
+    if (file.size > 25 * 1024 * 1024) return tst('La captura pesa más de 25 MB.', 1);
+    var path, old = t.screenshot_path;
     dp.classList.add('busy');
-    sb.storage.from('journal-capturas').upload(path, file, { contentType: file.type }).then(function(r) {
+    shrink(file).then(function(f) {
+      if (f.size > 5 * 1024 * 1024) throw new Error('big');
+      var ext = f.type === 'image/png' ? 'png' : f.type === 'image/webp' ? 'webp' : 'jpg';
+      path = cUser.id + '/' + JX.cur.id + '/' + t.ticket + '-' + Date.now() + '.' + ext;
+      return sb.storage.from('journal-capturas').upload(path, f, { contentType: f.type });
+    }).then(function(r) {
       if (r.error) throw r.error;
       return sb.from('journal_trades').update({ screenshot_path: path }).eq('id', t.id);
     }).then(function(r) {
@@ -707,7 +804,7 @@
       if (old) sb.storage.from('journal-capturas').remove([old]);
       var has = ov.querySelector('.jx-tr[data-id="' + t.id + '"] [data-has]'); if (has) has.textContent = ' · Con captura';
       paintShot(ov, t); renderCal(); tst('✓ Captura guardada');
-    }).catch(function() { tst('No se pudo subir la captura.', 1); }).then(function() { dp.classList.remove('busy'); });
+    }).catch(function(e) { tst(e && e.message === 'big' ? 'La captura es demasiado grande, prueba con otra.' : 'No se pudo subir la captura.', 1); }).then(function() { dp.classList.remove('busy'); });
   }
 
   /* ── Ventas / rentabilidad / compras ── */

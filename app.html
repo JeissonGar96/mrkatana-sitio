@@ -7315,9 +7315,9 @@ function _mkRenderRPanel(liveOnly) {
 var _mkAdTimer = null;
 function _mkEsc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function _mkSafeUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : '#'; }
-// Aviso del anuncio al entrar: como máximo una vez cada 2 días (se cierra con la X, "Ahora no" o tocando afuera)
+// Aviso del anuncio al entrar: en un momento al azar, cada 1 a 3 días (se cierra con la X, "Ahora no" o tocando afuera)
 function _mkAdPop(a) {
-  try { var t = +localStorage.getItem('mk-ad-pop') || 0; if (Date.now() - t < 2 * 864e5) return; localStorage.setItem('mk-ad-pop', Date.now()); } catch (e) {}
+  try { var t = +localStorage.getItem('mk-ad-next') || 0; if (Date.now() < t) return; localStorage.setItem('mk-ad-next', Date.now() + (1 + Math.random() * 2) * 864e5); } catch (e) {}
   if (!a || document.getElementById('adpop')) return;
   var url = _mkEsc(_mkSafeUrl(a.url)), d = document.createElement('div');
   d.id = 'adpop';

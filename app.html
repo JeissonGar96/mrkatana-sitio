@@ -5555,17 +5555,20 @@ function _pgLoad(force) {
     var dur = {};
     TA.forEach(function(t) { var c = new Date(t.close_time), k = dk(c); dur[k] = (dur[k] || 0) + (c - new Date(t.open_time)); if (c >= m0) res += (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); });
     Object.keys(dur).forEach(function(k) { if (dur[k] >= 3e5) { ok[k] = 1; if (k >= dk(m0)) td[k] = 1; } });
+    // Barras de la semana: cuentan las operaciones de TODAS sus cuentas (el ranking sí usa solo la cuenta elegida)
+    var TW = r[1].data || [], dw = {};
+    TW.forEach(function(t) { var c = new Date(t.close_time), k = dk(c); dw[k] = (dw[k] || 0) + (c - new Date(t.open_time)); });
     var rg = {};
     (r[2].data || []).forEach(function(x) { if (x.no_trade) { ok[x.day] = 1; if (!(dur[x.day] >= 3e5)) nt[x.day] = 1; } /* si ese día operó, se muestra "Operaste" y no "No operé" */ if (x.note && String(x.note).trim()) rg[x.day] = 1; });
     // Paso 3: registró el trade (nota o foto en una operación de ese día, o explicó por qué no operó)
-    TA.forEach(function(t) { if ((t.note && String(t.note).trim()) || t.screenshot_path) rg[dk(new Date(t.close_time))] = 1; });
+    TW.forEach(function(t) { if ((t.note && String(t.note).trim()) || t.screenshot_path) rg[dk(new Date(t.close_time))] = 1; });
     // Paso 1: entró a la plataforma. Paso 4: vio una clase, una grabación o el en vivo (solo academia)
     var vi = {}, ln = {};
     (r[5] && r[5].data || []).forEach(function(x) { vi[x.day] = 1; if (x.learned) ln[x.day] = 1; });
     (r[6] && r[6].data || []).forEach(function(x) { if (x.completed_at) ln[dk(new Date(x.completed_at))] = 1; });
     vi[dk(d)] = 1;
     // "Tu progreso semanal": minutos operados por día (lunes a domingo); cuenta si operó 5 min o marcó "No operé"
-    window._wk = { acc: A.length > 0, d: [0,1,2,3,4,5,6].map(function(i) { var k = dk(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)); return { k: k, n: TA.filter(function(t) { return dk(new Date(t.close_time)) === k; }).length, min: Math.round((dur[k] || 0) / 6e4), ok: !!ok[k], nt: !!nt[k] && !(dur[k] >= 3e5), s: [!!vi[k], !!ok[k], !!rg[k], !!ln[k]] }; }) };
+    window._wk = { acc: A.length > 0, d: [0,1,2,3,4,5,6].map(function(i) { var k = dk(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)); var okw = !!ok[k] || dw[k] >= 3e5; return { k: k, n: TW.filter(function(t) { return dk(new Date(t.close_time)) === k; }).length, min: Math.round((dw[k] || 0) / 6e4), ok: okw, nt: !!nt[k] && !(dw[k] >= 3e5), s: [!!vi[k], okw, !!rg[k], !!ln[k]] }; }) };
     _wkFill();
     var wd = function(x) { var w = x.getDay(); return w > 0 && w < 6; }, met = 0;
     for (var x = new Date(m0); x <= d; x.setDate(x.getDate() + 1)) if (wd(x) && ok[dk(x)]) met++;

@@ -278,19 +278,21 @@ async function pickRemind(sb) {
   const [pf, pk, ac, old, st] = await Promise.all([
     sb.from('profiles').select('id, email, full_name, role'),
     sb.from('journal_rank_picks').select('user_id').eq('month', month + '-01'),
-    sb.from('journal_accounts').select('user_id, server'),
+    sb.from('journal_accounts').select('user_id, server, broker, balance, currency'),
     sb.from('notifications').select('user_id').like('dedupe', 'pk:%:' + month),
     sb.from('user_settings').select('id, notify_rank')
   ]);
   if (pf.error || pk.error || old.error) return 0;
   const picked = new Set((pk.data || []).map(x => x.user_id)), done = new Set((old.data || []).map(x => x.user_id));
   const off = new Set((st.data || []).filter(x => x.notify_rank === false).map(x => x.id));
-  const hasAcc = new Set((ac.data || []).filter(a => !/trial/i.test(a.server || '')).map(a => a.user_id));
-  const who = (pf.data || []).filter(p => p.role !== 'admin' && p.role !== 'staff' && !picked.has(p.id) && !done.has(p.id) && !off.has(p.id)).slice(0, left);
+  // Cuentas válidas por alumno (no demo; Exness con $100 o más). Con una sola, ya participa con esa.
+  const nAcc = {}; (ac.data || []).filter(a => !/trial/i.test(a.server || '') && (a.broker !== 'exness' || (+a.balance || 0) / ((a.currency || '').toUpperCase() === 'USC' ? 100 : 1) >= 100)).forEach(a => { nAcc[a.user_id] = (nAcc[a.user_id] || 0) + 1; });
+  const hasAcc = new Set(Object.keys(nAcc));
+  const who = (pf.data || []).filter(p => p.role !== 'admin' && p.role !== 'staff' && nAcc[p.id] !== 1 && !picked.has(p.id) && !done.has(p.id) && !off.has(p.id)).slice(0, left);
   if (!who.length) return 0;
   const mes = MES[+month.slice(5, 7) - 1];
   const msg = p => hasAcc.has(p.id)
-    ? { link: 'dash', title: 'Elige tu cuenta para el ranking de ' + mes, body: 'Sin elegir tu cuenta no participas. Entra a "Mi progreso" y elige con qué cuenta compites: cuentan tus operaciones desde el 1 de ' + mes + '.' }
+    ? { link: 'dash', title: 'Elige tu cuenta para el ranking de ' + mes, body: 'Tienes varias cuentas: entra a "Mi progreso" y elige con cuál compites. Sin elegir no participas. Cuentan tus operaciones desde el 1 de ' + mes + '.' }
     : { link: 'journal', title: 'Conecta tu cuenta y entra al ranking de ' + mes, body: 'Conecta gratis tu cuenta de Exness o Funding Pips en el Journal y elígela para participar: cuentan tus operaciones desde el 1 de ' + mes + '.' };
   await add(sb, who.map(p => Object.assign({ user_id: p.id, kind: 'rank', dedupe: 'pk:' + p.id + ':' + month }, msg(p))));
   // Correo solo a quien no tiene avisos en el celular (app instalada con avisos activados)

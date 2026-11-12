@@ -5625,7 +5625,7 @@ function _pgLoad(force) {
     sb.from('journal_trades').select('account_id, open_time, close_time, profit, commission, swap, note, screenshot_path').eq('user_id', cUser.id).gte('close_time', s0.toISOString()).limit(5000),
     sb.from('journal_days').select('day, no_trade, note').eq('user_id', cUser.id).gte('day', dk(s0)),
     sb.from('journal_accounts').select('id, nickname, broker, server, login, balance, currency, created_at').eq('user_id', cUser.id).order('created_at'),
-    sb.from('journal_rank_picks').select('account_id').eq('month', dk(m0)),
+    sb.from('journal_rank_picks').select('account_id, changes').eq('month', dk(m0)),
     sb.from('daily_activity').select('day, learned').gte('day', dk(mon)).then(function(x) { return x; }, function() { return {}; }),
     sb.from('lesson_progress').select('completed_at').eq('user_id', cUser.id).gte('completed_at', mon.toISOString()).then(function(x) { return x; }, function() { return {}; })
   ]).then(function(r) {
@@ -5633,7 +5633,7 @@ function _pgLoad(force) {
     var A = r[3].data || [], el = A.filter(function(a) {
       return !/trial/i.test(a.server || '') && (a.broker !== 'exness' || (+a.balance || 0) / ((a.currency || '').toUpperCase() === 'USC' ? 100 : 1) >= 100);
     });
-    var pk = ((r[4].data || [])[0] || {}).account_id, eff = el.find(function(a) { return a.id === pk; });
+    var pr0 = (r[4].data || [])[0] || {}, pk = pr0.account_id, eff = el.find(function(a) { return a.id === pk; }) || (el.length === 1 ? el[0] : undefined); // con una sola cuenta válida, esa entra sola
     // Puntos: +1 por día hábil operado, −1 por día hábil sin operar y sin marcar "No operé"
     if (!r[0].error) window._pgRank = (r[0].data || []).map(function(x) { return { name: x.name, days: x.days - x.empty, traded: x.days, empty: x.empty, me: x.me, avatar: x.avatar }; });
     var TA = (r[1].data || []).filter(function(t) { return !eff || t.account_id === eff.id; }), ok = {}, td = {}, res = 0, nt = {};
@@ -5663,7 +5663,7 @@ function _pgLoad(force) {
     var st = 0, c = new Date(d); if (!ok[dk(c)]) c.setDate(c.getDate() - 1);
     for (var g = 0; g < 400; g++) { if (wd(c)) { if (!ok[dk(c)]) break; st++; } c.setDate(c.getDate() - 1); }
     var mine = (window._pgRank || []).find(function(x) { return x.me; });
-    window._pgMe = { acc: A.length > 0, el: el, eff: eff, picked: !!eff, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
+    window._pgMe = { acc: A.length > 0, el: el, eff: eff, picked: !!eff, chg: pr0.changes || 0, auto: !pk && !!eff, traded: Object.keys(td).length, met: met, streak: st, ops: T.length, res: res, pts: mine ? mine.days : 0, empty: mine ? mine.empty : 0 };
     document.querySelectorAll('.rp-rank').forEach(function(e) { e.outerHTML = _rpRankCard(); });
     document.querySelectorAll('.mpw-rk b').forEach(function(e) { e.textContent = _mpwRankTx(); });
     var pg = document.querySelector('#pg-modal .sum-body'); if (pg) pg.innerHTML = _pgBody();
@@ -5734,16 +5734,21 @@ function _pgPick(me) {
   if (!me.el.length) return head + '</div><small>Tus cuentas conectadas no participan: las demo no cuentan y las de Exness necesitan un balance de al menos $100.</small></div>';
   var nx = new Date(); nx = new Date(nx.getFullYear(), nx.getMonth() + 1, 1);
   var fin = '1 de ' + nx.toLocaleDateString('es-MX', { month: 'long' });
-  if (me.picked) return head + '<span>' + _pgAccName(me.eff) + '</span></div><small>Esta es tu cuenta del ranking este mes. No se puede cambiar hasta el ' + fin + '.</small></div>';
-  return head + '<span>Sin elegir</span></div>' +
-    '<div class="pg-pick-row"><select class="ai" id="pg-acc"><option value="" selected disabled>Elige tu cuenta</option>' + me.el.map(function(a) { return '<option value="' + a.id + '">' + _pgAccName(a) + '</option>'; }).join('') + '</select>' +
-    '<button class="mk-btn" onclick="_pgPickSave()">Participar con esta cuenta</button></div>' +
-    '<small>Para participar este mes elige tu cuenta. Cuentan tus operaciones desde el día 1 del mes, aunque la elijas tarde. Una vez elegida no podrás cambiarla hasta el ' + fin + '.</small></div>';
+  if (me.el.length < 2) return ''; // una sola cuenta válida: participa con esa sin elegir
+  var sel = function(btn) { return '<div class="pg-pick-row"><select class="ai" id="pg-acc"><option value="" selected disabled>' + (me.picked ? 'Cambiar a otra cuenta' : 'Elige tu cuenta') + '</option>' +
+    me.el.filter(function(a) { return !me.eff || a.id !== me.eff.id; }).map(function(a) { return '<option value="' + a.id + '">' + _pgAccName(a) + '</option>'; }).join('') + '</select>' +
+    '<button class="mk-btn" onclick="_pgPickSave()">' + btn + '</button></div>'; };
+  if (me.picked && me.chg >= 1) return head + '<span>' + _pgAccName(me.eff) + '</span></div><small>Esta es tu cuenta del ranking este mes. Ya usaste tu cambio: queda fija hasta el ' + fin + '.</small></div>';
+  if (me.picked) return head + '<span>' + _pgAccName(me.eff) + '</span></div>' + sel('Cambiar') +
+    '<small>Esta es tu cuenta del ranking este mes. Puedes cambiarla una sola vez; la nueva cuenta también cuenta desde el día 1 del mes.</small></div>';
+  return head + '<span>Sin elegir</span></div>' + sel('Participar con esta cuenta') +
+    '<small>Tienes varias cuentas: elige con cuál participas este mes. Cuentan tus operaciones desde el día 1 del mes, aunque la elijas tarde. Puedes cambiarla una sola vez hasta el ' + fin + '.</small></div>';
 }
 function _pgPickSave() {
   var s = document.getElementById('pg-acc'); if (!s) return;
   if (!s.value) { alert('Primero elige en la lista con qué cuenta participas.'); return; }
-  if (!confirm('¿Participar con ' + s.options[s.selectedIndex].text + '? No podrás cambiarla hasta que termine el mes.')) return;
+  var ch = window._pgMe && window._pgMe.picked;
+  if (!confirm((ch ? '¿Cambiar tu cuenta del ranking a ' : '¿Participar con ') + s.options[s.selectedIndex].text + '? ' + (ch ? 'Es tu único cambio del mes.' : 'Solo podrás cambiarla una vez este mes.'))) return;
   sb.rpc('journal_rank_pick', { p_account: s.value }).then(function(r) {
     if (r && (r.error || r.data === false)) alert('No se pudo guardar. Si acabas de conectar la cuenta, espera unos minutos a que se sincronice e inténtalo de nuevo.');
     _pgLoad(true);

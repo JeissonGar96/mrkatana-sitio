@@ -307,6 +307,33 @@ async function pickRemind(sb) {
   return who.length;
 }
 
+// Prueba gratis de Kairus: un día antes de terminar, aviso en la campana/celular y un correo con el botón para comprar
+async function kairusTrial(sb) {
+  const now = Date.now();
+  const tr = await sb.from('tv_access').select('user_id, expires_at').eq('plan_id', 'kairus_trial').eq('status', 'ok')
+    .gt('expires_at', new Date(now).toISOString()).lte('expires_at', new Date(now + 26 * 3600e3).toISOString());
+  const list = tr.data || [];
+  if (!list.length) return 0;
+  const old = await sb.from('notifications').select('dedupe').in('dedupe', list.map(x => 'kt:' + x.user_id));
+  if (old.error) return 0;
+  const done = new Set((old.data || []).map(x => x.dedupe));
+  const todo = list.filter(x => !done.has('kt:' + x.user_id));
+  if (!todo.length) return 0;
+  const title = 'Tu prueba de Kairus termina mañana', body = 'Si te gustó, actívalo desde Herramientas para no perder el acceso. El tiempo se suma al final de tu prueba.';
+  await add(sb, todo.map(x => ({ user_id: x.user_id, kind: 'exp', link: 'herramientas', dedupe: 'kt:' + x.user_id, title, body })));
+  const pf = (await sb.from('profiles').select('id, email, full_name').in('id', todo.map(x => x.user_id))).data || [];
+  const mails = pf.filter(p => p.email);
+  if (process.env.RESEND_API_KEY && mails.length) {
+    const batch = mails.map(p => ({ from: 'Mr Katana FX <noreply@mrkatanafx.com>', to: [p.email], subject: title,
+      html: M.page({ art: 'aviso', eyebrow: 'Indicador Kairus', title: 'Tu prueba termina<br>mañana', sub: 'Te queda un día de Kairus gratis.',
+        body: M.p('Hola' + (p.full_name ? ' ' + M.b(M.esc(String(p.full_name).split(' ')[0])) : '') + ', mañana termina tu prueba gratis de ' + M.b('Kairus') + ' y TradingView te quitará el acceso.', true) +
+          M.p('Si te sirvió, actívalo desde ' + M.b('Herramientas') + ' para seguir usándolo. Si lo compras hoy, el tiempo se suma al final de tu prueba y no pierdes ningún día.', true),
+        cta: 'Activar Kairus', url: SITE + '/app/herramientas/kairus', note: 'Desde $75 al mes.' }) }));
+    await fetch('https://api.resend.com/emails/batch', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY.trim(), 'Content-Type': 'application/json' }, body: JSON.stringify(batch) }).catch(() => null);
+  }
+  return todo.length;
+}
+
 let lastTick = 0;
 async function run(req) {
   if (!process.env.SUPABASE_SERVICE_KEY) return { error: 'missing_service_key' };
@@ -321,7 +348,7 @@ async function run(req) {
   const host = (req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
   const origin = host ? 'https://' + host : SITE;
   const out = {};
-  for (const [k, f] of [['mtg', mtgSoon], ['mtg30', mtg30], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking], ['pick', pickRemind], ['wix', wixClean]]) {
+  for (const [k, f] of [['mtg', mtgSoon], ['mtg30', mtg30], ['exp', expiring], ['cal', s => calendar(s, origin)], ['journal', journal], ['rank', ranking], ['pick', pickRemind], ['wix', wixClean], ['kt', kairusTrial]]) {
     try { out[k] = await f(sb); } catch (e) { out[k] = 'error: ' + e.message; }
   }
   try { Object.assign(out, await pushPending(sb)); } catch (e) { out.push_error = e.message; }

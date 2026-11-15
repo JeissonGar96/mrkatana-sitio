@@ -71,6 +71,7 @@ module.exports = async function handler(req, res) {
     if (body.action === 'whop_pay') return await whopPay(sb, user, body, req, res);
     if (body.action === 'renew_test') return await require('./_renew').adminTest({ sb, whopFetch, priceItems, WHOP_COMPANY, WHOP_PRODUCT }, user, body, res);
     if (body.action === 'tv_claim') return await tvClaim(sb, user, body, res);
+    if (body.action === 'tv_trial') return await tvTrial(sb, user, body, res);
     if (body.action === 'card_setup') return await cardSetup(sb, user, body, req, res);
     if (body.action === 'renew_set' || body.action === 'card_remove' || body.action === 'card_info') return await renewCard(sb, user, body, res);
     if (/^pp_(list|create|update|delete|cancel|resume|date)$/.test(String(body.action))) return await require('./_payplan').admin(sb, user, body, res);
@@ -305,7 +306,7 @@ async function grantTv(sb, userId, it, retry) {
   const username = s.data && s.data.tv_username;
   const prev = await sb.from('tv_access').select('expires_at').eq('user_id', userId).eq('pine_id', it.tv_pine_id).maybeSingle();
   const lifetime = !it.tv_months || (prev.data && prev.data.expires_at === null);
-  let expires = retry && prev.data ? prev.data.expires_at : (lifetime ? null : addMonths(prev.data && prev.data.expires_at, it.tv_months));
+  let expires = it.tv_expires ? it.tv_expires : retry && prev.data ? prev.data.expires_at : (lifetime ? null : addMonths(prev.data && prev.data.expires_at, it.tv_months));
   let ok = false, error = null;
   if (!username) error = 'no_username';
   else if (!process.env.TV_SESSIONID) error = 'missing_tv_session';
@@ -313,7 +314,7 @@ async function grantTv(sb, userId, it, retry) {
     try {
       const pine = await resolvePine(it.tv_pine_id);
       // Si ya tenía acceso dado directo en TradingView, se suma desde esa fecha (nunca se acorta)
-      if (!retry && expires !== null) {
+      if (!retry && expires !== null && !it.tv_expires) {
         const cur = await tvCurrent(pine, username);
         if (cur && cur.lifetime) expires = null;
         else if (cur && cur.expires && new Date(cur.expires) > new Date(prev.data && prev.data.expires_at || 0)) expires = addMonths(cur.expires, it.tv_months);
@@ -504,6 +505,42 @@ async function tvClaim(sb, user, body, res) {
     return res.status(502).json({ error: tv.error || 'tv_rejected' });
   }
   return res.status(200).json({ ok: true, expires: tv.expires });
+}
+
+// Prueba gratis de Kairus: 7 días, una sola vez por cuenta y por usuario de TradingView.
+// TradingView quita el acceso solo al llegar la fecha (se manda con "expiration"), así que no hace falta ningún proceso extra.
+// La fila de tv_access con plan_id 'kairus_trial' queda como registro de que ya usó la prueba.
+const TRIAL_DAYS = 7;
+async function tvTrial(sb, user, body, res) {
+  const username = String(body.username || '').trim().replace(/^@/, '');
+  if (!/^[A-Za-z0-9_.-]{2,40}$/.test(username)) return res.status(400).json({ error: 'bad_username' });
+  const k = await sb.from('checkout_plans').select('id, tv_pine_id').not('tv_pine_id', 'is', null).eq('category', 'herramienta').limit(1);
+  const kai = (k.data && k.data[0]) || null;
+  if (!kai) return res.status(500).json({ error: 'no_indicator' });
+  // Ya tuvo Kairus (prueba o compra) con esta cuenta
+  const mine = await sb.from('tv_access').select('id').eq('user_id', user.id).eq('pine_id', kai.tv_pine_id).maybeSingle();
+  if (mine.data) return res.status(409).json({ error: 'already_used' });
+  // Ese usuario de TradingView ya tuvo Kairus desde otra cuenta
+  const same = await sb.from('tv_access').select('id').eq('pine_id', kai.tv_pine_id).ilike('tv_username', username.replace(/[_%\\]/g, '\\$&')).limit(1);
+  if (same.data && same.data.length) return res.status(409).json({ error: 'username_used' });
+  if (!process.env.TV_SESSIONID) return res.status(500).json({ error: 'missing_tv_session' });
+  // Ya tiene acceso dado directo en TradingView
+  try {
+    const cur = await tvCurrent(await resolvePine(kai.tv_pine_id), username);
+    if (cur) return res.status(409).json({ error: 'username_used' });
+  } catch (e) { return res.status(502).json({ error: 'tv_rejected' }); }
+  const expires = new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString();
+  // Se aparta primero (única por cuenta) para que no se pueda pedir dos veces a la vez
+  const lock = await sb.from('tv_access').insert({ user_id: user.id, plan_id: 'kairus_trial', pine_id: kai.tv_pine_id, tv_username: username,
+    expires_at: expires, status: 'pending', updated_at: new Date().toISOString() }).select('id');
+  if (lock.error || !lock.data || !lock.data.length) return res.status(409).json({ error: 'already_used' });
+  await sb.from('user_settings').upsert({ id: user.id, tv_username: username }, { onConflict: 'id' });
+  const tv = await grantTv(sb, user.id, { plan_id: 'kairus_trial', tv_pine_id: kai.tv_pine_id, tv_expires: expires }, false);
+  if (!tv.ok) {
+    await sb.from('tv_access').delete().eq('user_id', user.id).eq('pine_id', kai.tv_pine_id).eq('plan_id', 'kairus_trial');
+    return res.status(502).json({ error: tv.error || 'tv_rejected' });
+  }
+  return res.status(200).json({ ok: true, expires });
 }
 
 // Cambiar tarjeta: Whop guarda la nueva con un "setup intent" (no cobra) y queda para las renovaciones.

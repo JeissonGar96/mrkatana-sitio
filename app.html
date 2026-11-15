@@ -6049,7 +6049,7 @@ function _tvState(p) {
   var active = !!(a && a.status === 'ok' && (!a.expires_at || new Date(a.expires_at) > new Date()));
   var days = active && a.expires_at ? Math.ceil((new Date(a.expires_at) - new Date()) / 864e5) : null;
   var trial = !!(a && a.plan_id === 'kairus_trial');
-  return { a: a, active: active, days: days, pending: !!(a && a.status === 'error'), trial: trial && active, trialEnded: trial && !active, canTrial: !a };
+  return { a: a, active: active, days: days, pending: !!(a && a.status === 'error' && !trial), trial: trial && active, trialEnded: trial && !active && a.status === 'ok', canTrial: !a || (trial && a.status === 'error') };
 }
 function rTools(detail) {
   pushRoute(detail ? { section: 'herramientas', tool: detail } : { section: 'herramientas' });
@@ -6108,7 +6108,8 @@ function _tvTrialGo(id) {
     if (r && r.ok) { if (_ajSet) _ajSet.tv_username = v; _tvAcc = null; _store = null; tst('Listo, tu prueba de 7 días de Kairus está activa'); return rTools(id); }
     b.disabled = false; b.textContent = 'Activar prueba gratis';
     var e = r && r.error;
-    tst(e === 'bad_username' ? 'Revisa tu usuario de TradingView' : e === 'username_used' ? 'Ese usuario de TradingView ya tuvo Kairus. La prueba es una sola vez.' : e === 'already_used' ? 'Ya usaste tu prueba gratis de Kairus.' : 'No se pudo activar ahora. Revisa tu usuario o escríbenos por WhatsApp.', 1);
+    tst(e === 'bad_username' ? 'Revisa tu usuario de TradingView' : e === 'username_used' ? 'Ese usuario de TradingView ya tuvo Kairus. La prueba es una sola vez.' : e === 'already_used' ? 'Ya usaste tu prueba gratis de Kairus.' : 'No se pudo activar ahora. Intenta de nuevo en unos minutos o escríbenos por WhatsApp.', 1);
+    if (r && r.detail) console.log('Kairus prueba:', r.detail);
   });
 }
 /* ── Journal automático: cuentas conectadas ── */

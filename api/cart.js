@@ -321,7 +321,7 @@ async function grantTv(sb, userId, it, retry) {
       }
       ok = await tvCall('add', pine, username, expires);
       if (!ok) ok = await tvCall('modify_user_expiration', pine, username, expires);
-      if (!ok) error = 'tv_rejected';
+      if (!ok) error = 'tv_rejected: ' + _tvLast;
     } catch (e) { error = String(e.message || e); }
   }
   await sb.from('tv_access').upsert({
@@ -341,8 +341,17 @@ async function resolvePine(v) {
   const url = v.replace(/^https?:\/\/[a-z]{2,3}\.tradingview\.com/, 'https://www.tradingview.com');
   const r = await fetch(url, { headers: { cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), 'user-agent': 'Mozilla/5.0' } });
   const html = await r.text();
-  const m = html.match(/PUB;[A-Za-z0-9]{16,}/);
-  if (!m) throw new Error('pine_id_not_found');
+  let m = html.match(/PUB;[A-Za-z0-9]{16,}/);
+  // Respaldo: la lista de scripts publicados de la cuenta (busca el que tenga el código del link)
+  if (!m) {
+    const slug = (url.match(/\/script\/([A-Za-z0-9]+)/) || [])[1] || '';
+    const l = await fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=published', { headers: { cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), 'user-agent': 'Mozilla/5.0', origin: 'https://www.tradingview.com', referer: 'https://www.tradingview.com/' } }).catch(() => null);
+    const arr = l && l.ok ? await l.json().catch(() => []) : [];
+    const hit = (Array.isArray(arr) ? arr : []).find(x => slug && JSON.stringify(x).indexOf(slug) >= 0) || (Array.isArray(arr) && arr.length === 1 ? arr[0] : null);
+    const id = hit && JSON.stringify(hit).match(/PUB;[A-Za-z0-9]{16,}/);
+    if (id) m = id;
+  }
+  if (!m) throw new Error('pine_id_not_found (http ' + r.status + ')');
   return (_pineCache[v] = m[0]);
 }
 
@@ -362,6 +371,7 @@ async function tvCurrent(pineId, username) {
   } catch (e) { return null; }
 }
 
+let _tvLast = '';
 async function tvCall(kind, pineId, username, expires) {
   const form = new URLSearchParams({ pine_id: pineId, username_recip: username });
   if (expires) form.set('expiration', expires);
@@ -374,8 +384,10 @@ async function tvCall(kind, pineId, username, expires) {
     },
     body: form.toString()
   });
+  const txt = await r.text().catch(() => '');
+  _tvLast = kind + ' http ' + r.status + ' ' + txt.replace(/\s+/g, ' ').slice(0, 160);
   if (!r.ok) return false;
-  const j = await r.json().catch(() => ({}));
+  let j = {}; try { j = JSON.parse(txt); } catch (e) {}
   return j.status === 'ok' || (kind === 'modify_user_expiration' && r.status === 200 && !j.status);
 }
 
@@ -518,28 +530,34 @@ async function tvTrial(sb, user, body, res) {
   const kai = (k.data && k.data[0]) || null;
   if (!kai) return res.status(500).json({ error: 'no_indicator' });
   // Ya tuvo Kairus (prueba o compra) con esta cuenta
-  const mine = await sb.from('tv_access').select('id').eq('user_id', user.id).eq('pine_id', kai.tv_pine_id).maybeSingle();
-  if (mine.data) return res.status(409).json({ error: 'already_used' });
+  // (si su intento anterior falló en TradingView, puede volver a intentarlo)
+  const mine = await sb.from('tv_access').select('id, plan_id, status').eq('user_id', user.id).eq('pine_id', kai.tv_pine_id).maybeSingle();
+  const again = !!(mine.data && mine.data.plan_id === 'kairus_trial' && mine.data.status === 'error');
+  if (mine.data && !again) return res.status(409).json({ error: 'already_used' });
   // Ese usuario de TradingView ya tuvo Kairus desde otra cuenta
-  const same = await sb.from('tv_access').select('id').eq('pine_id', kai.tv_pine_id).ilike('tv_username', username.replace(/[_%\\]/g, '\\$&')).limit(1);
+  const same = await sb.from('tv_access').select('id').eq('pine_id', kai.tv_pine_id).ilike('tv_username', username.replace(/[_%\\]/g, '\\$&')).neq('user_id', user.id).limit(1);
   if (same.data && same.data.length) return res.status(409).json({ error: 'username_used' });
-  if (!process.env.TV_SESSIONID) return res.status(500).json({ error: 'missing_tv_session' });
   // Ya tiene acceso dado directo en TradingView
-  try {
+  let perr = process.env.TV_SESSIONID ? null : 'missing_tv_session';
+  if (!perr) try {
     const cur = await tvCurrent(await resolvePine(kai.tv_pine_id), username);
     if (cur) return res.status(409).json({ error: 'username_used' });
-  } catch (e) { return res.status(502).json({ error: 'tv_rejected' }); }
+  } catch (e) { perr = String(e.message || e); }
   const expires = new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString();
   // Se aparta primero (única por cuenta) para que no se pueda pedir dos veces a la vez
-  const lock = await sb.from('tv_access').insert({ user_id: user.id, plan_id: 'kairus_trial', pine_id: kai.tv_pine_id, tv_username: username,
-    expires_at: expires, status: 'pending', updated_at: new Date().toISOString() }).select('id');
+  const row = { user_id: user.id, plan_id: 'kairus_trial', pine_id: kai.tv_pine_id, tv_username: username, expires_at: expires, status: 'pending', last_error: null, updated_at: new Date().toISOString() };
+  const lock = again
+    ? await sb.from('tv_access').update(row).eq('id', mine.data.id).eq('status', 'error').select('id')
+    : await sb.from('tv_access').insert(row).select('id');
   if (lock.error || !lock.data || !lock.data.length) return res.status(409).json({ error: 'already_used' });
+  // Si falla, la fila queda con el error (se ve en Admin y la persona puede reintentar)
+  if (perr) {
+    await sb.from('tv_access').update({ status: 'error', last_error: perr, updated_at: new Date().toISOString() }).eq('id', lock.data[0].id);
+    return res.status(502).json({ error: 'tv_rejected', detail: perr });
+  }
   await sb.from('user_settings').upsert({ id: user.id, tv_username: username }, { onConflict: 'id' });
   const tv = await grantTv(sb, user.id, { plan_id: 'kairus_trial', tv_pine_id: kai.tv_pine_id, tv_expires: expires }, false);
-  if (!tv.ok) {
-    await sb.from('tv_access').delete().eq('user_id', user.id).eq('pine_id', kai.tv_pine_id).eq('plan_id', 'kairus_trial');
-    return res.status(502).json({ error: tv.error || 'tv_rejected' });
-  }
+  if (!tv.ok) return res.status(502).json({ error: 'tv_rejected', detail: tv.error || 'tv_rejected' });
   return res.status(200).json({ ok: true, expires });
 }
 

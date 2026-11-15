@@ -339,20 +339,29 @@ async function resolvePine(v) {
   if (/^PUB;/.test(v)) return v;
   if (_pineCache[v]) return _pineCache[v];
   const url = v.replace(/^https?:\/\/[a-z]{2,3}\.tradingview\.com/, 'https://www.tradingview.com');
-  const r = await fetch(url, { headers: { cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), 'user-agent': 'Mozilla/5.0' } });
-  const html = await r.text();
-  let m = html.match(/PUB;[A-Za-z0-9]{16,}/);
-  // Respaldo: la lista de scripts publicados de la cuenta (busca el que tenga el código del link)
-  if (!m) {
-    const slug = (url.match(/\/script\/([A-Za-z0-9]+)/) || [])[1] || '';
-    const l = await fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=published', { headers: { cookie: 'sessionid=' + process.env.TV_SESSIONID.trim(), 'user-agent': 'Mozilla/5.0', origin: 'https://www.tradingview.com', referer: 'https://www.tradingview.com/' } }).catch(() => null);
-    const arr = l && l.ok ? await l.json().catch(() => []) : [];
-    const hit = (Array.isArray(arr) ? arr : []).find(x => slug && JSON.stringify(x).indexOf(slug) >= 0) || (Array.isArray(arr) && arr.length === 1 ? arr[0] : null);
-    const id = hit && JSON.stringify(hit).match(/PUB;[A-Za-z0-9]{16,}/);
-    if (id) m = id;
+  const ck = 'sessionid=' + process.env.TV_SESSIONID.trim();
+  const slug = (url.match(/\/script\/([A-Za-z0-9]+)/) || [])[1] || '';
+  // La página del script puede traer varios PUB; (scripts relacionados). Se juntan candidatos:
+  // primero los scripts publicados de la cuenta que coinciden con el link, luego los de la página.
+  const cands = [];
+  const push = id => { if (id && cands.indexOf(id) < 0) cands.push(id); };
+  const l = await fetch('https://pine-facade.tradingview.com/pine-facade/list/?filter=published', { headers: { cookie: ck, 'user-agent': 'Mozilla/5.0', origin: 'https://www.tradingview.com', referer: 'https://www.tradingview.com/' } }).catch(() => null);
+  const arr = l && l.ok ? await l.json().catch(() => []) : [];
+  const mineList = Array.isArray(arr) ? arr : [];
+  mineList.filter(x => slug && JSON.stringify(x).indexOf(slug) >= 0).forEach(x => push((JSON.stringify(x).match(/PUB;[A-Za-z0-9]{16,}/) || [])[0]));
+  mineList.filter(x => /kairus/i.test(JSON.stringify(x))).forEach(x => push((JSON.stringify(x).match(/PUB;[A-Za-z0-9]{16,}/) || [])[0]));
+  const r = await fetch(url, { headers: { cookie: ck, 'user-agent': 'Mozilla/5.0' } }).catch(() => null);
+  const html = r ? await r.text().catch(() => '') : '';
+  (html.match(/PUB;[A-Za-z0-9]{16,}/g) || []).forEach(push);
+  // Se queda con el que la cuenta puede administrar (TradingView solo deja ver la lista de accesos al dueño)
+  for (const id of cands.slice(0, 12)) {
+    const t = await fetch('https://www.tradingview.com/pine_perm/list_users/?limit=1', {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', cookie: ck, origin: 'https://www.tradingview.com', referer: 'https://www.tradingview.com/' },
+      body: new URLSearchParams({ pine_id: id }).toString()
+    }).catch(() => null);
+    if (t && t.ok) { const j = await t.json().catch(() => null); if (j && Array.isArray(j.results)) return (_pineCache[v] = id); }
   }
-  if (!m) throw new Error('pine_id_not_found (http ' + r.status + ')');
-  return (_pineCache[v] = m[0]);
+  throw new Error('pine_not_owned (candidatos ' + cands.length + ', scripts de la cuenta ' + mineList.length + ', pagina http ' + (r ? r.status : 0) + ')');
 }
 
 // Acceso actual de un usuario en el script (lo que se ve en "Administrar acceso" de TradingView)

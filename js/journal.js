@@ -900,7 +900,7 @@
     idx.forEach(function(i, j) {
       var d = M[i], cx = x0 + cw * (j + .5), on = sel === i;
       out += txt(cx, H - 7, few ? Mc(i) : Mc(i).charAt(0), 'text-anchor="middle" font-size="' + (sm ? 10 : 11) + '" style="fill:' + (on ? 'var(--c-text)' : 'var(--c-muted)') + '"');
-      var v = d[u], bw = Math.min(sm ? 48 : 72, cw * (sm ? .76 : .62)), yv = y(v), y0 = y(0), h = Math.max(2, Math.abs(yv - y0)), cur = yr === now.getFullYear() && i === now.getMonth();
+      var v = d[u], bw = Math.min(sm ? 48 : 84, cw * (sm ? .76 : .78)), yv = y(v), y0 = y(0), h = Math.max(2, Math.abs(yv - y0)), cur = yr === now.getFullYear() && i === now.getMonth();
       var op = sel != null && !on ? .35 : cur ? .6 : 1;
       var bx = cx - bw / 2, rr = Math.min(3, h / 2, bw / 4), ye = v >= 0 ? y0 - h : y0 + h, dd = v >= 0 ? rr : -rr; // base recta en la línea del 0, solo la punta un poco redondeada
       out += '<path d="M' + bx + ',' + y0 + 'V' + (ye + dd) + 'Q' + bx + ',' + ye + ' ' + (bx + rr) + ',' + ye + 'H' + (bx + bw - rr) + 'Q' + (bx + bw) + ',' + ye + ' ' + (bx + bw) + ',' + (ye + dd) + 'V' + y0 + 'Z" opacity="' + op + '" style="fill:' + (v < 0 ? 'var(--jx-loss)' : 'var(--jx-win)') + '"/>';

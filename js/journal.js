@@ -422,7 +422,8 @@
     Promise.all([
       sb.from('journal_trades').select(TR_COLS).eq('account_id', a.id).order('close_time', { ascending: false }).limit(3000),
       sb.from('journal_snapshots').select('day, balance, equity').eq('account_id', a.id).order('day'),
-      sb.from('journal_days').select('day, no_trade, note').eq('user_id', JX.view ? JX.view.id : cUser.id)
+      sb.from('journal_days').select('day, no_trade, note').eq('user_id', JX.view ? JX.view.id : cUser.id),
+      sb.from('journal_transfers').select('ticket, time, amount').eq('account_id', a.id).order('time')
     ]).then(function(r) {
       if (JX.cur !== a || !document.getElementById('jx-body')) return;
       if (r[0].error || r[1].error) { body.innerHTML = '<div class="jx-card jx-empty">No se pudieron cargar las operaciones. Recarga la página.</div>'; return; }
@@ -431,6 +432,7 @@
       JX.snaps = (r[1].data || []).map(function(s) { return { d: new Date(s.day + 'T12:00:00'), b: +s.balance, e: +s.equity }; });
       JX.days = {}; (r[2].data || []).forEach(function(d) { if (d.no_trade) JX.days[d.day] = d; }); // "No operé" vale para todas las cuentas; donde hubo operaciones se muestran las operaciones
       JX.all = JX.trades; JX.mf = null; JX.mesSel = null;
+      JX.tf = (r[3] && !r[3].error && r[3].data || []).map(function(x) { var d = new Date(x.time); return { d: d, a: +x.amount, k: dk(d), m: d.getFullYear() * 12 + d.getMonth() }; }); // depósitos (+) y retiros (−)
       if (!JX.trades.length && !JX.snaps.length) return waiting();
       render();
     });
@@ -492,13 +494,15 @@
     var bs = S.map(function(s) { return s.b; }).concat([bal]), es = S.map(function(s) { return s.e; }).concat([eq]);
     var maxB = Math.max.apply(null, bs), minB = Math.min.apply(null, bs), maxE = Math.max.apply(null, es), minE = Math.min.apply(null, es);
     var pos = function(v, lo, hi) { return hi > lo ? Math.round((v - lo) / (hi - lo) * 100) : 100; };
-    var ini = bal - (JX.all || T).reduce(function(x, t) { return x + t._n; }, 0); // balance inicial = balance actual menos todo lo ganado/perdido en operaciones
+    var TF = JX.tf || [], dep = TF.filter(function(x) { return x.a > 0; });
+    var ini = dep.length ? dep[0].a : bal - (JX.all || T).reduce(function(x, t) { return x + t._n; }, 0); // balance inicial = primer depósito (o balance menos todo lo ganado si no hay datos de depósitos)
+    var MD = mesData(), gp = (Object.keys(MD).reduce(function(p, k) { return p * (1 + MD[k].pct / 100); }, 1) - 1) * 100; // % ganado solo operando (sin retiros ni depósitos)
     var tk = dk(new Date()), tod = T.filter(function(t) { return t._k === tk; });
     var tn = tod.reduce(function(s, t) { return s + t._n; }, 0);
     var syms = tod.map(function(t) { return t.symbol; }).filter(function(x, i, arr) { return arr.indexOf(x) === i; }).slice(0, 2).join(', ');
     var d = discipline(T);
     document.getElementById('jx-top').innerHTML =
-      '<div class="jx-card jx-st"><div class="jx-lbl">Balance</div><div class="v num">' + money(bal) + '</div><div class="jx-bar"><i style="width:' + pos(bal, minB, maxB) + '%"></i></div><div class="sub num jx-ini">Inicial ' + money(ini).replace('.00', '') + (ini > 0 ? ' · <span class="' + cls(bal - ini) + '">' + (bal >= ini ? '+' : '−') + Math.abs((bal - ini) / ini * 100).toFixed(2) + '%</span>' : '') + '</div></div>' +
+      '<div class="jx-card jx-st"><div class="jx-lbl">Balance</div><div class="v num">' + money(bal) + '</div><div class="jx-bar"><i style="width:' + pos(bal, minB, maxB) + '%"></i></div><div class="sub num jx-ini">Inicial ' + money(ini).replace('.00', '') + (ini > 0 ? ' · <span class="' + cls(gp) + '">' + (gp >= 0 ? '+' : '−') + Math.abs(gp).toFixed(2) + '%</span>' : '') + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Equidad</div><div class="v num">' + money(eq) + '</div><div class="jx-bar"><i style="width:' + pos(eq, minE, maxE) + '%"></i></div><div class="sub num">Máximo ' + money(maxE) + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Resultado de hoy</div><div class="v num ' + (tod.length ? cls(tn) : '') + '">' + (tod.length ? money(tn) : '$0.00') + '</div><div class="sub">' + (tod.length ? tod.length + (tod.length === 1 ? ' operación' : ' operaciones') + ' · ' + esc(syms) : 'Sin operaciones hoy') + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Puntaje de disciplina</div><div class="v num">' + (d == null ? '—' : d + '<span class="m" style="font-size:14px;font-weight:600"> / 100</span>') + '</div><div class="jx-bar"><i style="width:' + (d || 0) + '%"></i></div><div class="sub">' + (d == null ? 'Se calcula desde 5 operaciones' : 'Stop loss, riesgo/beneficio, consistencia y acierto') + '</div></div>';
@@ -558,6 +562,10 @@
     var lb = S[n - 1].b, le = S[n - 1].e, gap = Math.abs(y(lb) - y(le)) < 24;
     out += badge(lb, 'var(--jx-curve)', 'var(--c-ongold)', gap ? (y(lb) <= y(le) ? -12 : 12) : 0);
     out += badge(le, 'rgba(var(--c-ov),.12)', 'var(--c-text)', gap ? (y(lb) <= y(le) ? 12 : -12) : 0);
+    var tfd = {}; (JX.tf || []).forEach(function(t, j) { if (j || t.a < 0) tfd[t.k] = (tfd[t.k] || 0) + t.a; }); // retiros y depósitos (menos el primer depósito)
+    S.forEach(function(p, i) { var v = tfd[dk(p.d)]; if (!v) return; var c = v < 0 ? 'var(--jx-loss)' : 'var(--jx-win)';
+      out += '<line x1="' + x(i) + '" x2="' + x(i) + '" y1="' + (T + 14) + '" y2="' + (H - B) + '" style="stroke:' + c + '" stroke-opacity=".45" stroke-dasharray="2 3"/><circle cx="' + x(i) + '" cy="' + y(p.b) + '" r="4.5" style="fill:var(--c-card);stroke:' + c + '" stroke-width="2"/>' +
+        txt(x(i), T + 6, (v < 0 ? 'Retiro ' : 'Depósito ') + kfmt(Math.abs(v)), 'text-anchor="middle" font-size="10" font-weight="600" style="fill:' + c + '"'); });
     out += '<line id="jx-vl" y1="' + T + '" y2="' + (H - B) + '" style="stroke:rgba(var(--c-ov),.18)" stroke-dasharray="3 4" opacity="0"/>';
     out += '<circle id="jx-db" r="5" style="fill:var(--jx-curve);stroke:var(--c-card)" stroke-width="2.5" opacity="0"/><circle id="jx-de" r="4.5" style="fill:var(--jx-eq);stroke:var(--c-card)" stroke-width="2.5" opacity="0"/>';
     s.setAttribute('viewBox', '0 0 ' + W + ' ' + H); s.innerHTML = out;
@@ -565,7 +573,7 @@
     var show = function(i) {
       var p = S[i]; [vl, db, de].forEach(function(e) { e.setAttribute('opacity', 1); });
       vl.setAttribute('x1', x(i)); vl.setAttribute('x2', x(i)); db.setAttribute('cx', x(i)); db.setAttribute('cy', y(p.b)); de.setAttribute('cx', x(i)); de.setAttribute('cy', y(p.e));
-      tip.innerHTML = '<h4>' + p.d.getDate() + ' de ' + MESL[p.d.getMonth()] + ', ' + p.d.getFullYear() + '</h4><div><span><i style="background:var(--jx-curve)"></i>Balance</span><b class="num">' + money(p.b) + '</b></div><div><span><i style="background:var(--jx-eq)"></i>Equidad</span><b class="num">' + money(p.e) + '</b></div>';
+      tip.innerHTML = '<h4>' + p.d.getDate() + ' de ' + MESL[p.d.getMonth()] + ', ' + p.d.getFullYear() + '</h4><div><span><i style="background:var(--jx-curve)"></i>Balance</span><b class="num">' + money(p.b) + '</b></div><div><span><i style="background:var(--jx-eq)"></i>Equidad</span><b class="num">' + money(p.e) + '</b></div>' + (tfd[dk(p.d)] ? '<div><span>' + (tfd[dk(p.d)] < 0 ? 'Retiro' : 'Depósito') + '</span><b class="num">' + money(tfd[dk(p.d)]) + '</b></div>' : '');
       tip.classList.add('on');
       var sc = s.getBoundingClientRect().width / W, bw = box.clientWidth, tw = tip.offsetWidth, xx = x(i) * sc + 6, left = xx + 24;
       if (left + tw > bw - 8) left = xx - tw - 12;
@@ -869,9 +877,15 @@
   function mesData() {
     var a = JX.cur, bal = a.balance != null ? +a.balance : (JX.snaps.length ? JX.snaps[JX.snaps.length - 1].b : 0), by = {};
     (JX.all || JX.trades).forEach(function(t) { var k = t._c.getFullYear() * 12 + t._c.getMonth(); by[k] = (by[k] || 0) + t._n; });
+    var tm = {}; (JX.tf || []).forEach(function(x) { tm[x.m] = (tm[x.m] || 0) + x.a; }); // depósitos/retiros de cada mes
     var ks = Object.keys(by).map(Number).sort(function(x, y) { return y - x; }), after = 0, out = {};
-    ks.forEach(function(k) { after += by[k]; var b0 = bal - after; out[k] = { usd: by[k], pct: b0 > 0 ? by[k] / b0 * 100 : 0 }; }); // balance al empezar el mes = balance actual menos lo ganado desde ese mes
-    return out;
+    var tAfter = function(k) { return (JX.tf || []).reduce(function(s, x) { return x.m >= k ? s + x.a : s; }, 0); };
+    ks.forEach(function(k) {
+      after += by[k];
+      var b0 = bal - after - tAfter(k) + Math.max(0, tm[k] || 0); // balance al empezar el mes (sin lo ganado ni lo depositado/retirado después) + lo depositado ese mes
+      out[k] = { usd: by[k], pct: b0 > 0 ? by[k] / b0 * 100 : 0, tf: tm[k] || 0 };
+    });
+    return out; // el % solo cuenta lo ganado operando: un retiro o depósito no cambia el %
   }
   function renderMes() {
     var box = document.getElementById('jx-mes'); if (!box || box.hidden) return;
@@ -885,7 +899,7 @@
     var f = function(v, unit) { var s = v > 0 ? '+' : v < 0 ? '−' : ''; v = Math.abs(v); return s + ((unit || u) === 'pct' ? v.toFixed(2) + '%' : '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })); };
     var tot = u === 'pct' ? (has.reduce(function(p, d) { return p * (1 + d.pct / 100); }, 1) - 1) * 100 : has.reduce(function(p, d) { return p + d.usd; }, 0);
     var best = has.reduce(function(p, d) { return d.usd > p.usd ? d : p; }), worst = has.reduce(function(p, d) { return d.usd < p.usd ? d : p; });
-    var rd = sel != null ? '<b class="num ' + cls(M[sel].usd) + '">' + f(M[sel][u]) + '</b><span>' + MESL[sel] + ' ' + yr + ' · ' + f(M[sel][u === 'pct' ? 'usd' : 'pct'], u === 'pct' ? 'usd' : 'pct') + (fi === sel ? ' · el journal muestra solo este mes' : ' · toca para ver solo este mes') + '</span>'
+    var rd = sel != null ? '<b class="num ' + cls(M[sel].usd) + '">' + f(M[sel][u]) + '</b><span>' + MESL[sel] + ' ' + yr + ' · ' + f(M[sel][u === 'pct' ? 'usd' : 'pct'], u === 'pct' ? 'usd' : 'pct') + (M[sel].tf ? ' · ' + (M[sel].tf < 0 ? 'retiro ' : 'depósito ') + money(Math.abs(M[sel].tf)).replace('.00', '') + ' (no cuenta en el %)' : '') + (fi === sel ? ' · el journal muestra solo este mes' : ' · toca para ver solo este mes') + '</span>'
       : '<b class="num ' + cls(tot) + '">' + f(tot) + '</b><span>en ' + yr + ' · toca un mes para ver solo ese mes</span>';
     if (JX.mf != null) rd += '<button class="jx-mfx" id="jx-mfx">Ver todo</button>';
     box.innerHTML = '<div class="jx-ch"><h2>Rendimiento mensual</h2><div class="jx-mctl"><div class="jx-seg" id="jx-mu"><button data-u="pct" class="' + (u === 'pct' ? 'on' : '') + '">%</button><button data-u="usd" class="' + (u === 'usd' ? 'on' : '') + '">$</button></div>' +

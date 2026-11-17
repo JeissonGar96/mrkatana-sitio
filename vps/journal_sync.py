@@ -200,6 +200,14 @@ def read_positions(mt5, date_from, off, acc):
     return rows, deals
 
 
+def read_transfers(mt5, off, acc):
+    """Depósitos y retiros (movimientos de balance) de todo el historial. Positivo = depósito, negativo = retiro."""
+    deals = mt5.history_deals_get(dt.datetime(2000, 1, 1), dt.datetime.now() + dt.timedelta(days=2)) or ()
+    return [{"account_id": acc["id"], "user_id": acc["user_id"], "ticket": int(d.ticket),
+             "time": to_utc(d.time, off).isoformat(), "amount": round(d.profit, 2), "comment": (d.comment or "")[:80] or None}
+            for d in deals if d.type == mt5.DEAL_TYPE_BALANCE and d.profit]
+
+
 def daily_balances(deals, balance, off, date_from, acc):
     """Balance al cierre de cada día, reconstruido hacia atrás desde el balance actual."""
     by_day = {}
@@ -248,24 +256,27 @@ def sync_account(mt5, acc, partner_logins):
         sb("DELETE", "journal_snapshots?account_id=eq.%s&day=lt.%s" % (acc["id"], since.date().isoformat()))
     trades, deals = read_positions(mt5, since, off, acc)
     snaps = daily_balances(deals, info.balance, off, since, acc)
+    transfers = read_transfers(mt5, off, acc)
     snaps[0]["equity"] = round(info.equity, 2)  # hoy: equidad real
     # Solo se escribe en Supabase si algo cambió: cada escritura obliga a la base a guardar
     # un archivo de 16 MB (gasta el "Disk IO" del plan). La equidad sola se guarda cada EQUITY_MIN.
     prev = LAST.get(acc["id"])
     now = time.time()
-    core = (repr(trades), repr([(s["day"], s["balance"]) for s in snaps[:4]]), info.balance, acc.get("status"))
+    core = (repr(trades), repr([(s["day"], s["balance"]) for s in snaps[:4]]), info.balance, acc.get("status"), repr(transfers))
     if not full and prev and prev["core"] == core and now - prev["at"] < EQUITY_MIN * 60:
         log.info("Sin cambios %s %s", acc["broker"], acc["login"])
         return
     if trades:
         upsert("journal_trades", trades, "account_id,ticket")
+    if transfers and (full or not prev or prev.get("tf") != repr(transfers)):
+        upsert("journal_transfers", transfers, "account_id,ticket")
     if full:
         upsert("journal_snapshots", snaps, "account_id,day")
     else:
         upsert("journal_snapshots", snaps[:4], "account_id,day")
     update_account(acc["id"], status="ok", last_error=None, balance=info.balance, equity=info.equity,
                    currency=info.currency, last_sync_at=dt.datetime.now(dt.timezone.utc).isoformat())
-    LAST[acc["id"]] = {"core": core, "at": now}
+    LAST[acc["id"]] = {"core": core, "at": now, "tf": repr(transfers)}
     log.info("OK %s %s: %d operaciones", acc["broker"], acc["login"], len(trades))
 
 

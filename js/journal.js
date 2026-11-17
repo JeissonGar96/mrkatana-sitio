@@ -96,7 +96,7 @@
     '.jx-gg .row{display:grid;grid-template-columns:repeat(3,1fr);width:100%;text-align:center;border-top:1px solid var(--k-line);padding-top:12px;margin-top:8px;}',
     '.jx-gg .row .v{font-size:12.5px;font-weight:700;margin-top:4px;color:var(--c-text);}',
     '.jx-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}',
-    '.jx-mctl{display:flex;gap:10px;align-items:center;} .jx-myr{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px;color:var(--c-text);} .jx-myr button{width:28px;height:28px;border-radius:9px;border:1px solid var(--k-line);background:none;color:var(--c-text2);cursor:pointer;font:inherit;} .jx-myr button:disabled{opacity:.3;cursor:default;}',
+    '.jx-mctl{display:flex;gap:10px;align-items:center;}',
     '.jx-mrd{display:flex;align-items:baseline;gap:10px;padding:12px 22px 0;} .jx-mrd b{font-size:20px;font-weight:700;letter-spacing:-.02em;} .jx-mrd span{font-size:12.5px;color:var(--c-text2);}',
     '#jx-msvg{height:240px;} .jx-mst{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;border-top:1px solid var(--k-line);margin:0 22px;padding:14px 0 18px;} .jx-mst div{display:flex;flex-direction:column;gap:4px;min-width:0;} .jx-mst b{font-size:14.5px;font-weight:700;color:var(--c-text);}',
     '@media (max-width:560px){#jx-msvg{height:200px;} .jx-mst{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 16px;} .jx-mrd{padding:12px 16px 0;}}',
@@ -873,21 +873,23 @@
     var box = document.getElementById('jx-mes'); if (!box || box.hidden) return;
     var Mc = function(i) { return MES[i].charAt(0).toUpperCase() + MES[i].slice(1); }, D = mesData(), keys = Object.keys(D).map(Number), now = new Date(), u = JX.mesU || 'pct';
     if (!keys.length) { box.innerHTML = '<div class="jx-ch"><h2>Rendimiento mensual</h2></div><div class="jx-empty" style="padding:30px 22px">Todavía no hay meses con operaciones.</div>'; return; }
-    var y0 = Math.floor(Math.min.apply(null, keys) / 12), y1 = Math.floor(Math.max.apply(null, keys) / 12);
-    var yr = JX.mesY = Math.min(Math.max(JX.mesY || y1, y0), y1);
+    var yrs = keys.map(function(k) { return Math.floor(k / 12); }).filter(function(v, i, a) { return a.indexOf(v) === i; }).sort();
+    var yr = JX.mesY = yrs.indexOf(JX.mesY) >= 0 ? JX.mesY : yrs[yrs.length - 1];
     var M = []; for (var i = 0; i < 12; i++) M.push(D[yr * 12 + i] || null);
     var has = M.filter(Boolean), sel = JX.mesSel != null && M[JX.mesSel] ? JX.mesSel : null;
-    var f = function(v, unit) { var s = v > 0 ? '+' : v < 0 ? '−' : ''; v = Math.abs(v); return s + ((unit || u) === 'pct' ? v.toFixed(1) + '%' : '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })); };
+    var f = function(v, unit) { var s = v > 0 ? '+' : v < 0 ? '−' : ''; v = Math.abs(v); return s + ((unit || u) === 'pct' ? v.toFixed(2) + '%' : '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })); };
     var tot = u === 'pct' ? (has.reduce(function(p, d) { return p * (1 + d.pct / 100); }, 1) - 1) * 100 : has.reduce(function(p, d) { return p + d.usd; }, 0);
     var best = has.reduce(function(p, d) { return d.usd > p.usd ? d : p; }), worst = has.reduce(function(p, d) { return d.usd < p.usd ? d : p; });
     var rd = sel != null ? '<b class="num ' + cls(M[sel].usd) + '">' + f(M[sel][u]) + '</b><span>' + MESL[sel] + ' ' + yr + ' · ' + f(M[sel][u === 'pct' ? 'usd' : 'pct'], u === 'pct' ? 'usd' : 'pct') + '</span>'
       : '<b class="num ' + cls(tot) + '">' + f(tot) + '</b><span>en ' + yr + '</span>';
     box.innerHTML = '<div class="jx-ch"><h2>Rendimiento mensual</h2><div class="jx-mctl"><div class="jx-seg" id="jx-mu"><button data-u="pct" class="' + (u === 'pct' ? 'on' : '') + '">%</button><button data-u="usd" class="' + (u === 'usd' ? 'on' : '') + '">$</button></div>' +
-      '<div class="jx-myr"><button data-y="-1" aria-label="Año anterior"' + (yr <= y0 ? ' disabled' : '') + '>‹</button><span class="num">' + yr + '</span><button data-y="1" aria-label="Año siguiente"' + (yr >= y1 ? ' disabled' : '') + '>›</button></div></div></div>' +
+      (yrs.length > 1 ? '<div class="jx-seg" id="jx-my">' + yrs.map(function(v) { return '<button class="num' + (v === yr ? ' on' : '') + '" data-y="' + v + '">' + v + '</button>'; }).join('') + '</div>' : '<span class="jx-lbl num">' + yr + '</span>') + '</div></div>' +
       '<div class="jx-mrd">' + rd + '</div><div class="jx-chart"><svg id="jx-msvg"></svg></div>' +
       '<div class="jx-mst"><div><span class="jx-lbl">Total del año</span><b class="num ' + cls(tot) + '">' + f(tot) + '</b></div><div><span class="jx-lbl">Mejor mes</span><b class="num">' + Mc(M.indexOf(best)) + ' <span class="' + cls(best.usd) + '">' + f(best[u]) + '</span></b></div>' +
       '<div><span class="jx-lbl">Peor mes</span><b class="num">' + Mc(M.indexOf(worst)) + ' <span class="' + cls(worst.usd) + '">' + f(worst[u]) + '</span></b></div><div><span class="jx-lbl">Meses en positivo</span><b class="num">' + has.filter(function(d) { return d.usd > 0; }).length + ' de ' + has.length + '</b></div></div>';
-    var s = document.getElementById('jx-msvg'), W = s.clientWidth || 640, H = s.clientHeight || 240, sm = W < 480, L = sm ? 38 : 50, R = 6, T = 22, B = 26, cw = (W - L - R) / 12;
+    var s = document.getElementById('jx-msvg'), W = s.clientWidth || 640, H = s.clientHeight || 240, sm = W < 480, L = sm ? 38 : 50, R = 6, T = 22, B = 26;
+    var idx = []; M.forEach(function(d, i) { if (d) idx.push(i); }); // solo los meses con operaciones, como en Myfxbook
+    var few = idx.length <= (sm ? 6 : 12), slots = Math.max(idx.length, sm ? 4 : 6), cw = (W - L - R) / slots, x0 = L + (slots - idx.length) * cw / 2;
     var vals = has.map(function(d) { return d[u]; }), mn = Math.min.apply(null, vals.concat([0])), mx = Math.max.apply(null, vals.concat([0])), tk = ticks(mn, mx, 4), st = tk.length > 1 ? tk[1] - tk[0] : (mx - mn || 1);
     var lo = Math.min(0, Math.floor(mn / st - (mn < 0 ? .25 : 0)) * st), hi = Math.max(0, Math.ceil(mx / st + (mx > 0 ? .25 : 0)) * st); if (hi === lo) hi = lo + 1; // deja espacio para el número encima/debajo de la barra
     tk = []; for (var v0 = lo; v0 <= hi + 1e-9; v0 += st) tk.push(+v0.toFixed(8));
@@ -895,14 +897,13 @@
     var out = '';
     tk.forEach(function(v) { out += gridLn(L, W - R, y(v)) + txt(L - 10, y(v) + 4, u === 'pct' ? (+v.toFixed(2)) + '%' : kfmt(v), 'text-anchor="end" ' + dimTxt); });
     out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '" style="stroke:rgba(var(--c-ov),.18)"/>';
-    M.forEach(function(d, i) {
-      var cx = L + cw * (i + .5), on = sel === i;
-      out += txt(cx, H - 7, sm ? Mc(i).charAt(0) : Mc(i), 'text-anchor="middle" font-size="' + (sm ? 10 : 11) + '" style="fill:' + (on ? 'var(--c-text)' : 'var(--c-muted)') + '"');
-      if (!d) return;
-      var v = d[u], bw = Math.min(sm ? 16 : 34, cw * .58), yv = y(v), y0 = y(0), h = Math.max(2, Math.abs(yv - y0)), cur = yr === now.getFullYear() && i === now.getMonth();
+    idx.forEach(function(i, j) {
+      var d = M[i], cx = x0 + cw * (j + .5), on = sel === i;
+      out += txt(cx, H - 7, few ? Mc(i) : Mc(i).charAt(0), 'text-anchor="middle" font-size="' + (sm ? 10 : 11) + '" style="fill:' + (on ? 'var(--c-text)' : 'var(--c-muted)') + '"');
+      var v = d[u], bw = Math.min(sm ? 44 : 72, cw * .6), yv = y(v), y0 = y(0), h = Math.max(2, Math.abs(yv - y0)), cur = yr === now.getFullYear() && i === now.getMonth();
       var op = sel != null && !on ? .35 : cur ? .6 : 1;
       out += '<rect x="' + (cx - bw / 2) + '" y="' + (v >= 0 ? y0 - h : y0) + '" width="' + bw + '" height="' + h + '" rx="' + Math.min(5, bw / 3) + '" opacity="' + op + '" style="fill:' + (v < 0 ? 'var(--jx-loss)' : 'var(--jx-win)') + '"/>';
-      if (!sm) out += txt(cx, v >= 0 ? yv - 7 : yv + 15, f(v), 'text-anchor="middle" font-size="10.5" font-weight="700" opacity="' + op + '" style="fill:var(--c-text)"');
+      if (few) out += txt(cx, v >= 0 ? yv - 7 : yv + 15, f(v), 'text-anchor="middle" font-size="' + (sm && idx.length > 4 ? 9.5 : 10.5) + '" font-weight="700" opacity="' + op + '" style="fill:var(--c-text)"');
       out += '<rect data-m="' + i + '" x="' + (cx - cw / 2) + '" y="' + T + '" width="' + cw + '" height="' + (H - T - B) + '" fill="transparent" style="cursor:pointer"/>';
     });
     s.innerHTML = out;
@@ -910,7 +911,7 @@
     s.onclick = function(e) { var r = e.target.closest('[data-m]'); if (r) pick(JX.mesSel === +r.dataset.m ? null : +r.dataset.m); };
     if (!sm) { s.onmouseover = function(e) { var r = e.target.closest('[data-m]'); if (r && JX.mesSel !== +r.dataset.m) pick(+r.dataset.m); }; s.onmouseleave = function() { if (JX.mesSel != null) pick(null); }; }
     box.querySelector('#jx-mu').onclick = function(e) { var b = e.target.closest('[data-u]'); if (b) { JX.mesU = b.dataset.u; renderMes(); } };
-    box.querySelectorAll('[data-y]').forEach(function(b) { b.onclick = function() { JX.mesY = yr + +b.dataset.y; JX.mesSel = null; renderMes(); }; });
+    box.querySelectorAll('[data-y]').forEach(function(b) { b.onclick = function() { JX.mesY = +b.dataset.y; JX.mesSel = null; renderMes(); }; });
   }
 
   /* ── Resultado según duración ── */

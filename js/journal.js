@@ -59,7 +59,7 @@
     /* fila superior */
     '.jx-top,.jx-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}',
     '.jx-st{padding:18px 20px;} .jx-st .v{font-size:23px;font-weight:700;letter-spacing:-.03em;margin-top:10px;color:var(--c-text);}',
-    '.jx-st .sub{font-size:11px;color:var(--c-muted);margin-top:8px;}',
+    '.jx-st .sub{font-size:11px;color:var(--c-muted);margin-top:8px;} .jx-ini{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
     '.jx-bar{height:4px;border-radius:3px;background:rgba(var(--c-ov),.06);margin-top:14px;position:relative;}',
     '.jx-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,rgb(var(--c-acc)),rgb(var(--c-acc2)));}',
     '.jx-kp{padding:16px 20px;} .jx-kp .v{font-size:20px;font-weight:700;margin-top:9px;letter-spacing:-.025em;color:var(--c-text);}',
@@ -198,7 +198,7 @@
     '.jx-wait{padding:44px 24px;text-align:center;} .jx-wait h3{margin:0 0 8px;font-size:1.05rem;color:var(--c-text);} .jx-wait p{margin:0 auto 18px;max-width:460px;color:var(--c-text2);font-size:.86rem;line-height:1.6;}',
     '@media (max-width:1020px){.jx-top,.jx-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .jx-calw,.jx-two,.jx-g3{grid-template-columns:minmax(0,1fr);} .jx-weeks{border-left:0;border-top:1px solid var(--k-line);margin:0;}}',
     '@media (max-width:620px){.jx input,.jx textarea,.jx-ov input,.jx-ov textarea{font-size:16px!important;} .jx-tbl{display:none;} .jx-hm{display:block;} .jx-trb{grid-template-columns:1fr;} .jx-accbtn{min-width:0;width:100%;} .jx-acts,.jx-accsel{width:100%;} .jx-accsel{flex:1;}}',
-    '@media (max-width:560px){.jx-days,.jx-dows{gap:4px;} .jx-day{padding:5px;border-radius:8px;aspect-ratio:1/1;overflow:hidden;} .jx-day .tc{display:none;} .jx-day .pn{font-size:10px;} .jx-day .pf{display:none;} .jx-day .pc{display:inline;} .jx-day.no .pn{font-size:9px;} .jx-day .cam{top:5px;right:5px;width:10px;height:10px;} .jx-st .v{font-size:19px;} .jx-curve svg{height:230px;} .jx-kv{grid-template-columns:repeat(2,1fr);}}',
+    '@media (max-width:560px){.jx-days,.jx-dows{gap:4px;} .jx-day{padding:5px;border-radius:8px;aspect-ratio:1/1;overflow:hidden;} .jx-day .tc{display:none;} .jx-day .pn{font-size:10px;} .jx-day .pf{display:none;} .jx-day .pc{display:inline;} .jx-day.no .pn{font-size:9px;} .jx-day .cam{top:5px;right:5px;width:10px;height:10px;} .jx-st .v{font-size:19px;} .jx-ini{font-size:9.5px;letter-spacing:-.01em;} .jx-curve svg{height:230px;} .jx-kv{grid-template-columns:repeat(2,1fr);}}',
     '@media (prefers-reduced-motion:reduce){.jx *,.jx-ov *{transition:none!important;}}'
   ].join('\n');
   function css() {
@@ -498,7 +498,7 @@
     var syms = tod.map(function(t) { return t.symbol; }).filter(function(x, i, arr) { return arr.indexOf(x) === i; }).slice(0, 2).join(', ');
     var d = discipline(T);
     document.getElementById('jx-top').innerHTML =
-      '<div class="jx-card jx-st"><div class="jx-lbl">Balance</div><div class="v num">' + money(bal) + '</div><div class="jx-bar"><i style="width:' + pos(bal, minB, maxB) + '%"></i></div><div class="sub num">Inicial ' + money(ini) + (ini > 0 ? ' · <span class="' + cls(bal - ini) + '">' + (bal >= ini ? '+' : '−') + Math.abs((bal - ini) / ini * 100).toFixed(2) + '%</span>' : '') + '</div></div>' +
+      '<div class="jx-card jx-st"><div class="jx-lbl">Balance</div><div class="v num">' + money(bal) + '</div><div class="jx-bar"><i style="width:' + pos(bal, minB, maxB) + '%"></i></div><div class="sub num jx-ini">Inicial ' + money(ini).replace('.00', '') + (ini > 0 ? ' · <span class="' + cls(bal - ini) + '">' + (bal >= ini ? '+' : '−') + Math.abs((bal - ini) / ini * 100).toFixed(2) + '%</span>' : '') + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Equidad</div><div class="v num">' + money(eq) + '</div><div class="jx-bar"><i style="width:' + pos(eq, minE, maxE) + '%"></i></div><div class="sub num">Máximo ' + money(maxE) + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Resultado de hoy</div><div class="v num ' + (tod.length ? cls(tn) : '') + '">' + (tod.length ? money(tn) : '$0.00') + '</div><div class="sub">' + (tod.length ? tod.length + (tod.length === 1 ? ' operación' : ' operaciones') + ' · ' + esc(syms) : 'Sin operaciones hoy') + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Puntaje de disciplina</div><div class="v num">' + (d == null ? '—' : d + '<span class="m" style="font-size:14px;font-weight:600"> / 100</span>') + '</div><div class="jx-bar"><i style="width:' + (d || 0) + '%"></i></div><div class="sub">' + (d == null ? 'Se calcula desde 5 operaciones' : 'Stop loss, riesgo/beneficio, consistencia y acierto') + '</div></div>';

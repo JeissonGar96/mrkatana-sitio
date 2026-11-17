@@ -492,12 +492,13 @@
     var bs = S.map(function(s) { return s.b; }).concat([bal]), es = S.map(function(s) { return s.e; }).concat([eq]);
     var maxB = Math.max.apply(null, bs), minB = Math.min.apply(null, bs), maxE = Math.max.apply(null, es), minE = Math.min.apply(null, es);
     var pos = function(v, lo, hi) { return hi > lo ? Math.round((v - lo) / (hi - lo) * 100) : 100; };
+    var ini = bal - (JX.all || T).reduce(function(x, t) { return x + t._n; }, 0); // balance inicial = balance actual menos todo lo ganado/perdido en operaciones
     var tk = dk(new Date()), tod = T.filter(function(t) { return t._k === tk; });
     var tn = tod.reduce(function(s, t) { return s + t._n; }, 0);
     var syms = tod.map(function(t) { return t.symbol; }).filter(function(x, i, arr) { return arr.indexOf(x) === i; }).slice(0, 2).join(', ');
     var d = discipline(T);
     document.getElementById('jx-top').innerHTML =
-      '<div class="jx-card jx-st"><div class="jx-lbl">Balance</div><div class="v num">' + money(bal) + '</div><div class="jx-bar"><i style="width:' + pos(bal, minB, maxB) + '%"></i></div><div class="sub num">Máximo ' + money(maxB) + '</div></div>' +
+      '<div class="jx-card jx-st"><div class="jx-lbl">Balance</div><div class="v num">' + money(bal) + '</div><div class="jx-bar"><i style="width:' + pos(bal, minB, maxB) + '%"></i></div><div class="sub num">Inicial ' + money(ini) + (ini > 0 ? ' · <span class="' + cls(bal - ini) + '">' + (bal >= ini ? '+' : '−') + Math.abs((bal - ini) / ini * 100).toFixed(2) + '%</span>' : '') + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Equidad</div><div class="v num">' + money(eq) + '</div><div class="jx-bar"><i style="width:' + pos(eq, minE, maxE) + '%"></i></div><div class="sub num">Máximo ' + money(maxE) + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Resultado de hoy</div><div class="v num ' + (tod.length ? cls(tn) : '') + '">' + (tod.length ? money(tn) : '$0.00') + '</div><div class="sub">' + (tod.length ? tod.length + (tod.length === 1 ? ' operación' : ' operaciones') + ' · ' + esc(syms) : 'Sin operaciones hoy') + '</div></div>' +
       '<div class="jx-card jx-st"><div class="jx-lbl">Puntaje de disciplina</div><div class="v num">' + (d == null ? '—' : d + '<span class="m" style="font-size:14px;font-weight:600"> / 100</span>') + '</div><div class="jx-bar"><i style="width:' + (d || 0) + '%"></i></div><div class="sub">' + (d == null ? 'Se calcula desde 5 operaciones' : 'Stop loss, riesgo/beneficio, consistencia y acierto') + '</div></div>';

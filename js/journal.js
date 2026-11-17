@@ -887,7 +887,7 @@
       '<div class="jx-mrd">' + rd + '</div><div class="jx-chart"><svg id="jx-msvg"></svg></div>' +
       '<div class="jx-mst"><div><span class="jx-lbl">Total del año</span><b class="num ' + cls(tot) + '">' + f(tot) + '</b></div><div><span class="jx-lbl">Mejor mes</span><b class="num">' + Mc(M.indexOf(best)) + ' <span class="' + cls(best.usd) + '">' + f(best[u]) + '</span></b></div>' +
       '<div><span class="jx-lbl">Peor mes</span><b class="num">' + Mc(M.indexOf(worst)) + ' <span class="' + cls(worst.usd) + '">' + f(worst[u]) + '</span></b></div><div><span class="jx-lbl">Meses en positivo</span><b class="num">' + has.filter(function(d) { return d.usd > 0; }).length + ' de ' + has.length + '</b></div></div>';
-    var s = document.getElementById('jx-msvg'), W = s.clientWidth || 640, H = s.clientHeight || 240, sm = W < 480, L = sm ? 38 : 50, R = 6, T = 22, B = 26;
+    var s = document.getElementById('jx-msvg'), W = s.clientWidth || 640, H = s.clientHeight || 240, sm = W < 480, L = sm ? (u === 'usd' ? 46 : 40) : 50, R = 6, T = 22, B = 26;
     var idx = []; M.forEach(function(d, i) { if (d) idx.push(i); }); // solo los meses con operaciones, como en Myfxbook
     var few = idx.length <= (sm ? 6 : 12), slots = Math.max(idx.length, sm ? 4 : 6), cw = (W - L - R) / slots, x0 = L + (slots - idx.length) * cw / 2;
     var vals = has.map(function(d) { return d[u]; }), mn = Math.min.apply(null, vals.concat([0])), mx = Math.max.apply(null, vals.concat([0])), tk = ticks(mn, mx, 4), st = tk.length > 1 ? tk[1] - tk[0] : (mx - mn || 1);
@@ -904,7 +904,8 @@
       var op = sel != null && !on ? .35 : cur ? .6 : 1;
       var bx = cx - bw / 2, rr = Math.min(3, h / 2, bw / 4), ye = v >= 0 ? y0 - h : y0 + h, dd = v >= 0 ? rr : -rr; // base recta en la línea del 0, solo la punta un poco redondeada
       out += '<path d="M' + bx + ',' + y0 + 'V' + (ye + dd) + 'Q' + bx + ',' + ye + ' ' + (bx + rr) + ',' + ye + 'H' + (bx + bw - rr) + 'Q' + (bx + bw) + ',' + ye + ' ' + (bx + bw) + ',' + (ye + dd) + 'V' + y0 + 'Z" opacity="' + op + '" style="fill:' + (v < 0 ? 'var(--jx-loss)' : 'var(--jx-win)') + '"/>';
-      if (few) out += txt(cx, v >= 0 ? yv - 7 : yv + 15, f(v), 'text-anchor="middle" font-size="' + (sm && idx.length > 4 ? 9.5 : 10.5) + '" font-weight="700" opacity="' + op + '" style="fill:var(--c-text)"');
+      var shortL = function(x) { var a = Math.abs(x), n = u === 'pct' ? (a >= 10 ? a.toFixed(0) : a.toFixed(1)) + '%' : (a >= 1000 ? (a / 1000).toFixed(1) + 'k' : a.toFixed(0)); return (x < 0 ? '−' : '') + (u === 'usd' ? '$' : '') + n; }; // en celular con muchos meses, número corto para que quepa
+      out += txt(cx, v >= 0 ? yv - 6 : yv + 13, few ? f(v) : shortL(v), 'text-anchor="middle" font-size="' + (few ? (sm && idx.length > 4 ? 9.5 : 10.5) : 8.5) + '" font-weight="700" opacity="' + op + '" style="fill:var(--c-text)"');
       out += '<rect data-m="' + i + '" x="' + (cx - cw / 2) + '" y="' + T + '" width="' + cw + '" height="' + (H - T - B) + '" fill="transparent" style="cursor:pointer"/>';
     });
     s.innerHTML = out;

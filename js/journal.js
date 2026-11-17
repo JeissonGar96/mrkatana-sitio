@@ -99,8 +99,8 @@
     '.jx-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}',
     '.jx-mctl{display:flex;gap:10px;align-items:center;}',
     '.jx-mrd{display:flex;align-items:baseline;gap:10px;padding:12px 22px 0;} .jx-mrd b{font-size:20px;font-weight:700;letter-spacing:-.02em;} .jx-mrd span{font-size:12.5px;color:var(--c-text2);}',
-    '#jx-msvg{height:240px;} .jx-mst{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;border-top:1px solid var(--k-line);margin:0 22px;padding:14px 0 18px;} .jx-mst div{display:flex;flex-direction:column;gap:4px;min-width:0;} .jx-mst b{font-size:14.5px;font-weight:700;color:var(--c-text);}',
-    '@media (max-width:560px){#jx-msvg{height:200px;} .jx-mst{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 16px;} .jx-mrd{padding:12px 16px 0;}}',
+    '#jx-msvg{height:300px;} #jx-mes .jx-chart{padding-bottom:6px;} .jx-mst{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;border-top:1px solid var(--k-line);margin:0 22px;padding:12px 0 14px;} .jx-mfx{margin-left:auto;background:none;border:0;color:var(--c-text2);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0;} .jx-mst div{display:flex;flex-direction:column;gap:4px;min-width:0;} .jx-mst b{font-size:14.5px;font-weight:700;color:var(--c-text);}',
+    '@media (max-width:560px){#jx-msvg{height:210px;} .jx-mst{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 16px;} .jx-mrd{padding:12px 16px 0;}}',
     '.jx-chart{padding:8px 14px 14px;} .jx-chart svg{display:block;width:100%;height:auto;}',
     '.jx svg text{font-family:inherit;}',
     /* historial */
@@ -430,6 +430,7 @@
       JX.trades.forEach(function(t) { t._n = net(t); t._c = new Date(t.close_time); t._o = new Date(t.open_time); t._k = dk(t._c); });
       JX.snaps = (r[1].data || []).map(function(s) { return { d: new Date(s.day + 'T12:00:00'), b: +s.balance, e: +s.equity }; });
       JX.days = {}; (r[2].data || []).forEach(function(d) { if (d.no_trade) JX.days[d.day] = d; }); // "No operé" vale para todas las cuentas; donde hubo operaciones se muestran las operaciones
+      JX.all = JX.trades; JX.mf = null; JX.mesSel = null;
       if (!JX.trades.length && !JX.snaps.length) return waiting();
       render();
     });
@@ -611,7 +612,7 @@
       '<div class="jx-calw"><div class="jx-cal"><div class="jx-dows"><div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div></div><div class="jx-days">' + cells + '</div></div><div class="jx-weeks">' + wks + '</div></div>';
     box.querySelector('.jx-seg').onclick = function(e) {
       var b = e.target.closest('[data-mv]'); if (!b || b.disabled) return;
-      var v = +b.dataset.mv; JX.month = v ? new Date(y0, m0 + v, 1) : new Date(now.getFullYear(), now.getMonth(), 1); renderCal();
+      var v = +b.dataset.mv; JX.month = v ? new Date(y0, m0 + v, 1) : new Date(now.getFullYear(), now.getMonth(), 1); if (JX.mf != null) setMF(null); else renderCal(); // al cambiar de mes en el calendario se quita el filtro del mes
     };
     box.querySelector('.jx-days').onclick = function(e) { var d = e.target.closest('[data-k]'); if (d) openDay(d.dataset.k, by[d.dataset.k] || []); };
   }
@@ -866,7 +867,7 @@
   /* ── Rendimiento mensual (barras por mes, % o $) ── */
   function mesData() {
     var a = JX.cur, bal = a.balance != null ? +a.balance : (JX.snaps.length ? JX.snaps[JX.snaps.length - 1].b : 0), by = {};
-    JX.trades.forEach(function(t) { var k = t._c.getFullYear() * 12 + t._c.getMonth(); by[k] = (by[k] || 0) + t._n; });
+    (JX.all || JX.trades).forEach(function(t) { var k = t._c.getFullYear() * 12 + t._c.getMonth(); by[k] = (by[k] || 0) + t._n; });
     var ks = Object.keys(by).map(Number).sort(function(x, y) { return y - x; }), after = 0, out = {};
     ks.forEach(function(k) { after += by[k]; var b0 = bal - after; out[k] = { usd: by[k], pct: b0 > 0 ? by[k] / b0 * 100 : 0 }; }); // balance al empezar el mes = balance actual menos lo ganado desde ese mes
     return out;
@@ -878,12 +879,14 @@
     var yrs = keys.map(function(k) { return Math.floor(k / 12); }).filter(function(v, i, a) { return a.indexOf(v) === i; }).sort();
     var yr = JX.mesY = yrs.indexOf(JX.mesY) >= 0 ? JX.mesY : yrs[yrs.length - 1];
     var M = []; for (var i = 0; i < 12; i++) M.push(D[yr * 12 + i] || null);
-    var has = M.filter(Boolean), sel = JX.mesSel != null && M[JX.mesSel] ? JX.mesSel : null;
+    var fi = JX.mf != null && Math.floor(JX.mf / 12) === yr ? JX.mf % 12 : null, s0 = JX.mesSel != null ? JX.mesSel : fi;
+    var has = M.filter(Boolean), sel = s0 != null && M[s0] ? s0 : null;
     var f = function(v, unit) { var s = v > 0 ? '+' : v < 0 ? '−' : ''; v = Math.abs(v); return s + ((unit || u) === 'pct' ? v.toFixed(2) + '%' : '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })); };
     var tot = u === 'pct' ? (has.reduce(function(p, d) { return p * (1 + d.pct / 100); }, 1) - 1) * 100 : has.reduce(function(p, d) { return p + d.usd; }, 0);
     var best = has.reduce(function(p, d) { return d.usd > p.usd ? d : p; }), worst = has.reduce(function(p, d) { return d.usd < p.usd ? d : p; });
-    var rd = sel != null ? '<b class="num ' + cls(M[sel].usd) + '">' + f(M[sel][u]) + '</b><span>' + MESL[sel] + ' ' + yr + ' · ' + f(M[sel][u === 'pct' ? 'usd' : 'pct'], u === 'pct' ? 'usd' : 'pct') + '</span>'
-      : '<b class="num ' + cls(tot) + '">' + f(tot) + '</b><span>en ' + yr + '</span>';
+    var rd = sel != null ? '<b class="num ' + cls(M[sel].usd) + '">' + f(M[sel][u]) + '</b><span>' + MESL[sel] + ' ' + yr + ' · ' + f(M[sel][u === 'pct' ? 'usd' : 'pct'], u === 'pct' ? 'usd' : 'pct') + (fi === sel ? ' · el journal muestra solo este mes' : ' · toca para ver solo este mes') + '</span>'
+      : '<b class="num ' + cls(tot) + '">' + f(tot) + '</b><span>en ' + yr + ' · toca un mes para ver solo ese mes</span>';
+    if (JX.mf != null) rd += '<button class="jx-mfx" id="jx-mfx">Ver todo</button>';
     box.innerHTML = '<div class="jx-ch"><h2>Rendimiento mensual</h2><div class="jx-mctl"><div class="jx-seg" id="jx-mu"><button data-u="pct" class="' + (u === 'pct' ? 'on' : '') + '">%</button><button data-u="usd" class="' + (u === 'usd' ? 'on' : '') + '">$</button></div>' +
       (yrs.length > 1 ? '<div class="jx-seg" id="jx-my">' + yrs.map(function(v) { return '<button class="num' + (v === yr ? ' on' : '') + '" data-y="' + v + '">' + v + '</button>'; }).join('') + '</div>' : '<span class="jx-lbl num">' + yr + '</span>') + '</div></div>' +
       '<div class="jx-mrd">' + rd + '</div><div class="jx-chart"><svg id="jx-msvg"></svg></div>' +
@@ -893,8 +896,8 @@
     var idx = []; M.forEach(function(d, i) { if (d) idx.push(i); }); // solo los meses con operaciones, como en Myfxbook
     var few = idx.length <= (sm ? 6 : 12), slots = Math.max(idx.length, sm ? 4 : 6), cw = (W - L - R) / slots, x0 = L + (slots - idx.length) * cw / 2;
     var vals = has.map(function(d) { return d[u]; }), mn = Math.min.apply(null, vals.concat([0])), mx = Math.max.apply(null, vals.concat([0])), tk = ticks(mn, mx, 4), st = tk.length > 1 ? tk[1] - tk[0] : (mx - mn || 1);
-    var lo = Math.min(0, Math.floor(mn / st - (mn < 0 ? .5 : 0)) * st), hi = Math.max(0, Math.ceil(mx / st + (mx > 0 ? .25 : 0)) * st); if (hi === lo) hi = lo + 1; // deja espacio para el número encima/debajo de la barra
-    tk = []; for (var v0 = lo; v0 <= hi + 1e-9; v0 += st) tk.push(+v0.toFixed(8));
+    var lo = Math.min(0, mn - (mn < 0 ? st * .45 : 0)), hi = Math.max(0, mx + (mx > 0 ? st * .2 : 0)); if (hi === lo) hi = lo + 1; // escala ajustada a los datos (barras más altas), con espacio para el número encima/debajo
+    tk = []; for (var v0 = Math.ceil(lo / st) * st; v0 <= hi + 1e-9; v0 += st) tk.push(+v0.toFixed(8));
     var y = function(v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); };
     var out = '';
     tk.forEach(function(v) { out += gridLn(L, W - R, y(v)) + txt(L - (sm ? 5 : 10), y(v) + 3, u === 'pct' ? (+v.toFixed(2)) + '%' : kfmt(v), 'text-anchor="end" font-size="' + (sm ? 7.5 : 10.5) + '" style="fill:var(--c-muted)"'); }); // eje pequeño a la izquierda
@@ -912,10 +915,19 @@
     });
     s.innerHTML = out;
     var pick = function(i) { JX.mesSel = i; renderMes(); };
-    s.onclick = function(e) { var r = e.target.closest('[data-m]'); if (r) pick(JX.mesSel === +r.dataset.m ? null : +r.dataset.m); };
-    if (!sm) { s.onmouseover = function(e) { var r = e.target.closest('[data-m]'); if (r && JX.mesSel !== +r.dataset.m) pick(+r.dataset.m); }; s.onmouseleave = function() { if (JX.mesSel != null) pick(null); }; }
+    s.onclick = function(e) { var r = e.target.closest('[data-m]'); if (r) { var k = yr * 12 + +r.dataset.m; setMF(JX.mf === k ? null : k); } }; // tocar una barra = ver solo ese mes; tocarla otra vez = volver a todo
+    var fx = box.querySelector('#jx-mfx'); if (fx) fx.onclick = function() { setMF(null); };
+    if (!sm && !matchMedia('(hover:none)').matches) { s.onmouseover = function(e) { var r = e.target.closest('[data-m]'); if (r && JX.mesSel !== +r.dataset.m) pick(+r.dataset.m); }; s.onmouseleave = function() { if (JX.mesSel != null) pick(null); }; }
     box.querySelector('#jx-mu').onclick = function(e) { var b = e.target.closest('[data-u]'); if (b) { JX.mesU = b.dataset.u; renderMes(); } };
     box.querySelectorAll('[data-y]').forEach(function(b) { b.onclick = function() { JX.mesY = +b.dataset.y; JX.mesSel = null; renderMes(); }; });
+  }
+
+  // Filtra todo el journal (calendario, estadísticas, gráficas e historial) a un mes; null = todo
+  function setMF(k) {
+    JX.mf = k; JX.mesSel = null; JX.hist = 25;
+    JX.trades = k == null ? JX.all : JX.all.filter(function(t) { return t._c.getFullYear() * 12 + t._c.getMonth() === k; });
+    if (k != null) JX.month = new Date(Math.floor(k / 12), k % 12, 1);
+    renderTop(); renderKpis(); renderCal(); renderGauges(); renderInst(); renderScatter(); renderHist(); renderMes();
   }
 
   /* ── Resultado según duración ── */
@@ -945,7 +957,7 @@
         '<td class="r num m">' + px(t.tp) + '</td><td class="r num m">' + px(t.sl) + '</td><td class="r num">' + (+t.volume) + '</td><td class="r num m">' + money(+t.commission || 0) + '</td><td class="r num ' + cls(t._n) + '" style="font-weight:700">' + money(t._n) + '</td></tr>';
     }).join('');
     var box = document.getElementById('jx-hist');
-    box.innerHTML = '<div class="jx-ch"><h2>Historial de operaciones</h2><span class="jx-lbl">' + T.length + (T.length === 1 ? ' operación cerrada' : ' operaciones cerradas') + '</span></div>' +
+    box.innerHTML = '<div class="jx-ch"><h2>Historial de operaciones</h2><span class="jx-lbl">' + T.length + (T.length === 1 ? ' operación cerrada' : ' operaciones cerradas') + (JX.mf != null ? ' en ' + MESL[JX.mf % 12] + ' ' + Math.floor(JX.mf / 12) : '') + '</span></div>' +
       '<div class="jx-hm">' + T.slice(0, n).map(function(t, i) {
         return '<button class="jx-hr" data-i="' + i + '"><span class="a"><b>' + esc(t.symbol) + sideLbl(t) + '</b><small>' + dt(t._c) + ' · ' + (+t.volume) + ' lotes</small></span><span class="v num ' + cls(t._n) + '">' + money(t._n) + '</span></button>';
       }).join('') + '</div>' +

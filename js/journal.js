@@ -905,7 +905,7 @@
       var bx = cx - bw / 2, rr = Math.min(3, h / 2, bw / 4), ye = v >= 0 ? y0 - h : y0 + h, dd = v >= 0 ? rr : -rr; // base recta en la línea del 0, solo la punta un poco redondeada
       out += '<path d="M' + bx + ',' + y0 + 'V' + (ye + dd) + 'Q' + bx + ',' + ye + ' ' + (bx + rr) + ',' + ye + 'H' + (bx + bw - rr) + 'Q' + (bx + bw) + ',' + ye + ' ' + (bx + bw) + ',' + (ye + dd) + 'V' + y0 + 'Z" opacity="' + op + '" style="fill:' + (v < 0 ? 'var(--jx-loss)' : 'var(--jx-win)') + '"/>';
       var shortL = function(x) { var a = Math.abs(x), n = u === 'pct' ? (a >= 10 ? a.toFixed(0) : a.toFixed(1)) + '%' : (a >= 1000 ? (a / 1000).toFixed(1) + 'k' : a.toFixed(0)); return (x < 0 ? '−' : '') + (u === 'usd' ? '$' : '') + n; }; // en celular con muchos meses, número corto para que quepa
-      out += txt(cx, v >= 0 ? yv - 6 : yv + 13, few ? f(v) : shortL(v), 'text-anchor="middle" font-size="' + (few ? (sm && idx.length > 4 ? 9.5 : 10.5) : 8.5) + '" font-weight="700" opacity="' + op + '" style="fill:var(--c-text)"');
+      out += txt(cx, v >= 0 ? yv - 6 : yv + 13, few ? f(v) : shortL(v), 'text-anchor="middle" font-size="' + (few ? (sm && idx.length > 4 ? 9.5 : 10.5) : 7) + '" font-weight="' + (few ? 700 : 600) + '" opacity="' + (few ? op : op * .85) + '" style="fill:var(--c-text)"');
       out += '<rect data-m="' + i + '" x="' + (cx - cw / 2) + '" y="' + T + '" width="' + cw + '" height="' + (H - T - B) + '" fill="transparent" style="cursor:pointer"/>';
     });
     s.innerHTML = out;

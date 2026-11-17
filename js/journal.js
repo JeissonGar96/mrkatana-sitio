@@ -84,6 +84,7 @@
     '.jx-day.lo{background:linear-gradient(160deg,color-mix(in srgb,var(--jx-loss) 14%,transparent),color-mix(in srgb,var(--jx-loss) 2%,transparent));border-color:color-mix(in srgb,var(--jx-loss) 18%,transparent);}',
     '.jx-day.no .pn{color:var(--c-text2);font-weight:500;font-size:11px;}',
     '.jx-day.today{box-shadow:0 0 0 1.5px rgb(var(--c-acc));} .jx-day.x{background:transparent;border-color:transparent;} .jx-day.fut{opacity:.45;}',
+    '.jx-day .pn{white-space:nowrap;} .jx-day .pc{display:none;}',
     '.jx-day .cam{position:absolute;top:8px;right:9px;width:12px;height:12px;color:var(--c-text2);}',
     '.jx-weeks{border-left:1px solid var(--k-line);display:flex;flex-direction:column;margin-bottom:18px;}',
     '.jx-wk{padding:12px 20px;display:grid;gap:7px;border-bottom:1px solid rgba(var(--c-ov),.05);} .jx-wk:last-child{border-bottom:0;}',
@@ -197,7 +198,7 @@
     '.jx-wait{padding:44px 24px;text-align:center;} .jx-wait h3{margin:0 0 8px;font-size:1.05rem;color:var(--c-text);} .jx-wait p{margin:0 auto 18px;max-width:460px;color:var(--c-text2);font-size:.86rem;line-height:1.6;}',
     '@media (max-width:1020px){.jx-top,.jx-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} .jx-calw,.jx-two,.jx-g3{grid-template-columns:minmax(0,1fr);} .jx-weeks{border-left:0;border-top:1px solid var(--k-line);margin:0;}}',
     '@media (max-width:620px){.jx input,.jx textarea,.jx-ov input,.jx-ov textarea{font-size:16px!important;} .jx-tbl{display:none;} .jx-hm{display:block;} .jx-trb{grid-template-columns:1fr;} .jx-accbtn{min-width:0;width:100%;} .jx-acts,.jx-accsel{width:100%;} .jx-accsel{flex:1;}}',
-    '@media (max-width:560px){.jx-days,.jx-dows{gap:4px;} .jx-day{padding:5px;border-radius:8px;} .jx-day .tc{display:none;} .jx-day .pn{font-size:10px;} .jx-st .v{font-size:19px;} .jx-curve svg{height:230px;} .jx-kv{grid-template-columns:repeat(2,1fr);}}',
+    '@media (max-width:560px){.jx-days,.jx-dows{gap:4px;} .jx-day{padding:5px;border-radius:8px;aspect-ratio:1/1;overflow:hidden;} .jx-day .tc{display:none;} .jx-day .pn{font-size:10px;} .jx-day .pf{display:none;} .jx-day .pc{display:inline;} .jx-day.no .pn{font-size:9px;} .jx-day .cam{top:5px;right:5px;width:10px;height:10px;} .jx-st .v{font-size:19px;} .jx-curve svg{height:230px;} .jx-kv{grid-template-columns:repeat(2,1fr);}}',
     '@media (prefers-reduced-motion:reduce){.jx *,.jx-ov *{transition:none!important;}}'
   ].join('\n');
   function css() {
@@ -210,6 +211,7 @@
   var net = function(t) { return (+t.profit || 0) + (+t.commission || 0) + (+t.swap || 0); };
   var money = function(v) { return (v < 0 ? '−$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
   var short = function(v) { var a = Math.abs(v); return (v < 0 ? '−$' : '$') + (a >= 10000 ? (a / 1000).toFixed(1) + 'k' : a.toFixed(0)); };
+  var mini = function(v) { var a = Math.abs(v); return (v < 0 ? '−' : '') + (a >= 1000 ? (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k' : a.toFixed(0)); }; // celular: número corto para que el cuadro del calendario no crezca
   var kfmt = function(v) { var a = Math.abs(v); return (v < 0 ? '−$' : '$') + (a >= 1000 ? (a / 1000).toFixed(a >= 10000 ? 0 : 1) + 'k' : a.toFixed(0)); };
   var pad = function(n) { return String(n).padStart(2, '0'); };
   var dk = function(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
@@ -590,8 +592,8 @@
       wk.to = dd; if (T) { wk.sum += sum; wk.days++; }
       var c = 'jx-day' + (T ? (sum >= 0 ? ' w t' : ' lo t') : no ? ' no t' : '') + (k === tk ? ' today' : '') + (fut ? ' fut' : '');
       var inner = '<span class="d num">' + dd + '</span>';
-      if (T) inner += '<div><div class="tc num">' + T.length + ' op.</div><div class="pn num ' + cls(sum) + '">' + short(sum) + '</div></div>';
-      else if (no) inner += '<div class="pn">No operé</div>';
+      if (T) inner += '<div><div class="tc num">' + T.length + ' op.</div><div class="pn num ' + cls(sum) + '"><span class="pf">' + short(sum) + '</span><span class="pc">' + mini(sum) + '</span></div></div>';
+      else if (no) inner += '<div class="pn"><span class="pf">No operé</span><span class="pc">No op.</span></div>';
       if (T && T.some(function(t) { return t.screenshot_path; })) inner += CAM.replace('<svg', '<svg class="cam"');
       var lbl = dd + ' de ' + MESL[m0] + (T ? ', ' + T.length + (T.length === 1 ? ' operación' : ' operaciones') : '');
       cells += fut ? '<div class="' + c + '">' + inner + '</div>' : '<button type="button" class="' + c + '" data-k="' + k + '" aria-label="' + lbl + '">' + inner + '</button>';

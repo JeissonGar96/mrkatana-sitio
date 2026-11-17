@@ -891,7 +891,7 @@
     var idx = []; M.forEach(function(d, i) { if (d) idx.push(i); }); // solo los meses con operaciones, como en Myfxbook
     var few = idx.length <= (sm ? 6 : 12), slots = Math.max(idx.length, sm ? 4 : 6), cw = (W - L - R) / slots, x0 = L + (slots - idx.length) * cw / 2;
     var vals = has.map(function(d) { return d[u]; }), mn = Math.min.apply(null, vals.concat([0])), mx = Math.max.apply(null, vals.concat([0])), tk = ticks(mn, mx, 4), st = tk.length > 1 ? tk[1] - tk[0] : (mx - mn || 1);
-    var lo = Math.min(0, Math.floor(mn / st - (mn < 0 ? .25 : 0)) * st), hi = Math.max(0, Math.ceil(mx / st + (mx > 0 ? .25 : 0)) * st); if (hi === lo) hi = lo + 1; // deja espacio para el número encima/debajo de la barra
+    var lo = Math.min(0, Math.floor(mn / st - (mn < 0 ? .5 : 0)) * st), hi = Math.max(0, Math.ceil(mx / st + (mx > 0 ? .25 : 0)) * st); if (hi === lo) hi = lo + 1; // deja espacio para el número encima/debajo de la barra
     tk = []; for (var v0 = lo; v0 <= hi + 1e-9; v0 += st) tk.push(+v0.toFixed(8));
     var y = function(v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); };
     var out = '';
@@ -900,9 +900,10 @@
     idx.forEach(function(i, j) {
       var d = M[i], cx = x0 + cw * (j + .5), on = sel === i;
       out += txt(cx, H - 7, few ? Mc(i) : Mc(i).charAt(0), 'text-anchor="middle" font-size="' + (sm ? 10 : 11) + '" style="fill:' + (on ? 'var(--c-text)' : 'var(--c-muted)') + '"');
-      var v = d[u], bw = Math.min(sm ? 44 : 72, cw * .6), yv = y(v), y0 = y(0), h = Math.max(2, Math.abs(yv - y0)), cur = yr === now.getFullYear() && i === now.getMonth();
+      var v = d[u], bw = Math.min(sm ? 48 : 72, cw * (sm ? .76 : .62)), yv = y(v), y0 = y(0), h = Math.max(2, Math.abs(yv - y0)), cur = yr === now.getFullYear() && i === now.getMonth();
       var op = sel != null && !on ? .35 : cur ? .6 : 1;
-      out += '<rect x="' + (cx - bw / 2) + '" y="' + (v >= 0 ? y0 - h : y0) + '" width="' + bw + '" height="' + h + '" rx="' + Math.min(5, bw / 3) + '" opacity="' + op + '" style="fill:' + (v < 0 ? 'var(--jx-loss)' : 'var(--jx-win)') + '"/>';
+      var bx = cx - bw / 2, rr = Math.min(3, h / 2, bw / 4), ye = v >= 0 ? y0 - h : y0 + h, dd = v >= 0 ? rr : -rr; // base recta en la línea del 0, solo la punta un poco redondeada
+      out += '<path d="M' + bx + ',' + y0 + 'V' + (ye + dd) + 'Q' + bx + ',' + ye + ' ' + (bx + rr) + ',' + ye + 'H' + (bx + bw - rr) + 'Q' + (bx + bw) + ',' + ye + ' ' + (bx + bw) + ',' + (ye + dd) + 'V' + y0 + 'Z" opacity="' + op + '" style="fill:' + (v < 0 ? 'var(--jx-loss)' : 'var(--jx-win)') + '"/>';
       if (few) out += txt(cx, v >= 0 ? yv - 7 : yv + 15, f(v), 'text-anchor="middle" font-size="' + (sm && idx.length > 4 ? 9.5 : 10.5) + '" font-weight="700" opacity="' + op + '" style="fill:var(--c-text)"');
       out += '<rect data-m="' + i + '" x="' + (cx - cw / 2) + '" y="' + T + '" width="' + cw + '" height="' + (H - T - B) + '" fill="transparent" style="cursor:pointer"/>';
     });

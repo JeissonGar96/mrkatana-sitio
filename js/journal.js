@@ -887,15 +887,14 @@
       '<div class="jx-mrd">' + rd + '</div><div class="jx-chart"><svg id="jx-msvg"></svg></div>' +
       '<div class="jx-mst"><div><span class="jx-lbl">Total del año</span><b class="num ' + cls(tot) + '">' + f(tot) + '</b></div><div><span class="jx-lbl">Mejor mes</span><b class="num">' + Mc(M.indexOf(best)) + ' <span class="' + cls(best.usd) + '">' + f(best[u]) + '</span></b></div>' +
       '<div><span class="jx-lbl">Peor mes</span><b class="num">' + Mc(M.indexOf(worst)) + ' <span class="' + cls(worst.usd) + '">' + f(worst[u]) + '</span></b></div><div><span class="jx-lbl">Meses en positivo</span><b class="num">' + has.filter(function(d) { return d.usd > 0; }).length + ' de ' + has.length + '</b></div></div>';
-    var s = document.getElementById('jx-msvg'), W = s.clientWidth || 640, H = s.clientHeight || 240, sm = W < 480, L = sm ? (u === 'usd' ? 46 : 40) : 50, R = 6, T = 22, B = 26;
+    var s = document.getElementById('jx-msvg'), W = s.clientWidth || 640, H = s.clientHeight || 240, sm = W < 480, L = 6, R = 6, T = 22, B = 26;
     var idx = []; M.forEach(function(d, i) { if (d) idx.push(i); }); // solo los meses con operaciones, como en Myfxbook
     var few = idx.length <= (sm ? 6 : 12), slots = Math.max(idx.length, sm ? 4 : 6), cw = (W - L - R) / slots, x0 = L + (slots - idx.length) * cw / 2;
     var vals = has.map(function(d) { return d[u]; }), mn = Math.min.apply(null, vals.concat([0])), mx = Math.max.apply(null, vals.concat([0])), tk = ticks(mn, mx, 4), st = tk.length > 1 ? tk[1] - tk[0] : (mx - mn || 1);
-    var lo = Math.min(0, Math.floor(mn / st - (mn < 0 ? .5 : 0)) * st), hi = Math.max(0, Math.ceil(mx / st + (mx > 0 ? .25 : 0)) * st); if (hi === lo) hi = lo + 1; // deja espacio para el número encima/debajo de la barra
-    tk = []; for (var v0 = lo; v0 <= hi + 1e-9; v0 += st) tk.push(+v0.toFixed(8));
+    var sp = (mx - mn) || 1, hi = mx + sp * .12, lo = mn < 0 ? mn - sp * .14 : 0; // sin eje: la escala solo deja aire para los números de las barras
     var y = function(v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); };
     var out = '';
-    tk.forEach(function(v) { out += gridLn(L, W - R, y(v)) + txt(L - 10, y(v) + 4, u === 'pct' ? (+v.toFixed(2)) + '%' : kfmt(v), 'text-anchor="end" ' + dimTxt); });
+    // sin eje de valores a la izquierda: cada barra ya muestra su número
     out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '" style="stroke:rgba(var(--c-ov),.18)"/>';
     idx.forEach(function(i, j) {
       var d = M[i], cx = x0 + cw * (j + .5), on = sel === i;

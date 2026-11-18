@@ -1,0 +1,6 @@
+
+# Kairus Journal (VPS): datos privados y locales
+journal-app/config.ini
+journal-app/estado.json
+journal-app/*.log*
+journal-app/__pycache__/

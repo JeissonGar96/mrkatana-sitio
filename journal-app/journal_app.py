@@ -201,8 +201,8 @@ class Engine:
                 t.msg = err
                 self.add_log("%s no se usa: %s" % (t.name, err), logging.ERROR)
                 continue
-            if t.broker not in jw.SERVER_PREFIX:
-                t.msg = "Bróker desconocido: %s (usa exness o fundingpips)" % t.broker
+            if t.broker not in jw.SERVER_PREFIX and t.broker != "todos":
+                t.msg = "Bróker desconocido: %s (usa todos, exness o fundingpips)" % t.broker
                 self.add_log(t.msg, logging.ERROR)
                 continue
             self.start_terminal(t)
@@ -291,7 +291,7 @@ class Engine:
                                     self.st[a["id"]].get("next", 0)))
             for a in due:
                 s = self.st[a["id"]]
-                ready = [t for t in self.terms if t.broker == a["broker"] and t.ok and len(t.jobs) < 2]
+                ready = [t for t in self.terms if t.broker in (a["broker"], "todos") and t.ok and len(t.jobs) < 2]
                 if not ready:
                     continue
                 pref = [t for t in ready if t.name == s.get("term")]

@@ -10,17 +10,15 @@ Reemplaza la ventana negra (cmd) del `journal_sync.py`. Se hace una sola vez, un
 3. No borres nada de `C:\journal`: ahí mismo van las carpetas nuevas.
 4. El sync viejo dejaba cuentas de alumnos abiertas en tus MT5 de Program Files. Abre tus MT5 personales y vuelve a entrar con tus cuentas si hace falta. Desde ahora nadie los mueve.
 
-## 2. Crear los MT5 del Journal (copias portables)
+## 2. Crear el MT5 del Journal (una copia portable del de Exness)
 1. La carpeta `C:\Journal` ya existe: es la misma `C:\journal` del sync viejo (Windows no distingue mayúsculas). Ábrela en el Explorador: Este equipo → Disco local (C:) → journal.
-2. **Exness:** copia la carpeta `C:\Program Files\MetaTrader 5 EXNESS` y pégala dentro de `C:\Journal`. Cámbiale el nombre a `EX-1`.
-3. **Funding Pips:** copia `C:\Program Files\MetaTrader 5` y pégala dentro de `C:\Journal`. Cámbiale el nombre a `FP-1`.
-   (Copiar no cambia nada en tus MT5 originales.)
-4. Abre cada copia en modo portable: `Windows + R`, escribe
-   `C:\Journal\EX-1\terminal64.exe /portable` y Enter.
-5. En ese MT5: **Archivo → Iniciar sesión en cuenta de trading**, entra con cualquier cuenta de ese bróker (una demo tuya sirve). Así la copia aprende la lista de servidores. Ciérralo.
-6. Repite los pasos 4 y 5 con `C:\Journal\FP-1\terminal64.exe /portable`.
+2. Copia la carpeta `C:\Program Files\MetaTrader 5 EXNESS` y pégala dentro de `C:\Journal`. Cámbiale el nombre a `MT5-1`. (Copiar no cambia nada en tu MT5 original.)
+3. Ábrela en modo portable: `Windows + R`, escribe `C:\Journal\MT5-1\terminal64.exe /portable` y Enter.
+4. En ese MT5: **Archivo → Iniciar sesión en cuenta de trading** y entra con cualquier cuenta de **Exness** (una demo tuya sirve).
+5. Repite el paso 4 con cualquier cuenta de **Funding Pips**. En el campo Servidor escribe `FundingPips` y elige el servidor de esa cuenta. Así este MT5 aprende los servidores de los dos brókers.
+6. Ciérralo.
 
-Con las cuentas de hoy basta con una copia por bróker. Cuando pasen de unas 40 cuentas, copia `C:\Journal\FP-1` como `FP-2` (o `EX-1` como `EX-2`) y agrégala en la configuración (paso 4). Cada copia usa unos 250 MB de RAM.
+Este único MT5 atiende a los alumnos de Exness y de Funding Pips, y alcanza para unos 100 alumnos. Cuando pasen de ahí, copia `C:\Journal\MT5-1` como `MT5-2` y agrega su línea en `config.ini`. Cada copia usa unos 250 MB de RAM.
 
 ## 3. Copiar la app
 1. En el VPS, entra a GitHub con tu cuenta y descarga el ZIP del repositorio (botón verde **Code → Download ZIP**).
@@ -34,12 +32,12 @@ Con las cuentas de hoy basta con una copia por bróker. Cuando pasen de unas 40 
 
 ## 4. Configuración privada
 1. En `C:\Journal\app`, copia `config.ejemplo.ini` y renombra la copia a `config.ini`.
-2. Ábrelo con el Bloc de notas. Lo único obligatorio es la sección `[terminales]`, que ya trae `EX-1` y `FP-1` con las rutas del paso 2.
+2. Ábrelo con el Bloc de notas. Lo único obligatorio es la sección `[terminales]`, que ya trae `MT5-1` con la ruta del paso 2.
 3. `service_key` y `journal_key`: si los dejas vacíos, la app usa los que ya guardaste antes en el VPS. Si prefieres, pégalos ahí. **No compartas este archivo con nadie, tampoco por el chat.**
 
 ## 5. Probar
 1. Doble clic en `kairus_journal.pyw`.
-2. Se abre la ventana **Kairus Journal**. Los MT5 del Journal se abren solos y minimizados.
+2. Se abre la ventana **Kairus Journal**. El MT5 del Journal se abre solo y minimizado.
 3. En un minuto cada cuenta debe pasar a **● OK** (verde). Si alguna sale en rojo, la columna Error dice por qué. El botón **Ver log** muestra el detalle.
 
 Botones:

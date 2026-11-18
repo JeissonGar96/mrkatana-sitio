@@ -282,6 +282,10 @@ class Syncer:
         open_pos = mt5.positions_total() or 0
         today_utc = dt.datetime.now(dt.timezone.utc).date()
         traded_today = any(d.type in trade_types and to_utc(d.time, off).date() == today_utc for d in deals)
+        # ¿Operó en los últimos N días? Si no, la cuenta "duerme" y se lee una vez al día
+        quiet_from = dt.datetime.now() - dt.timedelta(days=cfg.get("dormant_days", 60))
+        recent_trades = [d for d in (mt5.history_deals_get(quiet_from, _far()) or ()) if d.type in trade_types]
+        dormant = open_pos == 0 and not recent_trades
         took = time.time() - t0
 
         # ¿Cambió algo? Si no, no se escribe nada en Supabase.
@@ -293,7 +297,7 @@ class Syncer:
         if not full and status_ok and prev.get("core") == core and not equity_due:
             self.log("Sin cambios %s (%.1f s)" % (label, took))
             return {"ok": True, "wrote": False, "balance": info.balance, "equity": info.equity,
-                    "open": open_pos, "today": traded_today, "prev": prev}
+                    "open": open_pos, "today": traded_today, "dormant": dormant, "prev": prev}
         if full:
             self.sb.req("DELETE", "journal_snapshots?account_id=eq.%s&day=lt.%s" % (acc["id"], since.date().isoformat()))
         if trades and (full or prev.get("trades") != sig(trades)):
@@ -306,7 +310,7 @@ class Syncer:
                                currency=info.currency, last_sync_at=now_iso)
         self.log("OK %s: %d operaciones nuevas o revisadas%s (%.1f s)" % (label, len(trades), " (historial completo)" if full else "", took))
         return {"ok": True, "wrote": True, "balance": info.balance, "equity": info.equity, "open": open_pos,
-                "today": traded_today, "last_sync_at": now_iso,
+                "today": traded_today, "dormant": dormant, "last_sync_at": now_iso,
                 "prev": {"core": core, "trades": sig(trades), "tf": sig(transfers),
                          "equity": round(info.equity, 2), "eq_at": time.time()}}
 

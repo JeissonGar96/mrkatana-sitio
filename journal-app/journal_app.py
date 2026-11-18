@@ -61,6 +61,8 @@ def load_config():
         "journal_root": get("journal", "carpeta", "C:\\Journal"),
         "active_min": num("journal", "cada_min_activas", 5),
         "idle_min": num("journal", "cada_min_inactivas", 45),
+        "dormant_days": num("journal", "dias_para_dormir", 60),
+        "dormant_min": num("journal", "cada_min_dormidas", 1440),
         "error_min": num("journal", "reintentar_error_min", 15),
         "equity_min": num("journal", "equity_min", 60),
         "margin_hours": num("journal", "margen_horas", 2),
@@ -82,7 +84,7 @@ def load_config():
 
 
 def worker_cfg(cfg):
-    keys = ("supabase_url", "service_key", "journal_key", "journal_root", "margin_hours", "login_timeout_ms", "equity_min")
+    keys = ("supabase_url", "service_key", "journal_key", "journal_root", "margin_hours", "login_timeout_ms", "equity_min", "dormant_days")
     return {k: cfg[k] for k in keys}
 
 
@@ -356,9 +358,10 @@ class Engine:
             a = self.accounts.get(acc_id)
             if res.get("ok"):
                 s.update(fails=0, full=False, balance=res.get("balance"), equity=res.get("equity"),
-                         open=res.get("open", 0), today=res.get("today"), prev=res.get("prev") or s.get("prev"))
+                         open=res.get("open", 0), today=res.get("today"), dormant=res.get("dormant"), prev=res.get("prev") or s.get("prev"))
                 active = res.get("open") or res.get("today")
-                s["next"] = now + (self.cfg["active_min"] if active else self.cfg["idle_min"]) * 60
+                wait = self.cfg["active_min"] if active else (self.cfg["dormant_min"] if res.get("dormant") else self.cfg["idle_min"])
+                s["next"] = now + wait * 60
                 if res.get("wrote"):
                     s["wrote_at"] = now
                     if a:
@@ -384,7 +387,7 @@ class Engine:
                     "last_sync_at": a.get("last_sync_at"), "checked": s.get("done_at"),
                     "balance": s.get("balance", a.get("balance")), "equity": s.get("equity", a.get("equity")),
                     "currency": a.get("currency") or "", "next": s.get("next", 0), "error": a.get("last_error") or "",
-                    "open": s.get("open", 0),
+                    "open": s.get("open", 0), "dormant": s.get("dormant"),
                 })
             terms = [(t.name, t.broker, t.ok, t.msg, len(t.jobs)) for t in self.terms]
             return rows, terms
@@ -532,7 +535,7 @@ def run_ui(engine):
                     LABEL.get(r["status"], r["status"] or "—"), ago(max(filter(None, [iso_ts(r["last_sync_at"]), r["checked"]]), default=None)),
                     money(r["balance"], r["currency"]), money(r["equity"], r["currency"]),
                     "ahora" if nxt <= 0 else "%d min" % max(1, round(nxt / 60)),
-                    r["error"] if r["status"] == "error" else (("%d abierta%s" % (r["open"], "s" if r["open"] > 1 else "")) if r["open"] else ""))
+                    r["error"] if r["status"] == "error" else (("%d abierta%s" % (r["open"], "s" if r["open"] > 1 else "")) if r["open"] else ("Dormida: sin operar hace 2+ meses, se lee 1 vez al día" if r.get("dormant") else "")))
             tag = (TAG.get(r["status"], "wait"),)
             if tree.exists(r["id"]):
                 tree.item(r["id"], values=vals, tags=tag)

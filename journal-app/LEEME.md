@@ -7,11 +7,11 @@ Reemplaza la ventana negra (cmd) del `journal_sync.py`. Se hace una sola vez, un
 ## 1. Apagar el sync viejo
 1. Cierra la ventana negra (cmd) del journal.
 2. Presiona `Windows + R`, escribe `shell:startup` y Enter. Borra `iniciar.bat` de esa carpeta (así no vuelve a abrirse al reiniciar).
-3. No borres `C:\journal`: queda como respaldo.
+3. No borres nada de `C:\journal`: ahí mismo van las carpetas nuevas.
 4. El sync viejo dejaba cuentas de alumnos abiertas en tus MT5 de Program Files. Abre tus MT5 personales y vuelve a entrar con tus cuentas si hace falta. Desde ahora nadie los mueve.
 
 ## 2. Crear los MT5 del Journal (copias portables)
-1. Crea la carpeta `C:\Journal`.
+1. La carpeta `C:\Journal` ya existe: es la misma `C:\journal` del sync viejo (Windows no distingue mayúsculas). Ábrela en el Explorador: Este equipo → Disco local (C:) → journal.
 2. **Exness:** copia la carpeta `C:\Program Files\MetaTrader 5 EXNESS` y pégala dentro de `C:\Journal`. Cámbiale el nombre a `EX-1`.
 3. **Funding Pips:** copia `C:\Program Files\MetaTrader 5` y pégala dentro de `C:\Journal`. Cámbiale el nombre a `FP-1`.
    (Copiar no cambia nada en tus MT5 originales.)

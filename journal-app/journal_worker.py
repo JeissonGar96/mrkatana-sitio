@@ -264,7 +264,8 @@ class Syncer:
             # Incremental: desde el último sync menos un margen (por si MT5 tardó en bajar algo)
             last = dt.datetime.fromisoformat(acc["last_sync_at"].replace("Z", "+00:00")).replace(tzinfo=None)
             since = last - dt.timedelta(hours=cfg["margin_hours"])
-            since = since.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Un día extra: MT5 usa la hora del bróker y el VPS otra zona; así nunca se corta el día de hoy
+            since = since.replace(hour=0, minute=0, second=0, microsecond=0) - dt.timedelta(days=1)
         deals = list(mt5.history_deals_get(since, _far()) or ())
         orders = list(mt5.history_orders_get(since, _far()) or ())
         # Posiciones que cerraron en el rango pero abrieron antes: se piden completas por su número

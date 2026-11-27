@@ -93,15 +93,42 @@ async function guestUser(sb, id) {
 }
 
 // Código de descuento del checkout (tabla access_codes, code_type = 'discount')
-async function discountFor(sb, code, items) {
+// Reglas opcionales del código: starts_at / ends_at (vigencia), max_uses (usos en total), once_per_user (1 por persona).
+async function discountFor(sb, code, items, user) {
   code = String(code || '').trim().toUpperCase();
   if (!code) return null;
-  const r = await sb.from('access_codes').select('code, plan, code_type, discount_type, discount_value, is_used').eq('code', code).maybeSingle();
+  const r = await sb.from('access_codes').select('*').eq('code', code).maybeSingle();
   const d = r.data;
   if (!d || d.is_used || d.code_type !== 'discount') throw new Error('bad_code');
   const pl = d.plan || 'completo';
   if (pl !== 'completo' && !items.some(i => i.plan_id === pl || (pl === 'live' && String(i.plan_id).indexOf('live') === 0))) throw new Error('bad_code');
+  const now = Date.now();
+  if ((d.starts_at && now < new Date(d.starts_at).getTime()) || (d.ends_at && now > new Date(d.ends_at).getTime())) throw new Error('code_expired');
+  if (d.max_uses || d.once_per_user) {
+    // Compras pagadas con este código (y las que se están pagando ahora mismo, para no pasarse del límite)
+    const tag = JSON.stringify([{ discount_code: d.code }]);
+    const since = new Date(now - 30 * 60e3).toISOString();
+    const q = await sb.from('cart_orders').select('user_id, status, created_at').contains('items', tag).in('status', ['applied', 'pending']);
+    const rows = (q.data || []).filter(o => o.status === 'applied' || (o.status === 'pending' && o.created_at > since && o.user_id !== (user && user.id)));
+    if (d.once_per_user && user && rows.some(o => o.status === 'applied' && o.user_id === user.id)) throw new Error('code_used');
+    if (d.max_uses && rows.length >= Number(d.max_uses)) throw new Error('code_soldout');
+  }
   return { code: d.code, type: d.discount_type, value: Number(d.discount_value) || 0 };
+}
+
+// UTM del link por el que llegó (para medir de dónde vienen las ventas). Solo texto corto.
+function cleanUtm(u) {
+  if (!u || typeof u !== 'object') return null;
+  const o = {};
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'codigo'].forEach(k => {
+    if (u[k]) o[k] = String(u[k]).replace(/[^\w.@+-]/g, '').slice(0, 60);
+  });
+  return Object.keys(o).length ? o : null;
+}
+async function saveUtm(sb, orderId, body) {
+  const u = cleanUtm(body.utm);
+  if (!u || !orderId) return;
+  try { await sb.from('cart_orders').update({ utm: u }).eq('id', orderId); } catch (e) {}
 }
 
 // ── Precios reales desde la base ──
@@ -165,8 +192,9 @@ async function create(sb, user, body, res) {
   });
   const o = await r.json();
   if (!o.id) return res.status(502).json({ error: 'paypal_order', detail: o.message || o.name });
-  const ins = await sb.from('cart_orders').insert({ user_id: user.id, paypal_order_id: o.id, items, total });
+  const ins = await sb.from('cart_orders').insert({ user_id: user.id, paypal_order_id: o.id, items, total }).select('id').single();
   if (ins.error) return res.status(500).json({ error: ins.error.message });
+  await saveUtm(sb, ins.data.id, body);
   return res.status(200).json({ id: o.id, total });
 }
 
@@ -177,7 +205,7 @@ async function prepare(sb, user, body) {
   let disc = null;
   try {
     items = await priceItems(sb, body.items, checkout);
-    if (checkout) disc = await discountFor(sb, body.code, items);
+    if (checkout) disc = await discountFor(sb, body.code, items, user);
   } catch (e) { return { error: e.message }; }
   if (items.some(i => i.tv_pine_id)) {
     const s = await sb.from('user_settings').select('tv_username').eq('id', user.id).maybeSingle();
@@ -435,6 +463,7 @@ async function whopCreate(sb, user, body, req, res) {
   const ins = await sb.from('cart_orders').insert({ user_id: user.id, provider: 'whop', items, total, renew }).select('id').single();
   if (ins.error) return res.status(500).json({ error: ins.error.message });
   const orderId = ins.data.id;
+  await saveUtm(sb, orderId, body);
   // Formulario dentro de la página: no hace falta crear la página de pago de Whop (ahorra una llamada lenta)
   if (body.embed) return res.status(200).json({ order: orderId, total, account: WHOP_COMPANY });
   const origin = /^https:\/\/[a-z0-9.-]+$/i.test(String(req.headers.origin || '')) ? req.headers.origin : 'https://www.mrkatanafx.com';

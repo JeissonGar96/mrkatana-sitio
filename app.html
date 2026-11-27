@@ -11003,7 +11003,8 @@ function genCode() {
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var code = 'KATANA-';
   for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  if (codeType === 'discount') {
+  var custom = codeType === 'discount' && document.getElementById('cd-custom').checked;
+  if (custom) {
     var own = (document.getElementById('cd-name').value || '').trim().toUpperCase();
     if (own && !/^[A-Z0-9-]{3,30}$/.test(own)) return tst('El nombre solo puede tener letras, números y guiones (3 a 30)', 1);
     if (own) code = own;
@@ -11031,9 +11032,11 @@ function genCode() {
     data.discount_value = parseFloat(document.getElementById('code-discount-value').value) || 0;
     if (!(data.discount_value > 0)) return tst('Pon el valor del descuento', 1);
     if (data.discount_type === 'percent' && data.discount_value >= 100) return tst('El porcentaje debe ser menor a 100', 1);
-    var rules = _cdRead('cd-');
-    if (rules.error) return tst(rules.error, 1);
-    Object.assign(data, rules.data);
+    if (custom) {
+      var rules = _cdRead('cd-');
+      if (rules.error) return tst(rules.error, 1);
+      Object.assign(data, rules.data);
+    }
   }
 
   sb.from('access_codes').insert(data).then(function(r) {
@@ -11065,7 +11068,11 @@ var CD_ORIG = [['reel', 'instagram', 'Instagram · reel'], ['historias', 'instag
 })();
 function _cdFields(p, c) {
   p = p || 'cd-'; c = c || {};
-  return (p === 'cd-' ? '<div class="wp-field" style="margin-top:6px;"><label class="wp-label">Nombre del código (opcional)</label><input id="cd-name" class="wp-input" placeholder="Ej: NAVIDAD · si lo dejas vacío se crea uno al azar" maxlength="30" style="text-transform:uppercase;"></div>' : '') +
+  var main = p === 'cd-';
+  return (main ? '<div class="wp-toggle-row" style="margin-top:10px;"><div><span class="wp-toggle-text">Personalizado</span><div class="wp-toggle-sub">Nombre propio, fechas, cupos y 1 por persona (para campañas). Apagado = código normal como antes</div></div>' +
+      '<label class="wp-toggle"><input type="checkbox" id="cd-custom" onchange="document.getElementById(\'cd-opts\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label></div>' +
+      '<div id="cd-opts" style="display:none;margin-top:10px;padding:14px;background:rgba(var(--c-ov),.03);border:1px solid rgba(var(--c-ov),.06);border-radius:12px;">' : '') +
+    (main ? '<div class="wp-field"><label class="wp-label">Nombre del código (opcional)</label><input id="cd-name" class="wp-input" placeholder="Ej: NAVIDAD · si lo dejas vacío se crea uno al azar" maxlength="30" style="text-transform:uppercase;"></div>' : '') +
     '<div class="wp-field wp-grid2" style="margin-top:6px;">' +
       '<div><label class="wp-label">Empieza (hora Ecuador)</label><input id="' + p + 'from" type="datetime-local" class="wp-input" value="' + _cdLocal(c.starts_at) + '"></div>' +
       '<div><label class="wp-label">Termina (hora Ecuador)</label><input id="' + p + 'to" type="datetime-local" class="wp-input" value="' + _cdLocal(c.ends_at) + '"></div>' +
@@ -11074,7 +11081,8 @@ function _cdFields(p, c) {
       '<div><label class="wp-label">Cupos en total</label><input id="' + p + 'max" type="number" min="1" class="wp-input" placeholder="Vacío = sin límite" value="' + (c.max_uses || '') + '"></div>' +
       '<div class="wp-toggle-row" style="margin:0;padding-bottom:8px;"><span class="wp-toggle-text">1 uso por persona</span><label class="wp-toggle"><input type="checkbox" id="' + p + 'once"' + (c.once_per_user ? ' checked' : '') + '><span class="wp-toggle-track"></span></label></div>' +
     '</div>' +
-    '<div style="font-size:.7rem;color:var(--c-muted);margin-top:4px;">Si dejas las fechas vacías, el código vale desde ya y no vence. Solo aplica al pago único (no a los planes de pago).</div>';
+    '<div style="font-size:.7rem;color:var(--c-muted);margin-top:4px;">Si dejas las fechas vacías, el código vale desde ya y no vence. Solo aplica al pago único (no a los planes de pago).</div>' +
+    (main ? '</div>' : '');
 }
 // Ecuador = UTC-5 todo el año
 function _cdLocal(iso) { if (!iso) return ''; return new Date(new Date(iso).getTime() - 5 * 3600e3).toISOString().slice(0, 16); }

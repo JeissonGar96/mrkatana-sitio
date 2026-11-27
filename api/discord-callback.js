@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
   const REDIRECT_URI = `https://${req.headers.host}/api/discord-callback`;
 
   if (!code) {
-    return res.redirect('/?discord_error=no_code');
+    return res.redirect('/app/dash?discord_error=no_code');
   }
 
   try {
@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
       console.error('Token error:', tokenData);
-      return res.redirect('/?discord_error=token_failed');
+      return res.redirect('/app/dash?discord_error=token_failed');
     }
 
     const accessToken = tokenData.access_token;
@@ -80,7 +80,7 @@ module.exports = async function handler(req, res) {
     const discordUser = await userRes.json();
 
     if (!discordUser.id) {
-      return res.redirect('/?discord_error=user_failed');
+      return res.redirect('/app/dash?discord_error=user_failed');
     }
 
     // 3. Determine which roles to assign — los que el PLAN de esta persona tenga
@@ -115,7 +115,7 @@ module.exports = async function handler(req, res) {
     }
 
     // 4. Add user to server with those roles (if not already a member)
-    await fetch(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/members/${discordUser.id}`, {
+    const joinRes = await fetch(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/members/${discordUser.id}`, {
       method: 'PUT',
       headers: {
         Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
@@ -126,6 +126,11 @@ module.exports = async function handler(req, res) {
         roles: roleIds,
       }),
     });
+
+    if (!joinRes.ok) {
+      console.error('No se pudo unir al servidor:', joinRes.status, await joinRes.text().catch(function () { return ''; }));
+      return res.redirect('/app/dash?discord_error=join_failed');
+    }
 
     // 5. Assign each role individually too (por si el usuario ya era miembro —
     //    el PUT anterior solo fija roles cuando se une por primera vez)
@@ -150,6 +155,6 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error('Discord callback error:', err);
-    res.redirect('/?discord_error=server_error');
+    res.redirect('/app/dash?discord_error=server_error');
   }
 };

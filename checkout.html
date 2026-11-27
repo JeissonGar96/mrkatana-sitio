@@ -393,6 +393,18 @@ async function loadPlans() {
   var start = 0;
   plans.forEach(function(p, i) { if (p.id === want) start = i; });
   selectPlan(start, 0);
+  // Código que vino en el link (ej. ?codigo=BLACKFRIDAY): se escribe y se aplica solo
+  var lc = _mkUtm().codigo;
+  if (lc && !st.disc && !st.free && !st.pp) { _el('ck-code').value = lc; applyCode(); }
+}
+
+// UTM y código del link por el que llegó (también si entró primero al inicio): se guardan 14 días en este navegador
+function _mkUtm() {
+  var o = {}, q = new URLSearchParams(location.search), keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'codigo'];
+  try { var sv = JSON.parse(localStorage.getItem('mk-utm') || 'null'); if (sv && Date.now() - sv.t < 14 * 864e5) o = sv.u || {}; } catch (e) {}
+  if (keys.some(function(k) { return q.get(k); })) { o = {}; keys.forEach(function(k) { if (q.get(k)) o[k] = q.get(k); }); try { localStorage.setItem('mk-utm', JSON.stringify({ t: Date.now(), u: o })); } catch (e) {} }
+  if (o.codigo) o.codigo = String(o.codigo).trim().toUpperCase();
+  return o;
 }
 
 function selectPlan(i, vi) {
@@ -674,6 +686,9 @@ async function _api(action, body) {
 }
 
 var CK_ERR = {
+  code_expired: 'Este código ya no está vigente. Quítalo para pagar el precio normal.',
+  code_soldout: 'Este código ya alcanzó el máximo de usos. Quítalo para pagar el precio normal.',
+  code_used: 'Ya usaste este código en una compra anterior. Quítalo para pagar el precio normal.',
   bad_code: 'El código de descuento ya no es válido. Quítalo o usa otro.',
   no_session: 'Tu sesión expiró. Vuelve al paso anterior e intenta de nuevo.',
   missing_paypal_secret: 'Los pagos no están disponibles en este momento. Escríbenos por WhatsApp y te ayudamos.',
@@ -692,7 +707,7 @@ function renderPayPal() {
     createOrder: async function() {
       hideMsg();
       var r = await _api(st.session ? 'create' : 'guest_create', { source: 'checkout', user_id: st.user && st.user.id,
-        items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '' });
+        items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '', utm: _mkUtm() });
       if (!r.id) { showMsg(CK_ERR[r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.', true); throw new Error(r.error || 'order'); }
       return r.id;
     },
@@ -721,7 +736,7 @@ async function payWhop() {
   btn.disabled = true; lbl.textContent = 'Abriendo pago seguro...';
   // El formulario aparece al instante; la orden se prepara por detrás y se espera recién al pagar
   _wpOrd = _api(st.session ? 'whop_create' : 'guest_whop_create', { source: 'checkout', user_id: st.user.id, embed: true,
-    items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '', pp: st.pp ? st.pp.code : '',
+    items: [{ plan_id: st.plan.id, variant_id: st.plan.variant_id }], code: st.disc ? st.disc.code : '', pp: st.pp ? st.pp.code : '', utm: _mkUtm(),
     renew: st.plan.lm ? { live: true, kairus: true } : null }).then(function(r) {
       if (r && r.order) { _wpOrder = r.order; try { sessionStorage.setItem('mk-whop', JSON.stringify({ order: r.order, user_id: st.user.id, email: st.user.email, name: st.plan.name })); } catch (e) {} }
       else if (_wpPay) { _wpBack(); showMsg((CK_ERR[r && r.error] || 'No se pudo iniciar el pago. Intenta de nuevo.') + (r && r.detail ? ' (' + String(r.detail).slice(0, 120) + ')' : ''), true); }

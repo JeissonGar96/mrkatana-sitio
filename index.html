@@ -614,6 +614,13 @@ function _homeChart() {
 // Colores del admin (Apariencia): si cambian, se vuelve a dibujar el gráfico con el color nuevo
 _homeTheme(function() { if (document.getElementById('nq')) _homeChart(); });
 
+// Link de campaña (UTM y ?codigo=): se guarda 14 días para que el checkout lo use aunque entre después
+(function() {
+  var q = new URLSearchParams(location.search), o = {}, n = 0;
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'codigo'].forEach(function(k) { if (q.get(k)) { o[k] = q.get(k); n++; } });
+  if (n) try { localStorage.setItem('mk-utm', JSON.stringify({ t: Date.now(), u: o })); } catch (e) {}
+})();
+
 // Menú del celular
 document.getElementById('burger').addEventListener('click', function() { document.body.classList.toggle('mopen'); });
 document.getElementById('mnav').addEventListener('click', function(e) { if (e.target.closest('a')) document.body.classList.remove('mopen'); });

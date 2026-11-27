@@ -2576,7 +2576,7 @@ function mkToggleTheme(ev, want, after) {
           <button class="snav" data-v="admin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg> Admin</button>
         </div>
         <div class="snav-sec">Comunidad</div>
-        <a class="snav" href="https://discord.com/app" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7.5c2.3-.7 4.7-.7 7 0M7 16.5c3.2 1.2 6.8 1.2 10 0"/><path d="M15.5 17.5l1 2c2-.6 3.700-1.600 5-3 .3-3.900-.5-7.500-2.500-10.500-1.300-.6-2.700-1-4-1.200l-.7 1.400M8.500 17.500l-1 2c-2-.6-3.700-1.600-5-3-.3-3.900.5-7.500 2.500-10.500 1.300-.6 2.700-1 4-1.200l.7 1.400"/><circle cx="9" cy="12.5" r="1.2"/><circle cx="15" cy="12.5" r="1.2"/></svg> Discord</a>
+        <a class="snav" href="https://discord.com/channels/1458313559271276617" target="_blank" rel="noopener" onclick="return _dcOpen(event)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7.5c2.3-.7 4.7-.7 7 0M7 16.5c3.2 1.2 6.8 1.2 10 0"/><path d="M15.5 17.5l1 2c2-.6 3.700-1.600 5-3 .3-3.900-.5-7.500-2.500-10.500-1.300-.6-2.700-1-4-1.200l-.7 1.400M8.500 17.500l-1 2c-2-.6-3.700-1.600-5-3-.3-3.900.5-7.500 2.500-10.500 1.300-.6 2.700-1 4-1.200l.7 1.400"/><circle cx="9" cy="12.5" r="1.2"/><circle cx="15" cy="12.5" r="1.2"/></svg> Discord</a>
         <a class="snav" href="https://wa.me/593995014247" target="_blank" rel="noopener"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5l1.300-4.100A8.500 8.500 0 1 1 7.600 19.300z"/><path d="M9 8.500c0 3.500 3 6.500 6.500 6.500l1-1.600-2-1-1 1c-1.200-.5-2.300-1.600-2.800-2.800l1-1-1-2z"/></svg> WhatsApp</a>
       </div>
       <div class="aside-foot">
@@ -3160,6 +3160,14 @@ function loadApp(user) {
   sb.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
     cProfile = r.data;
     setTimeout(function() { if (window._splashDone) _splashDone(); }, 400);
+    // Aviso al volver de conectar Discord
+    (function() {
+      var q = new URLSearchParams(location.search), ok = q.get('discord_ok'), er = q.get('discord_error');
+      if (!ok && !er) return;
+      setTimeout(function() { tst(ok ? 'Discord conectado. Ya estás dentro del servidor de Mr Katana.' : (er === 'no_code' ? 'No se completó la conexión con Discord.' : 'No se pudo conectar Discord. Intenta de nuevo.'), !ok); }, 1200);
+      q.delete('discord_ok'); q.delete('discord_user'); q.delete('discord_error');
+      try { history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); } catch (e) {}
+    })();
     _actMark(false);
     var name = cProfile && cProfile.full_name ? cProfile.full_name.split(' ')[0] : 'Alumno';
     document.getElementById('uname').textContent = name;
@@ -5355,6 +5363,11 @@ async function _discordGo() {
     window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
   } catch (e) { tst('No se pudo abrir Discord. Intenta de nuevo.', 1); }
 }
+// Botón Discord (menú y panel): si ya vinculó, abre el servidor de Mr Katana; si no, lo conecta (lo une al servidor y le da su rol)
+function _dcOpen(e) {
+  if (cProfile && !cProfile.discord_id) { if (e) e.preventDefault(); _discordGo(); return false; }
+  return true;
+}
 
 // Editor en línea: la fila se convierte en un campo con Guardar / Cancelar
 function _ajEdit(k) {
@@ -7309,7 +7322,7 @@ function _mkRenderRPanel(liveOnly) {
     '<div class="rp-hi"><b>' + hi + ', ' + _mkEsc(first) + '</b><p id="rp-pct">' + (liveOnly ? (_hasLiveAccess() ? 'Bienvenido a las sesiones en vivo' : 'Bienvenido a Mr Katana FX') : 'Cargando tu progreso...') + '</p></div>' +
     '<div class="rp-qa">' +
       '<a href="#" title="Próximas actividades" onclick="_mkBell(event);return false;">' + MK_IC.bell + '</a>' +
-      '<a href="https://discord.com/app" target="_blank" rel="noopener" title="Discord">' + MK_IC.discord + '</a>' +
+      '<a href="https://discord.com/channels/1458313559271276617" target="_blank" rel="noopener" title="Discord" onclick="return _dcOpen(event)">' + MK_IC.discord + '</a>' +
       '<a href="https://wa.me/593995014247" target="_blank" rel="noopener" title="WhatsApp">' + MK_IC.wa + '</a>' +
     '</div>' +
     ('<div class="rp-h" style="font-size:1.1rem;">Tu progreso semanal <span id="rp-wk-n" style="font-size:.78rem;color:var(--c-muted);font-weight:400;"></span></div>' +

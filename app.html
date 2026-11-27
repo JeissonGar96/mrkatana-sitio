@@ -10269,6 +10269,7 @@ function rAdmCodes() {
             '</select></div>' +
             '<div><label class="wp-label" id="code-discount-value-label">Valor (%)</label><input id="code-discount-value" type="number" class="wp-input" placeholder="Ej: 20"></div>' +
           '</div>' +
+          _cdFields() +
         '</div>' +
 
         '<button class="wp-btn-primary" id="btn-gen-code" style="margin-top:14px;width:100%;">Generar código</button>' +
@@ -11002,6 +11003,12 @@ function genCode() {
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var code = 'KATANA-';
   for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  var custom = codeType === 'discount' && document.getElementById('cd-custom').checked;
+  if (custom) {
+    var own = (document.getElementById('cd-name').value || '').trim().toUpperCase();
+    if (own && !/^[A-Z0-9-]{3,30}$/.test(own)) return tst('El nombre solo puede tener letras, números y guiones (3 a 30)', 1);
+    if (own) code = own;
+  }
 
   var data = { code: code, created_by: cUser.id, plan: plan, notes: note, code_type: codeType };
 
@@ -11023,11 +11030,19 @@ function genCode() {
   } else {
     data.discount_type = document.getElementById('code-discount-type').value;
     data.discount_value = parseFloat(document.getElementById('code-discount-value').value) || 0;
+    if (!(data.discount_value > 0)) return tst('Pon el valor del descuento', 1);
+    if (data.discount_type === 'percent' && data.discount_value >= 100) return tst('El porcentaje debe ser menor a 100', 1);
+    if (custom) {
+      var rules = _cdRead('cd-');
+      if (rules.error) return tst(rules.error, 1);
+      Object.assign(data, rules.data);
+    }
   }
 
   sb.from('access_codes').insert(data).then(function(r) {
-    if (r.error) return tst('Error: ' + r.error.message, 1);
+    if (r.error) return tst(/duplicate|unique/i.test(r.error.message) ? 'Ya existe un código con ese nombre' : 'Error: ' + r.error.message, 1);
     tst('✓ Código generado: ' + code);
+    ['cd-name', 'cd-from', 'cd-to', 'cd-max'].forEach(function(k) { var el = document.getElementById(k); if (el) el.value = ''; });
     loadCodes();
   });
 }
@@ -11040,19 +11055,138 @@ function dCode(id) {
     loadCodes();
   });
 }
+// ── Códigos de descuento: reglas (vigencia, cupos, 1 por persona), editar, pausar, links con UTM y ventas por origen ──
+var _cdStats = [], _cdAll = [];
+var CD_ORIG = [['reel', 'instagram', 'Instagram · reel'], ['historias', 'instagram', 'Instagram · historias'], ['tiktok', 'tiktok', 'TikTok'], ['youtube', 'youtube', 'YouTube'], ['whatsapp', 'whatsapp', 'WhatsApp'], ['bot', 'instagram', 'Bot de Instagram (DM)']];
+(function() {
+  var st = document.createElement('style');
+  st.textContent = '.cd-act{background:none;border:1px solid var(--br);color:var(--c-muted);border-radius:6px;padding:3px 9px;font-size:.7rem;font-weight:500;font-family:inherit;cursor:pointer;margin-right:5px;}.cd-act:hover{color:var(--c-text);border-color:rgba(var(--c-ov),.25);}' +
+    '.cd-dot{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;color:var(--c-text);white-space:nowrap;}.cd-dot i{width:7px;height:7px;border-radius:50%;display:inline-block;}' +
+    '.cd-link{display:block;width:100%;box-sizing:border-box;word-break:break-all;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:rgba(var(--c-ov),.03);font-family:monospace;font-size:.74rem;color:var(--c-text);margin-top:6px;}' +
+    '.cd-sales td,.cd-sales th{font-size:.76rem;}#cd-name::placeholder{text-transform:none;}#cd-from,#cd-to,#cde-from,#cde-to{min-width:0;width:100%;box-sizing:border-box;}';
+  document.head.appendChild(st);
+})();
+function _cdFields(p, c) {
+  p = p || 'cd-'; c = c || {};
+  var main = p === 'cd-';
+  return (main ? '<div class="wp-toggle-row" style="margin-top:10px;"><div><span class="wp-toggle-text">Personalizado</span><div class="wp-toggle-sub">Nombre propio, fechas, cupos y 1 por persona (para campañas). Apagado = código normal como antes</div></div>' +
+      '<label class="wp-toggle"><input type="checkbox" id="cd-custom" onchange="document.getElementById(\'cd-opts\').style.display=this.checked?\'\':\'none\';"><span class="wp-toggle-track"></span></label></div>' +
+      '<div id="cd-opts" style="display:none;margin-top:10px;padding:14px;background:rgba(var(--c-ov),.03);border:1px solid rgba(var(--c-ov),.06);border-radius:12px;">' : '') +
+    (main ? '<div class="wp-field"><label class="wp-label">Nombre del código (opcional)</label><input id="cd-name" class="wp-input" placeholder="Ej: NAVIDAD · si lo dejas vacío se crea uno al azar" maxlength="30" style="text-transform:uppercase;"></div>' : '') +
+    '<div class="wp-field wp-grid2" style="margin-top:6px;">' +
+      '<div><label class="wp-label">Empieza (hora Ecuador)</label><input id="' + p + 'from" type="datetime-local" class="wp-input" value="' + _cdLocal(c.starts_at) + '"></div>' +
+      '<div><label class="wp-label">Termina (hora Ecuador)</label><input id="' + p + 'to" type="datetime-local" class="wp-input" value="' + _cdLocal(c.ends_at) + '"></div>' +
+    '</div>' +
+    '<div class="wp-field wp-grid2" style="margin-top:6px;align-items:end;">' +
+      '<div><label class="wp-label">Cupos en total</label><input id="' + p + 'max" type="number" min="1" class="wp-input" placeholder="Vacío = sin límite" value="' + (c.max_uses || '') + '"></div>' +
+      '<div class="wp-toggle-row" style="margin:0;padding-bottom:8px;"><span class="wp-toggle-text">1 uso por persona</span><label class="wp-toggle"><input type="checkbox" id="' + p + 'once"' + (c.once_per_user ? ' checked' : '') + '><span class="wp-toggle-track"></span></label></div>' +
+    '</div>' +
+    '<div style="font-size:.7rem;color:var(--c-muted);margin-top:4px;">Si dejas las fechas vacías, el código vale desde ya y no vence. Solo aplica al pago único (no a los planes de pago).</div>' +
+    (main ? '</div>' : '');
+}
+// Ecuador = UTC-5 todo el año
+function _cdLocal(iso) { if (!iso) return ''; return new Date(new Date(iso).getTime() - 5 * 3600e3).toISOString().slice(0, 16); }
+function _cdIso(v, end) { if (!v) return null; var d = new Date(v + (end && v.length === 16 && /T23:59$/.test(v) ? ':59' : ':00') + '-05:00'); return isNaN(d) ? undefined : d.toISOString(); }
+function _cdRead(p) {
+  var g = function(k) { return document.getElementById(p + k); };
+  var a = _cdIso(g('from').value), b = _cdIso(g('to').value, true);
+  if (a === undefined || b === undefined) return { error: 'Revisa las fechas' };
+  if (a && b && b <= a) return { error: 'La fecha de fin debe ser después del inicio' };
+  var mx = g('max').value ? parseInt(g('max').value, 10) : null;
+  if (mx !== null && !(mx > 0)) return { error: 'Los cupos deben ser 1 o más' };
+  return { data: { starts_at: a, ends_at: b, max_uses: mx, once_per_user: !!g('once').checked } };
+}
+function _cdPlanName(id) {
+  if (!id || id === 'completo') return 'Todos los planes';
+  var o = document.querySelector('#code-plan option[value="' + String(id).replace(/"/g, '') + '"]');
+  return o ? o.textContent.replace(/\s*\(.*\)$/, '') : id;
+}
+function _cdFmt(iso) { return new Date(new Date(iso).getTime() - 5 * 3600e3).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' }); }
+function _cdRange(c) {
+  if (!c.starts_at && !c.ends_at) return 'Sin fecha límite';
+  if (!c.starts_at) return 'Hasta el ' + _cdFmt(c.ends_at);
+  if (!c.ends_at) return 'Desde el ' + _cdFmt(c.starts_at);
+  return _cdFmt(c.starts_at) + ' – ' + _cdFmt(c.ends_at);
+}
+function _cdUses(code) { return _cdStats.filter(function(x) { return x.code === code; }).reduce(function(a, x) { return a + Number(x.sales || 0); }, 0); }
+function _cdState(c) {
+  var now = Date.now(), t = 'Activo', col = 'var(--c-ok-hex,#3fb97a)';
+  if (c.is_used) { t = 'Pausado'; col = 'var(--c-muted)'; }
+  else if (c.ends_at && now > new Date(c.ends_at).getTime()) { t = 'Vencido'; col = 'var(--c-muted)'; }
+  else if (c.max_uses && _cdUses(c.code) >= c.max_uses) { t = 'Agotado'; col = 'rgb(var(--c-bad))'; }
+  else if (c.starts_at && now < new Date(c.starts_at).getTime()) { t = 'Programado'; col = 'rgb(var(--c-acc))'; }
+  else col = 'rgb(var(--c-ok))';
+  return '<span class="cd-dot"><i style="background:' + col + ';"></i>' + t + '</span>';
+}
+function _cdPause(c) {
+  sb.from('access_codes').update({ is_used: !c.is_used }).eq('id', c.id).then(function(r) {
+    if (r.error) return tst('Error: ' + r.error.message, 1);
+    tst(c.is_used ? '✓ Código reanudado' : '✓ Código pausado: ya nadie lo puede usar');
+    loadCodes();
+  });
+}
+function _cdEdit(c) {
+  var md = _ppModal('<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">Editar ' + _mkEsc(c.code) + '</div><div style="color:var(--c-muted);font-size:.8rem;margin-bottom:16px;">Usado ' + _cdUses(c.code) + ' veces hasta ahora.</div>' +
+    '<div class="wp-field wp-grid2"><div><label class="wp-label">Tipo</label><select id="cde-type" class="wp-input"><option value="percent"' + (c.discount_type === 'percent' ? ' selected' : '') + '>Porcentaje (%)</option><option value="fixed"' + (c.discount_type !== 'percent' ? ' selected' : '') + '>Monto fijo ($)</option></select></div>' +
+    '<div><label class="wp-label">Valor</label><input id="cde-val" type="number" class="wp-input" value="' + Number(c.discount_value) + '"></div></div>' +
+    _cdFields('cde-', c) +
+    '<button class="wp-btn-primary" id="cde-save" style="margin-top:16px;width:100%;">Guardar cambios</button>' +
+    '<button class="cd-act" id="cde-del" style="margin-top:12px;width:100%;padding:9px;color:rgb(var(--c-bad));">Eliminar código</button>');
+  md.querySelector('#cde-save').onclick = function() {
+    var rules = _cdRead('cde-'); if (rules.error) return tst(rules.error, 1);
+    var v = parseFloat(md.querySelector('#cde-val').value) || 0, ty = md.querySelector('#cde-type').value;
+    if (!(v > 0) || (ty === 'percent' && v >= 100)) return tst('Revisa el valor del descuento', 1);
+    sb.from('access_codes').update(Object.assign({ discount_type: ty, discount_value: v }, rules.data)).eq('id', c.id).then(function(r) {
+      if (r.error) return tst('Error: ' + r.error.message, 1);
+      tst('✓ Código actualizado'); md.remove(); loadCodes();
+    });
+  };
+  md.querySelector('#cde-del').onclick = function() { md.remove(); dCode(c.id); };
+}
+function _cdLinks(c) {
+  var md = _ppModal('<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">Link con el código ' + _mkEsc(c.code) + '</div><div style="color:var(--c-muted);font-size:.8rem;margin-bottom:16px;">Quien abra el link llega al pago con el código ya aplicado. Usa un link distinto por cada lugar para saber de dónde vienen las ventas.</div>' +
+    '<div class="wp-field"><label class="wp-label">¿Dónde lo vas a poner?</label><select id="cdl-o" class="wp-input">' + CD_ORIG.map(function(o, i) { return '<option value="' + i + '">' + o[2] + '</option>'; }).join('') + '<option value="x">Otro (escríbelo)</option></select></div>' +
+    '<div class="wp-field" id="cdl-xw" style="display:none;"><label class="wp-label">Nombre del lugar</label><input id="cdl-x" class="wp-input" placeholder="Ej: email, facebook, live" maxlength="30"></div>' +
+    '<div class="cd-link" id="cdl-u"></div><button class="wp-btn-primary" id="cdl-c" style="margin-top:12px;width:100%;">Copiar link</button>');
+  function url() {
+    var v = md.querySelector('#cdl-o').value, o = v === 'x' ? null : CD_ORIG[+v];
+    var x = (md.querySelector('#cdl-x').value || '').toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'otro';
+    var plan = c.plan && c.plan !== 'completo' && c.plan !== 'live' ? 'plan=' + encodeURIComponent(c.plan) + '&' : '';
+    return 'https://www.mrkatanafx.com/checkout?' + plan + 'codigo=' + encodeURIComponent(c.code) +
+      '&utm_source=' + (o ? o[1] : x) + '&utm_medium=' + (o && o[0] === 'bot' ? 'dm' : 'social') + '&utm_campaign=' + encodeURIComponent(c.code.toLowerCase()) + '&utm_content=' + (o ? o[0] : x);
+  }
+  function upd() { md.querySelector('#cdl-xw').style.display = md.querySelector('#cdl-o').value === 'x' ? '' : 'none'; md.querySelector('#cdl-u').textContent = url(); }
+  md.querySelector('#cdl-o').onchange = upd; md.querySelector('#cdl-x').oninput = upd; upd();
+  md.querySelector('#cdl-c').onclick = function() { navigator.clipboard.writeText(url()).then(function() { tst('✓ Link copiado'); }); };
+}
+// Ventas por código y por origen (sale de las compras pagadas)
+function _cdSalesBox() {
+  var box = document.getElementById('codes-sales');
+  if (!box) { var l = document.getElementById('codes-list'); if (!l) return; box = document.createElement('div'); box.id = 'codes-sales'; l.parentNode.insertBefore(box, l.nextSibling); }
+  var rows = _cdStats.slice().sort(function(a, b) { return b.sales - a.sales; });
+  var name = function(o) { var f = CD_ORIG.filter(function(x) { return x[0] === o; })[0]; return f ? f[2] : (o === 'directo' ? 'Sin link (escrito a mano o directo)' : o); };
+  box.innerHTML = '<div class="wp-card" style="margin-top:20px;"><div class="wp-card-head"><span class="wp-card-title">Ventas por origen</span></div>' +
+    (rows.length ? '<div class="dtab-wrap"><table class="dtab cd-sales"><thead><tr><th>Código</th><th>De dónde vino</th><th>Ventas</th><th>Cobrado</th></tr></thead><tbody>' +
+      rows.map(function(x) { return '<tr><td style="font-family:monospace;">' + _mkEsc(x.code || 'Sin código') + '</td><td>' + _mkEsc(name(x.origin)) + '</td><td>' + x.sales + '</td><td>$' + Number(x.total || 0).toLocaleString('en-US') + '</td></tr>'; }).join('') +
+      '</tbody></table></div>' : '<div style="color:var(--c-muted);font-size:.8rem;">Todavía no hay ventas con código o con link de campaña.</div>') + '</div>';
+}
 function loadCodes() {
   var c = document.getElementById('codes-list'); if (!c) return;
-  sb.from('access_codes').select('*').order('created_at', {ascending: false}).then(function(r) {
+  Promise.all([sb.from('access_codes').select('*').order('created_at', {ascending: false}), sb.rpc('code_stats')]).then(function(rr) {
+    var r = rr[0]; _cdStats = (rr[1] && rr[1].data) || [];
+    _cdAll = r.data || [];
+    _cdSalesBox();
     if (!r.data || !r.data.length) { c.innerHTML = '<p style="color:var(--c-muted);font-size:.82rem;">Sin códigos generados aún.</p>'; return; }
     var tbl = document.createElement('table'); tbl.className = 'dtab';
-    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Detalle</th><th>Estado</th><th>Usado</th><th></th></tr></thead>';
+    tbl.innerHTML = '<thead><tr><th>Código</th><th>Nota</th><th>Detalle</th><th>Estado</th><th>Usos</th><th></th></tr></thead>';
     var tb = document.createElement('tbody');
     r.data.forEach(function(cd) {
       var tr = document.createElement('tr');
       var usedDate = cd.used_at ? new Date(cd.used_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : '—';
       var detail;
       if (cd.code_type === 'discount') {
-        detail = '<span style="color:rgb(var(--c-acc));">' + (cd.discount_type === 'percent' ? cd.discount_value + '% off' : '$' + cd.discount_value + ' off') + '</span>';
+        detail = '<span style="color:var(--c-text);">' + (cd.discount_type === 'percent' ? Number(cd.discount_value) + '%' : '$' + Number(cd.discount_value)) + '</span> · ' + _mkEsc(_cdPlanName(cd.plan)) +
+          '<div style="color:var(--c-muted);font-size:.7rem;margin-top:2px;">' + _cdRange(cd) + '</div>';
       } else if (cd.custom_duration) {
         var parts = [];
         if (cd.applies_clases) parts.push('Clases');
@@ -11066,9 +11200,17 @@ function loadCodes() {
         '<button onclick="navigator.clipboard.writeText(\'' + cd.code + '\').then(function(){tst(\'✓ Copiado\')})" style="background:none;border:none;color:var(--c-muted);cursor:pointer;font-size:.7rem;margin-left:6px;padding:2px 5px;border:1px solid var(--br);border-radius:3px;">Copiar</button></td>' +
         '<td style="font-size:.74rem;color:var(--c-muted);">' + (cd.notes || '—') + '</td>' +
         '<td style="font-size:.74rem;">' + detail + '</td>' +
-        '<td><span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (cd.is_used ? 'rgba(var(--c-bad),.1)' : 'rgba(var(--c-ok),.1)') + ';color:' + (cd.is_used ? 'rgb(var(--c-bad))' : 'rgb(var(--c-ok))') + ';">' + (cd.is_used ? 'Usado' : 'Disponible') + '</span></td>' +
-        '<td style="font-size:.74rem;color:var(--c-muted);">' + usedDate + '</td>' +
-        '<td></td>';
+        (cd.code_type === 'discount'
+          ? '<td>' + _cdState(cd) + '</td><td style="font-size:.74rem;color:var(--c-muted);white-space:nowrap;">' + _cdUses(cd.code) + (cd.max_uses ? ' de ' + cd.max_uses : '') + (cd.once_per_user ? '<div style="font-size:.66rem;">1 por persona</div>' : '') + '</td>'
+          : '<td><span style="font-size:.68rem;padding:2px 8px;border-radius:3px;background:' + (cd.is_used ? 'rgba(var(--c-bad),.1)' : 'rgba(var(--c-ok),.1)') + ';color:' + (cd.is_used ? 'rgb(var(--c-bad))' : 'rgb(var(--c-ok))') + ';">' + (cd.is_used ? 'Usado' : 'Disponible') + '</span></td>' +
+            '<td style="font-size:.74rem;color:var(--c-muted);">' + usedDate + '</td>') +
+        '<td style="white-space:nowrap;"></td>';
+      if (cd.code_type === 'discount') {
+        var acts = tr.cells[tr.cells.length-1];
+        [['Link', function() { _cdLinks(cd); }], ['Editar', function() { _cdEdit(cd); }], [cd.is_used ? 'Reanudar' : 'Pausar', function() { _cdPause(cd); }]].forEach(function(a) {
+          var b = document.createElement('button'); b.className = 'cd-act'; b.textContent = a[0]; b.addEventListener('click', a[1]); acts.appendChild(b);
+        });
+      }
       {
         var delBtn = document.createElement('button');
         delBtn.textContent = '✕';
